@@ -1,0 +1,1 @@
+# Ditto Android Quickstart App 🚀

@@ -1,0 +1,1 @@
+# Ditto Rust Quickstart App 🚀
