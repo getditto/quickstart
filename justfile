@@ -6,8 +6,8 @@ _default:
     @just --list
 
 # os_family()
-patform := if os_family() == "macos" { "mac" } else { "linux" }
-cmdline_url := "https://dl.google.com/android/repository/commandlinetools-{{ patform }}-11076708_latest.zip"
+platform := if os_family() == "macos" { "mac" } else { "linux" }
+cmdline_url := "https://dl.google.com/android/repository/commandlinetools-{{ platform }}-11076708_latest.zip"
 cmdline_tools_dir := env_var('ANDROID_HOME') + "/cmdline-tools"
 
 # Installs the Android command line tools
