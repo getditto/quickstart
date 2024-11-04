@@ -3,7 +3,11 @@ package live.ditto.quickstart.tasks.edit
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -22,8 +26,8 @@ fun EditScreen(navController: NavController, taskId: String?) {
 
     val topBarTitle = if (taskId == null) "New Task" else "Edit Task"
 
-    val body: String by editScreenViewModel.body.observeAsState("")
-    val isCompleted: Boolean by editScreenViewModel.isCompleted.observeAsState(initial = false)
+    val title: String by editScreenViewModel.title.observeAsState("")
+    val done: Boolean by editScreenViewModel.done.observeAsState(initial = false)
     val canDelete: Boolean by editScreenViewModel.canDelete.observeAsState(initial = false)
 
     Scaffold(
@@ -36,13 +40,15 @@ fun EditScreen(navController: NavController, taskId: String?) {
             )
         },
         content = { padding ->
-            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Column(modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)) {
                 EditForm(
                     canDelete = canDelete,
-                    body = body,
-                    onBodyTextChange = { editScreenViewModel.body.value = it },
-                    isCompleted = isCompleted,
-                    onIsCompletedChanged = { editScreenViewModel.isCompleted.value = it },
+                    title = title,
+                    onTitleTextChange = { editScreenViewModel.title.value = it },
+                    done = done,
+                    onDoneChanged = { editScreenViewModel.done.value = it },
                     onSaveButtonClicked = {
                         editScreenViewModel.save()
                         navController.popBackStack()

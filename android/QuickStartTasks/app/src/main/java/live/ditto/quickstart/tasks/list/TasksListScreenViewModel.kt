@@ -7,17 +7,16 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.data.Task
-import java.lang.Exception
 
-class TasksListScreenViewModel: ViewModel() {
+class TasksListScreenViewModel : ViewModel() {
     val tasks: MutableLiveData<List<Task>> = MutableLiveData(emptyList())
 
     init {
-        val query = "SELECT * FROM tasks WHERE isDeleted != true"
+        val query = "SELECT * FROM tasks WHERE deleted != true"
         ditto.sync.registerSubscription(query)
         ditto.store.registerObserver(query) { result ->
             val list = result.items.map { item -> Task.fromJson(item.jsonString()) }
-             tasks.postValue(list)
+            tasks.postValue(list)
         }
     }
 
@@ -29,12 +28,12 @@ class TasksListScreenViewModel: ViewModel() {
                     mapOf("_id" to taskId)
                 ).items.first()
 
-                val isCompleted = doc.value["isCompleted"] as Boolean
+                val done = doc.value["done"] as Boolean
 
                 ditto.store.execute(
-                    "UPDATE tasks SET isCompleted = :toggled WHERE _id = :_id",
+                    "UPDATE tasks SET done = :toggled WHERE _id = :_id",
                     mapOf(
-                        "toggled" to !isCompleted,
+                        "toggled" to !done,
                         "_id" to taskId
                     )
                 )

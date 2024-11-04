@@ -12,18 +12,18 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun EditForm(
     canDelete: Boolean,
-    body: String,
-    onBodyTextChange: ((body: String) -> Unit)? = null,
-    isCompleted: Boolean = false,
-    onIsCompletedChanged: ((isCompleted: Boolean) -> Unit)? = null,
+    title: String,
+    onTitleTextChange: ((title: String) -> Unit)? = null,
+    done: Boolean = false,
+    onDoneChanged: ((done: Boolean) -> Unit)? = null,
     onSaveButtonClicked: (() -> Unit)? = null,
     onDeleteButtonClicked: (() -> Unit)? = null,
 ) {
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(text = "Body:")
+        Text(text = "Title:")
         TextField(
-            value = body,
-            onValueChange = { onBodyTextChange?.invoke(it) },
+            value = title,
+            onValueChange = { onTitleTextChange?.invoke(it) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp)
@@ -35,7 +35,7 @@ fun EditForm(
             Arrangement.SpaceBetween
         ) {
             Text(text = "Is Complete:")
-            Switch(checked = isCompleted, onCheckedChange = { onIsCompletedChanged?.invoke(it) })
+            Switch(checked = done, onCheckedChange = { onDoneChanged?.invoke(it) })
         }
         Button(
             onClick = {

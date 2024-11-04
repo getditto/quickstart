@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch {
-            ditto.store.execute("EVICT FROM tasks WHERE isDeleted = true")
+            ditto.store.execute("EVICT FROM tasks WHERE deleted = true")
         }
 
         requestMissingPermissions()

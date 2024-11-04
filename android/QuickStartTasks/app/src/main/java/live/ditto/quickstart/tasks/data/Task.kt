@@ -7,8 +7,9 @@ import java.lang.Exception
 
 data class Task(
     val _id: String = UUID.randomUUID().toString(),
-    val body: String,
-    val isCompleted: Boolean
+    val title: String,
+    val done: Boolean,
+    val deleted: Boolean
 ) {
     companion object {
         fun fromJson(jsonString: String): Task {
@@ -16,12 +17,13 @@ data class Task(
                 val json = JSONObject(jsonString)
                 Task(
                     _id = json["_id"].toString(),
-                    body = json["body"].toString(),
-                    isCompleted = json["isCompleted"] as Boolean
+                    title = json["title"].toString(),
+                    done = json["done"] as Boolean,
+                    deleted = json["deleted"] as Boolean
                 )
             } catch (e: Exception) {
                 Log.e("ERROR:", e.message.toString())
-                Task(body = "", isCompleted = false)
+                Task(title = "", done = false, deleted = false)
             }
         }
     }

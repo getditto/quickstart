@@ -2,7 +2,11 @@ package live.ditto.quickstart.tasks.list
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,9 +19,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import live.ditto.quickstart.tasks.data.Task
 import live.ditto.quickstart.tasks.R
-import java.util.*
+import live.ditto.quickstart.tasks.data.Task
+import java.util.UUID
 
 /**
  * Represents a row of tasks
@@ -26,18 +30,17 @@ import java.util.*
 fun TaskRow(
     task: Task,
     onToggle: ((task: Task) -> Unit)? = null,
-    onClickBody: ((task: Task) -> Unit)? = null) {
+    onClickTitle: ((task: Task) -> Unit)? = null
+) {
 
     val iconId =
-        if (task.isCompleted) R.drawable.ic_baseline_circle_24 else R.drawable.ic_outline_circle_24
-    val color = if (task.isCompleted) R.color.blue_200 else R.color.gray
-    val textDecoration = if (task.isCompleted) TextDecoration.LineThrough else
-        TextDecoration.None
+        if (task.done) R.drawable.ic_baseline_circle_24 else R.drawable.ic_outline_circle_24
+    val color = if (task.done) R.color.blue_200 else R.color.gray
+    val textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
     Row(
         Modifier
             .fillMaxWidth()
             .padding(12.dp)
-
     ) {
         Image(
             ImageVector.vectorResource(
@@ -52,22 +55,22 @@ fun TaskRow(
             alignment = Alignment.CenterEnd
         )
         Text(
-            text = task.body,
+            text = task.title,
             textDecoration = textDecoration,
             fontSize = 16.sp,
             modifier = Modifier
                 .alignByBaseline()
                 .fillMaxWidth()
-                .clickable { onClickBody?.invoke(task) })
+                .clickable { onClickTitle?.invoke(task) })
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TaskRowPreview() {
-    Column() {
-        TaskRow(task = Task(UUID.randomUUID().toString(), "Get Milk", true))
-        TaskRow(task = Task(UUID.randomUUID().toString(), "Do Homework", false))
-        TaskRow(task = Task(UUID.randomUUID().toString(), "Take out trash", true))
+    Column {
+        TaskRow(task = Task(UUID.randomUUID().toString(), "Get Milk", true, false))
+        TaskRow(task = Task(UUID.randomUUID().toString(), "Do Homework", false, false))
+        TaskRow(task = Task(UUID.randomUUID().toString(), "Take out trash", true, false))
     }
 }

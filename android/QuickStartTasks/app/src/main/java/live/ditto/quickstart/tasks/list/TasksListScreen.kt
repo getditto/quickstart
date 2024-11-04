@@ -52,7 +52,7 @@ fun TasksListScreen(navController: NavController) {
                 TasksList(
                     tasks = tasks,
                     onToggle = { tasksListViewModel.toggle(it) },
-                    onClickBody = {
+                    onClickTitle = {
                         navController.navigate("tasks/edit/${it}")
                     }
                 )
@@ -65,13 +65,13 @@ fun TasksListScreen(navController: NavController) {
 fun TasksList(
     tasks: List<Task>,
     onToggle: ((taskId: String) -> Unit)? = null,
-    onClickBody: ((taskId: String) -> Unit)? = null
+    onClickTitle: ((taskId: String) -> Unit)? = null
 ) {
     LazyColumn {
         items(tasks) { task ->
             TaskRow(
                 task = task,
-                onClickBody = { onClickBody?.invoke(it._id) },
+                onClickTitle = { onClickTitle?.invoke(it._id) },
                 onToggle = { onToggle?.invoke(it._id) }
             )
         }
@@ -87,9 +87,9 @@ fun TasksList(
 fun TasksListPreview() {
     TasksList(
         tasks = listOf(
-            Task(UUID.randomUUID().toString(), "Get Milk", true),
-            Task(UUID.randomUUID().toString(), "Get Oats", false),
-            Task(UUID.randomUUID().toString(), "Get Berries", true),
+            Task(UUID.randomUUID().toString(), "Get Milk", true, false),
+            Task(UUID.randomUUID().toString(), "Get Oats", false, false),
+            Task(UUID.randomUUID().toString(), "Get Berries", true, false),
         )
     )
 }

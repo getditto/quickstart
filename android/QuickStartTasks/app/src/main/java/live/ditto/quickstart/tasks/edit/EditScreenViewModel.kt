@@ -7,14 +7,13 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.data.Task
-import java.lang.Exception
 
-class EditScreenViewModel: ViewModel() {
+class EditScreenViewModel : ViewModel() {
 
     private var _id: String? = null
 
-    var body = MutableLiveData<String>("")
-    var isCompleted = MutableLiveData<Boolean>(false)
+    var title = MutableLiveData<String>("")
+    var done = MutableLiveData<Boolean>(false)
     var canDelete = MutableLiveData<Boolean>(false)
 
     fun setupWithTask(id: String?) {
@@ -30,8 +29,8 @@ class EditScreenViewModel: ViewModel() {
 
                 val task = Task.fromJson(item.jsonString())
                 _id = task._id
-                body.postValue(task.body)
-                isCompleted.postValue(task.isCompleted)
+                title.postValue(task.title)
+                done.postValue(task.done)
             } catch (e: Exception) {
                 Log.e("ERROR:", e.message.toString())
             }
@@ -44,24 +43,27 @@ class EditScreenViewModel: ViewModel() {
                 if (_id == null) {
                     ditto.store.execute(
                         "INSERT INTO tasks DOCUMENTS (:doc)",
-                        mapOf("doc" to mapOf(
-                            "body" to body.value,
-                            "isCompleted" to isCompleted.value,
-                            "isDeleted" to false
-                        ))
+                        mapOf(
+                            "doc" to mapOf(
+                                "title" to title.value,
+                                "done" to done.value,
+                                "deleted" to false
+                            )
+                        )
                     )
                 } else {
                     _id?.let { id ->
-                        ditto.store.execute("""
+                        ditto.store.execute(
+                            """
                             UPDATE tasks
                             SET
-                              body = :body,
-                              isCompleted = :isCompleted
+                              title = :title,
+                              done = :done
                             WHERE _id = :id
                             """,
                             mapOf(
-                                "body" to body.value,
-                                "isCompleted" to isCompleted.value,
+                                "title" to title.value,
+                                "done" to done.value,
                                 "id" to id
                             )
                         )
@@ -73,13 +75,12 @@ class EditScreenViewModel: ViewModel() {
         }
     }
 
-    // 4.
     fun delete() {
         viewModelScope.launch {
             try {
                 _id?.let { id ->
                     ditto.store.execute(
-                        "UPDATE tasks SET isDeleted = true WHERE _id = :id",
+                        "UPDATE tasks SET deleted = true WHERE _id = :id",
                         mapOf("id" to id)
                     )
                 }
