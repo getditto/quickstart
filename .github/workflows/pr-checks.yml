@@ -1,0 +1,31 @@
+#
+# .github/workflows/pr-checks.yml
+#
+---
+name: pr-checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android
+
+    # https://github.com/actions/runner-images#available-images
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tools
+        run: |
+          sudo apt update && sudo apt install just
+          just --version
+          just tools
