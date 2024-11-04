@@ -24,5 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Tools
-        run: just tools
+      - name: Install Tools
+        run: |
+          sudo apt update && sudo apt install just
+          just --version
+          just tools
