@@ -54,6 +54,12 @@ build and run them.
 - [C++](cpp/#readme)
 - [Rust](rust/#readme)
 
+## 🔨 Building
+
+This repo uses [just](https://just.systems/) to launch various build commands.
+Run `just` without any arguments to view a list of the available recipes.
+The full commands can be viewed in the root [`justfile`](justfile).
+
 ## 📄 License
 
 This repo is licensed under the MIT License. See the [LICENSE](LICENSE) file for
