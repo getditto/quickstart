@@ -1,47 +1,51 @@
 package live.ditto.quickstart.tasks
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import live.ditto.quickstart.tasks.ui.theme.QuickStartTasksTheme
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import live.ditto.DittoError
+import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
+import live.ditto.transports.DittoSyncPermissions
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        try {
+            ditto.startSync()
+        } catch (e: DittoError) {
+            Toast.makeText(
+                this@MainActivity,
+                """
+                    Uh oh! There was an error trying to start Ditto's sync feature.
+                    That's okay, it will still work as a local database.
+                    This is the error: ${e.localizedMessage}
+                """.trimIndent(), Toast.LENGTH_LONG
+            ).show()
+        }
+
         setContent {
-            QuickStartTasksTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+            Root()
+        }
+
+        lifecycleScope.launch {
+            ditto.store.execute("EVICT FROM tasks WHERE isDeleted = true")
+        }
+
+        requestMissingPermissions()
+    }
+
+    private fun requestMissingPermissions() {
+        val missingPermissions = DittoSyncPermissions(this).missingPermissions()
+        if (missingPermissions.isNotEmpty()) {
+            this.requestPermissions(missingPermissions, 0)
         }
     }
+
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    QuickStartTasksTheme {
-        Greeting("Android")
-    }
-}
+
