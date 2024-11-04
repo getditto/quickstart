@@ -1,14 +1,19 @@
 package live.ditto.quickstart.tasks.edit
 
-import android.annotation.SuppressLint
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import live.ditto.quickstart.tasks.R
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditScreen(navController: NavController, taskId: String?) {
@@ -24,26 +29,30 @@ fun EditScreen(navController: NavController, taskId: String?) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(topBarTitle) }
+                title = { Text(topBarTitle, color = Color.White) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorResource(id = R.color.blue_700)
+                )
             )
         },
-        content = {
-            EditForm(
-                canDelete = canDelete,
-                body = body,
-                onBodyTextChange = { editScreenViewModel.body.value = it },
-                isCompleted = isCompleted,
-                onIsCompletedChanged = { editScreenViewModel.isCompleted.value = it },
-                onSaveButtonClicked = {
-                    editScreenViewModel.save()
-                    navController.popBackStack()
-                },
-                onDeleteButtonClicked = {
-                    editScreenViewModel.delete()
-                    navController.popBackStack()
-                }
-            )
+        content = { padding ->
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                EditForm(
+                    canDelete = canDelete,
+                    body = body,
+                    onBodyTextChange = { editScreenViewModel.body.value = it },
+                    isCompleted = isCompleted,
+                    onIsCompletedChanged = { editScreenViewModel.isCompleted.value = it },
+                    onSaveButtonClicked = {
+                        editScreenViewModel.save()
+                        navController.popBackStack()
+                    },
+                    onDeleteButtonClicked = {
+                        editScreenViewModel.delete()
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     )
 }
-
