@@ -1,6 +1,29 @@
+import com.android.build.api.variant.BuildConfigField
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+}
+
+androidComponents {
+    onVariants {
+        it.buildConfigFields.put(
+            "APP_ID",
+            BuildConfigField(
+                "String",
+                "\"ea76785d-812f-4286-ac4a-e8e27c2455b9\"",
+                "Ditto App ID"
+            )
+        )
+        it.buildConfigFields.put(
+            "TOKEN",
+            BuildConfigField(
+                "String",
+                "\"3f8c0a0b-588f-4b54-bdd3-0afe2e54fd29\"",
+                "Ditto Authentication token"
+            )
+        )
+    }
 }
 
 android {
@@ -38,6 +61,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"

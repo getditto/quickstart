@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import live.ditto.quickstart.tasks.BuildConfig
 import live.ditto.quickstart.tasks.R
 import live.ditto.quickstart.tasks.data.Task
 import java.util.UUID
@@ -58,14 +59,17 @@ fun TasksListScreen(navController: NavController) {
                             .padding(8.dp)
                     ) {
                         Column {
-                            Text(text = "Ditto Tasks")
                             Text(
-                                text = "App ID: B25685ED-B9CF-492D-A3E6-C57D732B69DB",
-                                style = TextStyle(fontSize = 8.sp)
+                                text = "Ditto Tasks",
+                                style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "Token: 7B5151B7-2404-421E-99F2-0C31449249EB",
-                                style = TextStyle(fontSize = 8.sp)
+                                text = "App ID: ${BuildConfig.APP_ID}",
+                                style = TextStyle(fontSize = 10.sp)
+                            )
+                            Text(
+                                text = "Token: ${BuildConfig.TOKEN}",
+                                style = TextStyle(fontSize = 10.sp)
                             )
                         }
                     }
@@ -77,9 +81,9 @@ fun TasksListScreen(navController: NavController) {
                 actions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Sync enabled",
+                            text = "Sync",
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(end = 8.dp),
+                            modifier = Modifier.padding(end = 10.dp),
                             color = Color.White
                         )
                         Switch(
