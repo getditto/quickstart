@@ -1,22 +1,38 @@
 package live.ditto.quickstart.tasks.list
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import live.ditto.quickstart.tasks.R
@@ -29,12 +45,49 @@ fun TasksListScreen(navController: NavController) {
     val tasksListViewModel: TasksListScreenViewModel = viewModel()
     val tasks: List<Task> by tasksListViewModel.tasks.observeAsState(emptyList())
 
+    // TODO: move this to the view model
+    var isSyncEnabled = true
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tasks", color = Color.White) },
+                title = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        Column {
+                            Text(text = "Ditto Tasks")
+                            Text(
+                                text = "App ID: B25685ED-B9CF-492D-A3E6-C57D732B69DB",
+                                style = TextStyle(fontSize = 8.sp)
+                            )
+                            Text(
+                                text = "Token: 7B5151B7-2404-421E-99F2-0C31449249EB",
+                                style = TextStyle(fontSize = 8.sp)
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(id = R.color.blue_700))
+                    containerColor = colorResource(id = R.color.blue_700),
+                    titleContentColor = Color.White
+                ),
+                actions = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Sync enabled",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(end = 8.dp),
+                            color = Color.White
+                        )
+                        Switch(
+                            checked = isSyncEnabled,
+                            onCheckedChange = { isChecked -> isSyncEnabled = isChecked }
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -48,7 +101,11 @@ fun TasksListScreen(navController: NavController) {
         },
         floatingActionButtonPosition = FabPosition.End,
         content = { padding ->
-            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
                 TasksList(
                     tasks = tasks,
                     onToggle = { tasksListViewModel.toggle(it) },
