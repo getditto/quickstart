@@ -1,25 +1,42 @@
 import com.android.build.api.variant.BuildConfigField
+import java.io.FileInputStream
+import java.io.FileNotFoundException
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
 }
 
+// Load properties from the .env file at the repository root
+fun loadEnvProperties(): Properties {
+    val envFile = rootProject.file("../../.env")
+    val properties = Properties()
+    if (envFile.exists()) {
+        FileInputStream(envFile).use { properties.load(it) }
+    } else {
+        throw FileNotFoundException(".env file not found at: ${envFile.path}")
+    }
+    return properties
+}
+
+// Define BuildConfig.DITTO_APP_ID and BuildConfig.DITTO_PLAYGROUND_TOKEN
 androidComponents {
     onVariants {
+        val prop = loadEnvProperties()
         it.buildConfigFields.put(
-            "APP_ID",
+            "DITTO_APP_ID",
             BuildConfigField(
                 "String",
-                "\"ea76785d-812f-4286-ac4a-e8e27c2455b9\"",
+                "\"${prop["DITTO_APP_ID"]}\"",
                 "Ditto App ID"
             )
         )
         it.buildConfigFields.put(
-            "TOKEN",
+            "DITTO_PLAYGROUND_TOKEN",
             BuildConfigField(
                 "String",
-                "\"3f8c0a0b-588f-4b54-bdd3-0afe2e54fd29\"",
+                "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
                 "Ditto Authentication token"
             )
         )
@@ -60,8 +77,8 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
-        compose = true
         buildConfig = true
+        compose = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
@@ -94,5 +111,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Ditto SDK
     implementation("live.ditto:ditto:4.8.2")
 }

@@ -64,11 +64,11 @@ fun TasksListScreen(navController: NavController) {
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "App ID: ${BuildConfig.APP_ID}",
+                                text = "App ID: ${BuildConfig.DITTO_APP_ID}",
                                 style = TextStyle(fontSize = 10.sp)
                             )
                             Text(
-                                text = "Token: ${BuildConfig.TOKEN}",
+                                text = "Token: ${BuildConfig.DITTO_PLAYGROUND_TOKEN}",
                                 style = TextStyle(fontSize = 10.sp)
                             )
                         }

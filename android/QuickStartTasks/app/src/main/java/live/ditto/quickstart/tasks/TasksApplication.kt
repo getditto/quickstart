@@ -17,8 +17,8 @@ class TasksApplication : Application() {
 
     private fun setupDitto() {
         val androidDependencies = DefaultAndroidDittoDependencies(applicationContext)
-        val appId = BuildConfig.APP_ID
-        val token = BuildConfig.TOKEN
+        val appId = BuildConfig.DITTO_APP_ID
+        val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
         val enableDittoCloudSync = true
 
         val identity = DittoIdentity.OnlinePlayground(
