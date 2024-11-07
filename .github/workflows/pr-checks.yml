@@ -29,3 +29,23 @@ jobs:
           sudo apt update && sudo apt install just
           just --version
           just tools
+
+  rust:
+    name: rust-quickstart
+
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
