@@ -46,6 +46,4 @@ jobs:
           components: rustfmt, clippy
 
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
+        run: "(cd rust; cargo build)"
