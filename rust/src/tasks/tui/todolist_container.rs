@@ -94,10 +94,12 @@ impl TodolistState {
                 self.try_toggle_selected_field("deleted").await?;
             }
             key!(Char(ch)) if self.create_task_title.is_some() => {
+                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
                 let title = self.create_task_title.as_mut().unwrap();
                 title.push(*ch);
             }
             key!(Backspace) if self.create_task_title.is_some() => {
+                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
                 let title = self.create_task_title.as_mut().unwrap();
 
                 // Backspace on empty quits new todo mode
@@ -112,6 +114,7 @@ impl TodolistState {
                 self.try_toggle_selected_field("done").await?;
             }
             key!(Enter) if self.create_task_title.is_some() => {
+                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
                 let title = self.create_task_title.take().unwrap();
                 self.try_create_new_todo(title).await?;
             }

@@ -2,18 +2,15 @@ use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context as _, Result};
 use ditto_quickstart::{tasks, term, Shutdown};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer, EnvFilter};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let shutdown = <Shutdown>::new();
     let (terminal, _cleanup) = term::init_crossterm()?;
 
-    tasks::spawn_tasks(shutdown.clone(), terminal).context("failed to launch app tasks")?;
-
     let tmpfile_writer = std::fs::OpenOptions::new()
         .create(true)
-        .write(true)
         .append(true)
         .open("/tmp/ditto-quickstart.log")
         .context("failed to open /tmp/ditto-quickstart.log for logging")?;
@@ -25,6 +22,8 @@ async fn main() -> Result<()> {
         )
         .try_init()
         .context("failed to initialize tracing-subscriber")?;
+
+    tasks::spawn_tasks(shutdown.clone(), terminal).context("failed to launch app tasks")?;
 
     tracing::info!(success = true, "Initialized!");
 

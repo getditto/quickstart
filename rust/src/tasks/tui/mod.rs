@@ -28,7 +28,7 @@ pub mod todolist_container;
 /// External handle for callers to interact with the tui task
 pub struct TuiTask {
     /// Sender to inject actions to the Tui task
-    pub actions_tx: flume::Sender<TuiInput>,
+    pub actions_tx: flume::Sender<TuiEvent>,
 
     /// Tokio handle for task shutdown
     pub tokio_handle: JoinHandle<()>,
@@ -39,10 +39,10 @@ impl TuiTask {
     pub fn try_spawn(
         shutdown: Shutdown,
         terminal: Terminal<CrosstermBackend<Stdout>>,
-        config: DittoConfig,
+        _config: DittoConfig,
     ) -> TuiTask {
         let mut root_state = RootContainerState::new();
-        root_state.profiles_state.profiles_list_state.items = config
+        root_state.profiles_state.profiles_list_state.items = _config
             .profiles
             .iter()
             .map(|(_name, profile)| ProfileListItem::from_profile(profile))
@@ -54,7 +54,7 @@ impl TuiTask {
             root_state,
             actions_tx: actions_tx.clone(),
             actions_rx,
-            config,
+            _config,
         };
         let task_shutdown = task_context.shutdown.clone();
         let task_future = task_context.run();
@@ -71,7 +71,7 @@ impl TuiTask {
 }
 
 /// The set of input events that the Tui app can react to
-pub enum TuiInput {
+pub enum TuiEvent {
     /// One tick of our framerate has passed, we should redraw
     FrameTick,
 
@@ -86,22 +86,26 @@ pub enum TuiInput {
 }
 
 pub struct TuiActions<'a> {
-    tx: &'a flume::Sender<TuiInput>,
+    tx: &'a flume::Sender<TuiEvent>,
 }
 
 impl<'a> TuiActions<'a> {
-    pub fn new(tx: &'a flume::Sender<TuiInput>) -> Self {
+    pub fn new(tx: &'a flume::Sender<TuiEvent>) -> Self {
         Self { tx }
     }
 
+    /// Initialize a Ditto client for the selected profile
     pub fn enter_profile(&self, profile: Profile) {
+        #[allow(clippy::expect_used)]
         self.tx
-            .send(TuiInput::EnterProfile(profile))
+            .send(TuiEvent::EnterProfile(profile))
             .expect("enter_profile");
     }
 
+    /// Navigate back up to the profiles UI, but leave the Ditto client running
     pub fn exit_profile(&self) {
-        self.tx.send(TuiInput::ExitProfile).expect("exit_profile");
+        #[allow(clippy::expect_used)]
+        self.tx.send(TuiEvent::ExitProfile).expect("exit_profile");
     }
 }
 
@@ -117,13 +121,13 @@ pub struct TuiContext {
     root_state: RootContainerState,
 
     /// Channel for sending app events
-    actions_tx: flume::Sender<TuiInput>,
+    actions_tx: flume::Sender<TuiEvent>,
 
     /// Channel for receiving app events
-    actions_rx: flume::Receiver<TuiInput>,
+    actions_rx: flume::Receiver<TuiEvent>,
 
     /// Ditto profiles config
-    config: DittoConfig,
+    _config: DittoConfig,
 }
 
 impl TuiContext {
@@ -147,7 +151,7 @@ impl TuiContext {
 
     async fn try_run(
         &mut self,
-        input_stream: &mut (impl Stream<Item = TuiInput> + Unpin),
+        input_stream: &mut (impl Stream<Item = TuiEvent> + Unpin),
     ) -> Result<()> {
         loop {
             let input = input_stream
@@ -169,12 +173,12 @@ impl TuiContext {
         }
     }
 
-    async fn try_handle_event(&mut self, input_event: TuiInput) -> Result<ControlFlow<()>> {
+    async fn try_handle_event(&mut self, input_event: TuiEvent) -> Result<ControlFlow<()>> {
         match input_event {
-            TuiInput::FrameTick => {
+            TuiEvent::FrameTick => {
                 // Fall through to draw
             }
-            TuiInput::Terminal(result) => {
+            TuiEvent::Terminal(result) => {
                 let event = result.context("terminal input error")?;
 
                 if input::should_quit(&event) {
@@ -187,8 +191,7 @@ impl TuiContext {
                 let actions = TuiActions::new(&self.actions_tx);
                 self.root_state.try_handle_event(actions, &event).await?;
             }
-            TuiInput::EnterProfile(profile) => {
-                let app_id = profile.app_id.parse::<AppId>()?;
+            TuiEvent::EnterProfile(profile) => {
                 let app_id_string = profile.app_id.to_string();
 
                 let app_exists = self
@@ -201,35 +204,9 @@ impl TuiContext {
                     return Ok(ControlFlow::Continue(()));
                 }
 
-                let root: Arc<dyn DittoRoot> = match &profile.root {
-                    None => Arc::new(TempRoot::new()),
-                    Some(root) => Arc::new(PersistentRoot::new(root)?),
-                };
-                let Identity::OnlinePlayground(crate::config::OnlinePlayground { token }) =
-                    &profile.identity
-                else {
-                    panic!("Wrong identity");
-                };
-
-                let ditto = Ditto::builder()
-                    .with_root(root)
-                    .with_identity(|root| {
-                        OnlinePlayground::new(root, app_id, token.to_string(), true, None)
-                    })?
-                    .build()?;
-                _ = ditto.disable_sync_with_v3();
-                _ = ditto.start_sync();
-                tracing::info!(app_id=%app_id_string, "Started Ditto!");
-
-                let app_state = TodolistState::new(profile, ditto)?;
-                self.root_state
-                    .ditto_app_states
-                    .insert(app_id_string.to_string(), app_state);
-
-                self.root_state.active_ditto_app = Some(app_id_string);
-                self.root_state.focus = RootContainerFocus::TodoList;
+                self.try_initialize_ditto(profile)?;
             }
-            TuiInput::ExitProfile => {
+            TuiEvent::ExitProfile => {
                 self.root_state.focus = RootContainerFocus::Profiles;
             }
         }
@@ -237,20 +214,59 @@ impl TuiContext {
         Ok(ControlFlow::Continue(()))
     }
 
-    async fn try_create_stream(&self) -> Result<impl Stream<Item = TuiInput> + 'static> {
+    async fn try_create_stream(&self) -> Result<impl Stream<Item = TuiEvent> + 'static> {
         use futures_concurrency::prelude::*;
 
-        let term_stream = EventStream::new().map(TuiInput::Terminal);
+        let term_stream = EventStream::new().map(TuiEvent::Terminal);
         let framerate = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
             Duration::from_millis(20),
         ))
-        .map(|_| TuiInput::FrameTick);
+        .map(|_| TuiEvent::FrameTick);
 
         // NOTE: Avoid cloning this RX elsewhere
         let actions_stream = self.actions_rx.clone().into_stream();
 
         let merged_stream = (term_stream, framerate, actions_stream).merge();
         Ok(merged_stream)
+    }
+
+    fn try_initialize_ditto(&mut self, profile: Profile) -> Result<()> {
+        let app_id = profile.app_id.parse::<AppId>()?;
+        let app_id_string = profile.app_id.to_string();
+
+        let root: Arc<dyn DittoRoot> = match &profile.root {
+            None => Arc::new(TempRoot::new()),
+            Some(root) => Arc::new(PersistentRoot::new(root)?),
+        };
+
+        #[allow(irrefutable_let_patterns)]
+        #[allow(clippy::panic)]
+        let Identity::OnlinePlayground(crate::config::OnlinePlayground { token }) =
+            &profile.identity
+        else {
+            panic!("Wrong identity");
+        };
+
+        let ditto = Ditto::builder()
+            .with_root(root)
+            .with_identity(|root| {
+                OnlinePlayground::new(root, app_id, token.to_string(), true, None)
+            })?
+            .build()?;
+        _ = ditto.disable_sync_with_v3();
+        _ = ditto.start_sync();
+        tracing::info!(app_id=%app_id_string, "Started Ditto!");
+
+        // Create initial state for the Todolist under this profile
+        let app_state = TodolistState::new(profile, ditto)?;
+        self.root_state
+            .ditto_app_states
+            .insert(app_id_string.to_string(), app_state);
+
+        self.root_state.active_ditto_app = Some(app_id_string);
+        self.root_state.focus = RootContainerFocus::TodoList;
+
+        Ok(())
     }
 }
 
