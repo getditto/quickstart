@@ -1,30 +1,30 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::{anyhow, bail, Context as _, Result};
-use ditto_quickstart::{tasks, term, Shutdown};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use clap::Parser;
+use ditto_quickstart::{tasks::tui::TuiTask, term, Shutdown};
+use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto};
+
+#[derive(Debug, Parser)]
+pub struct Cli {
+    #[clap(long, env = "DITTO_APP_ID")]
+    app_id: AppId,
+
+    #[clap(long, env = "DITTO_PLAYGROUND_TOKEN")]
+    token: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+    let cli = Cli::parse();
     let shutdown = <Shutdown>::new();
     let (terminal, _cleanup) = term::init_crossterm()?;
 
-    let tmpfile_writer = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("/tmp/ditto-quickstart.log")
-        .context("failed to open /tmp/ditto-quickstart.log for logging")?;
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_writer(tmpfile_writer)
-                .with_filter(EnvFilter::from_default_env()),
-        )
-        .try_init()
-        .context("failed to initialize tracing-subscriber")?;
-
-    tasks::spawn_tasks(shutdown.clone(), terminal).context("failed to launch app tasks")?;
-
+    // Initialize and launch app
+    let ditto = try_initialize_ditto(cli.app_id, cli.token)?;
+    let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, ditto)
+        .context("failed to start tui task")?;
     tracing::info!(success = true, "Initialized!");
 
     // Wait for shutdown trigger
@@ -50,4 +50,16 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn try_initialize_ditto(app_id: AppId, token: String) -> Result<Ditto> {
+    let ditto = Ditto::builder()
+        .with_root(Arc::new(TempRoot::new()))
+        .with_identity(|root| OnlinePlayground::new(root, app_id.clone(), token, true, None))?
+        .build()?;
+    _ = ditto.disable_sync_with_v3();
+    _ = ditto.start_sync();
+
+    tracing::info!(%app_id, "Started Ditto!");
+    Ok(ditto)
 }

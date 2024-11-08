@@ -3,6 +3,7 @@
 *.iml
 *.xccheckout
 *.xcscmblueprint
+.env
 .DS_Store
 .build/
 .classpath

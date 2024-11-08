@@ -1,13 +1,11 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use anyhow::Error;
 use anyhow::Result;
 use crossterm::event::Event;
 use dittolive_ditto::store::StoreObserver;
 use dittolive_ditto::sync::SyncSubscription;
 use dittolive_ditto::Ditto;
-use fehler::throws;
 use ratatui::prelude::*;
 use ratatui::widgets::Block;
 use ratatui::widgets::BorderType;
@@ -16,35 +14,38 @@ use ratatui::widgets::Padding;
 use ratatui::widgets::{Cell, Row, StatefulWidget, Table, TableState};
 use tokio::sync::watch;
 
-use crate::config::Profile;
 use crate::key;
 
-use super::TuiActions;
-
-pub struct TodolistContainer {}
-
-impl TodolistContainer {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-pub struct TodolistState {
+pub struct Todolist {
+    /// Our handle to the Ditto peer, used to create observers and subscriptions
     pub ditto: Ditto,
-    pub profile: Profile,
-    pub table_state: TableState,
 
-    pub tasks_rx: watch::Receiver<Vec<serde_json::Value>>,
+    /// Ditto observer handles must be held (not dropped) to keep them alive
+    ///
+    /// Observers provide the actual callback triggers to allow handling events
     pub tasks_observer: Arc<StoreObserver>,
+
+    /// Our observer sends any document updates into this watch channel
+    pub tasks_rx: watch::Receiver<Vec<serde_json::Value>>,
+
+    /// Ditto subscriptions must also be held to keep them alive
+    ///
+    /// Subscriptions cause Ditto to sync selected data from other peers
     pub tasks_subscription: Arc<SyncSubscription>,
 
-    /// Holds the contents of a new todo dialog
+    // TUI state below
+    /// Table scrolling state
+    pub table_state: TableState,
+
+    /// Holds the contents of a "new todo" dialog
+    ///
+    /// When this is "None", the dialog is closed. When "Some", it contains
+    /// the title being typed by the user.
     pub create_task_title: Option<String>,
 }
 
-impl TodolistState {
-    #[throws]
-    pub fn new(profile: Profile, ditto: Ditto) -> Self {
+impl Todolist {
+    pub fn new(ditto: Ditto) -> Result<Self> {
         let (tasks_tx, tasks_rx) = watch::channel(Vec::new());
         let tasks_subscription = ditto
             .sync()
@@ -61,22 +62,90 @@ impl TodolistState {
             },
         )?;
 
-        Self {
+        Ok(Self {
             ditto,
-            profile,
             table_state: Default::default(),
             tasks_rx,
             tasks_observer,
             tasks_subscription,
             create_task_title: None,
-        }
+        })
     }
 
-    pub async fn try_handle_event(&mut self, actions: TuiActions<'_>, event: &Event) -> Result<()> {
+    /// Top-level render function for the Todolist
+    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        self.render_todo_table(area, buf);
+        self.render_new_todo_prompt(area, buf);
+    }
+
+    /// Render a table displaying each todo and its current status
+    fn render_todo_table(&mut self, area: Rect, buf: &mut Buffer) {
+        let tasks = self.tasks_rx.borrow().clone();
+
+        let header = ["Done".bold(), "Title".bold(), "Deleted".bold()]
+            .into_iter()
+            .map(Cell::from)
+            .collect::<Row>();
+        let rows = tasks
+            .iter()
+            .map(|doc| {
+                let done = doc["done"].as_bool().unwrap_or(false);
+                let done = if done { " ✅ " } else { " ☐ " };
+                let title = doc["title"].as_str().unwrap_or_default();
+                let deleted = doc["deleted"].as_bool().unwrap_or(false);
+                let title_style = if deleted {
+                    Style::new().crossed_out()
+                } else {
+                    Style::new()
+                };
+                let deleted = if deleted {
+                    "true".bold().red()
+                } else {
+                    "false".into()
+                };
+
+                [
+                    Cell::from(Text::from(done.to_string())),
+                    Cell::from(Text::styled(title, title_style)),
+                    Cell::from(Text::from(deleted)),
+                ]
+                .into_iter()
+                .collect::<Row>()
+            })
+            .collect::<Vec<_>>();
+
+        let table = Table::new(rows, Constraint::from_percentages([14, 53, 33]))
+            .header(header)
+            .highlight_symbol("❯❯ ")
+            .highlight_style(Style::new().bold().blue())
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title_bottom(" j↓ k↑ (Enter: toggle done) (c: create) (d: delete) (q: quit) "),
+            );
+        StatefulWidget::render(table, area, buf, &mut self.table_state);
+    }
+
+    /// Render "new todo" prompt if `create_task_title` is "Some"
+    fn render_new_todo_prompt(&self, area: Rect, buf: &mut Buffer) {
+        let Some(title) = self.create_task_title.as_ref() else {
+            return;
+        };
+
+        let space = area.inner(Margin::new(2, 2));
+        Clear.render(space, buf);
+        Block::bordered()
+            .border_type(BorderType::Rounded)
+            .title(" New Todo ")
+            .padding(Padding::uniform(1))
+            .render(space, buf);
+        let space = space.inner(Margin::new(2, 2));
+        Line::raw(title).render(space, buf);
+    }
+
+    /// Apply a terminal event to update the todolist state
+    pub async fn try_handle_event(&mut self, event: &Event) -> Result<()> {
         match event {
-            key!(Esc) if self.create_task_title.is_none() => {
-                actions.exit_profile();
-            }
             key!(Esc) if self.create_task_title.is_some() => {
                 self.create_task_title = None;
             }
@@ -124,17 +193,7 @@ impl TodolistState {
         Ok(())
     }
 
-    pub fn breadcrumbs(&self) -> Vec<Span<'_>> {
-        let mut crumbs = Vec::new();
-        let app_name = {
-            let app_name = self.profile.name.as_deref().unwrap_or(&self.profile.app_id);
-            format!("{app_name} ").bold()
-        };
-        crumbs.extend([app_name, "❯❯ ".dim()]);
-
-        crumbs
-    }
-
+    /// Given the name of a boolean field (e.g. "done" or "deleted"), toggle the state of that field
     pub async fn try_toggle_selected_field(&mut self, field: &str) -> Result<()> {
         let tasks = self.tasks_rx.borrow().clone();
         let task_index = self
@@ -187,64 +246,5 @@ impl TodolistState {
             )
             .await?;
         Ok(())
-    }
-}
-
-impl StatefulWidget for TodolistContainer {
-    type State = TodolistState;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let tasks = state.tasks_rx.borrow().clone();
-
-        let header = ["Done".bold(), "Title".bold(), "Deleted".bold()]
-            .into_iter()
-            .map(Cell::from)
-            .collect::<Row>();
-        let rows = tasks
-            .iter()
-            .map(|doc| {
-                let done = doc["done"].as_bool().unwrap_or(false);
-                let done = if done { " ✅ " } else { " ☐ " };
-                let title = doc["title"].as_str().unwrap_or_default();
-                let deleted = doc["deleted"].as_bool().unwrap_or(false);
-                let title_style = if deleted {
-                    Style::new().crossed_out()
-                } else {
-                    Style::new()
-                };
-                let deleted = if deleted {
-                    "true".bold().red()
-                } else {
-                    "false".into()
-                };
-
-                [
-                    Cell::from(Text::from(done.to_string())),
-                    Cell::from(Text::styled(title, title_style)),
-                    Cell::from(Text::from(deleted)),
-                ]
-                .into_iter()
-                .collect::<Row>()
-            })
-            .collect::<Vec<_>>();
-
-        let table = Table::new(rows, Constraint::from_percentages([14, 53, 33]))
-            .header(header)
-            .highlight_symbol("❯❯ ")
-            .highlight_style(Style::new().bold().blue());
-        StatefulWidget::render(table, area, buf, &mut state.table_state);
-
-        // Optionally render "new todo" prompt
-        if let Some(title) = state.create_task_title.as_ref() {
-            let space = area.inner(Margin::new(2, 2));
-            Clear.render(space, buf);
-            Block::bordered()
-                .border_type(BorderType::Rounded)
-                .title(" New Todo ")
-                .padding(Padding::uniform(1))
-                .render(space, buf);
-            let space = space.inner(Margin::new(2, 2));
-            Line::raw(title).render(space, buf);
-        }
     }
 }
