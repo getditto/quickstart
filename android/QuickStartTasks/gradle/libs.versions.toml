@@ -11,6 +11,7 @@ composeBom = "2024.10.01"
 navigationCompose = "2.8.3"
 runtimeLivedata = "1.7.5"
 appcompat = "1.7.0"
+datastorePreferences = "1.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -27,9 +28,10 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", name = "navigation-compose", version.ref= "navigationCompose"}
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", name = "datastore-preferences", version.ref = "datastorePreferences" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -45,9 +45,7 @@ import java.util.UUID
 fun TasksListScreen(navController: NavController) {
     val tasksListViewModel: TasksListScreenViewModel = viewModel()
     val tasks: List<Task> by tasksListViewModel.tasks.observeAsState(emptyList())
-
-    // TODO: move this to the view model
-    var isSyncEnabled = true
+    val syncEnabled: Boolean by tasksListViewModel.syncEnabled.observeAsState(true)
 
     Scaffold(
         topBar = {
@@ -87,8 +85,10 @@ fun TasksListScreen(navController: NavController) {
                             color = Color.White
                         )
                         Switch(
-                            checked = isSyncEnabled,
-                            onCheckedChange = { isChecked -> isSyncEnabled = isChecked }
+                            checked = syncEnabled,
+                            onCheckedChange = { isChecked ->
+                                tasksListViewModel.setSyncEnabled(isChecked)
+                            }
                         )
                     }
                 }

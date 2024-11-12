@@ -21,6 +21,7 @@ fun loadEnvProperties(): Properties {
 }
 
 // Define BuildConfig.DITTO_APP_ID and BuildConfig.DITTO_PLAYGROUND_TOKEN
+// based on values in the .env file
 androidComponents {
     onVariants {
         val prop = loadEnvProperties()
@@ -29,7 +30,7 @@ androidComponents {
             BuildConfigField(
                 "String",
                 "\"${prop["DITTO_APP_ID"]}\"",
-                "Ditto App ID"
+                "Ditto application ID"
             )
         )
         it.buildConfigFields.put(
@@ -37,7 +38,7 @@ androidComponents {
             BuildConfigField(
                 "String",
                 "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
-                "Ditto Authentication token"
+                "Ditto online playground authentication token"
             )
         )
     }
@@ -103,11 +104,14 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.datastore.preferences)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 

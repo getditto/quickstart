@@ -1,6 +1,7 @@
 package live.ditto.quickstart.tasks
 
 import android.app.Application
+import android.content.Context
 import live.ditto.Ditto
 import live.ditto.DittoIdentity
 import live.ditto.DittoLogLevel
@@ -10,6 +11,18 @@ import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 
 class TasksApplication : Application() {
 
+    companion object {
+        private var instance: TasksApplication? = null
+
+        fun applicationContext(): Context {
+            return instance!!.applicationContext
+        }
+    }
+
+    init {
+        instance = this
+    }
+    
     override fun onCreate() {
         super.onCreate()
         setupDitto()
