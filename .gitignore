@@ -29,5 +29,4 @@ obj/
 packages/
 target/
 xcuserdata
-.env
-
+node_modules/
