@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Context;
 use anyhow::Result;
 use crossterm::event::Event;
@@ -14,6 +12,8 @@ use ratatui::widgets::Padding;
 use ratatui::widgets::{Cell, Row, StatefulWidget, Table, TableState};
 use serde::Deserialize;
 use serde::Serialize;
+use std::ops::Not;
+use std::sync::Arc;
 use tokio::sync::watch;
 use uuid::Uuid;
 
@@ -45,6 +45,9 @@ pub struct Todolist {
     /// When this is "None", the dialog is closed. When "Some", it contains
     /// the title being typed by the user.
     pub create_task_title: Option<String>,
+
+    /// Holds the contents of an existing TODO title to be edited
+    pub edit_task: Option<(String, String)>, // (ID, title)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -92,6 +95,7 @@ impl Todolist {
             tasks_observer,
             tasks_subscription,
             create_task_title: None,
+            edit_task: None,
         })
     }
 
@@ -139,7 +143,7 @@ impl Todolist {
 
     /// Render "new todo" prompt if `create_task_title` is "Some"
     fn render_new_todo_prompt(&self, area: Rect, buf: &mut Buffer) {
-        let Some(title) = self.create_task_title.as_ref() else {
+        let Some(title) = self.active_buffer() else {
             return;
         };
 
@@ -154,49 +158,119 @@ impl Todolist {
         Line::raw(title).render(space, buf);
     }
 
+    /// Whether either the create or edit buffers is open
+    fn is_popup_open(&self) -> bool {
+        self.create_task_title.is_some() || self.edit_task.is_some()
+    }
+
+    /// Provide a mutable reference to an open buffer, if one exists
+    fn active_buffer_mut(&mut self) -> Option<&mut String> {
+        if !self.is_popup_open() {
+            return None;
+        }
+
+        if let Some(buffer) = self.create_task_title.as_mut() {
+            return Some(buffer);
+        }
+
+        if let Some((_id, buffer)) = self.edit_task.as_mut() {
+            return Some(buffer);
+        }
+
+        None
+    }
+
+    /// Provide a reference to an open buffer, if one exists
+    fn active_buffer(&self) -> Option<&String> {
+        if !self.is_popup_open() {
+            return None;
+        }
+
+        if let Some(buffer) = self.create_task_title.as_ref() {
+            return Some(buffer);
+        }
+
+        if let Some((_id, buffer)) = self.edit_task.as_ref() {
+            return Some(buffer);
+        }
+
+        None
+    }
+
     /// Apply a terminal event to update the todolist state
     pub async fn try_handle_event(&mut self, event: &Event) -> Result<()> {
         match event {
-            key!(Esc) if self.create_task_title.is_some() => {
+            // Esc in popup closes popup
+            key!(Esc) if self.is_popup_open() => {
                 self.create_task_title = None;
+                self.edit_task = None;
             }
-            key!(Up) | key!(Char('k')) if self.create_task_title.is_none() => {
+            // Scroll up
+            key!(Up) | key!(Char('k')) if self.is_popup_open().not() => {
                 self.table_state.select_previous();
             }
-            key!(Down) | key!(Char('j')) if self.create_task_title.is_none() => {
+            // Scroll down
+            key!(Down) | key!(Char('j')) if self.is_popup_open().not() => {
                 self.table_state.select_next();
             }
-            key!(Char('c')) if self.create_task_title.is_none() => {
+            // c for Create
+            key!(Char('c')) if self.is_popup_open().not() => {
                 // Enter "create todo" state by setting Some
                 self.create_task_title = Some("".to_string());
             }
-            key!(Char('d')) if self.create_task_title.is_none() => {
+            // d for Delete
+            key!(Char('d')) if self.is_popup_open().not() => {
                 self.try_delete_task().await?;
             }
-            key!(Char(ch)) if self.create_task_title.is_some() => {
-                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
-                let title = self.create_task_title.as_mut().unwrap();
-                title.push(*ch);
+            // e for Edit
+            key!(Char('e')) if self.is_popup_open().not() => {
+                let selected = self
+                    .table_state
+                    .selected()
+                    .context("failed to get selected index")?;
+                let item = self
+                    .tasks_rx
+                    .borrow()
+                    .get(selected)
+                    .cloned()
+                    .context("failed to get todo from list")?;
+                self.edit_task = Some((item.id.clone(), item.title.to_string()));
             }
-            key!(Backspace) if self.create_task_title.is_some() => {
-                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
-                let title = self.create_task_title.as_mut().unwrap();
+            // Typing into open buffer (edit or create)
+            key!(Char(ch)) if self.is_popup_open() => {
+                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_popup_open
+                let buffer = self.active_buffer_mut().unwrap();
+                buffer.push(*ch);
+            }
+            // Backspace either pops from active buffer, or closes prompt
+            key!(Backspace) if self.is_popup_open() => {
+                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_popup_open
+                let buffer = self.active_buffer_mut().unwrap();
 
-                // Backspace on empty quits new todo mode
-                if title.is_empty() {
+                // Backspace on empty quits open buffers
+                if buffer.is_empty() {
                     self.create_task_title = None;
+                    self.edit_task = None;
                     return Ok(());
                 }
 
-                title.pop();
+                buffer.pop();
             }
-            key!(Enter) if self.create_task_title.is_none() => {
+            // Enter when popup is closed just toggles "done"
+            key!(Enter) if self.is_popup_open().not() => {
                 self.try_toggle_done().await?;
             }
+            // Submit "create task"
             key!(Enter) if self.create_task_title.is_some() => {
                 #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
                 let title = self.create_task_title.take().unwrap();
                 self.try_create_new_todo(title).await?;
+            }
+            // Submit "edit task"
+            key!(Enter) if self.edit_task.is_some() => {
+                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
+                let (id, title) = self.edit_task.take().unwrap();
+                self.try_edit_todo(&id, &title).await?;
             }
             _ => {}
         }
@@ -269,6 +343,19 @@ impl Todolist {
                 Some(serde_json::json!({"task": task}).into()),
             )
             .await?;
+        Ok(())
+    }
+
+    /// Set the title of the task with the given ID
+    pub async fn try_edit_todo(&mut self, id: &str, title: &str) -> Result<()> {
+        self.ditto
+            .store()
+            .execute(
+                "UPDATE tasks SET title=:title WHERE _id=:id",
+                Some(serde_json::json!({ "title": title, "id": id }).into()),
+            )
+            .await?;
+
         Ok(())
     }
 }
