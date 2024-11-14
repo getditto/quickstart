@@ -8,12 +8,11 @@ pub use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 
 pub fn init_crossterm() -> Result<(Terminal<CrosstermBackend<io::Stdout>>, OnShutdown)> {
-    use crossterm::event::EnableMouseCapture;
     use crossterm::terminal::{self, EnterAlternateScreen};
     terminal::enable_raw_mode().context("Failed to enable crossterm raw mode")?;
 
     let mut stdout = std::io::stdout();
-    crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture)
+    crossterm::execute!(stdout, EnterAlternateScreen)
         .context("Failed to enable crossterm alternate screen")?;
     let backend = CrosstermBackend::new(io::stdout());
     let term = Terminal::new(backend).context("Failed to create crossterm terminal")?;
