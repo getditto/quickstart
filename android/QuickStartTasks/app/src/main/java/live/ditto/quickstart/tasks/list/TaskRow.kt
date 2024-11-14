@@ -3,9 +3,12 @@ package live.ditto.quickstart.tasks.list
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,20 +20,19 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import live.ditto.quickstart.tasks.R
 import live.ditto.quickstart.tasks.data.Task
 import java.util.UUID
 
 /**
- * Represents a row of tasks
+ * A row in the task list screen
  */
 @Composable
 fun TaskRow(
     task: Task,
     onToggle: ((task: Task) -> Unit)? = null,
-    onClickTitle: ((task: Task) -> Unit)? = null
+    onClickEdit: ((task: Task) -> Unit)? = null,
+    onClickDelete: ((task: Task) -> Unit)? = null
 ) {
 
     val iconId =
@@ -41,21 +43,36 @@ fun TaskRow(
         headlineContent = {
             Text(
                 text = task.title,
-                textDecoration = textDecoration,
-                modifier = Modifier
-                    .clickable { onClickTitle?.invoke(task) })
+                textDecoration = textDecoration
+            )
         },
         leadingContent = {
             Image(
                 ImageVector.vectorResource(
                     id = iconId
                 ),
-                "Localized description",
+                "Toggle",
                 colorFilter = ColorFilter.tint(colorResource(id = color)),
                 modifier = Modifier
                     .clickable { onToggle?.invoke(task) },
                 alignment = Alignment.CenterEnd
             )
+        },
+        trailingContent = {
+            Row {
+                IconButton(onClick = { onClickEdit?.invoke(task) }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = "Delete"
+                    )
+                }
+                IconButton(onClick = { onClickDelete?.invoke(task) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete",
+                    )
+                }
+            }
         }
     )
 }

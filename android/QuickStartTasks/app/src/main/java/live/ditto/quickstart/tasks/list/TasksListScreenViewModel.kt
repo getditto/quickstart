@@ -75,4 +75,17 @@ class TasksListScreenViewModel : ViewModel() {
             }
         }
     }
+
+    fun delete(taskId: String) {
+        viewModelScope.launch {
+            try {
+                ditto.store.execute(
+                    "UPDATE tasks SET deleted = true WHERE _id = :id",
+                    mapOf("id" to taskId)
+                )
+            } catch (e: Exception) {
+                Log.e("ERROR:", e.message.toString())
+            }
+        }
+    }
 }
