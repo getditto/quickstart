@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use crossterm::event::{Event, KeyEvent, KeyModifiers};
 
-pub mod tasks;
 pub mod term;
+pub mod tui;
 
 /// Crate alias for a shutdown handle that carries an [`anyhow::Error`]
 pub type Shutdown<T = Arc<anyhow::Error>> = async_shutdown::ShutdownManager<T>;

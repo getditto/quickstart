@@ -1,15 +1,17 @@
 use std::{sync::Arc, time::Duration};
 
-use anyhow::{anyhow, bail, Context as _, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use ditto_quickstart::{tasks::tui::TuiTask, term, Shutdown};
+use ditto_quickstart::{term, tui::TuiTask, Shutdown};
 use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto};
 
 #[derive(Debug, Parser)]
 pub struct Cli {
+    /// The Ditto App ID this app will use to initialize Ditto
     #[clap(long, env = "DITTO_APP_ID")]
     app_id: AppId,
 
+    /// The Online Playground token this app should use for authentication
     #[clap(long, env = "DITTO_PLAYGROUND_TOKEN")]
     token: String,
 }
@@ -39,15 +41,9 @@ async fn main() -> Result<()> {
     }
 
     // Wait for shutdown to complete or timeout
-    tokio::select! {
-        reason = shutdown.wait_shutdown_complete() => {
-            tracing::info!(%reason, "[SHUTDOWN] Shutdown complete, quitting!");
-        }
-        _ = tokio::time::sleep(Duration::from_secs(5)) => {
-            tracing::warn!("[SHUTDOWN] Failed to cleanup within timeout, force-quitting!");
-            bail!("ditto-tui force-quit after cleanup timeout");
-        }
-    }
+    tokio::time::timeout(Duration::from_secs(5), shutdown.wait_shutdown_complete())
+        .await
+        .context("force-quitting after cleanup timed out")?;
 
     Ok(())
 }

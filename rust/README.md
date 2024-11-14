@@ -16,7 +16,7 @@ From this directory, copy the `.env.sample` file to `.env`, and fill in the
 fields with your AppID and Playground Token:
 
 ```
-quickstart/rust$ cp .sample.env .env
+cp .sample.env .env
 ```
 
 The `.env` file should look like this (with your fields filled in):
