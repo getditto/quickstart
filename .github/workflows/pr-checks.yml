@@ -32,8 +32,11 @@ jobs:
 
   rust:
     name: rust-quickstart
+    strategy:
+      matrix:
+        os: ["macos-latest", "linux-latest"]
 
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +47,9 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt, clippy
+
+      - name: Clippy
+        run: "(cd rust; cargo clippy)"
 
       - name: Build
         run: "(cd rust; cargo build)"
