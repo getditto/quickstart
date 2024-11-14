@@ -3,10 +3,10 @@ package live.ditto.quickstart.tasks.list
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,32 +37,27 @@ fun TaskRow(
         if (task.done) R.drawable.ic_baseline_circle_24 else R.drawable.ic_outline_circle_24
     val color = if (task.done) R.color.blue_200 else R.color.gray
     val textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(12.dp)
-    ) {
-        Image(
-            ImageVector.vectorResource(
-                id = iconId
-            ),
-            "Localized description",
-            colorFilter = ColorFilter.tint(colorResource(id = color)),
-            modifier = Modifier
-                .padding(end = 16.dp)
-                .size(24.dp, 24.dp)
-                .clickable { onToggle?.invoke(task) },
-            alignment = Alignment.CenterEnd
-        )
-        Text(
-            text = task.title,
-            textDecoration = textDecoration,
-            fontSize = 16.sp,
-            modifier = Modifier
-                .alignByBaseline()
-                .fillMaxWidth()
-                .clickable { onClickTitle?.invoke(task) })
-    }
+    ListItem(
+        headlineContent = {
+            Text(
+                text = task.title,
+                textDecoration = textDecoration,
+                modifier = Modifier
+                    .clickable { onClickTitle?.invoke(task) })
+        },
+        leadingContent = {
+            Image(
+                ImageVector.vectorResource(
+                    id = iconId
+                ),
+                "Localized description",
+                colorFilter = ColorFilter.tint(colorResource(id = color)),
+                modifier = Modifier
+                    .clickable { onToggle?.invoke(task) },
+                alignment = Alignment.CenterEnd
+            )
+        }
+    )
 }
 
 @Preview(showBackground = true)
