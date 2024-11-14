@@ -12,7 +12,10 @@ use ratatui::widgets::BorderType;
 use ratatui::widgets::Clear;
 use ratatui::widgets::Padding;
 use ratatui::widgets::{Cell, Row, StatefulWidget, Table, TableState};
+use serde::Deserialize;
+use serde::Serialize;
 use tokio::sync::watch;
+use uuid::Uuid;
 
 use crate::key;
 
@@ -26,7 +29,7 @@ pub struct Todolist {
     pub tasks_observer: Arc<StoreObserver>,
 
     /// Our observer sends any document updates into this watch channel
-    pub tasks_rx: watch::Receiver<Vec<serde_json::Value>>,
+    pub tasks_rx: watch::Receiver<Vec<TodoItem>>,
 
     /// Ditto subscriptions must also be held to keep them alive
     ///
@@ -44,6 +47,26 @@ pub struct Todolist {
     pub create_task_title: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TodoItem {
+    #[serde(rename = "_id")]
+    id: String,
+    title: String,
+    done: bool,
+    deleted: bool,
+}
+
+impl TodoItem {
+    pub fn new(title: String) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            title,
+            done: false,
+            deleted: false,
+        }
+    }
+}
+
 impl Todolist {
     pub fn new(ditto: Ditto) -> Result<Self> {
         let (tasks_tx, tasks_rx) = watch::channel(Vec::new());
@@ -51,12 +74,12 @@ impl Todolist {
             .sync()
             .register_subscription("SELECT * FROM tasks", None)?;
         let tasks_observer = ditto.store().register_observer(
-            "SELECT * FROM tasks ORDER BY deleted",
+            "SELECT * FROM tasks WHERE deleted=false ORDER BY _id",
             None,
             move |query_result| {
                 let docs = query_result
                     .into_iter()
-                    .flat_map(|it| it.deserialize_value::<serde_json::Value>().ok())
+                    .flat_map(|it| it.deserialize_value::<TodoItem>().ok())
                     .collect::<Vec<_>>();
                 tasks_tx.send_replace(docs);
             },
@@ -82,39 +105,27 @@ impl Todolist {
     fn render_todo_table(&mut self, area: Rect, buf: &mut Buffer) {
         let tasks = self.tasks_rx.borrow().clone();
 
-        let header = ["Done".bold(), "Title".bold(), "Deleted".bold()]
+        let header = ["Done".bold(), "Title".bold()]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>();
         let rows = tasks
             .iter()
             .map(|doc| {
-                let done = doc["done"].as_bool().unwrap_or(false);
+                let done = doc.done;
                 let done = if done { " ✅ " } else { " ☐ " };
-                let title = doc["title"].as_str().unwrap_or_default();
-                let deleted = doc["deleted"].as_bool().unwrap_or(false);
-                let title_style = if deleted {
-                    Style::new().crossed_out()
-                } else {
-                    Style::new()
-                };
-                let deleted = if deleted {
-                    "true".bold().red()
-                } else {
-                    "false".into()
-                };
+                let title = &doc.title;
 
                 [
                     Cell::from(Text::from(done.to_string())),
-                    Cell::from(Text::styled(title, title_style)),
-                    Cell::from(Text::from(deleted)),
+                    Cell::from(Text::raw(title)),
                 ]
                 .into_iter()
                 .collect::<Row>()
             })
             .collect::<Vec<_>>();
 
-        let table = Table::new(rows, Constraint::from_percentages([14, 53, 33]))
+        let table = Table::new(rows, Constraint::from_percentages([30, 70]))
             .header(header)
             .highlight_symbol("❯❯ ")
             .highlight_style(Style::new().bold().blue())
@@ -160,7 +171,7 @@ impl Todolist {
                 self.create_task_title = Some("".to_string());
             }
             key!(Char('d')) if self.create_task_title.is_none() => {
-                self.try_toggle_selected_field("deleted").await?;
+                self.try_delete_task().await?;
             }
             key!(Char(ch)) if self.create_task_title.is_some() => {
                 #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
@@ -180,7 +191,7 @@ impl Todolist {
                 title.pop();
             }
             key!(Enter) if self.create_task_title.is_none() => {
-                self.try_toggle_selected_field("done").await?;
+                self.try_toggle_done().await?;
             }
             key!(Enter) if self.create_task_title.is_some() => {
                 #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
@@ -193,8 +204,8 @@ impl Todolist {
         Ok(())
     }
 
-    /// Given the name of a boolean field (e.g. "done" or "deleted"), toggle the state of that field
-    pub async fn try_toggle_selected_field(&mut self, field: &str) -> Result<()> {
+    /// Toggle "done" for the currently selected item in the list
+    async fn try_toggle_done(&self) -> Result<()> {
         let tasks = self.tasks_rx.borrow().clone();
         let task_index = self
             .table_state
@@ -204,21 +215,17 @@ impl Todolist {
             .get(task_index)
             .cloned()
             .context("failed to find selected task")?;
-        let id = selected_task["_id"]
-            .as_str()
-            .context("failed to get document _id")?;
-        let value = selected_task[field]
-            .as_bool()
-            .with_context(|| format!("expected '{field}' to be a bool but wasn't"))?;
 
+        let id = selected_task.id.to_string();
+        let done = selected_task.done;
         self.ditto
             .store()
             .execute(
-                format!("UPDATE tasks SET {field}=:value WHERE _id=:id"),
+                "UPDATE tasks SET done=:done WHERE _id=:id",
                 Some(
                     serde_json::json!({
                         "id": id,
-                        "value": !value,
+                        "done": !done,
                     })
                     .into(),
                 ),
@@ -228,21 +235,38 @@ impl Todolist {
         Ok(())
     }
 
+    /// Delete the task item currently selected in the list
+    pub async fn try_delete_task(&mut self) -> Result<()> {
+        let tasks = self.tasks_rx.borrow().clone();
+        let task_index = self
+            .table_state
+            .selected()
+            .context("failed to get todolist selected index")?;
+        let selected_task = tasks
+            .get(task_index)
+            .cloned()
+            .context("failed to find selected task")?;
+
+        let id = selected_task.id;
+        self.ditto
+            .store()
+            .execute(
+                "UPDATE tasks SET deleted=true WHERE _id=:id",
+                Some(serde_json::json!({"id": id}).into()),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    /// Create a new task todo with the given title
     pub async fn try_create_new_todo(&mut self, title: String) -> Result<()> {
+        let task = TodoItem::new(title);
         self.ditto
             .store()
             .execute(
                 "INSERT INTO tasks DOCUMENTS (:task)",
-                Some(
-                    serde_json::json!({
-                        "task": {
-                            "title": title,
-                            "done": false,
-                            "deleted": false
-                        }
-                    })
-                    .into(),
-                ),
+                Some(serde_json::json!({"task": task}).into()),
             )
             .await?;
         Ok(())

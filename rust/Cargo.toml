@@ -25,7 +25,9 @@ dotenv = "0.15.0"
 futures = "0.3.30"
 futures-concurrency = "7.6.0"
 ratatui = { version = "0.28", features = ["crossterm"] }
+serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.128"
 tokio = { version = "1.37", features = ["full", "sync"] }
 tracing = "0.1.40"
 tokio-stream = { version = "0.1.15", features = ["sync"] }
+uuid = "1.11.0"
