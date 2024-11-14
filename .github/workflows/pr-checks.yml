@@ -34,7 +34,7 @@ jobs:
     name: rust-quickstart
     strategy:
       matrix:
-        os: ["macos-latest", "linux-latest"]
+        os: ["macos-latest", "ubuntu-latest"]
 
     runs-on: ${{ matrix.os }}
 
