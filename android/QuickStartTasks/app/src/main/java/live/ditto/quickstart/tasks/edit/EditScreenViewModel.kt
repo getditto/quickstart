@@ -36,7 +36,7 @@ class EditScreenViewModel : ViewModel() {
                 title.postValue(task.title)
                 done.postValue(task.done)
             } catch (e: Exception) {
-                Log.e(TAG, e.message.toString())
+                Log.e(TAG, "Unable to setup view task data", e)
             }
         }
     }
@@ -74,7 +74,7 @@ class EditScreenViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, e.message.toString())
+                Log.e(TAG, "Unable to save task", e)
             }
         }
     }
@@ -89,7 +89,7 @@ class EditScreenViewModel : ViewModel() {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, e.message.toString())
+                Log.e(TAG, "Unable to set deleted=true", e)
             }
         }
     }

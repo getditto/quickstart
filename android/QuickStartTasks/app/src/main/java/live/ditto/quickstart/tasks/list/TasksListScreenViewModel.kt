@@ -27,7 +27,7 @@ class TasksListScreenViewModel : ViewModel() {
     companion object {
         private const val TAG = "TasksListScreenViewModel"
 
-        private const val QUERY = "SELECT * FROM tasks WHERE deleted != true"
+        private const val QUERY = "SELECT * FROM tasks WHERE deleted != true ORDER BY _id"
     }
 
     private val preferencesDataStore = TasksApplication.applicationContext().preferencesDataStore
@@ -51,7 +51,7 @@ class TasksListScreenViewModel : ViewModel() {
                     ditto.startSync()
                     syncSubscription = ditto.sync.registerSubscription(QUERY)
                 } catch (e: DittoError) {
-                    Log.e(TAG, e.message.toString())
+                    Log.e(TAG, "Unable to start sync", e)
                 }
             } else if (ditto.isSyncActive) {
                 try {
@@ -59,7 +59,7 @@ class TasksListScreenViewModel : ViewModel() {
                     syncSubscription = null
                     ditto.stopSync()
                 } catch (e: DittoError) {
-                    Log.e(TAG, e.message.toString())
+                    Log.e(TAG, "Unable to stop sync", e)
                 }
             }
         }
@@ -104,7 +104,7 @@ class TasksListScreenViewModel : ViewModel() {
                         )
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, e.message.toString())
+                    Log.e(TAG, "Unable to insert initial document", e)
                 }
             }
         }
@@ -128,7 +128,7 @@ class TasksListScreenViewModel : ViewModel() {
                     )
                 )
             } catch (e: Exception) {
-                Log.e(TAG, e.message.toString())
+                Log.e(TAG, "Unable to toggle done state", e)
             }
         }
     }
@@ -141,7 +141,7 @@ class TasksListScreenViewModel : ViewModel() {
                     mapOf("id" to taskId)
                 )
             } catch (e: Exception) {
-                Log.e(TAG, e.message.toString())
+                Log.e(TAG, "Unable to set deleted=true", e)
             }
         }
     }
