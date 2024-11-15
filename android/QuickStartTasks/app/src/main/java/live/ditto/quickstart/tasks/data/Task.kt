@@ -8,8 +8,8 @@ import java.lang.Exception
 data class Task(
     val _id: String = UUID.randomUUID().toString(),
     val title: String,
-    val done: Boolean,
-    val deleted: Boolean
+    val done: Boolean = false,
+    val deleted: Boolean = false,
 ) {
     companion object {
         private const val TAG = "Task"
