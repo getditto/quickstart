@@ -12,6 +12,8 @@ data class Task(
     val deleted: Boolean
 ) {
     companion object {
+        private const val TAG = "Task"
+
         fun fromJson(jsonString: String): Task {
             return try {
                 val json = JSONObject(jsonString)
@@ -22,7 +24,7 @@ data class Task(
                     deleted = json["deleted"] as Boolean
                 )
             } catch (e: Exception) {
-                Log.e("ERROR:", e.message.toString())
+                Log.e(TAG, e.message.toString())
                 Task(title = "", done = false, deleted = false)
             }
         }

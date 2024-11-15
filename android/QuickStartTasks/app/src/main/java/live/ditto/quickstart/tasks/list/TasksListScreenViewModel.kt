@@ -12,44 +12,69 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import live.ditto.DittoError
+import live.ditto.DittoSyncSubscription
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.TasksApplication
 import live.ditto.quickstart.tasks.data.Task
 
 // The value of the Sync switch is stored in persistent settings
-private val Context.dataStore by preferencesDataStore("tasks_list_settings")
+private val Context.preferencesDataStore by preferencesDataStore("tasks_list_settings")
 private val SYNC_ENABLED_KEY = booleanPreferencesKey("sync_enabled")
 
 class TasksListScreenViewModel : ViewModel() {
-    private val dataStore = TasksApplication.applicationContext().dataStore
+
+    companion object {
+        private const val TAG = "TasksListScreenViewModel"
+
+        private const val QUERY = "SELECT * FROM tasks WHERE deleted != true"
+    }
+
+    private val preferencesDataStore = TasksApplication.applicationContext().preferencesDataStore
 
     val tasks: MutableLiveData<List<Task>> = MutableLiveData(emptyList())
 
     private val _syncEnabled = MutableLiveData(true)
     val syncEnabled: LiveData<Boolean> = _syncEnabled
 
+    private var syncSubscription: DittoSyncSubscription? = null
+
     fun setSyncEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            dataStore.edit { settings ->
+            preferencesDataStore.edit { settings ->
                 settings[SYNC_ENABLED_KEY] = enabled
             }
             _syncEnabled.value = enabled
 
-            // TODO: start/stop sync
+            if (enabled && !ditto.isSyncActive) {
+                try {
+                    ditto.startSync()
+                    syncSubscription = ditto.sync.registerSubscription(QUERY)
+                } catch (e: DittoError) {
+                    Log.e(TAG, e.message.toString())
+                }
+            } else if (ditto.isSyncActive) {
+                try {
+                    syncSubscription?.close()
+                    syncSubscription = null
+                    ditto.stopSync()
+                } catch (e: DittoError) {
+                    Log.e(TAG, e.message.toString())
+                }
+            }
         }
     }
 
     init {
         viewModelScope.launch {
-            _syncEnabled.value =
-                dataStore.data.map { prefs -> prefs[SYNC_ENABLED_KEY] ?: true }.first()
-
-            val query = "SELECT * FROM tasks WHERE deleted != true"
-            ditto.sync.registerSubscription(query)
-            ditto.store.registerObserver(query) { result ->
+            ditto.store.registerObserver(QUERY) { result ->
                 val list = result.items.map { item -> Task.fromJson(item.jsonString()) }
                 tasks.postValue(list)
             }
+
+            setSyncEnabled(
+                preferencesDataStore.data.map { prefs -> prefs[SYNC_ENABLED_KEY] ?: true }.first()
+            )
         }
     }
 
@@ -71,7 +96,7 @@ class TasksListScreenViewModel : ViewModel() {
                     )
                 )
             } catch (e: Exception) {
-                Log.e("ERROR:", e.message.toString())
+                Log.e(TAG, e.message.toString())
             }
         }
     }
@@ -84,7 +109,7 @@ class TasksListScreenViewModel : ViewModel() {
                     mapOf("id" to taskId)
                 )
             } catch (e: Exception) {
-                Log.e("ERROR:", e.message.toString())
+                Log.e(TAG, e.message.toString())
             }
         }
     }

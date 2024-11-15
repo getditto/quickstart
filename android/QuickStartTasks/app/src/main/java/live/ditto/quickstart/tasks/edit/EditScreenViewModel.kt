@@ -10,6 +10,10 @@ import live.ditto.quickstart.tasks.data.Task
 
 class EditScreenViewModel : ViewModel() {
 
+    companion object {
+        private const val TAG = "EditScreenViewModel"
+    }
+
     private var _id: String? = null
 
     var title = MutableLiveData<String>("")
@@ -32,7 +36,7 @@ class EditScreenViewModel : ViewModel() {
                 title.postValue(task.title)
                 done.postValue(task.done)
             } catch (e: Exception) {
-                Log.e("ERROR:", e.message.toString())
+                Log.e(TAG, e.message.toString())
             }
         }
     }
@@ -70,7 +74,7 @@ class EditScreenViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e("ERROR:", e.message.toString())
+                Log.e(TAG, e.message.toString())
             }
         }
     }
@@ -85,7 +89,7 @@ class EditScreenViewModel : ViewModel() {
                     )
                 }
             } catch (e: Exception) {
-                Log.e("ERROR:", e.message.toString())
+                Log.e(TAG, e.message.toString())
             }
         }
     }
