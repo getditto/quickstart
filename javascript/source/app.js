@@ -4,6 +4,17 @@ import { Text, Spacer, Box, useInput } from 'ink';
 const enterAltScreenCommand = '\x1b[?1049h';
 const leaveAltScreenCommand = '\x1b[?1049l';
 
+export default function App({ ditto }) {
+	return (
+		<FullScreen>
+			<HelpPanel>
+				<TodoApp ditto={ditto} />
+			</HelpPanel>
+		</FullScreen>
+	)
+}
+
+// Helper component to make TUI fullscreen and wrap with a border
 const FullScreen = (props) => {
 	const [size, setSize] = useState({
 		columns: process.stdout.columns,
@@ -33,7 +44,40 @@ const FullScreen = (props) => {
 	);
 };
 
-export default function App({ ditto }) {
+const HelpPanel = (props) => {
+	const [showHelp, setShowHelp] = useState(true);
+
+	useInput((input, _key) => {
+		if (input === 'h') {
+			setShowHelp(!showHelp);
+		}
+	});
+
+	if (showHelp) {
+		return (
+			<>
+				<Box flexDirection="row">
+					<Box flexDirection="column">
+						<Text>h - toggle help</Text>
+						<Text>k - scroll up</Text>
+						<Text>j - scroll down</Text>
+						<Text>c - create task</Text>
+						<Text>Enter - toggle done</Text>
+					</Box>
+					{props.children}
+				</Box>
+			</>
+		);
+	}
+
+	return (
+		<>
+			{props.children}
+		</>
+	);
+};
+
+const TodoApp = ({ ditto }) => {
 	const [tasks, setTasks] = useState([]);
 	const [mode, setMode] = useState("list");
 	const [selected, setSelected] = useState(0);
@@ -68,7 +112,7 @@ export default function App({ ditto }) {
 		})(); // End async
 	}, [ditto, mode]);
 
-	const Prompt = () => {
+	const Prompt = React.memo(() => {
 		const [content, setContent] = useState("");
 		useInput((input, key) => {
 			if (key.backspace || key.delete) {
@@ -98,11 +142,11 @@ export default function App({ ditto }) {
 		});
 
 		return (
-			<Text>New task: {content}</Text>
+			<Text>Title: {content}</Text>
 		)
-	}
+	});
 
-	const List = ({ tasks }) => {
+	const List = React.memo(({ tasks }) => {
 		useInput((input, key) => {
 			// Scroll up
 			if (input === 'k') {
@@ -137,9 +181,9 @@ export default function App({ ditto }) {
 		});
 
 		return (
-			<>
+			<Box flexDirection="column">
 				{Array.from(tasks).map((task, i) => {
-					const done = task.done ? " ✅ " : " ▢ ";
+					const done = task.done ? " 🟢 " : " ⚪️ ";
 					const highlight = selected === i ? "blue" : "";
 					return (
 						<Box flexDirection="row">
@@ -150,26 +194,24 @@ export default function App({ ditto }) {
 						</Box>
 					)
 				})}
-			</>
+			</Box>
 		);
-	}
+	});
 
 	if (mode === "list") {
-		return (
-			<FullScreen>
-				<List tasks={tasks} />
-			</FullScreen>
-		)
+		return <Box flexDirection="column">
+			<Text> Done  Title</Text>
+			<List tasks={tasks} />
+		</Box>
 	}
 
 	if (mode === "create") {
-		return (
-			<FullScreen>
-				<Prompt />
-			</FullScreen>
-		)
+		return <Box flexDirection="column">
+			<Text> Create new Task</Text>
+			<Prompt />
+		</Box>
 	}
-}
+};
 
 const toggleDone = async (ditto, task) => {
 	console.log("Toggling task!", task);

@@ -47,4 +47,12 @@ const ditto = new Ditto({
 await ditto.disableSyncWithV3();
 ditto.startSync();
 
+process.on('uncaughtException', (err) => {
+	console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+	console.error('Unhandled Rejection:', reason);
+});
+
 render(<App ditto={ditto} />);
