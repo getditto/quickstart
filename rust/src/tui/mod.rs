@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use crossterm::event::{Event, EventStream};
 use dittolive_ditto::prelude::*;
-use futures::{Stream, StreamExt};
+use futures::{FutureExt, Stream, StreamExt};
 use ratatui::prelude::*;
 use std::{io::Stdout, ops::ControlFlow, time::Duration};
 use todolist::Todolist;
@@ -49,6 +49,9 @@ pub enum TuiEvent {
 
     /// An input was received from the terminal
     Terminal(std::io::Result<Event>),
+
+    /// Shutdown event received, need to cleanup and quit
+    Shutdown,
 }
 
 /// Internal state and resources for the tui app
@@ -85,7 +88,7 @@ impl TuiContext {
     async fn try_run(
         &mut self,
         input_stream: &mut (impl Stream<Item = TuiEvent> + Unpin),
-    ) -> Result<()> {
+    ) -> Result<ControlFlow<()>> {
         loop {
             let input = input_stream
                 .next()
@@ -94,8 +97,8 @@ impl TuiContext {
 
             let flow = self.try_handle_event(input).await?;
             if flow.is_break() {
-                // Return Ok(()) means graceful shutdown
-                return Ok(());
+                // Graceful shutdown
+                return Ok(ControlFlow::Break(()));
             }
 
             self.terminal
@@ -122,6 +125,9 @@ impl TuiContext {
 
                 self.todolist.try_handle_event(&event).await?;
             }
+            TuiEvent::Shutdown => {
+                return Ok(ControlFlow::Break(()));
+            }
         }
 
         Ok(ControlFlow::Continue(()))
@@ -134,13 +140,18 @@ impl TuiContext {
     async fn try_create_stream(&self) -> Result<impl Stream<Item = TuiEvent> + 'static> {
         use futures_concurrency::prelude::*;
 
+        let shutdown_stream = self
+            .shutdown
+            .wait_shutdown_triggered()
+            .into_stream()
+            .map(|_| TuiEvent::Shutdown);
         let term_stream = EventStream::new().map(TuiEvent::Terminal);
         let framerate = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
             Duration::from_millis(20),
         ))
         .map(|_| TuiEvent::FrameTick);
 
-        let merged_stream = (term_stream, framerate).merge();
+        let merged_stream = (shutdown_stream, term_stream, framerate).merge();
         Ok(merged_stream)
     }
 }

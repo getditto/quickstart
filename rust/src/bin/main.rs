@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
     }
 
     // Wait for shutdown to complete or timeout
-    tokio::time::timeout(Duration::from_secs(5), shutdown.wait_shutdown_complete())
+    tokio::time::timeout(Duration::from_secs(2), shutdown.wait_shutdown_complete())
         .await
         .context("force-quitting after cleanup timed out")?;
 
