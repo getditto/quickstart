@@ -1,6 +1,7 @@
 //! Handy terminal initialization and drop tool
 //!
 //! Credit to [`hawkw`][0].
+//!
 //! [0]: https://github.com/tokio-rs/console/blob/cbf6f56a16036ecf13548c4209fcc62f8a84bae2/tokio-console/src/term.rs
 
 use anyhow::{Context, Result};
