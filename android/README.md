@@ -20,7 +20,8 @@ After you have completed the [common prerequisites] you will need the following:
 
 ## Building and Running the Android Application
 
-Assuming you have Android Studio and other prerequisites installed, you can build and run the app by following these steps:
+Assuming you have Android Studio and other prerequisites installed, you can
+build and run the app by following these steps:
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
 2. Copy the `.env.template` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
@@ -47,7 +48,9 @@ summary of the key parts of integration with Ditto.
 
 ### Adding the Ditto SDK
 
-At the bottom of `app/build.gradle.kts`, you will see this line that causes Android Studio to automatically download the Ditto SDK from Maven Central and add it to the project:
+At the bottom of `app/build.gradle.kts`, you will see this line that causes
+Android Studio to automatically download the Ditto SDK from Maven Central and
+add it to the project:
 
 ```kotlin
     implementation("live.ditto:ditto:4.8.2")
