@@ -48,7 +48,7 @@ const HelpPanel = (props) => {
 	const [showHelp, setShowHelp] = useState(true);
 
 	useInput((input, _key) => {
-		if (input === 'h') {
+		if (input === '?') {
 			setShowHelp(!showHelp);
 		}
 	});
@@ -57,14 +57,17 @@ const HelpPanel = (props) => {
 		return (
 			<>
 				<Box flexDirection="row">
-					<Box flexDirection="column">
-						<Text>h - toggle help</Text>
+					{props.children}
+					<Spacer />
+					<Box flexDirection="column" borderStyle="round">
+						<Text>? - toggle help</Text>
 						<Text>k - scroll up</Text>
 						<Text>j - scroll down</Text>
 						<Text>c - create task</Text>
+						<Text>d - delete task</Text>
+						<Text>e - edit task</Text>
 						<Text>Enter - toggle done</Text>
 					</Box>
-					{props.children}
 				</Box>
 			</>
 		);
@@ -77,26 +80,30 @@ const HelpPanel = (props) => {
 	);
 };
 
+const LIST_MODE = "list";
+const CREATE_MODE = "create";
+const EDIT_MODE = "edit";
+
 const TodoApp = ({ ditto }) => {
 	const [tasks, setTasks] = useState([]);
-	const [mode, setMode] = useState("list");
+	const [mode, setMode] = useState(LIST_MODE);
 	const [selected, setSelected] = useState(0);
 	const [_observer, setObserver] = useState(null);
 
 	useInput((input, key) => {
-		if (mode === "list") {
+		if (mode === LIST_MODE) {
 			if (input === 'c') {
-				setMode("create");
+				setMode(CREATE_MODE);
 				return;
 			}
 			if (input === 'e') {
-				setMode("edit");
+				setMode(EDIT_MODE);
 				return;
 			}
 		}
 
 		if (key.escape) {
-			setMode("list");
+			setMode(LIST_MODE);
 			return;
 		}
 	});
@@ -112,37 +119,51 @@ const TodoApp = ({ ditto }) => {
 		})(); // End async
 	}, [ditto, mode]);
 
-	const Prompt = React.memo(() => {
-		const [content, setContent] = useState("");
+	const Prompt = React.memo(({ edit }) => {
+		const newTask = !edit;
+		const initialText = newTask ? "" : edit.title;
+		const [text, setText] = useState(initialText);
+
 		useInput((input, key) => {
 			if (key.backspace || key.delete) {
 				// Chop off last char and set
-				setContent(content.slice(0, -1));
+				setText(text.slice(0, -1));
 				return;
 			}
 
 			if (key.return) {
-				(async () => {
-					const _result = await ditto.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
-						task: {
-							title: content,
-							done: false,
-							deleted: false,
-						}
-					});
-				})();
+				if (newTask) {
+					(async () => {
+						const _result = await ditto.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
+							task: {
+								title: text,
+								done: false,
+								deleted: false,
+							}
+						});
+					})();
+				} else {
+					debugger;
+					(async () => {
+						const _result = await ditto.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
+							id: edit._id,
+							title: text,
+						});
+					})();
+				}
 
-				setContent(""); // Reset input field
-				setMode("list");
+				// On submission:
+				setText(""); // Reset input field
+				setMode(LIST_MODE); // Set app back to "list" mode
 				return;
 			}
 
-			const newContent = content + input;
-			setContent(newContent);
+			const newContent = text + input;
+			setText(newContent);
 		});
 
 		return (
-			<Text>Title: {content}</Text>
+			<Text>Title: {text}</Text>
 		)
 	});
 
@@ -198,17 +219,25 @@ const TodoApp = ({ ditto }) => {
 		);
 	});
 
-	if (mode === "list") {
+	if (mode === LIST_MODE) {
 		return <Box flexDirection="column">
 			<Text> Done  Title</Text>
 			<List tasks={tasks} />
 		</Box>
 	}
 
-	if (mode === "create") {
+	if (mode === CREATE_MODE) {
 		return <Box flexDirection="column">
 			<Text> Create new Task</Text>
 			<Prompt />
+		</Box>
+	}
+
+	if (mode === EDIT_MODE) {
+		const selectedTask = tasks[selected];
+		return <Box flexDirection="column">
+			<Text> Create new Task</Text>
+			<Prompt edit={selectedTask} />
 		</Box>
 	}
 };
