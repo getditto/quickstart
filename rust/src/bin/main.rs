@@ -61,6 +61,7 @@ async fn main() -> Result<()> {
     }
 
     // Wait for shutdown to complete or timeout
+    drop(_cleanup);
     tokio::select! {
         _ = shutdown.wait_shutdown_complete() => {
             tracing::info!("[SHUTDOWN] Graceful shutdown complete, quitting");
