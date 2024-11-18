@@ -27,7 +27,7 @@ class TasksListScreenViewModel : ViewModel() {
     companion object {
         private const val TAG = "TasksListScreenViewModel"
 
-        private const val QUERY = "SELECT * FROM tasks WHERE deleted != true ORDER BY _id"
+        private const val QUERY = "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id"
     }
 
     private val preferencesDataStore = TasksApplication.applicationContext().preferencesDataStore
@@ -114,14 +114,14 @@ class TasksListScreenViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val doc = ditto.store.execute(
-                    "SELECT * FROM tasks WHERE _id = :_id",
+                    "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
                     mapOf("_id" to taskId)
                 ).items.first()
 
                 val done = doc.value["done"] as Boolean
 
                 ditto.store.execute(
-                    "UPDATE tasks SET done = :toggled WHERE _id = :_id",
+                    "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
                     mapOf(
                         "toggled" to !done,
                         "_id" to taskId

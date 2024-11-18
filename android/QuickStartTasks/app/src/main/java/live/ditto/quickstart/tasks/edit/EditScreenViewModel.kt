@@ -27,7 +27,7 @@ class EditScreenViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val item = ditto.store.execute(
-                    "SELECT * FROM tasks WHERE _id = :_id",
+                    "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
                     mapOf("_id" to taskId)
                 ).items.first()
 
@@ -64,6 +64,7 @@ class EditScreenViewModel : ViewModel() {
                               title = :title,
                               done = :done
                             WHERE _id = :id
+                            AND NOT deleted
                             """,
                             mapOf(
                                 "title" to title.value,
