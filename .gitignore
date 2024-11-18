@@ -29,3 +29,5 @@ obj/
 packages/
 target/
 xcuserdata
+.env
+
