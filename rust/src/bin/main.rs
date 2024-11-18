@@ -1,9 +1,10 @@
-use std::{sync::Arc, time::Duration};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
 use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -14,12 +15,31 @@ pub struct Cli {
     /// The Online Playground token this app should use for authentication
     #[clap(long, env = "DITTO_PLAYGROUND_TOKEN")]
     token: String,
+
+    /// Path to write logs on disk
+    #[clap(long, default_value = "/tmp/ditto-quickstart.log")]
+    log: PathBuf,
+}
+
+impl Cli {
+    pub fn try_init_tracing(&self) -> Result<()> {
+        let logfile = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.log)
+            .with_context(|| format!("failed to open logfile {}", self.log.display()))?;
+        tracing_subscriber::registry()
+            .with(tracing_subscriber::fmt::layer().with_writer(logfile))
+            .try_init()?;
+        Ok(())
+    }
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
     let cli = Cli::parse();
+    cli.try_init_tracing()?;
     let shutdown = <Shutdown>::new();
     let (terminal, _cleanup) = term::init_crossterm()?;
 
@@ -41,10 +61,17 @@ async fn main() -> Result<()> {
     }
 
     // Wait for shutdown to complete or timeout
-    tokio::time::timeout(Duration::from_secs(2), shutdown.wait_shutdown_complete())
-        .await
-        .context("force-quitting after cleanup timed out")?;
+    tokio::select! {
+        _ = shutdown.wait_shutdown_complete() => {
+            tracing::info!("[SHUTDOWN] Graceful shutdown complete, quitting");
+        }
+        _ = tokio::time::sleep(Duration::from_secs(2)) => {
+            tracing::error!("[SHUTDOWN] Graceful shutdown timer expired, force-quitting!");
+            std::process::exit(1);
+        }
+    }
 
+    tracing::info!("Moving to quit");
     Ok(())
 }
 

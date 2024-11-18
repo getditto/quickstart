@@ -29,5 +29,6 @@ serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.128"
 tokio = { version = "1.37", features = ["full", "sync"] }
 tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tokio-stream = { version = "0.1.15", features = ["sync"] }
 uuid = "1.11.0"

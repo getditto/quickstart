@@ -74,13 +74,19 @@ impl TuiContext {
                     .try_create_stream()
                     .await
                     .context("failed to create tui stream")?;
-                self.try_run(&mut stream).await?;
-                Ok::<_, anyhow::Error>(())
+                let flow = self.try_run(&mut stream).await?;
+                Ok::<_, anyhow::Error>(flow)
             };
 
             let result = future.await;
-            if let Err(error) = result {
-                tracing::error!(%error, "Error in tui loop, continuing");
+            match result {
+                Ok(ControlFlow::Break(())) => {
+                    return;
+                }
+                Err(error) => {
+                    tracing::error!(%error, "Error in tui loop, continuing");
+                }
+                _ => {} // Continue
             }
         }
     }
