@@ -66,6 +66,21 @@ pub struct TuiContext {
     todolist: Todolist,
 }
 
+pub enum EventResult {
+    Ignored,
+    Consumed,
+}
+
+impl EventResult {
+    pub fn is_ignored(&self) -> bool {
+        matches!(self, Self::Ignored)
+    }
+
+    pub fn is_consumed(&self) -> bool {
+        matches!(self, Self::Consumed)
+    }
+}
+
 impl TuiContext {
     async fn run(mut self) {
         loop {
@@ -122,14 +137,14 @@ impl TuiContext {
             }
             TuiEvent::Terminal(result) => {
                 let event = result.context("terminal input error")?;
+                let event_result = self.todolist.try_handle_event(&event).await?;
 
-                if should_quit(&event) {
+                // Only check for quitting if no other handlers consumed this event
+                if event_result.is_ignored() && should_quit(&event) {
                     self.shutdown
                         .trigger_shutdown(anyhow!("Pressed q!").into())?;
                     return Ok(ControlFlow::Break(()));
                 }
-
-                self.todolist.try_handle_event(&event).await?;
             }
             TuiEvent::Shutdown => {
                 return Ok(ControlFlow::Break(()));

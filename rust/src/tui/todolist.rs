@@ -12,12 +12,13 @@ use ratatui::widgets::Padding;
 use ratatui::widgets::{Cell, Row, StatefulWidget, Table, TableState};
 use serde::Deserialize;
 use serde::Serialize;
-use std::ops::Not;
 use std::sync::Arc;
 use tokio::sync::watch;
 use uuid::Uuid;
 
 use crate::key;
+
+use super::EventResult;
 
 pub struct Todolist {
     /// Our handle to the Ditto peer, used to create observers and subscriptions
@@ -37,6 +38,8 @@ pub struct Todolist {
     pub tasks_subscription: Arc<SyncSubscription>,
 
     // TUI state below
+    pub mode: TodoMode,
+
     /// Table scrolling state
     pub table_state: TableState,
 
@@ -48,6 +51,14 @@ pub struct Todolist {
 
     /// Holds the contents of an existing TODO title to be edited
     pub edit_task: Option<(String, String)>, // (ID, title)
+}
+
+/// Mode enum used to decide how to interpret keystrokes
+#[derive(Debug)]
+pub enum TodoMode {
+    Normal,
+    CreateTask { buffer: String },
+    EditTask { id: String, buffer: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,6 +105,7 @@ impl Todolist {
             tasks_rx,
             tasks_observer,
             tasks_subscription,
+            mode: TodoMode::Normal,
             create_task_title: None,
             edit_task: None,
         })
@@ -143,8 +155,12 @@ impl Todolist {
 
     /// Render "new todo" prompt if `create_task_title` is "Some"
     fn render_new_todo_prompt(&self, area: Rect, buf: &mut Buffer) {
-        let Some(title) = self.active_buffer() else {
-            return;
+        let title = match &self.mode {
+            TodoMode::CreateTask { buffer } => buffer,
+            TodoMode::EditTask { buffer, .. } => buffer,
+            _ => {
+                return;
+            }
         };
 
         let space = area.inner(Margin::new(2, 2));
@@ -158,72 +174,21 @@ impl Todolist {
         Line::raw(title).render(space, buf);
     }
 
-    /// Whether either the create or edit buffers is open
-    fn is_popup_open(&self) -> bool {
-        self.create_task_title.is_some() || self.edit_task.is_some()
-    }
-
-    /// Provide a mutable reference to an open buffer, if one exists
-    fn active_buffer_mut(&mut self) -> Option<&mut String> {
-        if !self.is_popup_open() {
-            return None;
-        }
-
-        if let Some(buffer) = self.create_task_title.as_mut() {
-            return Some(buffer);
-        }
-
-        if let Some((_id, buffer)) = self.edit_task.as_mut() {
-            return Some(buffer);
-        }
-
-        None
-    }
-
-    /// Provide a reference to an open buffer, if one exists
-    fn active_buffer(&self) -> Option<&String> {
-        if !self.is_popup_open() {
-            return None;
-        }
-
-        if let Some(buffer) = self.create_task_title.as_ref() {
-            return Some(buffer);
-        }
-
-        if let Some((_id, buffer)) = self.edit_task.as_ref() {
-            return Some(buffer);
-        }
-
-        None
-    }
-
     /// Apply a terminal event to update the todolist state
-    pub async fn try_handle_event(&mut self, event: &Event) -> Result<()> {
-        match event {
-            // Esc in popup closes popup
-            key!(Esc) if self.is_popup_open() => {
-                self.create_task_title = None;
-                self.edit_task = None;
+    pub async fn try_handle_event(&mut self, event: &Event) -> Result<EventResult> {
+        match (&mut self.mode, event) {
+            // Normal:c -> Goto create mode
+            (TodoMode::Normal, key!(Char('c'))) => {
+                self.mode = TodoMode::CreateTask {
+                    buffer: String::new(),
+                };
             }
-            // Scroll up
-            key!(Up) | key!(Char('k')) if self.is_popup_open().not() => {
-                self.table_state.select_previous();
-            }
-            // Scroll down
-            key!(Down) | key!(Char('j')) if self.is_popup_open().not() => {
-                self.table_state.select_next();
-            }
-            // c for Create
-            key!(Char('c')) if self.is_popup_open().not() => {
-                // Enter "create todo" state by setting Some
-                self.create_task_title = Some("".to_string());
-            }
-            // d for Delete
-            key!(Char('d')) if self.is_popup_open().not() => {
+            // Normal:d -> Delete task
+            (TodoMode::Normal, key!(Char('d'))) => {
                 self.try_delete_task().await?;
             }
-            // e for Edit
-            key!(Char('e')) if self.is_popup_open().not() => {
+            // Normal:e -> Goto edit mode
+            (TodoMode::Normal, key!(Char('e'))) => {
                 let selected = self
                     .table_state
                     .selected()
@@ -234,48 +199,69 @@ impl Todolist {
                     .get(selected)
                     .cloned()
                     .context("failed to get todo from list")?;
-                self.edit_task = Some((item.id.clone(), item.title.to_string()));
+                self.mode = TodoMode::EditTask {
+                    id: item.id.to_string(),
+                    buffer: item.title.to_string(),
+                };
             }
-            // Typing into open buffer (edit or create)
-            key!(Char(ch)) if self.is_popup_open() => {
-                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_popup_open
-                let buffer = self.active_buffer_mut().unwrap();
-                buffer.push(*ch);
+            // Non-Normal:Esc -> Normal
+            (TodoMode::CreateTask { .. } | TodoMode::EditTask { .. }, key!(Esc)) => {
+                self.mode = TodoMode::Normal;
             }
-            // Backspace either pops from active buffer, or closes prompt
-            key!(Backspace) if self.is_popup_open() => {
-                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_popup_open
-                let buffer = self.active_buffer_mut().unwrap();
-
-                // Backspace on empty quits open buffers
-                if buffer.is_empty() {
-                    self.create_task_title = None;
-                    self.edit_task = None;
-                    return Ok(());
-                }
-
-                buffer.pop();
+            // Scroll up
+            (TodoMode::Normal, key!(Up) | key!(Char('k'))) => {
+                self.table_state.select_previous();
             }
-            // Enter when popup is closed just toggles "done"
-            key!(Enter) if self.is_popup_open().not() => {
+            // Scroll down
+            (TodoMode::Normal, key!(Down) | key!(Char('j'))) => {
+                self.table_state.select_next();
+            }
+            // Toggle done
+            (TodoMode::Normal, key!(Enter)) => {
                 self.try_toggle_done().await?;
             }
-            // Submit "create task"
-            key!(Enter) if self.create_task_title.is_some() => {
-                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
-                let title = self.create_task_title.take().unwrap();
-                self.try_create_new_todo(title).await?;
+            // Create task typing
+            (TodoMode::CreateTask { buffer }, key!(Char(ch))) => {
+                buffer.push(*ch);
             }
-            // Submit "edit task"
-            key!(Enter) if self.edit_task.is_some() => {
-                #[allow(clippy::unwrap_used)] // SAFETY: Checked is_some
-                let (id, title) = self.edit_task.take().unwrap();
-                self.try_edit_todo(&id, &title).await?;
+            // Submit create task
+            (TodoMode::CreateTask { buffer }, key!(Enter)) => {
+                if !buffer.is_empty() {
+                    let title = std::mem::take(buffer);
+                    self.try_create_new_todo(title).await?;
+                    self.mode = TodoMode::Normal;
+                }
             }
-            _ => {}
+            // Submit edit task
+            (TodoMode::EditTask { id, buffer }, key!(Enter)) => {
+                if !buffer.is_empty() {
+                    let title = std::mem::take(buffer);
+                    let id = id.clone();
+                    self.try_edit_todo(&id, &title).await?;
+                    self.mode = TodoMode::Normal;
+                }
+            }
+            // Edit task typing
+            (TodoMode::EditTask { buffer, .. }, key!(Char(ch))) => {
+                buffer.push(*ch);
+            }
+            // Backspace
+            (
+                TodoMode::CreateTask { buffer } | TodoMode::EditTask { buffer, .. },
+                key!(Backspace),
+            ) => {
+                if buffer.is_empty() {
+                    self.mode = TodoMode::Normal;
+                } else {
+                    buffer.pop();
+                }
+            }
+            _ => {
+                return Ok(EventResult::Ignored);
+            }
         }
 
-        Ok(())
+        Ok(EventResult::Consumed)
     }
 
     /// Toggle "done" for the currently selected item in the list
