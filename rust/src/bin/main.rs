@@ -37,14 +37,14 @@ impl Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenvy::dotenv().ok();
+    try_init_dotenv().ok();
     let cli = Cli::parse();
     cli.try_init_tracing()?;
     let shutdown = <Shutdown>::new();
     let (terminal, _cleanup) = term::init_crossterm()?;
 
     // Initialize and launch app
-    let ditto = try_initialize_ditto(cli.app_id, cli.token)?;
+    let ditto = try_init_ditto(cli.app_id, cli.token)?;
     let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, ditto)
         .context("failed to start tui task")?;
     tracing::info!(success = true, "Initialized!");
@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn try_initialize_ditto(app_id: AppId, token: String) -> Result<Ditto> {
+fn try_init_ditto(app_id: AppId, token: String) -> Result<Ditto> {
     let ditto = Ditto::builder()
         .with_root(Arc::new(TempRoot::new()))
         .with_identity(|root| OnlinePlayground::new(root, app_id.clone(), token, true, None))?
@@ -86,4 +86,17 @@ fn try_initialize_ditto(app_id: AppId, token: String) -> Result<Ditto> {
 
     tracing::info!(%app_id, "Started Ditto!");
     Ok(ditto)
+}
+
+/// Load .env file from git repo root rather than `rust/`
+fn try_init_dotenv() -> Result<()> {
+    let git_toplevel_output = std::process::Command::new("git")
+        .args(&["rev-parse", "--show-toplevel"])
+        .output()
+        .context("failed to exec 'git rev-parse --show-toplevel'")?;
+    let path = String::from_utf8(git_toplevel_output.stdout)?;
+    let path = std::path::Path::new(path.trim());
+    let path = path.join(".env");
+    dotenvy::from_path(&path)?;
+    Ok(())
 }
