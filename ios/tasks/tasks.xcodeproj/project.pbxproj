@@ -72,6 +72,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 41F869982CECF42600DC7268 /* Build configuration list for PBXNativeTarget "tasks" */;
 			buildPhases = (
+				4170A85A2CED3ADB00043F5A /* Generate Env.swift */,
 				41F869862CECF42500DC7268 /* Sources */,
 				41F869872CECF42500DC7268 /* Frameworks */,
 				41F869882CECF42500DC7268 /* Resources */,
@@ -138,6 +139,30 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4170A85A2CED3ADB00043F5A /* Generate Env.swift */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/buildEnv.sh",
+				"$(SRCROOT)/../../.env",
+			);
+			name = "Generate Env.swift";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"${SRCROOT}/${PROJECT}/Env.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/buildEnv.sh\" \"${SRCROOT}/../../.env\" \"${SRCROOT}/${PROJECT}\"\n\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		41F869862CECF42500DC7268 /* Sources */ = {
