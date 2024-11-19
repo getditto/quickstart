@@ -12,7 +12,7 @@ AppID and Playground Token in order to use this quickstart.
 
 [0]: https://portal.ditto.live
 
-From this directory, copy the `.env.sample` file to `.env`, and fill in the
+From the repo root, copy the `.env.sample` file to `.env`, and fill in the
 fields with your AppID and Playground Token:
 
 ```

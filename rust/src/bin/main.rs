@@ -91,7 +91,7 @@ fn try_init_ditto(app_id: AppId, token: String) -> Result<Ditto> {
 /// Load .env file from git repo root rather than `rust/`
 fn try_init_dotenv() -> Result<()> {
     let git_toplevel_output = std::process::Command::new("git")
-        .args(&["rev-parse", "--show-toplevel"])
+        .args(["rev-parse", "--show-toplevel"])
         .output()
         .context("failed to exec 'git rev-parse --show-toplevel'")?;
     let path = String::from_utf8(git_toplevel_output.stdout)?;
