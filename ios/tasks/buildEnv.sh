@@ -23,7 +23,7 @@ if [ -f "$1" ]; then
         trimline="${line//[$'\t\r\n ']}"
         if [ -n "$trimline" ] && [[ $trimline != \#* ]]; then
             KEY="${line%%=*}"
-            VALUE="${line#*=}"
+            VALUE="$(echo "${line#*=}" | sed 's/^[[:space:]]*//')"
             code=$(cat <<EOS
         $code
     static let $KEY = "$VALUE"
