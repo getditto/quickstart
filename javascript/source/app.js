@@ -56,10 +56,10 @@ const HelpPanel = (props) => {
 	if (showHelp) {
 		return (
 			<>
-				<Box flexDirection="row">
+				<Box flexDirection="row" height="100%">
 					{props.children}
 					<Spacer />
-					<Box flexDirection="column" borderStyle="round">
+					<Box flexDirection="column" borderStyle="round" height="100%" width="50%">
 						<Text>? - toggle help</Text>
 						<Text>k - scroll up</Text>
 						<Text>j - scroll down</Text>
@@ -88,6 +88,7 @@ const TodoApp = ({ ditto }) => {
 	const [tasks, setTasks] = useState([]);
 	const [mode, setMode] = useState(LIST_MODE);
 	const [selected, setSelected] = useState(0);
+	const [_subscriber, setSubscriber] = useState(null);
 	const [_observer, setObserver] = useState(null);
 
 	useInput((input, key) => {
@@ -111,6 +112,9 @@ const TodoApp = ({ ditto }) => {
 	useEffect(() => {
 		// Inline async context
 		(async () => {
+			const subscriber = ditto.sync.registerSubscription("SELECT * FROM tasks");
+			setSubscriber(subscriber);
+
 			const observer = ditto.store.registerObserver("SELECT * FROM tasks WHERE NOT deleted ORDER BY _id", (result) => {
 				const tasks = result.items.map(item => item.value);
 				setTasks(tasks);
@@ -134,21 +138,11 @@ const TodoApp = ({ ditto }) => {
 			if (key.return) {
 				if (newTask) {
 					(async () => {
-						const _result = await ditto.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
-							task: {
-								title: text,
-								done: false,
-								deleted: false,
-							}
-						});
+						await createTask(ditto, text);
 					})();
 				} else {
-					debugger;
 					(async () => {
-						const _result = await ditto.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
-							id: edit._id,
-							title: text,
-						});
+						await updateTask(ditto, edit._id, text);
 					})();
 				}
 
@@ -189,7 +183,7 @@ const TodoApp = ({ ditto }) => {
 			if (input === 'd') {
 				if (tasks.length > 0) {
 					(async () => {
-						deleteTask(ditto, tasks[selected]);
+						await deleteTask(ditto, tasks[selected]);
 					})();
 				}
 			}
@@ -221,7 +215,7 @@ const TodoApp = ({ ditto }) => {
 
 	if (mode === LIST_MODE) {
 		return <Box flexDirection="column">
-			<Text> Done  Title</Text>
+			<Text> Done   Title</Text>
 			<List tasks={tasks} />
 		</Box>
 	}
@@ -243,22 +237,31 @@ const TodoApp = ({ ditto }) => {
 };
 
 const toggleDone = async (ditto, task) => {
-	console.log("Toggling task!", task);
 	await ditto.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
 		id: task._id,
 		done: !task.done,
 	});
 }
 
+const createTask = async (ditto, title) => {
+	await ditto.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
+		task: {
+			title,
+			done: false,
+			deleted: false,
+		}
+	});
+};
+
 const deleteTask = async (ditto, task) => {
 	await ditto.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
 		id: task._id,
 	});
-}
+};
 
-const updateTask = async (ditto, task, title) => {
+const updateTask = async (ditto, id, title) => {
 	await ditto.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
-		id: task._id,
+		id: id,
 		title,
 	});
-}
+};
