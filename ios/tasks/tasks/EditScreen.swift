@@ -86,11 +86,11 @@ struct EditScreen: View {
                 viewModel.isExistingTask ? "Edit Task" : "Create Task"
             )
             .navigationBarItems(
-                leading: Button(viewModel.isExistingTask ? "Save" : "Create") {
-                    viewModel.save(listVM: listVM)
+                leading: Button("Cancel") {
                     dismiss()
                 },
-                trailing: Button("Cancel") {
+                trailing: Button(viewModel.isExistingTask ? "Save" : "Create") {
+                    viewModel.save(listVM: listVM)
                     dismiss()
                 }
             )

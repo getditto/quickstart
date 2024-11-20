@@ -24,13 +24,11 @@ class DittoManager: ObservableObject {
             )
         }
 
-        // Prevent Xcode previews from syncing: non-preview simulators and real devices can sync
         let isPreview: Bool =
             ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
             == "1"
         if !isPreview {
             DittoLogger.minimumLogLevel = .debug
-            try! ditto.startSync()
         }
     }
 }
