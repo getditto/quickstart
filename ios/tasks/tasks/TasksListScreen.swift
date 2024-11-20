@@ -30,7 +30,11 @@ class TasksListScreenViewModel: ObservableObject {
 
     var baseQuery: QueryExpr {
         var expr = QueryExpr()
-        expr.query = "SELECT * FROM tasks WHERE NOT deleted"
+        expr.query = """
+            SELECT * FROM tasks
+            WHERE NOT deleted
+            ORDER BY _id
+            """
         return expr
     }
 
@@ -176,8 +180,18 @@ struct TasksListScreen: View {
                 }
             }
             .animation(.default, value: viewModel.tasks)
-            .navigationTitle("Tasks")
+            .navigationTitle("Ditto Tasks")
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack {
+                        Text("App ID: \(Env.DITTO_APP_ID)")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                        Text("Token: \(Env.DITTO_PLAYGROUND_TOKEN)")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                    }
+                }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Menu {
                         Button("New Task") {
