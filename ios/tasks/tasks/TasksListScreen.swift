@@ -131,7 +131,21 @@ class TasksListScreenViewModel: ObservableObject {
                     query: query, arguments: ["newTask": newTask])
             } catch {
                 print(
-                    "EditScreenVM.\(#function) - ERROR creating new task: \(error.localizedDescription)"
+                    "TaskListScreenVM.\(#function) - ERROR creating new task: \(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
+    nonisolated func deleteTask(_ task: TaskModel) {
+        Task {
+            let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
+            do {
+                try await dittoStore.execute(
+                    query: query, arguments: ["_id": task._id])
+            } catch {
+                print(
+                    "TaskListScreenVM.\(#function) - ERROR deleting task: \(error.localizedDescription)"
                 )
             }
         }
@@ -176,6 +190,7 @@ struct TasksListScreen: View {
                             }
                         )
                     }
+                    .onDelete(perform: deleteTaskItems)
                 }
             }
             .animation(.default, value: viewModel.tasks)
@@ -229,6 +244,13 @@ struct TasksListScreen: View {
                     syncEnabled = false
                 }
             }
+        }
+    }
+
+    private func deleteTaskItems(at offsets: IndexSet) {
+        let deletedTasks = offsets.map { viewModel.tasks[$0] }
+        for task in deletedTasks {
+            viewModel.deleteTask(task)
         }
     }
 
