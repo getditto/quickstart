@@ -35,7 +35,7 @@ pub struct Todolist {
     /// Ditto subscriptions must also be held to keep them alive
     ///
     /// Subscriptions cause Ditto to sync selected data from other peers
-    pub tasks_subscription: Arc<SyncSubscription>,
+    pub tasks_subscription: Option<Arc<SyncSubscription>>,
 
     // TUI state below
     pub mode: TodoMode,
@@ -87,6 +87,7 @@ impl Todolist {
         let tasks_subscription = ditto
             .sync()
             .register_subscription("SELECT * FROM tasks", None)?;
+        let tasks_subscription = Some(tasks_subscription);
         let tasks_observer = ditto.store().register_observer(
             "SELECT * FROM tasks WHERE deleted=false ORDER BY _id",
             None,
@@ -141,6 +142,15 @@ impl Todolist {
             })
             .collect::<Vec<_>>();
 
+        let sync_state = if self.tasks_subscription.is_some() {
+            " 🟢 Sync Active ".green()
+        } else {
+            " 🔴 Sync Inactive ".red()
+        };
+        let sync_line = [sync_state, "(s: toggle sync) ".into()]
+            .into_iter()
+            .collect::<Line>();
+
         let table = Table::new(rows, Constraint::from_percentages([30, 70]))
             .header(header)
             .highlight_symbol("❯❯ ")
@@ -148,7 +158,9 @@ impl Todolist {
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
-                    .title_bottom(" j↓ k↑ (Enter: toggle done) (c: create) (d: delete) (q: quit) "),
+                    .title_top(Line::raw(" Tasks (j↓, k↑, ⏎ toggle done) ").left_aligned())
+                    .title_top(sync_line.right_aligned())
+                    .title_bottom(" (c: create) (d: delete) (e: edit) (q: quit) "),
             );
         StatefulWidget::render(table, area, buf, &mut self.table_state);
     }
@@ -168,6 +180,7 @@ impl Todolist {
         Block::bordered()
             .border_type(BorderType::Rounded)
             .title(" New Todo ")
+            .title_bottom(" (Esc: back) ")
             .padding(Padding::uniform(1))
             .render(space, buf);
         let space = space.inner(Margin::new(2, 2));
@@ -203,6 +216,9 @@ impl Todolist {
                     id: item.id.to_string(),
                     buffer: item.title.to_string(),
                 };
+            }
+            (TodoMode::Normal, key!(Char('s'))) => {
+                self.toggle_sync()?;
             }
             // Non-Normal:Esc -> Normal
             (TodoMode::CreateTask { .. } | TodoMode::EditTask { .. }, key!(Esc)) => {
@@ -262,6 +278,23 @@ impl Todolist {
         }
 
         Ok(EventResult::Consumed)
+    }
+
+    fn toggle_sync(&mut self) -> Result<()> {
+        self.tasks_subscription = match &self.tasks_subscription {
+            Some(subscription) => {
+                subscription.cancel();
+                None
+            }
+            None => {
+                let sub = self
+                    .ditto
+                    .sync()
+                    .register_subscription("SELECT * FROM tasks", None)?;
+                Some(sub)
+            }
+        };
+        Ok(())
     }
 
     /// Toggle "done" for the currently selected item in the list
