@@ -222,7 +222,10 @@ struct TasksListScreen: View {
                     header: VStack {
                         Text("App ID: \(Env.DITTO_APP_ID)")
                         Text("Token: \(Env.DITTO_PLAYGROUND_TOKEN)")
-                    }.font(.caption).textCase(nil)
+                    }
+                    .font(.caption)
+                    .textCase(nil)
+                    .padding(.bottom)
                 ) {
                     ForEach(viewModel.tasks) { task in
                         TaskRow(

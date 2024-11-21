@@ -48,6 +48,7 @@ struct EditScreen: View {
                 Section {
                     TextField("Title", text: $viewModel.taskTitleText)
                         .focused($titleHasFocus)
+                        .onSubmit(onSubmit)
 
                     Toggle("Is Completed", isOn: $viewModel.task.done)
                 }
@@ -88,8 +89,7 @@ struct EditScreen: View {
                     dismiss()
                 },
                 trailing: Button(viewModel.isExistingTask ? "Save" : "Create") {
-                    viewModel.save(listVM: listVM)
-                    dismiss()
+                    onSubmit()
                 }
             )
         }
@@ -98,6 +98,11 @@ struct EditScreen: View {
                 titleHasFocus = true
             }
         }
+    }
+
+    func onSubmit() {
+        viewModel.save(listVM: listVM)
+        dismiss()
     }
 }
 
