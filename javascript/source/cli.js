@@ -5,6 +5,7 @@ import meow from 'meow';
 import App from './app.js';
 import dotenv from 'dotenv';
 import { Ditto } from '@dittolive/ditto';
+import { temporaryDirectory } from 'tempy';
 
 const config = dotenv.config();
 const cli = meow(
@@ -35,6 +36,8 @@ const cli = meow(
 
 console.log("Flags:", cli.flags);
 
+const tempdir = temporaryDirectory();
+
 // Grab appID and token from CLI or .env in that order
 const appID = cli.flags.appId ?? process.env.DITTO_APP_ID;
 const token = cli.flags.playgroundToken ?? process.env.DITTO_PLAYGROUND_TOKEN;
@@ -43,7 +46,7 @@ const ditto = new Ditto({
 	type: "onlinePlayground",
 	appID,
 	token,
-});
+}, tempdir);
 await ditto.disableSyncWithV3();
 ditto.startSync();
 

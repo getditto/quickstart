@@ -66,6 +66,7 @@ const HelpPanel = (props) => {
 						<Text>c - create task</Text>
 						<Text>d - delete task</Text>
 						<Text>e - edit task</Text>
+						<Text>s - toggle sync</Text>
 						<Text>Enter - toggle done</Text>
 					</Box>
 				</Box>
@@ -88,7 +89,7 @@ const TodoApp = ({ ditto }) => {
 	const [tasks, setTasks] = useState([]);
 	const [mode, setMode] = useState(LIST_MODE);
 	const [selected, setSelected] = useState(0);
-	const [_subscriber, setSubscriber] = useState(null);
+	const [subscription, setSubscription] = useState(null);
 	const [_observer, setObserver] = useState(null);
 
 	useInput((input, key) => {
@@ -101,6 +102,15 @@ const TodoApp = ({ ditto }) => {
 				setMode(EDIT_MODE);
 				return;
 			}
+			if (input === 's') {
+				if (!!subscription) {
+					subscription.cancel();
+					setSubscription(null);
+				} else {
+					const subscription = ditto.sync.registerSubscription("SELECT * FROM tasks");
+					setSubscription(subscription);
+				}
+			}
 		}
 
 		if (key.escape) {
@@ -112,8 +122,8 @@ const TodoApp = ({ ditto }) => {
 	useEffect(() => {
 		// Inline async context
 		(async () => {
-			const subscriber = ditto.sync.registerSubscription("SELECT * FROM tasks");
-			setSubscriber(subscriber);
+			const subscription = ditto.sync.registerSubscription("SELECT * FROM tasks");
+			setSubscription(subscription);
 
 			const observer = ditto.store.registerObserver("SELECT * FROM tasks WHERE NOT deleted ORDER BY _id", (result) => {
 				const tasks = result.items.map(item => item.value);
@@ -121,7 +131,7 @@ const TodoApp = ({ ditto }) => {
 			});
 			setObserver(observer);
 		})(); // End async
-	}, [ditto, mode]);
+	}, [ditto]);
 
 	const Prompt = React.memo(({ edit }) => {
 		const newTask = !edit;
@@ -213,8 +223,12 @@ const TodoApp = ({ ditto }) => {
 		);
 	});
 
+	const syncStatus = !!subscription ? "🟢 Sync Active" : "🔴 Sync Inactive";
+	const syncText = <Text>{syncStatus}</Text>;
+
 	if (mode === LIST_MODE) {
 		return <Box flexDirection="column">
+			{syncText}
 			<Text> Done   Title</Text>
 			<List tasks={tasks} />
 		</Box>
@@ -222,6 +236,7 @@ const TodoApp = ({ ditto }) => {
 
 	if (mode === CREATE_MODE) {
 		return <Box flexDirection="column">
+			{syncText}
 			<Text> Create new Task</Text>
 			<Prompt />
 		</Box>
@@ -230,7 +245,8 @@ const TodoApp = ({ ditto }) => {
 	if (mode === EDIT_MODE) {
 		const selectedTask = tasks[selected];
 		return <Box flexDirection="column">
-			<Text> Create new Task</Text>
+			{syncText}
+			<Text> Edit Task</Text>
 			<Prompt edit={selectedTask} />
 		</Box>
 	}
