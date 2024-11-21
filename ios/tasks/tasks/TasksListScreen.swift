@@ -101,7 +101,8 @@ class TasksListScreenViewModel: ObservableObject {
     nonisolated func saveEditedTask(_ task: TaskModel) {
         Task {
             let query = """
-                UPDATE tasks SET 
+                UPDATE tasks SET
+                    title = :title,
                     done = :done,
                     deleted = :deleted
                 WHERE _id == :_id
@@ -111,6 +112,7 @@ class TasksListScreenViewModel: ObservableObject {
                 try await dittoStore.execute(
                     query: query,
                     arguments: [
+                        "title": task.title,
                         "done": task.done,
                         "deleted": task.deleted,
                         "_id": task._id,

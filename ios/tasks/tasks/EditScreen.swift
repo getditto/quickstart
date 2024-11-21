@@ -19,6 +19,7 @@ class EditScreenViewModel: ObservableObject {
 
     func save(listVM: TasksListScreenViewModel) {
         if isExistingTask {
+            task.title = taskTitleText
             task.deleted = deleteRequested
             listVM.saveEditedTask(task)
         } else {
@@ -45,11 +46,8 @@ struct EditScreen: View {
         NavigationView {
             Form {
                 Section {
-                    // disallow editing title text on existing task
                     TextField("Title", text: $viewModel.taskTitleText)
                         .focused($titleHasFocus)
-                        .disabled(viewModel.isExistingTask)
-                        .opacity(viewModel.isExistingTask ? 0.5 : 1.0)
 
                     Toggle("Is Completed", isOn: $viewModel.task.done)
                 }
@@ -94,6 +92,11 @@ struct EditScreen: View {
                     dismiss()
                 }
             )
+        }
+        .onAppear {
+            if !viewModel.isExistingTask {
+                titleHasFocus = true
+            }
         }
     }
 }
