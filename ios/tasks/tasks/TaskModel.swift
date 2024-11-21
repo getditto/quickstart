@@ -4,8 +4,8 @@ import DittoSwift
 struct TaskModel {
     let _id: String
     var title: String
-    var done: Bool
-    var deleted: Bool
+    var done: Bool = false
+    var deleted: Bool = false
 }
 
 extension TaskModel {

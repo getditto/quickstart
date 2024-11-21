@@ -9,6 +9,7 @@ class TasksListScreenViewModel: ObservableObject {
     @Published var isPresentingEditScreen: Bool = false
     private(set) var taskToEdit: TaskModel?
 
+    private let ditto = DittoManager.shared.ditto
     private let dittoSync = DittoManager.shared.ditto.sync
     private let dittoStore = DittoManager.shared.ditto.store
     private var subscription: DittoSyncSubscription?
@@ -21,6 +22,8 @@ class TasksListScreenViewModel: ObservableObject {
         """
 
     init() {
+        populateTasksCollection()
+
         storeObserver = try? dittoStore.registerObserver(query: query) {
             [weak self] result in
             guard let self = self else { return }
@@ -39,22 +42,22 @@ class TasksListScreenViewModel: ObservableObject {
             obs.cancel()
             storeObserver = nil
         }
-        if DittoManager.shared.ditto.isSyncActive {
+        if ditto.isSyncActive {
             DittoManager.shared.ditto.stopSync()
         }
     }
 
     func setSyncEnabled(_ newValue: Bool) throws {
-        if !DittoManager.shared.ditto.isSyncActive && newValue {
+        if !ditto.isSyncActive && newValue {
             try startSync()
-        } else if DittoManager.shared.ditto.isSyncActive && !newValue {
+        } else if ditto.isSyncActive && !newValue {
             stopSync()
         }
     }
 
     private func startSync() throws {
         do {
-            try DittoManager.shared.ditto.startSync()
+            try ditto.startSync()
             subscription = try dittoSync.registerSubscription(query: query)
         } catch {
             print(
@@ -70,7 +73,7 @@ class TasksListScreenViewModel: ObservableObject {
             subscription = nil
         }
 
-        DittoManager.shared.ditto.stopSync()
+        ditto.stopSync()
     }
 
     func toggleComplete(task: TaskModel) {
@@ -147,6 +150,46 @@ class TasksListScreenViewModel: ObservableObject {
                 print(
                     "TaskListScreenVM.\(#function) - ERROR deleting task: \(error.localizedDescription)"
                 )
+            }
+        }
+    }
+
+    private nonisolated func populateTasksCollection() {
+        Task {
+            let initialTasks = [
+                TaskModel(
+                    _id: "50191411-4C46-4940-8B72-5F8017A04FA7",
+                    title: "Buy groceries"),
+                TaskModel(
+                    _id: "6DA283DA-8CFE-4526-A6FA-D385089364E5",
+                    title: "Clean the kitchen"),
+                TaskModel(
+                    _id: "5303DDF8-0E72-4FEB-9E82-4B007E5797F0",
+                    title: "Schedule dentist appointment"),
+                TaskModel(
+                    _id: "38411F1B-6B49-4346-90C3-0B16CE97E174",
+                    title: "Pay bills"),
+            ]
+
+            for task in initialTasks {
+                do {
+                    try await dittoStore.execute(
+                        query: "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
+                        arguments: [
+                            "task":
+                                [
+                                    "_id": task._id,
+                                    "title": task.title,
+                                    "done": task.done,
+                                    "deleted": task.deleted,
+                                ]
+                        ]
+                    )
+                } catch {
+                    print(
+                        "TaskListScreenVM.\(#function) - ERROR creating initial task: \(error.localizedDescription)"
+                    )
+                }
             }
         }
     }
