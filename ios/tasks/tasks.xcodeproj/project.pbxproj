@@ -12,16 +12,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		41F8698A2CECF42500DC7268 /* tasks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tasks.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		41F8698A2CECF42500DC7268 /* Ditto Tasks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Ditto Tasks.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4170A8592CED356700043F5A /* Exceptions for "tasks" folder in "tasks" target */ = {
+		4170A8592CED356700043F5A /* Exceptions for "tasks" folder in "Ditto Tasks" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 41F869892CECF42500DC7268 /* tasks */;
+			target = 41F869892CECF42500DC7268 /* Ditto Tasks */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -29,7 +29,7 @@
 		41F8698C2CECF42500DC7268 /* tasks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				4170A8592CED356700043F5A /* Exceptions for "tasks" folder in "tasks" target */,
+				4170A8592CED356700043F5A /* Exceptions for "tasks" folder in "Ditto Tasks" target */,
 			);
 			path = tasks;
 			sourceTree = "<group>";
@@ -60,7 +60,7 @@
 		41F8698B2CECF42500DC7268 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				41F8698A2CECF42500DC7268 /* tasks.app */,
+				41F8698A2CECF42500DC7268 /* Ditto Tasks.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,9 +68,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		41F869892CECF42500DC7268 /* tasks */ = {
+		41F869892CECF42500DC7268 /* Ditto Tasks */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 41F869982CECF42600DC7268 /* Build configuration list for PBXNativeTarget "tasks" */;
+			buildConfigurationList = 41F869982CECF42600DC7268 /* Build configuration list for PBXNativeTarget "Ditto Tasks" */;
 			buildPhases = (
 				4170A85A2CED3ADB00043F5A /* Generate Env.swift */,
 				41F869862CECF42500DC7268 /* Sources */,
@@ -84,13 +84,13 @@
 			fileSystemSynchronizedGroups = (
 				41F8698C2CECF42500DC7268 /* tasks */,
 			);
-			name = tasks;
+			name = "Ditto Tasks";
 			packageProductDependencies = (
 				4170A8542CED346F00043F5A /* DittoObjC */,
 				4170A8562CED346F00043F5A /* DittoSwift */,
 			);
 			productName = tasks;
-			productReference = 41F8698A2CECF42500DC7268 /* tasks.app */;
+			productReference = 41F8698A2CECF42500DC7268 /* Ditto Tasks.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -125,7 +125,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				41F869892CECF42500DC7268 /* tasks */,
+				41F869892CECF42500DC7268 /* Ditto Tasks */,
 			);
 		};
 /* End PBXProject section */
@@ -374,7 +374,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		41F869982CECF42600DC7268 /* Build configuration list for PBXNativeTarget "tasks" */ = {
+		41F869982CECF42600DC7268 /* Build configuration list for PBXNativeTarget "Ditto Tasks" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				41F869992CECF42600DC7268 /* Debug */,
