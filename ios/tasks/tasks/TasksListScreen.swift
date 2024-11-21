@@ -245,16 +245,18 @@ struct TasksListScreen: View {
             .navigationTitle("Ditto Tasks")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Toggle("Sync", isOn: $syncEnabled)
-                        .toggleStyle(SwitchToggleStyle())
-                        .onChange(of: syncEnabled) {
-                            Self.saveSyncEnabledState(syncEnabled)
-                            do {
-                                try viewModel.setSyncEnabled(syncEnabled)
-                            } catch {
-                                syncEnabled = false
+                    HStack {
+                        Toggle("Sync", isOn: $syncEnabled)
+                            .toggleStyle(SwitchToggleStyle())
+                            .onChange(of: syncEnabled) { newSyncEnabled in
+                                Self.saveSyncEnabledState(newSyncEnabled)
+                                do {
+                                    try viewModel.setSyncEnabled(newSyncEnabled)
+                                } catch {
+                                    syncEnabled = false
+                                }
                             }
-                        }
+                    }
                 }
                 ToolbarItem(placement: .bottomBar) {
                     HStack {
