@@ -8,10 +8,8 @@ class EditScreenViewModel: ObservableObject {
     @Published var isExistingTask: Bool = false
     @Published var deleteRequested = false
     @Published var task: TaskModel
-    private var _taskToEdit: TaskModel?  // TODO: why is this needed?
 
     init(task: TaskModel?) {
-        self._taskToEdit = task
         self.task = task ?? TaskModel.new()
         self.taskTitleText = task?.title ?? ""
         isExistingTask = task != nil

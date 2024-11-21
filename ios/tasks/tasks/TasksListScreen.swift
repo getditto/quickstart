@@ -269,8 +269,8 @@ struct TasksListScreen: View {
                                 Text("New Task")
                             }
                         }
-                        .padding()
                         .buttonStyle(.borderedProminent)
+                        .padding(.bottom)
                     }
                 }
             }

@@ -21,10 +21,6 @@ struct TaskRow: View {
             } else {
                 Text(task.title)
             }
-
-            Spacer()
-
-            // TODO: add edit and delete controls
         }
         .contentShape(Rectangle())
         .onTapGesture {
