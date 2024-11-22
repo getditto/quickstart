@@ -7,19 +7,15 @@ import dotenv from 'dotenv';
 import { Ditto } from '@dittolive/ditto';
 import { temporaryDirectory } from 'tempy';
 
-const config = dotenv.config();
+const config = dotenv.config({ path: "../.env" });
 const cli = meow(
 	`
 		Usage
-		  $ javascript
+		  $ npm start -- 2>/dev/null
 
 		Options
-			--app-id Your Ditto AppID
-			--playground-token An OnlinePlayground token
-
-		Examples
-		  $ javascript --name=Jane
-		  Hello, Jane
+			--app-id [env: DITTO_APP_ID] Your Ditto AppID
+			--playground-token [env: DITTO_PLAYGROUND_TOKEN] An OnlinePlayground token
 	`,
 	{
 		importMeta: import.meta,
