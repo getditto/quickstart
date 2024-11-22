@@ -29,3 +29,27 @@ jobs:
           sudo apt update && sudo apt install just
           just --version
           just tools
+
+  rust:
+    name: rust-quickstart
+    strategy:
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Clippy
+        run: "(cd rust; cargo clippy)"
+
+      - name: Build
+        run: "(cd rust; cargo build)"

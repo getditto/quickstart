@@ -3,6 +3,7 @@
 *.iml
 *.xccheckout
 *.xcscmblueprint
+.env
 .DS_Store
 .build/
 .classpath
@@ -18,7 +19,6 @@
 .vscode/
 Carthage/
 Pods/
-bin/
 build/
 cmake-build-debug/
 gradlew.bat
