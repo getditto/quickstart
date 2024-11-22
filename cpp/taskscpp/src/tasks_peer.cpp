@@ -16,8 +16,8 @@ using namespace std;
 using json = nlohmann::json;
 
 /// Extract a Task object from a QueryResultItem.
-static tasks::Task task_from(const ditto::QueryResultItem &item) {
-  return json::parse(item.json_string()).template get<tasks::Task>();
+static Task task_from(const ditto::QueryResultItem &item) {
+  return json::parse(item.json_string()).template get<Task>();
 }
 
 /// Convert a QueryResult to a JSON string
@@ -39,7 +39,7 @@ static string to_json_string(const ditto::QueryResult &result) {
 static shared_ptr<ditto::Ditto>
 init_ditto(string app_id, string online_playground_token,
            bool enable_cloud_sync, string persistence_dir,
-           tasks::TasksPeer::TransportConfig xport_cfg) {
+           TasksPeer::TransportConfig xport_cfg) {
   try {
     const auto identity = ditto::Identity::OnlinePlayground(
         std::move(app_id), std::move(online_playground_token),
@@ -72,13 +72,12 @@ init_ditto(string app_id, string online_playground_token,
 
     return ditto;
   } catch (const exception &err) {
-    throw tasks::TasksException("unable to initialize Ditto: " +
-                                string(err.what()));
+    throw TasksException("unable to initialize Ditto: " + string(err.what()));
   }
 }
 
 // Private implementation of the TasksPeer::TasksObserver class.
-class tasks::TasksPeer::TasksObserver::
+class TasksPeer::TasksObserver::
     Impl { // NOLINT(cppcoreguidelines-special-member-functions)
 
 private:
@@ -104,19 +103,16 @@ public:
   bool is_cancelled() const { return observer->is_cancelled(); }
 };
 
-tasks::TasksPeer::TasksObserver::TasksObserver(Impl *impl) : impl(impl) {}
+TasksPeer::TasksObserver::TasksObserver(Impl *impl) : impl(impl) {}
 
-tasks::TasksPeer::TasksObserver::~TasksObserver() noexcept = default;
+TasksPeer::TasksObserver::~TasksObserver() noexcept = default;
 
-void tasks::TasksPeer::TasksObserver::cancel() { impl->cancel(); }
+void TasksPeer::TasksObserver::cancel() { impl->cancel(); }
 
-bool tasks::TasksPeer::TasksObserver::is_cancelled() {
-  return impl->is_cancelled();
-}
+bool TasksPeer::TasksObserver::is_cancelled() { return impl->is_cancelled(); }
 
 // Private implementation of the TasksPeer class.
-class tasks::TasksPeer::
-    Impl { // NOLINT(cppcoreguidelines-special-member-functions)
+class TasksPeer::Impl { // NOLINT(cppcoreguidelines-special-member-functions)
 private:
   shared_ptr<mutex> mtx;
   shared_ptr<ditto::Ditto> ditto;
@@ -170,7 +166,7 @@ public:
       return task_id;
     } catch (const exception &err) {
       log_error("Failed to add task: " + string(err.what()));
-      throw tasks::TasksException("unable to add task: " + string(err.what()));
+      throw TasksException("unable to add task: " + string(err.what()));
     }
   }
 
@@ -357,8 +353,8 @@ public:
     }
   }
 
-  shared_ptr<tasks::TasksPeer::TasksObserver> register_tasks_observer(
-      const std::function<void(const std::vector<tasks::Task> &)> &callback) {
+  shared_ptr<TasksPeer::TasksObserver> register_tasks_observer(
+      const std::function<void(const std::vector<Task> &)> &callback) {
     try {
       const auto observer = ditto->get_store().register_observer(
           select_tasks_query(), [callback](const ditto::QueryResult &result) {
@@ -403,97 +399,91 @@ public:
                            string(err.what()));
     }
   }
-}; // class tasks::TasksPeer::Impl
+}; // class TasksPeer::Impl
 
-tasks::TasksPeer tasks::TasksPeer::create(string ditto_app_id,
-                                          string ditto_online_playground_token,
-                                          bool enable_cloud_sync,
-                                          string ditto_persistence_dir,
-                                          TransportConfig transports) {
+TasksPeer TasksPeer::create(string ditto_app_id,
+                            string ditto_online_playground_token,
+                            bool enable_cloud_sync,
+                            string ditto_persistence_dir,
+                            TransportConfig transports) {
   return {std::move(ditto_app_id), std::move(ditto_online_playground_token),
           enable_cloud_sync, std::move(ditto_persistence_dir), transports};
 }
 
-tasks::TasksPeer::TasksPeer(string app_id, string online_playground_token,
-                            bool enable_cloud_sync, string persistence_dir,
-                            tasks::TasksPeer::TransportConfig transports)
+TasksPeer::TasksPeer(string app_id, string online_playground_token,
+                     bool enable_cloud_sync, string persistence_dir,
+                     TasksPeer::TransportConfig transports)
     : impl(new Impl(std::move(app_id), std::move(online_playground_token),
                     enable_cloud_sync, std::move(persistence_dir),
                     transports)) {}
 
-tasks::TasksPeer::~TasksPeer() noexcept {
+TasksPeer::~TasksPeer() noexcept {
   try {
     log_debug("Destroying TasksPeer instance");
   } catch (const std::exception &) { // NOLINT(bugprone-empty-catch)
   }
 }
 
-void tasks::TasksPeer::stop_sync() { impl->stop_sync(); }
+void TasksPeer::stop_sync() { impl->stop_sync(); }
 
-string tasks::TasksPeer::add_task(const string &title, bool done) {
+string TasksPeer::add_task(const string &title, bool done) {
   return impl->add_task(title, done);
 }
 
-vector<tasks::Task> tasks::TasksPeer::get_tasks(bool include_deleted_tasks) {
+vector<Task> TasksPeer::get_tasks(bool include_deleted_tasks) {
   return impl->get_tasks(include_deleted_tasks);
 }
 
-tasks::Task tasks::TasksPeer::get_task(const string &task_id) {
+Task TasksPeer::get_task(const string &task_id) {
   return impl->get_task(task_id);
 }
 
-tasks::Task
-tasks::TasksPeer::find_matching_task(const string &task_id_substring) {
+Task TasksPeer::find_matching_task(const string &task_id_substring) {
   return impl->find_matching_task(task_id_substring);
 }
 
-void tasks::TasksPeer::update_task(const tasks::Task &task) {
-  impl->update_task(task);
-}
+void TasksPeer::update_task(const Task &task) { impl->update_task(task); }
 
-void tasks::TasksPeer::mark_task_complete(const string &task_id, bool done) {
+void TasksPeer::mark_task_complete(const string &task_id, bool done) {
   impl->mark_task_complete(task_id, done);
 }
 
-void tasks::TasksPeer::update_task_title(const string &task_id,
-                                         const string &title) {
+void TasksPeer::update_task_title(const string &task_id, const string &title) {
   impl->update_task_title(task_id, title);
 }
 
-void tasks::TasksPeer::delete_task(const string &task_id) {
+void TasksPeer::delete_task(const string &task_id) {
   impl->delete_task(task_id);
 }
 
-void tasks::TasksPeer::evict_deleted_tasks() { impl->evict_deleted_tasks(); }
+void TasksPeer::evict_deleted_tasks() { impl->evict_deleted_tasks(); }
 
-shared_ptr<tasks::TasksPeer::TasksObserver>
-tasks::TasksPeer::register_tasks_observer(
-    const function<void(const std::vector<tasks::Task> &)> &callback) {
+shared_ptr<TasksPeer::TasksObserver> TasksPeer::register_tasks_observer(
+    const function<void(const std::vector<Task> &)> &callback) {
   return impl->register_tasks_observer(callback);
 }
 
-shared_ptr<tasks::TasksPeer::TasksObserver>
-tasks::TasksPeer::register_tasks_observer(
-    tasks::TasksPeer::TasksObserverHandler *handler) {
+shared_ptr<TasksPeer::TasksObserver>
+TasksPeer::register_tasks_observer(TasksPeer::TasksObserverHandler *handler) {
   return impl->register_tasks_observer(
-      [handler](const std::vector<tasks::Task> &tasks) {
+      [handler](const std::vector<Task> &tasks) {
         handler->on_tasks_updated(tasks);
       });
 }
 
-string tasks::TasksPeer::execute_dql_query(const string &query) {
+string TasksPeer::execute_dql_query(const string &query) {
   return impl->execute_dql_query(query);
 }
 
-string tasks::TasksPeer::get_ditto_sdk_version() {
+string TasksPeer::get_ditto_sdk_version() {
   return ditto::Ditto::get_sdk_version();
 }
 
-tasks::TasksPeer::TasksObserverHandler::TasksObserverHandler() {
+TasksPeer::TasksObserverHandler::TasksObserverHandler() {
   log_debug("TasksObserverHandler created");
 }
 
-tasks::TasksPeer::TasksObserverHandler::~TasksObserverHandler() noexcept {
+TasksPeer::TasksObserverHandler::~TasksObserverHandler() noexcept {
   try {
     log_debug("TasksObserverHandler destroyed");
   } catch (const std::exception &e) {
@@ -501,7 +491,7 @@ tasks::TasksPeer::TasksObserverHandler::~TasksObserverHandler() noexcept {
   }
 }
 
-void tasks::TasksPeer::TasksObserverHandler::on_tasks_updated(
+void TasksPeer::TasksObserverHandler::on_tasks_updated(
     const std::vector<Task> &tasks) {
   log_warning("TasksObserverHandler::on_tasks_updated should be overridden");
 }

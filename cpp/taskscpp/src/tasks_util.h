@@ -1,13 +1,11 @@
-#ifndef DITTO_TASKSLIB_TASKS_UTIL_H
-#define DITTO_TASKSLIB_TASKS_UTIL_H
+#ifndef DITTO_QUICKSTART_TASKS_UTIL_H
+#define DITTO_QUICKSTART_TASKS_UTIL_H
 
 #include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
-
-namespace tasks {
 
 /// Quote a string for use in a DQL identifier.
 ///
@@ -20,8 +18,6 @@ std::string quote_dql_identifier(const std::string &identifier);
 /// Adds single-quote characters to the beginning and end, and escapes any
 /// single-quotes within the string.
 std::string quote_dql_string_literal(const std::string &s);
-
-#ifndef SWIG
 
 /// Convert a container of values to a single string with values separated by
 /// the given delimiter.
@@ -67,8 +63,4 @@ inline std::string hexdump_string(const std::string &s,
   return hexdump_data(s.data(), s.size(), include_ascii);
 }
 
-#endif // SWIG
-
-} // namespace tasks
-
-#endif // DITTO_TASKSLIB_TASKS_UTIL_H
+#endif // DITTO_QUICKSTART_TASKS_UTIL_H

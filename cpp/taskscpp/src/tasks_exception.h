@@ -1,10 +1,8 @@
-#ifndef DITTO_TASKS_EXCEPTION_H
-#define DITTO_TASKS_EXCEPTION_H
+#ifndef DITTO_QUICKSTART_TASKS_EXCEPTION_H
+#define DITTO_QUICKSTART_TASKS_EXCEPTION_H
 
 #include <exception>
 #include <string>
-
-namespace tasks {
 
 /// Exception class for the Tasks library.
 ///
@@ -15,9 +13,7 @@ class TasksException : public std::exception {
 public:
   explicit TasksException(std::string msg) noexcept : message(std::move(msg)) {}
 
-#ifndef SWIG
   explicit TasksException(const std::exception &e) : message(e.what()) {}
-#endif
 
   const char *what() const noexcept override { return message.c_str(); }
 
@@ -25,6 +21,4 @@ private:
   std::string message;
 };
 
-} // namespace tasks
-
-#endif // DITTO_TASKS_EXCEPTION_H
+#endif // DITTO_QUICKSTART_TASKS_EXCEPTION_H

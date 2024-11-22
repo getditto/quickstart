@@ -131,32 +131,32 @@ int main(int argc, const char *argv[]) {
     }
 
     if (opt_parse.count("ditto-sdk-version") > 0) {
-      cout << "Ditto SDK version: " << tasks::TasksPeer::get_ditto_sdk_version()
+      cout << "Ditto SDK version: " << TasksPeer::get_ditto_sdk_version()
            << endl;
       exit(EXIT_SUCCESS);
     }
 
     // Logging configuration
-    tasks::LogLevel log_level = tasks::LogLevel::warning;
+    ditto::LogLevel log_level = ditto::LogLevel::warning;
     if (opt_parse.count("error") > 0) {
-      log_level = tasks::LogLevel::error;
+      log_level = ditto::LogLevel::error;
     }
     if (opt_parse.count("warning") > 0) {
-      log_level = tasks::LogLevel::warning;
+      log_level = ditto::LogLevel::warning;
     }
     if (opt_parse.count("info") > 0) {
-      log_level = tasks::LogLevel::info;
+      log_level = ditto::LogLevel::info;
     }
     if (opt_parse.count("debug") > 0) {
-      log_level = tasks::LogLevel::debug;
+      log_level = ditto::LogLevel::debug;
     }
     if (opt_parse.count("verbose") > 0) {
-      log_level = tasks::LogLevel::verbose;
+      log_level = ditto::LogLevel::verbose;
     }
-    tasks::set_minimum_log_level(log_level);
+    set_minimum_log_level(log_level);
 
     if (opt_parse.count("log") > 0) {
-      tasks::set_log_file(opt_parse["log"].as<string>());
+      set_log_file(opt_parse["log"].as<string>());
     }
 
     if (opt_parse.count("export") > 0) {
@@ -184,7 +184,7 @@ int main(int argc, const char *argv[]) {
     // Set this true if we make modifications and need to allow post-sync time.
     bool need_post_sync = false;
 
-    tasks::TasksPeer::TransportConfig transports;
+    TasksPeer::TransportConfig transports;
     if (opt_parse.count("no-ble") > 0) {
       transports.disable_ble = true;
     }
@@ -200,16 +200,16 @@ int main(int argc, const char *argv[]) {
 
     // The peer exists until the end of this scope
     {
-      tasks::TasksPeer peer(app_id, online_playground_token, enable_cloud_sync,
-                            persistence_dir, transports);
+      TasksPeer peer(app_id, online_playground_token, enable_cloud_sync,
+                     persistence_dir, transports);
 
       // A thread must hold mtx while using peer or writing output.
       mutex mtx;
 
-      shared_ptr<tasks::TasksPeer::TasksObserver> tasks_observer;
+      shared_ptr<TasksPeer::TasksObserver> tasks_observer;
       if (opt_parse.count("monitor") > 0) {
         tasks_observer = peer.register_tasks_observer(
-            [quiet, &mtx](const vector<tasks::Task> &tasks) {
+            [quiet, &mtx](const vector<Task> &tasks) {
               if (!quiet && !tasks.empty()) {
                 lock_guard<mutex> lock(mtx);
                 cout << "-------------- Tasks Sync --------------" << endl;
@@ -444,14 +444,14 @@ int main(int argc, const char *argv[]) {
     } // peer destroyed
 
     if (!export_log_path.empty()) {
-      tasks::export_log(export_log_path);
+      export_log(export_log_path);
     }
   } catch (const std::exception &err) {
     cerr << "error: " << err.what() << endl;
 
     if (!export_log_path.empty()) {
       try {
-        tasks::export_log(export_log_path);
+        export_log(export_log_path);
       } catch (const std::exception &err) {
         cerr << "error: failed to export log: " << err.what() << endl;
       }

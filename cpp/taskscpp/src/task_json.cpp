@@ -1,7 +1,7 @@
 #include "task_json.h"
 #include "tasks_exception.h"
 
-void tasks::to_json(nlohmann::json &j, const tasks::Task &task) {
+void to_json(nlohmann::json &j, const Task &task) {
   try {
     j = nlohmann::json{
         {"title", task.title}, {"done", task.done}, {"deleted", task.deleted}};
@@ -13,7 +13,7 @@ void tasks::to_json(nlohmann::json &j, const tasks::Task &task) {
   }
 }
 
-void tasks::from_json(const nlohmann::json &j, tasks::Task &task) {
+void from_json(const nlohmann::json &j, Task &task) {
   try {
     task._id = j.value("_id", "");
     task.title = j.value("title", "");

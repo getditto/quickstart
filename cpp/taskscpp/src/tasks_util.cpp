@@ -2,7 +2,7 @@
 
 #include <iomanip>
 
-std::string tasks::quote_dql_identifier(const std::string &identifier) {
+std::string quote_dql_identifier(const std::string &identifier) {
   std::string result = "`";
   for (char c : identifier) {
     if (c == '`') {
@@ -15,7 +15,7 @@ std::string tasks::quote_dql_identifier(const std::string &identifier) {
   return result;
 }
 
-std::string tasks::quote_dql_string_literal(const std::string &s) {
+std::string quote_dql_string_literal(const std::string &s) {
   std::string result = "'";
   for (char c : s) {
     if (c == '\'') {
@@ -28,8 +28,8 @@ std::string tasks::quote_dql_string_literal(const std::string &s) {
   return result;
 }
 
-std::ostream &tasks::hexdump(std::ostream &os, const void *data,
-                             std::size_t size, bool include_ascii) {
+std::ostream &hexdump(std::ostream &os, const void *data, std::size_t size,
+                      bool include_ascii) {
   const auto *bdata = reinterpret_cast<const unsigned char *>(data);
   std::size_t offset = 0;
   std::string ascii;

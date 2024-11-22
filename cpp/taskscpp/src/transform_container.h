@@ -1,5 +1,5 @@
-#ifndef DITTO_TASKSLIB_TRANSFORM_CONTAINER_H
-#define DITTO_TASKSLIB_TRANSFORM_CONTAINER_H
+#ifndef DITTO_QUICKSTART_TRANSFORM_CONTAINER_H
+#define DITTO_QUICKSTART_TRANSFORM_CONTAINER_H
 
 #include <algorithm>
 #include <functional>
@@ -18,4 +18,4 @@ OutputContainer transform_container(const InputContainer &input, UnaryOp f) {
   return output;
 }
 
-#endif
+#endif // DITTO_QUICKSTART_TRANSFORM_CONTAINER_H

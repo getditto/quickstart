@@ -1,5 +1,5 @@
-#ifndef DITTO_TASKSLIB_TASKS_PEER_H
-#define DITTO_TASKSLIB_TASKS_PEER_H
+#ifndef DITTO_QUICKSTART_TASKS_PEER_H
+#define DITTO_QUICKSTART_TASKS_PEER_H
 
 #include <cstdint>
 #include <functional>
@@ -7,8 +7,6 @@
 #include <vector>
 
 #include "task.h"
-
-namespace tasks {
 
 /// An agent that can create, read, update, and delete tasks, and sync them with
 /// other devices.
@@ -58,9 +56,8 @@ public:
   virtual ~TasksPeer() noexcept;
 
   TasksPeer(const TasksPeer &) = default;
-#ifndef SWIG
   TasksPeer(TasksPeer &&) = default;
-#endif
+
   TasksPeer &operator=(const TasksPeer &) = delete;
   TasksPeer &operator=(TasksPeer &&) = delete;
 
@@ -175,6 +172,4 @@ private:
   std::shared_ptr<Impl> impl;
 };
 
-} // namespace tasks
-
-#endif // DITTO_TASKSLIB_TASKS_PEER_H
+#endif // DITTO_QUICKSTART_TASKS_PEER_H
