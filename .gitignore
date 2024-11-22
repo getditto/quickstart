@@ -30,4 +30,5 @@ packages/
 target/
 xcuserdata
 .env
-
+bazel-*
+build-cmake

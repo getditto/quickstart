@@ -1,0 +1,75 @@
+# CMake build type: Debug, Release, RelWithDebInfo
+BUILD_TYPE ?= Debug
+
+# Utility paths
+CMAKE ?= cmake
+CTEST ?= ctest
+CLANG_TIDY ?= clang-tidy
+CLANG_FORMAT ?= clang-format
+
+BUILD_DIR = build-cmake
+XCODE_BUILD_DIR = build-xcode
+
+CPP_SRC_FILES = $(shell find src -type f -name '*.cpp' -o -name '*.h')
+
+# Location of Ditto C++ SDK build directory
+SDKBUILD_DIR=~/getditto/ditto/cpp
+SDKBUILD_ANDROID_DIR=~/getditto/ditto/android/dittocpp/build/outputs/aar
+
+# The "help" target will display all targets marked with a "##" comment.
+.PHONY: help
+help: MAKEFILE_FMT = "  \033[36m%-34s\033[0m%s\n"
+help: ## (default) Displays this message
+	@echo "template-app-cpp-todo-crossplatform Makefile"
+	@echo ""
+	@echo "Targets:"
+	@grep -E '^[a-zA-Z0-9_-]*:.*?##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?##"}; {printf $(MAKEFILE_FMT), $$1, $$2}'
+	@echo ""
+	@echo "Parameters:"
+	@grep -E '^[A-Z0-9_-]* ?\?=.*?##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = " ?\\?=.*?##"}; {printf $(MAKEFILE_FMT), $$1, $$2}'
+
+.PHONY: build
+build: ## Generates all targets
+	$(CMAKE) -B $(BUILD_DIR) . -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -Wno-dev
+	$(CMAKE) --build $(BUILD_DIR) --parallel
+
+.PHONY: build-bazel
+build-bazel: ## Builds taskscpp using Bazel
+	bazel build --config=asan //:taskscpp
+
+.PHONY: run-list
+run-list: build-native ## Builds taskscpp and runs the --list-all command
+	cd $(BUILD_DIR) && ./taskscpp --list-all
+
+.PHONY: run-monitor
+run-monitor: build-native ## Builds taskscpp and runs the --monitor command
+	cd $(BUILD_DIR) && ./taskscpp --monitor
+
+.PHONY: xcode
+xcode: ## Generates an Xcode project in the build-xcode directory
+	mkdir -p $(XCODE_BUILD_DIR)
+	cd $(XCODE_BUILD_DIR) && $(CMAKE) .. -G Xcode
+
+.PHONY: format
+format: ## Apply clang-format to all .cpp and .h files
+	$(CLANG_FORMAT) -i $(CPP_SRC_FILES)
+
+.PHONY: lint
+lint: build ## Runs clang-format -n and clang-tidy on all .cpp and .h files
+	$(CLANG_FORMAT) --dry-run --Werror $(CPP_SRC_FILES)
+	$(CLANG_TIDY) -p $(BUILD_DIR) $(CPP_SRC_FILES)
+
+# TODO: updatesdk should be able to download a published SDK build from the
+# Internet.  For now, just copy from local build tree.
+.PHONY: updatesdk
+updatesdk: ## Copies Ditto.h and libditto.a from SDK build
+	mkdir -p dittosdk
+	cp $(SDKBUILD_DIR)/include/Ditto.h dittosdk/Ditto.h
+	cp $(SDKBUILD_DIR)/build/libditto.a dittosdk/libditto.a
+
+.PHONY: clean
+clean: ## Removes all generated files
+	- rm -rf $(BUILD_DIR)
+	- rm -rf $(XCODE_BUILD_DIR)
+	- rm -rf bazel-*
+	- rm -f src/env.h
