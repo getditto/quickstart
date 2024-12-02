@@ -16,7 +16,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4170A8592CED356700043F5A /* Exceptions for "tasks" folder in "Ditto Tasks" target */ = {
+		4170A8592CED356700043F5A /* Exceptions for "Tasks" folder in "Ditto Tasks" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -26,12 +26,12 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		41F8698C2CECF42500DC7268 /* tasks */ = {
+		41F8698C2CECF42500DC7268 /* Tasks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				4170A8592CED356700043F5A /* Exceptions for "tasks" folder in "Ditto Tasks" target */,
+				4170A8592CED356700043F5A /* Exceptions for "Tasks" folder in "Ditto Tasks" target */,
 			);
-			path = tasks;
+			path = Tasks;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -52,7 +52,7 @@
 		41F869812CECF42500DC7268 = {
 			isa = PBXGroup;
 			children = (
-				41F8698C2CECF42500DC7268 /* tasks */,
+				41F8698C2CECF42500DC7268 /* Tasks */,
 				41F8698B2CECF42500DC7268 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -82,14 +82,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				41F8698C2CECF42500DC7268 /* tasks */,
+				41F8698C2CECF42500DC7268 /* Tasks */,
 			);
 			name = "Ditto Tasks";
 			packageProductDependencies = (
 				4170A8542CED346F00043F5A /* DittoObjC */,
 				4170A8562CED346F00043F5A /* DittoSwift */,
 			);
-			productName = tasks;
+			productName = Tasks;
 			productReference = 41F8698A2CECF42500DC7268 /* Ditto Tasks.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -108,7 +108,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 41F869852CECF42500DC7268 /* Build configuration list for PBXProject "tasks" */;
+			buildConfigurationList = 41F869852CECF42500DC7268 /* Build configuration list for PBXProject "Tasks" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -301,11 +301,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"tasks/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Tasks/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = tasks/Info.plist;
+				INFOPLIST_FILE = Tasks/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Uses Bluetooth to connect and sync with nearby devices";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Uses Bluetooth to connect and sync with nearby devices";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Uses WiFi to connect and sync with nearby devices";
@@ -335,11 +335,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"tasks/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Tasks/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = tasks/Info.plist;
+				INFOPLIST_FILE = Tasks/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Uses Bluetooth to connect and sync with nearby devices";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Uses Bluetooth to connect and sync with nearby devices";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Uses WiFi to connect and sync with nearby devices";
@@ -365,7 +365,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		41F869852CECF42500DC7268 /* Build configuration list for PBXProject "tasks" */ = {
+		41F869852CECF42500DC7268 /* Build configuration list for PBXProject "Tasks" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				41F869962CECF42600DC7268 /* Debug */,

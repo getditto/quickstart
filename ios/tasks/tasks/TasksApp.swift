@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct tasksApp: App {
+struct TasksApp: App {
     var body: some Scene {
         WindowGroup {
             TasksListScreen()
