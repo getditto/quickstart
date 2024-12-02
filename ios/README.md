@@ -17,3 +17,21 @@ After you have completed the [common prerequisites] you will need the following:
 - [Swift Release Notes](https://docs.ditto.live/release-notes/swift)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
+
+## Building and Running the iOS Application
+
+Assuming you have Xcode and other prerequisites installed, you can build and run the app by following these steps:
+
+1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
+2. Copy the `.env.template` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
+3. Launch Xcode and open the `quickstart/ios/tasks/tasks.xcodeproj` project.
+4. Navigate to the project **Signing & Capabilities** tab and modify the **Team** and **Bundle Identifier** settings to your Apple developer account credentials to provision building to your device.
+5. In Xcode, select a connected iOS device or iOS Simulator as the destination.
+6. Choose the **Product > Build** menu item.  This should generate an `Env.swift` source file containing the values from your `.env` file, and then build the app.
+7. Choose the **Product > Run** menu item.
+
+The app will build and run on the selected device or emulator.  You can add,
+edit, and delete tasks in the app.
+
+If you run the app on additional devices or emulators, the data will be synced
+between them.
