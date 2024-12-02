@@ -15,16 +15,14 @@ class TasksListScreenViewModel: ObservableObject {
     private var subscription: DittoSyncSubscription?
     private var storeObserver: DittoStoreObserver?
 
-    private let query = """
-        SELECT * FROM tasks
-        WHERE NOT deleted
-        ORDER BY _id
-        """
+    private let subscriptionQuery = "SELECT * from tasks"
+
+    private let observerQuery = "SELECT * FROM tasks WHERE NOT deleted"
 
     init() {
         populateTasksCollection()
 
-        storeObserver = try? dittoStore.registerObserver(query: query) {
+        storeObserver = try? dittoStore.registerObserver(query: observerQuery) {
             [weak self] result in
             guard let self = self else { return }
             self.tasks = result.items.compactMap {
@@ -34,14 +32,12 @@ class TasksListScreenViewModel: ObservableObject {
     }
 
     deinit {
-        if let sub = subscription {
-            sub.cancel()
-            subscription = nil
-        }
-        if let obs = storeObserver {
-            obs.cancel()
-            storeObserver = nil
-        }
+        subscription?.cancel()
+        subscription = nil
+
+        storeObserver?.cancel()
+        storeObserver = nil
+
         if ditto.isSyncActive {
             DittoManager.shared.ditto.stopSync()
         }
@@ -58,7 +54,7 @@ class TasksListScreenViewModel: ObservableObject {
     private func startSync() throws {
         do {
             try ditto.startSync()
-            subscription = try dittoSync.registerSubscription(query: query)
+            subscription = try dittoSync.registerSubscription(query: subscriptionQuery)
         } catch {
             print(
                 "TaskListScreenVM.\(#function) - ERROR starting sync operations: \(error.localizedDescription)"
@@ -68,10 +64,8 @@ class TasksListScreenViewModel: ObservableObject {
     }
 
     private func stopSync() {
-        if let sub = subscription {
-            sub.cancel()
-            subscription = nil
-        }
+        subscription?.cancel()
+        subscription = nil
 
         ditto.stopSync()
     }
@@ -158,7 +152,7 @@ class TasksListScreenViewModel: ObservableObject {
 
     private nonisolated func populateTasksCollection() {
         Task {
-            let initialTasks = [
+            let initialTasks: [TaskModel] = [
                 TaskModel(
                     _id: "50191411-4C46-4940-8B72-5F8017A04FA7",
                     title: "Buy groceries"),
