@@ -32,18 +32,27 @@ extension TaskModel {
     }
 }
 
-extension TaskModel: Identifiable, Equatable {
+// MARK: - Identifiable
+
+extension TaskModel: Identifiable {
 
     /// Required for SwiftUI List view
     var id: String {
         return _id
     }
 
+}
+
+// MARK: - Equatable
+
+extension TaskModel: Equatable {
     /// Required for TaskListScreen List animation
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id
     }
 }
+
+// MARK: - Codable
 
 extension TaskModel: Codable {
 
@@ -57,6 +66,8 @@ extension TaskModel: Codable {
         }
     }
 }
+
+// MARK: - Preview support
 
 extension TaskModel {
 
