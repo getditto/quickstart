@@ -10,7 +10,7 @@ class EditScreenViewModel: ObservableObject {
     @Published var task: TaskModel
 
     init(task: TaskModel?) {
-        self.task = task ?? TaskModel.new()
+        self.task = task ?? TaskModel()
         self.taskTitleText = task?.title ?? ""
         isExistingTask = task != nil
     }

@@ -45,14 +45,6 @@ extension TaskModel: Identifiable, Equatable {
     }
 }
 
-extension TaskModel {
-
-    /// Convenience initializer returns model instance with default values, not from Ditto data
-    static func new() -> TaskModel {
-        TaskModel()
-    }
-}
-
 extension TaskModel: Codable {
 
     /// Returns optional instance decoded from `QueryResultItem.jsonString()`
