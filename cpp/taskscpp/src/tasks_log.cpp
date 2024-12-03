@@ -1,5 +1,4 @@
 #include "tasks_log.h"
-#include "tasks_exception.h"
 
 // These functions are all thin wrappers over the ditto::Log() API.  Application
 // code should call these rather than the ditto::Log() API to make it easy to

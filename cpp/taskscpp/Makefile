@@ -37,12 +37,20 @@ build: ## Generates all targets
 build-bazel: ## Builds taskscpp using Bazel
 	bazel build --config=asan //:taskscpp
 
+.PHONY: run-help
+run-help: build ## Builds taskscpp and runs the --help command
+	cd $(BUILD_DIR) && ./taskscpp --help
+
+.PHONY: run-tui
+run-tui: build ## Builds taskscpp and runs it in TUI mode
+	cd $(BUILD_DIR) && ./taskscpp --tui
+
 .PHONY: run-list
-run-list: build-native ## Builds taskscpp and runs the --list-all command
+run-list: build ## Builds taskscpp and runs the --list-all command
 	cd $(BUILD_DIR) && ./taskscpp --list-all
 
 .PHONY: run-monitor
-run-monitor: build-native ## Builds taskscpp and runs the --monitor command
+run-monitor: build ## Builds taskscpp and runs the --monitor command
 	cd $(BUILD_DIR) && ./taskscpp --monitor
 
 .PHONY: xcode

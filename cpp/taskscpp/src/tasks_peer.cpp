@@ -1,6 +1,5 @@
 #include "tasks_peer.h"
 #include "task_json.h"
-#include "tasks_exception.h"
 #include "tasks_log.h"
 #include "tasks_util.h"
 #include "transform_container.h"
@@ -10,6 +9,7 @@
 #include <iostream>
 #include <mutex>
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 
 using namespace std;
@@ -72,7 +72,7 @@ init_ditto(string app_id, string online_playground_token,
 
     return ditto;
   } catch (const exception &err) {
-    throw TasksException("unable to initialize Ditto: " + string(err.what()));
+    throw runtime_error("unable to initialize Ditto: " + string(err.what()));
   }
 }
 
@@ -166,7 +166,7 @@ public:
       return task_id;
     } catch (const exception &err) {
       log_error("Failed to add task: " + string(err.what()));
-      throw TasksException("unable to add task: " + string(err.what()));
+      throw runtime_error("unable to add task: " + string(err.what()));
     }
   }
 
@@ -190,7 +190,7 @@ public:
       return tasks;
     } catch (const exception &err) {
       log_error("Failed to get tasks: " + string(err.what()));
-      throw TasksException("unable to get tasks: " + string(err.what()));
+      throw runtime_error("unable to get tasks: " + string(err.what()));
     }
   }
 
@@ -205,11 +205,11 @@ public:
       const auto result = ditto->get_store().execute(query, {{"id", task_id}});
       const auto item_count = result.item_count();
       if (item_count == 0) {
-        throw TasksException(string("no tasks found with id \"") + task_id +
-                             "\"");
+        throw runtime_error(string("no tasks found with id \"") + task_id +
+                            "\"");
       } else if (item_count > 1) {
-        throw TasksException("more than one task found with id \"" + task_id +
-                             "\"");
+        throw runtime_error("more than one task found with id \"" + task_id +
+                            "\"");
       }
 
       auto task = task_from(result.get_item(0));
@@ -218,7 +218,7 @@ public:
     } catch (const exception &err) {
       log_error("Failed to get task with _id " + task_id + ": " +
                 string(err.what()));
-      throw TasksException("unable to retrieve task: " + string(err.what()));
+      throw runtime_error("unable to retrieve task: " + string(err.what()));
     }
   }
 
@@ -236,11 +236,11 @@ public:
           query, {{"idSubstring", task_id_substring}});
       const auto item_count = result.item_count();
       if (item_count == 0) {
-        throw TasksException(string("no tasks found with id containing \"") +
-                             task_id_substring + "\"");
+        throw runtime_error(string("no tasks found with id containing \"") +
+                            task_id_substring + "\"");
       } else if (item_count > 1) {
-        throw TasksException("more than one task found with id containing \"" +
-                             task_id_substring + "\"");
+        throw runtime_error("more than one task found with id containing \"" +
+                            task_id_substring + "\"");
       }
 
       auto task = task_from(result.get_item(0));
@@ -249,8 +249,8 @@ public:
       return task;
     } catch (const exception &err) {
       log_error("Failed to find matching task: " + string(err.what()));
-      throw TasksException("unable to find matching task: " +
-                           string(err.what()));
+      throw runtime_error("unable to find matching task: " +
+                          string(err.what()));
     }
   }
 
@@ -269,12 +269,12 @@ public:
                                             {"deleted", task.deleted},
                                             {"id", task._id}});
       if (result.mutated_document_ids().empty()) {
-        throw TasksException("task not found with ID: " + task._id);
+        throw runtime_error("task not found with ID: " + task._id);
       }
       log_debug("Updated task: " + task._id);
     } catch (const exception &err) {
       log_error("Failed to update task: " + string(err.what()));
-      throw TasksException("unable to update task: " + string(err.what()));
+      throw runtime_error("unable to update task: " + string(err.what()));
     }
   }
 
@@ -293,8 +293,8 @@ public:
                 (done ? " complete" : " incomplete"));
     } catch (const exception &err) {
       log_error("Failed to mark task complete: " + string(err.what()));
-      throw TasksException("unable to mark task complete: " +
-                           string(err.what()));
+      throw runtime_error("unable to mark task complete: " +
+                          string(err.what()));
     }
   }
 
@@ -310,13 +310,12 @@ public:
       const auto result =
           ditto->get_store().execute(stmt, {{"title", title}, {"id", task_id}});
       if (result.mutated_document_ids().empty()) {
-        throw TasksException("task not found with ID: " + task_id);
+        throw runtime_error("task not found with ID: " + task_id);
       }
       log_debug("Updated task title: " + task_id);
     } catch (const exception &err) {
       log_error("Failed to update task title: " + string(err.what()));
-      throw TasksException("unable to update task title: " +
-                           string(err.what()));
+      throw runtime_error("unable to update task title: " + string(err.what()));
     }
   }
 
@@ -331,12 +330,12 @@ public:
       const auto stmt = "UPDATE tasks SET deleted = true WHERE _id = :id";
       const auto result = ditto->get_store().execute(stmt, {{"id", task_id}});
       if (result.mutated_document_ids().empty()) {
-        throw TasksException("task not found with ID: " + task_id);
+        throw runtime_error("task not found with ID: " + task_id);
       }
       log_debug("Deleted task: " + task_id);
     } catch (const exception &err) {
       log_error("Failed to delete task: " + string(err.what()));
-      throw TasksException("unable to evict task: " + string(err.what()));
+      throw runtime_error("unable to evict task: " + string(err.what()));
     }
   }
 
@@ -349,7 +348,7 @@ public:
       log_debug("Evicted deleted tasks");
     } catch (const exception &err) {
       log_error("Failed to evict deleted tasks: " + string(err.what()));
-      throw TasksException("unable to evict task: " + string(err.what()));
+      throw runtime_error("unable to evict task: " + string(err.what()));
     }
   }
 
@@ -381,8 +380,7 @@ public:
       return shared_ptr<TasksObserver>(new TasksObserver(subscriber_impl));
     } catch (const exception &err) {
       log_error("Failed to register observer: " + string(err.what()));
-      throw TasksException("unable to register observer: " +
-                           string(err.what()));
+      throw runtime_error("unable to register observer: " + string(err.what()));
     }
   }
 
@@ -395,8 +393,7 @@ public:
       return to_json_string(result);
     } catch (const exception &err) {
       log_error("Failed to execute DQL query: " + string(err.what()));
-      throw TasksException("unable to execute DQL query: " +
-                           string(err.what()));
+      throw runtime_error("unable to execute DQL query: " + string(err.what()));
     }
   }
 }; // class TasksPeer::Impl

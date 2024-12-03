@@ -1,12 +1,13 @@
 #ifndef DITTO_QUICKSTART_TASK_JSON_H
 #define DITTO_QUICKSTART_TASK_JSON_H
 
-// This header file is not part of the public API of the Tasks library.
-// It directly references the Ditto SDK, so is only used internally.
-
 #include "task.h"
 
-#include "Ditto.h" // for nhlohmann::json
+#include "Ditto.h" // for nlohmann::json
+
+// For information about how the nlohmann::json library handles
+// serialization/deserialization of C++ types, see
+// <https://github.com/nlohmann/json#arbitrary-types-conversions>
 
 /// Copies data from a Task to a JSON object.
 void to_json(nlohmann::json &j, const Task &task);
