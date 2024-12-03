@@ -1,4 +1,0 @@
-build:asan --copt=-fsanitize=address --linkopt=-fsanitize=address --copt=-fno-omit-frame-pointer
-test:asan --copt=-fsanitize=address --linkopt=-fsanitize=address --copt=-fno-omit-frame-pointer
-build:asan --cxxopt=-fsanitize=address --linkopt=-fsanitize=address --cxxopt=-fno-omit-frame-pointer
-test:asan --cxxopt=-fsanitize=address --linkopt=-fsanitize=address --cxxopt=-fno-omit-frame-pointer
