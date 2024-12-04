@@ -1,43 +1,42 @@
+#ifdef DITTO_QUICKSTART_TUI
+
 #include "tasks_tui.h"
 
 #include <cstdio>
 #include <iostream>
 
+#include "ftxui/component/component.hpp"
+#include "ftxui/component/screen_interactive.hpp"
 #include "ftxui/dom/elements.hpp"
-#include "ftxui/screen/screen.hpp"
-#include "ftxui/screen/string.hpp"
 
 using namespace ftxui;
+
+TasksTui::TasksTui() {
+  // Demo content
+  // TODO: Get data via Ditto
+  tasks = {
+      {"50191411-4C46-4940-8B72-5F8017A04FA7", "Buy groceries"},
+      {"6DA283DA-8CFE-4526-A6FA-D385089364E5", "Clean the kitchen"},
+      {"5303DDF8-0E72-4FEB-9E82-4B007E5797F0", "Schedule dentist appointment"},
+      {"38411F1B-6B49-4346-90C3-0B16CE97E174", "Pay bills"}};
+}
 
 void TasksTui::run(TasksPeer *peer) {
   // Redirect stderr to /dev/null so it doesn't interfere with TUI output.
   std::freopen("/dev/null", "w", stderr);
 
-  auto summary = [&] {
-    auto content = vbox({
-        hbox({text(L"- done:   "), text(L"3") | bold}) | color(Color::Green),
-        hbox({text(L"- active: "), text(L"2") | bold}) | color(Color::RedLight),
-        hbox({text(L"- queue:  "), text(L"9") | bold}) | color(Color::Red),
-    });
-    return window(text(L" Summary "), content);
-  };
+  auto container = Container::Vertical({});
+  for (auto &task : tasks) {
+    container->Add(Checkbox(task.title, &task.done));
+  }
 
-  auto document = //
-      vbox({
-          hbox({
-              summary(),
-              summary(),
-              summary() | flex,
-          }),
-          summary(),
-          summary(),
-      });
+  auto renderer = Renderer(container, [&] {
+    return window(text("Ditto Tasks"),
+                  container->Render() | vscroll_indicator | frame);
+  });
 
-  // Limit the size of the document to 80 char.
-  document = document | size(WIDTH, LESS_THAN, 80);
-
-  auto screen = Screen::Create(Dimension::Full(), Dimension::Fit(document));
-  Render(screen, document);
-
-  std::cout << screen.ToString() << '\0' << std::endl;
+  auto screen = ScreenInteractive::Fullscreen();
+  screen.Loop(renderer);
 }
+
+#endif // DITTO_QUICKSTART_TUI

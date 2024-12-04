@@ -33,6 +33,11 @@ build: ## Generates all targets
 	$(CMAKE) -B $(BUILD_DIR) . -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -Wno-dev
 	$(CMAKE) --build $(BUILD_DIR) --parallel
 
+.PHONY: build-no-tui
+build-no-tui: ## Generates all targets, without TUI support
+	$(CMAKE) -B $(BUILD_DIR) . -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -Wno-dev -DDITTO_QUICKSTART_TUI=OFF
+	$(CMAKE) --build $(BUILD_DIR) --parallel
+
 .PHONY: build-bazel
 build-bazel: ## Builds taskscpp using Bazel
 	bazel build --config=asan //:taskscpp

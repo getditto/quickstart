@@ -1,10 +1,12 @@
 #include "env.h"
 
-// taskslib
 #include "task.h"
 #include "tasks_log.h"
 #include "tasks_peer.h"
+
+#ifdef DITTO_QUICKSTART_TUI
 #include "tasks_tui.h"
+#endif
 
 // We want to allow commas in command-line option values, so define
 // CXXOPTS_VECTOR_DELIMITER to be something that is unlikely to appear in the
@@ -59,7 +61,9 @@ int main(int argc, const char *argv[]) {
     // clang-format off
     options.add_options("Command")
       ("h,help", "Print usage")
+#ifdef DITTO_QUICKSTART_TUI
       ("tui", "Run the text-based user interface (default)")
+#endif
       ("a,add", "Add a new task",
         cxxopts::value<vector<string>>(), "TITLE")
       ("c,complete", "Mark a task as completed",
@@ -126,6 +130,8 @@ int main(int argc, const char *argv[]) {
         break;
       }
     }
+
+#ifdef DITTO_QUICKSTART_TUI
     bool found_tui_command = opt_parse.count("tui") > 0;
 
     if ((found_tui_command && found_non_tui_command) ||
@@ -133,6 +139,12 @@ int main(int argc, const char *argv[]) {
       cout << options.help() << endl;
       exit(EXIT_SUCCESS);
     }
+#else
+    if ((!found_non_tui_command) || opt_parse.count("help") > 0) {
+      cout << options.help() << endl;
+      exit(EXIT_SUCCESS);
+    }
+#endif
 
     if (opt_parse.count("ditto-sdk-version") > 0) {
       cout << "Ditto SDK version: " << TasksPeer::get_ditto_sdk_version()
@@ -207,10 +219,13 @@ int main(int argc, const char *argv[]) {
       TasksPeer peer(app_id, online_playground_token, enable_cloud_sync,
                      persistence_dir, transports);
 
+#ifdef DITTO_QUICKSTART_TUI
       if (found_tui_command) {
         TasksTui tui;
         tui.run(&peer);
-      } else {
+      } else
+#endif
+      {
         // A thread must hold mtx while using peer or writing output.
         mutex mtx;
 
@@ -458,6 +473,9 @@ int main(int argc, const char *argv[]) {
     if (!export_log_path.empty()) {
       export_log(export_log_path);
     }
+  } catch (const cxxopts::exceptions::exception &err) {
+    cerr << "error: " << err.what() << endl;
+    exit(EXIT_FAILURE);
   } catch (const std::exception &err) {
     cerr << "error: " << err.what() << endl;
 

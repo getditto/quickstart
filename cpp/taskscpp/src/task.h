@@ -12,7 +12,7 @@ struct Task {
 
   Task() = default;
 
-  Task(const std::string &id, const std::string &title, bool done,
+  Task(const std::string &id, const std::string &title, bool done = false,
        bool deleted = false)
       : _id(id), title(title), done(done), deleted(deleted) {}
 };
