@@ -473,9 +473,6 @@ int main(int argc, const char *argv[]) {
     if (!export_log_path.empty()) {
       export_log(export_log_path);
     }
-  } catch (const cxxopts::exceptions::exception &err) {
-    cerr << "error: " << err.what() << endl;
-    exit(EXIT_FAILURE);
   } catch (const std::exception &err) {
     cerr << "error: " << err.what() << endl;
 

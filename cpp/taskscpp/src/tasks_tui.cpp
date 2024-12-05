@@ -11,59 +11,42 @@
 #include "ftxui/component/screen_interactive.hpp"
 #include "ftxui/dom/elements.hpp"
 
-using namespace ftxui;
-
-using lock_guard = std::lock_guard<std::mutex>;
-
 class TasksTui::Impl {
 private:
-  std::mutex mutex;
-  std::vector<::Task> tasks;
-  std::vector<::Task> last_update_tasks;
-  Component container;
-  ScreenInteractive screen;
+  std::vector<Task> tasks;
+  ftxui::Component tasks_list;
+  ftxui::ScreenInteractive screen;
 
-  void update_tasks(std::vector<::Task> new_tasks) {
+  void update_tasks_list(std::vector<Task> new_tasks) {
     if (new_tasks == tasks) {
       return;
     }
 
-    // TODO: Need to maintain currently selected task when updating.
+    // TODO: Need to maintain currently active task in the list.
 
-    container->DetachAllChildren();
+    tasks_list->DetachAllChildren();
 
-    tasks = new_tasks;
+    tasks = std::move(new_tasks);
 
     for (auto &task : tasks) {
-      // TODO: add on_change callback to update task.done
-      auto checkbox = Checkbox(task.title, &task.done);
-      container->Add(checkbox);
+      // TODO: add CheckboxOption.on_change callback to update task.done
+      // TODO: customize checkbox appearance with CheckboxOption.transform
+      auto checkbox = ftxui::Checkbox(task.title, &task.done);
+      tasks_list->Add(checkbox);
     }
 
+    // force redraw
     screen.RequestAnimationFrame();
   }
 
-public:
-  Impl()
-      : screen(ScreenInteractive::Fullscreen()),
-        container(Container::Vertical({})) {}
-
-  ~Impl() {}
-
-  void run(TasksPeer &peer) {
-    if (isatty(STDERR_FILENO)) {
-      // Redirect stderr to /dev/null so it doesn't interfere with TUI output.
-      std::freopen("/dev/null", "w", stderr);
-    }
-
-    auto observer = peer.register_tasks_observer(
-        [this](const std::vector<::Task> &new_tasks) {
-          screen.Post([this, new_tasks] { update_tasks(new_tasks); });
-        });
+  // Render the UI until the user quits.
+  void display_ui() {
+    using namespace ftxui;
 
     auto top_bar = Renderer([] {
+      // TODO: Use color and icon for Sync Active state
       return hbox({
-          text("Ditto Tasks") | flex,
+          text("Ditto Tasks") | bold | flex,
           text("Sync Active (s: toggle sync)"),
       });
     });
@@ -72,11 +55,13 @@ public:
       return hbox({text("(c: create) (d: delete) (e: edit) (q: quit)") | flex});
     });
 
-    auto renderer = Renderer(container, [&, this] {
-      return vbox(
-          {top_bar->Render(),
-           container->Render() | vscroll_indicator | frame | border | flex,
-           bottom_bar->Render()});
+    auto renderer = Renderer(tasks_list, [&, this] {
+      return vbox({top_bar->Render(),                                       //
+                   separator(),                                             //
+                   tasks_list->Render() | vscroll_indicator | frame | flex, //
+                   separator(),                                             //
+                   bottom_bar->Render()})                                   //
+             | border;
     });
 
     auto event_handler = CatchEvent(renderer, [&](Event event) {
@@ -91,6 +76,28 @@ public:
     });
 
     screen.Loop(event_handler);
+  }
+
+public:
+  Impl()
+      : screen(ftxui::ScreenInteractive::Fullscreen()),
+        tasks_list(ftxui::Container::Vertical({})) {}
+
+  ~Impl() {}
+
+  void run(TasksPeer &peer) {
+    if (isatty(STDERR_FILENO)) {
+      // Redirect stderr to /dev/null so it doesn't interfere with TUI output.
+      std::freopen("/dev/null", "w", stderr);
+    }
+
+    auto observer = peer.register_tasks_observer(
+        [this](const std::vector<Task> &new_tasks) {
+          screen.Post(
+              [this, new_tasks] { update_tasks_list(std::move(new_tasks)); });
+        });
+
+    display_ui();
   }
 };
 

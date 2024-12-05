@@ -5,8 +5,7 @@
 
 #include "tasks_peer.h"
 
-#include <mutex>
-#include <vector>
+#include <memory>
 
 /// Text-based interactive user interface for the Tasks application.
 class TasksTui {
