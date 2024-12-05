@@ -1,6 +1,7 @@
 #ifdef DITTO_QUICKSTART_TUI
 
 #include "tasks_tui.h"
+#include "env.h"
 
 #include <cstdio>
 
@@ -45,9 +46,11 @@ private:
 
     auto top_bar = Renderer([] {
       // TODO: Use color and icon for Sync Active state
-      return hbox({
-          text("Ditto Tasks") | bold | flex,
-          text("Sync Active (s: toggle sync)"),
+      return vbox({
+          hbox({text("Ditto Tasks") | bold | flex,
+                text("Sync Active (s: toggle sync)")}),
+          text("App ID: " DITTO_APP_ID) | center,
+          text("Playground Token: " DITTO_PLAYGROUND_TOKEN) | center,
       });
     });
 
@@ -55,7 +58,7 @@ private:
       return hbox({text("(c: create) (d: delete) (e: edit) (q: quit)") | flex});
     });
 
-    auto renderer = Renderer(tasks_list, [&, this] {
+    auto renderer = Renderer(tasks_list, [this, &top_bar, &bottom_bar] {
       return vbox({top_bar->Render(),                                       //
                    separator(),                                             //
                    tasks_list->Render() | vscroll_indicator | frame | flex, //
@@ -64,7 +67,7 @@ private:
              | border;
     });
 
-    auto event_handler = CatchEvent(renderer, [&](Event event) {
+    auto event_handler = CatchEvent(renderer, [this](Event event) {
       if (event == Event::Character('q')) {
         screen.ExitLoopClosure()();
         return true;
