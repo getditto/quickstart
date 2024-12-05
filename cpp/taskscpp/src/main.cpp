@@ -222,7 +222,7 @@ int main(int argc, const char *argv[]) {
 #ifdef DITTO_QUICKSTART_TUI
       if (found_tui_command) {
         TasksTui tui;
-        tui.run(&peer);
+        tui.run(peer);
       } else
 #endif
       {

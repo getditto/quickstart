@@ -5,6 +5,7 @@
 
 #include "tasks_peer.h"
 
+#include <mutex>
 #include <vector>
 
 /// Text-based interactive user interface for the Tasks application.
@@ -12,10 +13,16 @@ class TasksTui {
 public:
   TasksTui();
 
-  void run(TasksPeer *peer);
+  ~TasksTui();
+
+  /// Run the TUI, using the specified TasksPeer object to access data.
+  ///
+  /// The `peer` reference must iremain valid until `run()` returns.
+  void run(TasksPeer &peer);
 
 private:
-  std::vector<Task> tasks;
+  class Impl;
+  std::shared_ptr<Impl> impl; // private implementation
 };
 
 #endif // DITTO_QUICKSTART_TUI

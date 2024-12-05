@@ -134,7 +134,7 @@ public:
                          enable_cloud_sync, std::move(persistence_dir),
                          transports)) {
     tasks_subscription =
-        ditto->sync().register_subscription(select_tasks_query());
+        ditto->sync().register_subscription("SELECT * FROM tasks");
   }
 
   ~Impl() noexcept {
@@ -376,8 +376,8 @@ public:
           });
 
       log_debug("Registered tasks observer");
-      auto *subscriber_impl = new TasksObserver::Impl(observer);
-      return shared_ptr<TasksObserver>(new TasksObserver(subscriber_impl));
+      auto *observer_impl = new TasksObserver::Impl(observer);
+      return shared_ptr<TasksObserver>(new TasksObserver(observer_impl));
     } catch (const exception &err) {
       log_error("Failed to register observer: " + string(err.what()));
       throw runtime_error("unable to register observer: " + string(err.what()));

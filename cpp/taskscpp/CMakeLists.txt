@@ -48,9 +48,10 @@ endif()
 set(ENV_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../../.env)
 set(ENV_H ${CMAKE_CURRENT_SOURCE_DIR}/src/env.h)
 set(ENV_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_env.awk)
+find_program(AWK NAMES awk nawk gawk)
 add_custom_command(
   OUTPUT ${ENV_H}
-  COMMAND awk -f ${ENV_SCRIPT} ${ENV_INPUT} > ${ENV_H}
+  COMMAND ${AWK} -f ${ENV_SCRIPT} ${ENV_INPUT} > ${ENV_H}
   DEPENDS ${ENV_INPUT} ${ENV_SCRIPT}
   COMMENT "Generating env.h"
 )

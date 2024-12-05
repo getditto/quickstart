@@ -15,6 +15,13 @@ struct Task {
   Task(const std::string &id, const std::string &title, bool done = false,
        bool deleted = false)
       : _id(id), title(title), done(done), deleted(deleted) {}
+
+  bool operator==(const Task &other) const {
+    return _id == other._id &&     //
+           title == other.title && //
+           done == other.done &&   //
+           deleted == other.deleted;
+  }
 };
 
 #endif // DITTO_QUICKSTART_TASK_H
