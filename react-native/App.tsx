@@ -1,75 +1,105 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  FlatList,
   Text,
   StyleSheet,
   PermissionsAndroid,
   Platform,
   View,
-  TextInput,
-  Button,
   SafeAreaView,
   Alert,
+  FlatList,
+  Button,
 } from 'react-native';
 import {
   Ditto,
   IdentityOnlinePlayground,
+  StoreObserver,
+  SyncSubscription,
   TransportConfig,
 } from '@dittolive/ditto';
+
+import Fab from './components/Fab';
+import NewTaskModal from './components/NewTaskModal';
+import DittoInfo from './components/DittoInfo';
+import DittoSync from './components/DittoSync';
 
 type Task = {
   id: string;
   title: string;
+  done: boolean,
+  deleted: boolean,
 };
 
+const identity: IdentityOnlinePlayground = {
+  type: 'onlinePlayground',
+  appID: '<YOUR APP ID>',
+  token: '<YOUR PLAYGROUND TOKEN>',
+};
+
+async function requestPermissions() {
+  const permissions = [
+    PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+    PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+    PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES,
+    PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+  ];
+
+  const granted = await PermissionsAndroid.requestMultiple(permissions);
+  return Object.values(granted).every(
+    result => result === PermissionsAndroid.RESULTS.GRANTED,
+  );
+}
+
 const App = () => {
-  const [task, setTask] = useState<string>('');
-  const [tasks, setTasks] = useState<Task[]>([]);
-
   const ditto = useRef<Ditto | null>(null);
+  const taskSubscription = useRef<SyncSubscription | null>(null);
+  const taskObserver = useRef<StoreObserver | null>(null);
 
-  async function requestPermissions() {
-    const permissions = [
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
-      PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES,
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-    ];
+  const [modalVisible, setModalVisible] = useState(false);
+  const [syncEnabled, setSyncEnabled] = useState(false);
 
-    const granted = await PermissionsAndroid.requestMultiple(permissions);
-    return Object.values(granted).every(
-      result => result === PermissionsAndroid.RESULTS.GRANTED,
-    );
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: "1", title: "One", done: false, deleted: false },
+    { id: "2", title: "Two", done: false, deleted: false },
+    { id: "3", title: "Three", done: false, deleted: false },
+  ]);
+
+  const toggleSync = () => {
+    if (syncEnabled) {
+      ditto.current?.stopSync();
+    } else {
+      ditto.current?.startSync();
+    }
+    setSyncEnabled(!syncEnabled);
   }
 
   async function syncTasks() {
     try {
-      const identity: IdentityOnlinePlayground = {
-        type: 'onlinePlayground',
-        appID: '<YOUR APP ID>',
-        token: '<YOUR PLAYGROUND TOKEN>',
-      };
-
       ditto.current = new Ditto(identity);
-      const transportsConfig = new TransportConfig();
-      transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
-      transportsConfig.peerToPeer.lan.isEnabled = true;
-      transportsConfig.peerToPeer.lan.isMdnsEnabled = true;
 
-      if (Platform.OS === 'ios') {
-        transportsConfig.peerToPeer.awdl.isEnabled = true;
+      // Initialize transport config
+      {
+        const transportsConfig = new TransportConfig();
+        transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
+        transportsConfig.peerToPeer.lan.isEnabled = true;
+        transportsConfig.peerToPeer.lan.isMdnsEnabled = true;
+
+        if (Platform.OS === 'ios') {
+          transportsConfig.peerToPeer.awdl.isEnabled = true;
+        }
+        ditto.current.setTransportConfig(transportsConfig);
       }
-      ditto.current.setTransportConfig(transportsConfig);
 
       ditto.current.startSync();
-
-      ditto.current.sync.registerSubscription(`SELECT * FROM tasks`);
+      taskSubscription.current = ditto.current.sync.registerSubscription(`SELECT * FROM tasks`);
 
       // Subscribe to task updates
-      ditto.current.store.registerObserver(`SELECT * FROM tasks`, response => {
+      taskObserver.current = ditto.current.store.registerObserver(`SELECT * FROM tasks WHERE NOT deleted`, response => {
         const fetchedTasks: Task[] = response.items.map(doc => ({
           id: doc.value._id,
           title: doc.value.title as string,
+          done: doc.value.done,
+          deleted: doc.value.deleted,
         }));
 
         setTasks(fetchedTasks);
@@ -80,7 +110,7 @@ const App = () => {
   }
 
   useEffect(() => {
-    const setupDitto = async () => {
+    (async () => {
       const granted =
         Platform.OS === 'android' ? await requestPermissions() : true;
       if (granted) {
@@ -91,47 +121,34 @@ const App = () => {
           'You need to grant all permissions to use this app.',
         );
       }
-    };
-    setupDitto();
+    })();
   }, []);
 
-  async function handleAddTask() {
-    if (ditto.current === null) return;
-
-    if (task.trim().length === 0) return;
-
-    const result = await ditto.current.store.execute(
-      `INSERT INTO tasks DOCUMENTS ({ 'title': '${task}' })`,
-    );
-    const newId = result.mutatedDocumentIDs().map(id => id.value)[0];
-
-    const newTask: Task = {
-      title: task,
-      id: newId,
-    };
-    setTasks(currentTasks => [...currentTasks, newTask]);
-    setTask('');
-  }
-
   const renderItem = ({ item }: { item: Task }) => (
-    <View style={styles.item}>
-      <Text style={styles.title}>{item.title}</Text>
+    <View>
+      <View>
+        <Button title="Done" />
+        <Text style={styles.title}>{item.title}</Text>
+      </View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter a task"
-        value={task}
-        onChangeText={setTask}
+      <DittoInfo appId={identity.appID} token={identity.token} />
+      <DittoSync value={syncEnabled} onChange={toggleSync} />
+      <Fab onPress={() => setModalVisible(true)} />
+      <NewTaskModal
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+        onSubmit={(task) => Alert.alert(`New task ${task}`)}
+        onClose={() => setModalVisible(false)}
       />
-      <Button title="Add Task" onPress={handleAddTask} />
       <FlatList
+        style={styles.list}
+        contentContainerStyle={{ gap: 5 }}
         data={tasks}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
       />
     </SafeAreaView>
   );
@@ -143,21 +160,24 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
-  input: {
-    marginBottom: 10,
+  taskContainer: {
     padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
+    backgroundColor: '#93C5FD',
+    flex: 1,
+    flexDirection: "row",
   },
-  item: {
-    padding: 10,
-    marginVertical: 8,
-    backgroundColor: '#f9c2ff',
-    borderRadius: 5,
+  taskCheckbox: {
+
+  },
+  taskDeleteButton: {
+
   },
   title: {
     fontSize: 18,
   },
+  list: {
+    borderWidth: 5,
+  }
 });
 
 export default App;
