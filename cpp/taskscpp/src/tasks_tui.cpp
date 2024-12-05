@@ -35,6 +35,7 @@ private:
     tasks = new_tasks;
 
     for (auto &task : tasks) {
+      // TODO: add on_change callback to update task.done
       auto checkbox = Checkbox(task.title, &task.done);
       container->Add(checkbox);
     }
@@ -60,12 +61,36 @@ public:
           screen.Post([this, new_tasks] { update_tasks(new_tasks); });
         });
 
-    auto renderer = Renderer(container, [this] {
-      return window(text("Ditto Tasks"),
-                    container->Render() | vscroll_indicator | frame);
+    auto top_bar = Renderer([] {
+      return hbox({
+          text("Ditto Tasks") | flex,
+          text("Sync Active (s: toggle sync)"),
+      });
     });
 
-    screen.Loop(renderer);
+    auto bottom_bar = Renderer([] {
+      return hbox({text("(c: create) (d: delete) (e: edit) (q: quit)") | flex});
+    });
+
+    auto renderer = Renderer(container, [&, this] {
+      return vbox(
+          {top_bar->Render(),
+           container->Render() | vscroll_indicator | frame | border | flex,
+           bottom_bar->Render()});
+    });
+
+    auto event_handler = CatchEvent(renderer, [&](Event event) {
+      if (event == Event::Character('q')) {
+        screen.ExitLoopClosure()();
+        return true;
+      }
+
+      // TODO: add handlers for 's', 'c', 'd', and 'e' key presses
+
+      return false;
+    });
+
+    screen.Loop(event_handler);
   }
 };
 
