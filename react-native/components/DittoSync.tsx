@@ -4,7 +4,7 @@ const DittoSync: React.FC<SwitchProps> = (props) => {
     return (
         <View style={styles.container}>
             <Text style={styles.text}>Sync Enabled</Text>
-            <Switch style={styles.button} {...props} />
+            <Switch trackColor={{ true: "#6D28D9" }} {...props} />
         </View>
     )
 }
@@ -20,9 +20,6 @@ const styles = StyleSheet.create({
     text: {
         flexGrow: 1,
         fontSize: 20,
-    },
-    button: {
-
     },
 });
 

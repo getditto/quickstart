@@ -22,6 +22,7 @@ import Fab from './components/Fab';
 import NewTaskModal from './components/NewTaskModal';
 import DittoInfo from './components/DittoInfo';
 import DittoSync from './components/DittoSync';
+import TaskDone from './components/TaskDone';
 
 type Task = {
   id: string;
@@ -56,13 +57,8 @@ const App = () => {
   const taskObserver = useRef<StoreObserver | null>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [syncEnabled, setSyncEnabled] = useState(false);
-
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: "1", title: "One", done: false, deleted: false },
-    { id: "2", title: "Two", done: false, deleted: false },
-    { id: "3", title: "Three", done: false, deleted: false },
-  ]);
+  const [syncEnabled, setSyncEnabled] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   const toggleSync = () => {
     if (syncEnabled) {
@@ -73,7 +69,30 @@ const App = () => {
     setSyncEnabled(!syncEnabled);
   }
 
-  async function syncTasks() {
+  const createTask = async (title: string) => {
+    await ditto.current?.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
+      task: {
+        title,
+        done: false,
+        deleted: false,
+      }
+    });
+  }
+
+  const toggleTask = async (task: Task) => {
+    await ditto.current?.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
+      id: task.id,
+      done: !task.done,
+    });
+  }
+
+  const deleteTask = async (task: Task) => {
+    await ditto.current?.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
+      id: task.id,
+    });
+  }
+
+  const initDitto = async () => {
     try {
       ditto.current = new Ditto(identity);
 
@@ -114,7 +133,7 @@ const App = () => {
       const granted =
         Platform.OS === 'android' ? await requestPermissions() : true;
       if (granted) {
-        syncTasks();
+        initDitto();
       } else {
         Alert.alert(
           'Permission Denied',
@@ -125,10 +144,11 @@ const App = () => {
   }, []);
 
   const renderItem = ({ item }: { item: Task }) => (
-    <View>
-      <View>
-        <Button title="Done" />
-        <Text style={styles.title}>{item.title}</Text>
+    <View key={item.id} style={{ flex: 1, flexDirection: "row", paddingVertical: 10, paddingHorizontal: 20, width: "100%" }}>
+      <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
+      <Text style={{ fontSize: 20, alignSelf: "center", flex: 1, flexGrow: 1, flexShrink: 1 }}>{item.title}</Text>
+      <View style={{ alignSelf: "flex-end" }}>
+        <Button title="Delete" color="#DC2626" onPress={() => deleteTask(item)} />
       </View>
     </View>
   );
@@ -141,11 +161,13 @@ const App = () => {
       <NewTaskModal
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
-        onSubmit={(task) => Alert.alert(`New task ${task}`)}
+        onSubmit={(task) => {
+          createTask(task);
+          setModalVisible(false);
+        }}
         onClose={() => setModalVisible(false)}
       />
       <FlatList
-        style={styles.list}
         contentContainerStyle={{ gap: 5 }}
         data={tasks}
         renderItem={renderItem}
@@ -166,18 +188,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
   },
-  taskCheckbox: {
-
-  },
-  taskDeleteButton: {
-
-  },
-  title: {
-    fontSize: 18,
-  },
-  list: {
-    borderWidth: 5,
-  }
 });
 
 export default App;
