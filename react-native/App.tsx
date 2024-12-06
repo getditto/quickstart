@@ -67,30 +67,30 @@ const App = () => {
       ditto.current?.startSync();
     }
     setSyncEnabled(!syncEnabled);
-  }
+  };
 
   const createTask = async (title: string) => {
-    await ditto.current?.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
+    await ditto.current?.store.execute('INSERT INTO tasks DOCUMENTS (:task)', {
       task: {
         title,
         done: false,
         deleted: false,
       }
     });
-  }
+  };
 
   const toggleTask = async (task: Task) => {
-    await ditto.current?.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
+    await ditto.current?.store.execute('UPDATE tasks SET done=:done WHERE _id=:id', {
       id: task.id,
       done: !task.done,
     });
-  }
+  };
 
   const deleteTask = async (task: Task) => {
-    await ditto.current?.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
+    await ditto.current?.store.execute('UPDATE tasks SET deleted=true WHERE _id=:id', {
       id: task.id,
     });
-  }
+  };
 
   const initDitto = async () => {
     try {
@@ -110,10 +110,10 @@ const App = () => {
       }
 
       ditto.current.startSync();
-      taskSubscription.current = ditto.current.sync.registerSubscription(`SELECT * FROM tasks`);
+      taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
       // Subscribe to task updates
-      taskObserver.current = ditto.current.store.registerObserver(`SELECT * FROM tasks WHERE NOT deleted`, response => {
+      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted', response => {
         const fetchedTasks: Task[] = response.items.map(doc => ({
           id: doc.value._id,
           title: doc.value.title as string,
@@ -126,7 +126,7 @@ const App = () => {
     } catch (error) {
       console.error('Error syncing tasks:', error);
     }
-  }
+  };
 
   useEffect(() => {
     (async () => {
@@ -144,10 +144,10 @@ const App = () => {
   }, []);
 
   const renderItem = ({ item }: { item: Task }) => (
-    <View key={item.id} style={{ flex: 1, flexDirection: "row", paddingVertical: 10, paddingHorizontal: 20, width: "100%" }}>
+    <View key={item.id} style={{ flex: 1, flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 20, width: '100%' }}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
-      <Text style={{ fontSize: 20, alignSelf: "center", flex: 1, flexGrow: 1, flexShrink: 1 }}>{item.title}</Text>
-      <View style={{ alignSelf: "flex-end" }}>
+      <Text style={{ fontSize: 20, alignSelf: 'center', flex: 1, flexGrow: 1, flexShrink: 1 }}>{item.title}</Text>
+      <View style={{ alignSelf: 'flex-end' }}>
         <Button title="Delete" color="#DC2626" onPress={() => deleteTask(item)} />
       </View>
     </View>
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#93C5FD',
     flex: 1,
-    flexDirection: "row",
+    flexDirection: 'row',
   },
 });
 
