@@ -67,6 +67,7 @@ const HelpPanel = (props) => {
 						<Text>d - delete task</Text>
 						<Text>e - edit task</Text>
 						<Text>s - toggle sync</Text>
+						<Text>q - quit</Text>
 						<Text>Enter - toggle done</Text>
 					</Box>
 				</Box>
@@ -174,7 +175,7 @@ const TodoApp = ({ ditto }) => {
 	const List = React.memo(({ tasks }) => {
 		useInput((input, key) => {
 			// Scroll up
-			if (input === 'k') {
+			if (input === 'k' || key.upArrow) {
 				if (selected > 0) {
 					setSelected(selected - 1);
 				}
@@ -182,7 +183,7 @@ const TodoApp = ({ ditto }) => {
 			}
 
 			// Scroll down
-			if (input === 'j') {
+			if (input === 'j' || key.downArrow) {
 				if (selected < tasks.length - 1) {
 					setSelected(selected + 1);
 				}
@@ -196,6 +197,12 @@ const TodoApp = ({ ditto }) => {
 						await deleteTask(ditto, tasks[selected]);
 					})();
 				}
+			}
+
+			// Quit
+			if (input === 'q') {
+				process.stdout.write('\x1B[?25h'); // Make cursor visible
+				process.exit(0);
 			}
 
 			if (key.return) {
