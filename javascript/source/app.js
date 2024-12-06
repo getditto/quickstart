@@ -61,8 +61,8 @@ const HelpPanel = (props) => {
 					<Spacer />
 					<Box flexDirection="column" borderStyle="round" height="100%" width="50%">
 						<Text>? - toggle help</Text>
-						<Text>k - scroll up</Text>
-						<Text>j - scroll down</Text>
+						<Text>↑/k - scroll up</Text>
+						<Text>↓/j - scroll down</Text>
 						<Text>c - create task</Text>
 						<Text>d - delete task</Text>
 						<Text>e - edit task</Text>
