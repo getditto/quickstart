@@ -4,6 +4,9 @@
 #include <string>
 
 /// Representation of a to-do item.
+///
+/// If data members of this struct are changed, the `to_json()` and
+/// `from_json()` functions in tasks_json.cpp must be updated to match.
 struct Task {
   std::string _id;
   std::string title;

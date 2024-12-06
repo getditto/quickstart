@@ -3,7 +3,7 @@
 
 #include "task.h"
 
-#include "Ditto.h" // for nlohmann::json
+#include "Ditto.h" // includes nlohmann::json library
 
 // For information about how the nlohmann::json library handles
 // serialization/deserialization of C++ types, see

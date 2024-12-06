@@ -2,6 +2,7 @@
 
 #include "tasks_tui.h"
 #include "env.h"
+#include "tasks_log.h"
 
 #include <cstdio>
 
@@ -40,10 +41,13 @@ private:
     screen.RequestAnimationFrame();
   }
 
-  // Render the UI until the user quits.
-  void display_ui() {
+  // Render text UI until the user quits.
+  void display_ui(TasksPeer &peer) {
     using namespace ftxui;
 
+    enum class Mode { Normal, Create, Edit } mode = Mode::Normal;
+
+    // Main screen layout with list of tasks and sync on/off
     auto top_bar = Renderer([] {
       // TODO: Use color and icon for Sync Active state
       return vbox({
@@ -53,12 +57,10 @@ private:
           text("Playground Token: " DITTO_PLAYGROUND_TOKEN) | center,
       });
     });
-
     auto bottom_bar = Renderer([] {
       return hbox({text("(c: create) (d: delete) (e: edit) (q: quit)") | flex});
     });
-
-    auto renderer = Renderer(tasks_list, [this, &top_bar, &bottom_bar] {
+    auto main_ui = Renderer(tasks_list, [this, &top_bar, &bottom_bar] {
       return vbox({top_bar->Render(),                                       //
                    separator(),                                             //
                    tasks_list->Render() | vscroll_indicator | frame | flex, //
@@ -67,13 +69,85 @@ private:
              | border;
     });
 
-    auto event_handler = CatchEvent(renderer, [this](Event event) {
-      if (event == Event::Character('q')) {
-        screen.ExitLoopClosure()();
-        return true;
-      }
+    // Modal dialog allows text entry
+    bool show_modal = false;
+    std::string modal_text;
+    auto modal_input = Input(&modal_text, "Enter task title");
+    auto modal_dialog = Renderer(modal_input, [this, &mode, &modal_input] {
+      return vbox({
+                 text(mode == Mode::Create ? "New Task" : "Edit Task") | bold,
+                 separator(),
+                 modal_input->Render(),
+                 filler(),
+                 separator(),
+                 text("(Esc: back) (Return/Enter: save)"),
+             }) |
+             size(WIDTH, EQUAL, screen.dimx() - 6) |
+             size(HEIGHT, EQUAL, screen.dimy() - 4) | border;
+    });
+    main_ui |= Modal(modal_dialog, &show_modal);
 
-      // TODO: add handlers for 's', 'c', 'd', and 'e' key presses
+    auto event_handler = CatchEvent(main_ui, [this, &peer, &mode, &show_modal,
+                                              &modal_text](Event event) {
+      switch (mode) {
+      case Mode::Normal:
+        if (event == Event::Character('c')) {
+          mode = Mode::Create;
+          modal_text = "";
+          show_modal = true;
+          return true;
+        } else if (event == Event::Character('d')) {
+          // TODO: delete task
+        } else if (event == Event::Character('e')) {
+          mode = Mode::Edit;
+          modal_text = "TODO: put selected task title here (not implemented)";
+          show_modal = true;
+          return true;
+        } else if (event == Event::Character('s')) {
+          // TODO: toggle sync
+        } else if (event == Event::Character('q')) {
+          screen.ExitLoopClosure()();
+          return true;
+        }
+        break;
+
+      case Mode::Create:
+        if (event == Event::Escape) {
+          show_modal = false;
+          mode = Mode::Normal;
+          return true;
+        } else if (event == Event::Return) {
+          if (!modal_text.empty()) {
+            show_modal = false;
+            mode = Mode::Normal;
+            try {
+              auto task_id = peer.add_task(modal_text, false);
+              // TODO: select this task when it appears in the task list (which
+              // should happen when the observer is called)
+            } catch (const std::exception &err) {
+              // TODO: display this error in the UI
+              log_error("Failed to add task: " + std::string(err.what()));
+            }
+          }
+          return true;
+        }
+        break;
+
+      case Mode::Edit:
+        if (event == Event::Escape) {
+          show_modal = false;
+          mode = Mode::Normal;
+          return true;
+        } else if (event == Event::Return) {
+          if (!modal_text.empty()) {
+            show_modal = false;
+            mode = Mode::Normal;
+            // TODO: update task title using modal_text
+          }
+          return true;
+        }
+        break;
+      }
 
       return false;
     });
@@ -100,7 +174,7 @@ public:
               [this, new_tasks] { update_tasks_list(std::move(new_tasks)); });
         });
 
-    display_ui();
+    display_ui(peer);
   }
 };
 
