@@ -7,7 +7,7 @@ CTEST ?= ctest
 CLANG_TIDY ?= clang-tidy
 CLANG_FORMAT ?= clang-format
 
-BUILD_DIR = build-cmake
+BUILD_DIR = build
 XCODE_BUILD_DIR = build-xcode
 
 CPP_SRC_FILES = $(shell find src -type f -name '*.cpp' -o -name '*.h')
