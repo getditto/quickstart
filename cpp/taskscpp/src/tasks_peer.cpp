@@ -406,6 +406,32 @@ public:
       throw runtime_error("unable to execute DQL query: " + string(err.what()));
     }
   }
+
+  void insert_initial_tasks() {
+    try {
+      lock_guard<mutex> lock(*mtx);
+
+      std::vector<Task> initial_tasks = {
+          {"50191411-4C46-4940-8B72-5F8017A04FA7", "Buy groceries"},
+          {"6DA283DA-8CFE-4526-A6FA-D385089364E5", "Clean the kitchen"},
+          {"5303DDF8-0E72-4FEB-9E82-4B007E5797F0",
+           "Schedule dentist appointment"},
+          {"38411F1B-6B49-4346-90C3-0B16CE97E174", "Pay bills"}};
+
+      for (const auto &task : initial_tasks) {
+        const json task_args = {{"_id", task._id},
+                                {"title", task.title},
+                                {"done", task.done},
+                                {"deleted", task.deleted}};
+        const auto command = "INSERT INTO tasks INITIAL DOCUMENTS (:newTask)";
+        ditto->get_store().execute(command, {{"newTask", task_args}});
+      }
+    } catch (const exception &err) {
+      log_error("Failed to insert initial tasks: " + string(err.what()));
+      throw runtime_error("unable to insert initial tasks: " +
+                          string(err.what()));
+    }
+  }
 }; // class TasksPeer::Impl
 
 TasksPeer TasksPeer::create(string ditto_app_id,
@@ -489,6 +515,8 @@ string TasksPeer::execute_dql_query(const string &query) {
 string TasksPeer::get_ditto_sdk_version() {
   return ditto::Ditto::get_sdk_version();
 }
+
+void TasksPeer::insert_initial_tasks() { impl->insert_initial_tasks(); }
 
 TasksPeer::TasksObserverHandler::TasksObserverHandler() {
   log_debug("TasksObserverHandler created");

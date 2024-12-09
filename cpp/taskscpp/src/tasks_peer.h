@@ -173,6 +173,9 @@ public:
   std::shared_ptr<TasksObserver>
   register_tasks_observer(TasksObserverHandler *handler);
 
+  /// Add a set of initial documents to the tasks collection.
+  void insert_initial_tasks();
+
 private:
   class Impl; // private implementation class
   std::shared_ptr<Impl> impl;
