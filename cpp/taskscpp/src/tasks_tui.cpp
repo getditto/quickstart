@@ -87,6 +87,22 @@ private:
     screen.RequestAnimationFrame();
   }
 
+  // Toggle sync on/off
+  void toggle_sync() {
+    try {
+      if (peer.is_sync_active()) {
+        peer.stop_sync();
+      } else {
+        peer.start_sync();
+      }
+    } catch (const std::exception &err) {
+      log_error("Failed to toggle sync: " + std::string(err.what()));
+    }
+
+    // force redraw
+    screen.RequestAnimationFrame();
+  }
+
   // Render text UI until the user quits.
   void display_ui() {
     using namespace ftxui;
@@ -94,11 +110,14 @@ private:
     enum class Mode { Normal, Create, Edit } mode = Mode::Normal;
 
     // Main screen layout with list of tasks and sync on/off
-    auto top_bar = Renderer([] {
-      // TODO: Use color and icon for Sync Active state
+    auto top_bar = Renderer([this] {
       return vbox({
           hbox({text("Ditto Tasks") | bold | flex,
-                text("Sync Active (s: toggle sync)")}),
+                (peer.is_sync_active()
+                     ? text("🟢 Sync Active") | color(Color::Green)
+                     : text("🔴 Sync Inactive") | color(Color::Red)) |
+                    bold,
+                text(" (s: toggle sync)")}),
           text("App ID: " DITTO_APP_ID) | center,
           text("Playground Token: " DITTO_PLAYGROUND_TOKEN) | center,
       });
@@ -166,7 +185,7 @@ private:
             return true;
           }
         } else if (event == Event::Character('s')) {
-          // TODO: toggle sync
+          toggle_sync();
         } else if (event == Event::Character('q')) {
           screen.ExitLoopClosure()();
           return true;
@@ -242,15 +261,7 @@ public:
   }
 };
 
-TasksTui::TasksTui(TasksPeer &peer) : impl(std::make_shared<Impl>(peer)) {
-
-  // Demo content
-  //       {"50191411-4C46-4940-8B72-5F8017A04FA7", "Buy groceries"},
-  //       {"6DA283DA-8CFE-4526-A6FA-D385089364E5", "Clean the kitchen"},
-  //       {"5303DDF8-0E72-4FEB-9E82-4B007E5797F0", "Schedule dentist
-  //       appointment"},
-  //       {"38411F1B-6B49-4346-90C3-0B16CE97E174", "Pay bills"}};
-}
+TasksTui::TasksTui(TasksPeer &peer) : impl(std::make_shared<Impl>(peer)) {}
 
 TasksTui::~TasksTui() {}
 
