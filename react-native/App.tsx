@@ -144,10 +144,10 @@ const App = () => {
   }, []);
 
   const renderItem = ({ item }: { item: Task }) => (
-    <View key={item.id} style={{ flex: 1, flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 20, width: '100%' }}>
+    <View key={item.id} style={styles.taskContainer}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
-      <Text style={{ fontSize: 20, alignSelf: 'center', flex: 1, flexGrow: 1, flexShrink: 1 }}>{item.title}</Text>
-      <View style={{ alignSelf: 'flex-end' }}>
+      <Text style={styles.taskTitle}>{item.title}</Text>
+      <View style={styles.taskButton}>
         <Button title="Delete" color="#DC2626" onPress={() => deleteTask(item)} />
       </View>
     </View>
@@ -168,7 +168,7 @@ const App = () => {
         onClose={() => setModalVisible(false)}
       />
       <FlatList
-        contentContainerStyle={{ gap: 5 }}
+        contentContainerStyle={styles.listContainer}
         data={tasks}
         renderItem={renderItem}
       />
@@ -178,16 +178,31 @@ const App = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    height: '100%',
     padding: 20,
     backgroundColor: '#fff',
   },
-  taskContainer: {
-    padding: 10,
-    backgroundColor: '#93C5FD',
-    flex: 1,
-    flexDirection: 'row',
+  listContainer: {
+    gap: 5,
   },
+  taskContainer: {
+    flex: 1,
+    flexShrink: 1,
+    gap: 5,
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  taskTitle: {
+    fontSize: 20,
+    alignSelf: 'center',
+    flexGrow: 1,
+    flexShrink: 1,
+  },
+  taskButton: {
+    flexShrink: 1,
+    alignSelf: 'center',
+  }
 });
 
 export default App;
