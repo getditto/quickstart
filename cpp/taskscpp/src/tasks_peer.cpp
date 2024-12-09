@@ -1,7 +1,6 @@
 #include "tasks_peer.h"
 #include "task_json.h"
 #include "tasks_log.h"
-#include "tasks_util.h"
 #include "transform_container.h"
 
 #include "Ditto.h"
@@ -85,13 +84,10 @@ private:
 
 public:
   explicit Impl(shared_ptr<ditto::StoreObserver> observer)
-      : observer(std::move(observer)) {
-    log_debug("Created TasksObserver::Impl " + ptr_to_string(this));
-  }
+      : observer(std::move(observer)) {}
 
   ~Impl() noexcept {
     try {
-      log_debug("Destroying TasksObserver::Impl" + ptr_to_string(this));
       observer->cancel();
     } catch (const exception &err) {
       log_error("Failed to cancel observer: " + string(err.what()));
