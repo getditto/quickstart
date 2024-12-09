@@ -16,11 +16,11 @@
 
 class TasksTui::Impl {
 private:
+  TasksPeer &peer;
   std::vector<Task> tasks;
   ftxui::Component tasks_list;
   ftxui::ScreenInteractive screen;
-  std::string new_task_id;
-  std::string debug_text; // displayed at the bottom of the UI, if not empty
+  std::string status_text;
 
   // Return the ID of the task that is currently active in the task list, or
   // empty string if none.
@@ -41,33 +41,32 @@ private:
       return;
     }
 
-    // If a new task was just added by the user, select it in the list;
-    // otherwise, maintain the existing selection.
-    std::string task_id;
-    if (!new_task_id.empty()) {
-      task_id = new_task_id;
-      new_task_id.clear();
-
-    } else {
-      task_id = active_task_id();
-    }
+    // Maintain the existing selection.
+    auto task_id = active_task_id();
 
     tasks_list->DetachAllChildren();
 
     tasks = std::move(new_tasks);
 
-    ftxui::Component selected_checkbox;
+    ftxui::Component active_checkbox;
     for (auto &task : tasks) {
-      // TODO: add CheckboxOption.on_change callback to update task.done
-      // TODO: customize checkbox appearance with CheckboxOption.transform
-      auto checkbox = ftxui::Checkbox(task.title, &task.done);
+      auto checkbox =
+          ftxui::Checkbox(task.title, &task.done,
+                          ftxui::CheckboxOption{.on_change = [this, &task] {
+                            try {
+                              peer.mark_task_complete(task._id, task.done);
+                            } catch (const std::exception &err) {
+                              log_error("Failed to mark task complete: " +
+                                        std::string(err.what()));
+                            }
+                          }});
       tasks_list->Add(checkbox);
       if (task._id == active_task_id()) {
-        selected_checkbox = checkbox;
+        active_checkbox = checkbox;
       }
     }
-    if (selected_checkbox) {
-      tasks_list->SetActiveChild(selected_checkbox);
+    if (active_checkbox) {
+      tasks_list->SetActiveChild(active_checkbox);
     }
 
     // force redraw
@@ -75,7 +74,7 @@ private:
   }
 
   // Render text UI until the user quits.
-  void display_ui(TasksPeer &peer) {
+  void display_ui() {
     using namespace ftxui;
 
     enum class Mode { Normal, Create, Edit } mode = Mode::Normal;
@@ -94,7 +93,7 @@ private:
       return hbox({text("(j,↑: down) (k,↓: up) (Space/Enter: toggle)"
                         " (c: create) (d: delete) (e: edit) (q: quit)") |
                        flex,
-                   text(debug_text)});
+                   text(status_text)});
     });
     auto main_ui = Renderer(tasks_list, [this, &top_bar, &bottom_bar] {
       return vbox({top_bar->Render(),                                       //
@@ -123,7 +122,7 @@ private:
     });
     main_ui |= Modal(modal_dialog, &show_modal);
 
-    auto event_handler = CatchEvent(main_ui, [this, &peer, &mode, &show_modal,
+    auto event_handler = CatchEvent(main_ui, [this, &mode, &show_modal,
                                               &modal_text](Event event) {
       switch (mode) {
       case Mode::Normal:
@@ -138,7 +137,6 @@ private:
             try {
               peer.delete_task(task_id);
             } catch (const std::exception &err) {
-              // TODO: display this error in the UI
               log_error("Failed to delete task: " + std::string(err.what()));
             }
           }
@@ -165,9 +163,10 @@ private:
             show_modal = false;
             mode = Mode::Normal;
             try {
-              new_task_id = peer.add_task(modal_text, false);
+              auto new_task_id = peer.add_task(modal_text, false);
+              // TODO: select new task in list and scroll to it
+              // (Note that we have to wait for the Ditto observer to fire.)
             } catch (const std::exception &err) {
-              // TODO: display this error in the UI
               log_error("Failed to add task: " + std::string(err.what()));
             }
           }
@@ -198,13 +197,13 @@ private:
   }
 
 public:
-  Impl()
-      : screen(ftxui::ScreenInteractive::Fullscreen()),
+  Impl(TasksPeer &peer)
+      : peer(peer), screen(ftxui::ScreenInteractive::Fullscreen()),
         tasks_list(ftxui::Container::Vertical({})) {}
 
   ~Impl() {}
 
-  void run(TasksPeer &peer) {
+  void run() {
     if (isatty(STDERR_FILENO)) {
       // Redirect stderr to /dev/null so it doesn't interfere with TUI output.
       std::freopen("/dev/null", "w", stderr);
@@ -216,11 +215,11 @@ public:
               [this, new_tasks] { update_tasks_list(std::move(new_tasks)); });
         });
 
-    display_ui(peer);
+    display_ui();
   }
 };
 
-TasksTui::TasksTui() : impl(std::make_shared<Impl>()) {
+TasksTui::TasksTui(TasksPeer &peer) : impl(std::make_shared<Impl>(peer)) {
 
   // Demo content
   //       {"50191411-4C46-4940-8B72-5F8017A04FA7", "Buy groceries"},
@@ -232,6 +231,6 @@ TasksTui::TasksTui() : impl(std::make_shared<Impl>()) {
 
 TasksTui::~TasksTui() {}
 
-void TasksTui::run(TasksPeer &peer) { impl->run(peer); }
+void TasksTui::run() { impl->run(); }
 
 #endif // DITTO_QUICKSTART_TUI

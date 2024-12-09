@@ -10,14 +10,11 @@
 /// Text-based interactive user interface for the Tasks application.
 class TasksTui {
 public:
-  TasksTui();
+  TasksTui(TasksPeer &peer);
 
   ~TasksTui();
 
-  /// Run the TUI, using the specified TasksPeer object to access data.
-  ///
-  /// The `peer` reference must iremain valid until `run()` returns.
-  void run(TasksPeer &peer);
+  void run();
 
 private:
   class Impl;
