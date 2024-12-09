@@ -22,9 +22,9 @@ private:
   std::string new_task_id;
   std::string debug_text; // displayed at the bottom of the UI, if not empty
 
-  // Return the ID of the task that is currently focused in the task list, or
+  // Return the ID of the task that is currently active in the task list, or
   // empty string if none.
-  std::string selected_task_id() {
+  std::string active_task_id() {
     for (auto i = 0; i < std::min(tasks.size(), tasks_list->ChildCount());
          i++) {
       auto checkbox = tasks_list->ChildAt(i);
@@ -41,15 +41,15 @@ private:
       return;
     }
 
-    // If a new task was just added, select it in the list; otherwise, maintain
-    // the existing selection.
+    // If a new task was just added by the user, select it in the list;
+    // otherwise, maintain the existing selection.
     std::string task_id;
     if (!new_task_id.empty()) {
       task_id = new_task_id;
       new_task_id.clear();
 
     } else {
-      task_id = selected_task_id();
+      task_id = active_task_id();
     }
 
     tasks_list->DetachAllChildren();
@@ -62,7 +62,7 @@ private:
       // TODO: customize checkbox appearance with CheckboxOption.transform
       auto checkbox = ftxui::Checkbox(task.title, &task.done);
       tasks_list->Add(checkbox);
-      if (task._id == selected_task_id()) {
+      if (task._id == active_task_id()) {
         selected_checkbox = checkbox;
       }
     }
@@ -133,7 +133,15 @@ private:
           show_modal = true;
           return true;
         } else if (event == Event::Character('d')) {
-          // TODO: delete task
+          auto task_id = active_task_id();
+          if (!task_id.empty()) {
+            try {
+              peer.delete_task(task_id);
+            } catch (const std::exception &err) {
+              // TODO: display this error in the UI
+              log_error("Failed to delete task: " + std::string(err.what()));
+            }
+          }
         } else if (event == Event::Character('e')) {
           mode = Mode::Edit;
           modal_text = "TODO: put selected task title here (not implemented)";
