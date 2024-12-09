@@ -22,20 +22,34 @@ private:
   ftxui::ScreenInteractive screen;
   std::string status_text;
 
-  // Return the ID of the task that is currently active in the task list, or
-  // empty string if none.
-  std::string active_task_id() {
+  // Return a pointer to the task that is currently active in the task list, or
+  // nullptr if none.
+  //
+  // The returned pointer is only valid until the next call to
+  // update_tasks_list().
+  Task *active_task() {
     for (auto i = 0; i < std::min(tasks.size(), tasks_list->ChildCount());
          i++) {
       auto checkbox = tasks_list->ChildAt(i);
       if (checkbox->Active()) {
-        return tasks[i]._id;
+        return &tasks[i];
       }
     }
-    return "";
+    return nullptr;
   }
 
-  // Update the task list with new tasks.
+  // Return the ID of the task that is currently active in the task list, or
+  // empty string if none.
+  std::string active_task_id() {
+    auto task = active_task();
+    if (task) {
+      return task->_id;
+    } else {
+      return "";
+    }
+  }
+
+  // Set the contents of the task list to the given tasks.
   void update_tasks_list(std::vector<Task> new_tasks) {
     if (new_tasks == tasks) {
       return;
@@ -107,6 +121,7 @@ private:
     // Modal dialog allows text entry
     bool show_modal = false;
     std::string modal_text;
+    std::string modal_task_id;
     auto modal_input = Input(&modal_text, "Enter task title");
     auto modal_dialog = Renderer(modal_input, [this, &mode, &modal_input] {
       return vbox({
@@ -123,7 +138,8 @@ private:
     main_ui |= Modal(modal_dialog, &show_modal);
 
     auto event_handler = CatchEvent(main_ui, [this, &mode, &show_modal,
-                                              &modal_text](Event event) {
+                                              &modal_text,
+                                              &modal_task_id](Event event) {
       switch (mode) {
       case Mode::Normal:
         if (event == Event::Character('c')) {
@@ -141,10 +157,14 @@ private:
             }
           }
         } else if (event == Event::Character('e')) {
-          mode = Mode::Edit;
-          modal_text = "TODO: put selected task title here (not implemented)";
-          show_modal = true;
-          return true;
+          auto task = active_task();
+          if (task != nullptr) {
+            mode = Mode::Edit;
+            modal_task_id = task->_id;
+            modal_text = task->title;
+            show_modal = true;
+            return true;
+          }
         } else if (event == Event::Character('s')) {
           // TODO: toggle sync
         } else if (event == Event::Character('q')) {
@@ -183,7 +203,12 @@ private:
           if (!modal_text.empty()) {
             show_modal = false;
             mode = Mode::Normal;
-            // TODO: update task title using modal_text
+            try {
+              peer.update_task_title(modal_task_id, modal_text);
+            } catch (const std::exception &err) {
+              log_error("Failed to update task title: " +
+                        std::string(err.what()));
+            }
           }
           return true;
         }
