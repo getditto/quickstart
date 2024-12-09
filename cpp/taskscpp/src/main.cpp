@@ -214,7 +214,7 @@ int main(int argc, const char *argv[]) {
       transports.disable_wifi_aware = true;
     }
 
-    // The peer exists until the end of this scope
+    // The peer is destroyed at the end of this scope
     {
       TasksPeer peer(app_id, online_playground_token, enable_cloud_sync,
                      persistence_dir, transports);

@@ -4,6 +4,7 @@
 #include "env.h"
 #include "tasks_log.h"
 
+#include <algorithm>
 #include <cstdio>
 
 #include <unistd.h>
@@ -18,23 +19,55 @@ private:
   std::vector<Task> tasks;
   ftxui::Component tasks_list;
   ftxui::ScreenInteractive screen;
+  std::string new_task_id;
+  std::string debug_text; // displayed at the bottom of the UI, if not empty
 
+  // Return the ID of the task that is currently focused in the task list, or
+  // empty string if none.
+  std::string selected_task_id() {
+    for (auto i = 0; i < std::min(tasks.size(), tasks_list->ChildCount());
+         i++) {
+      auto checkbox = tasks_list->ChildAt(i);
+      if (checkbox->Active()) {
+        return tasks[i]._id;
+      }
+    }
+    return "";
+  }
+
+  // Update the task list with new tasks.
   void update_tasks_list(std::vector<Task> new_tasks) {
     if (new_tasks == tasks) {
       return;
     }
 
-    // TODO: Need to maintain currently active task in the list.
+    // If a new task was just added, select it in the list; otherwise, maintain
+    // the existing selection.
+    std::string task_id;
+    if (!new_task_id.empty()) {
+      task_id = new_task_id;
+      new_task_id.clear();
+
+    } else {
+      task_id = selected_task_id();
+    }
 
     tasks_list->DetachAllChildren();
 
     tasks = std::move(new_tasks);
 
+    ftxui::Component selected_checkbox;
     for (auto &task : tasks) {
       // TODO: add CheckboxOption.on_change callback to update task.done
       // TODO: customize checkbox appearance with CheckboxOption.transform
       auto checkbox = ftxui::Checkbox(task.title, &task.done);
       tasks_list->Add(checkbox);
+      if (task._id == selected_task_id()) {
+        selected_checkbox = checkbox;
+      }
+    }
+    if (selected_checkbox) {
+      tasks_list->SetActiveChild(selected_checkbox);
     }
 
     // force redraw
@@ -57,8 +90,11 @@ private:
           text("Playground Token: " DITTO_PLAYGROUND_TOKEN) | center,
       });
     });
-    auto bottom_bar = Renderer([] {
-      return hbox({text("(c: create) (d: delete) (e: edit) (q: quit)") | flex});
+    auto bottom_bar = Renderer([this] {
+      return hbox({text("(j,↑: down) (k,↓: up) (Space/Enter: toggle)"
+                        " (c: create) (d: delete) (e: edit) (q: quit)") |
+                       flex,
+                   text(debug_text)});
     });
     auto main_ui = Renderer(tasks_list, [this, &top_bar, &bottom_bar] {
       return vbox({top_bar->Render(),                                       //
@@ -121,9 +157,7 @@ private:
             show_modal = false;
             mode = Mode::Normal;
             try {
-              auto task_id = peer.add_task(modal_text, false);
-              // TODO: select this task when it appears in the task list (which
-              // should happen when the observer is called)
+              new_task_id = peer.add_task(modal_text, false);
             } catch (const std::exception &err) {
               // TODO: display this error in the UI
               log_error("Failed to add task: " + std::string(err.what()));
