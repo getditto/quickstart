@@ -14,16 +14,13 @@ A sample React Native application that lets you create tasks and sync them with 
 
 ## Getting Started
 
-### Clone the Repository
-
-```bash
-git clone https://github.com/getditto/react-native-sample-app.git
-cd react-native-sample-app
-```
-
 ### Install Dependencies
 
 ```bash
+# Using npm
+npm install
+
+# Using yarn
 yarn install
 ```
 
@@ -33,7 +30,14 @@ Navigate to the `App.tsx` file and replace `<Your-App-ID>` and `<Your-Token>` wi
 
 ### Run the Application
 
+Running the `start` script launches the "Metro" dev tool, which will build the iOS or Android apps on demand.
+After running the start command, press `i` to launch the iOS simulator or `a` to launch the Android emulator.
+
 ```bash
+# Using npm
+npm start
+
+# Using yarn
 yarn start
 ```
 
