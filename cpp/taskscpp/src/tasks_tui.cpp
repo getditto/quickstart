@@ -27,7 +27,7 @@ private:
   //
   // The returned pointer is only valid until the next call to
   // update_tasks_list().
-  Task *active_task() {
+  const Task *active_task() const {
     for (auto i = 0; i < std::min(tasks.size(), tasks_list->ChildCount());
          i++) {
       auto checkbox = tasks_list->ChildAt(i);
@@ -40,7 +40,7 @@ private:
 
   // Return the ID of the task that is currently active in the task list, or
   // empty string if none.
-  std::string active_task_id() {
+  std::string active_task_id() const {
     auto task = active_task();
     if (task) {
       return task->_id;
@@ -183,9 +183,7 @@ private:
             show_modal = false;
             mode = Mode::Normal;
             try {
-              auto new_task_id = peer.add_task(modal_text, false);
-              // TODO: select new task in list and scroll to it
-              // (Note that we have to wait for the Ditto observer to fire.)
+              peer.add_task(modal_text, false);
             } catch (const std::exception &err) {
               log_error("Failed to add task: " + std::string(err.what()));
             }

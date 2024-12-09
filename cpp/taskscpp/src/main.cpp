@@ -218,6 +218,7 @@ int main(int argc, const char *argv[]) {
     {
       TasksPeer peer(app_id, online_playground_token, enable_cloud_sync,
                      persistence_dir, transports);
+      peer.start_sync();
 
 #ifdef DITTO_QUICKSTART_TUI
       if (found_tui_command) {

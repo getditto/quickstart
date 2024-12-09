@@ -63,11 +63,10 @@ init_ditto(string app_id, string online_playground_token,
           }
         });
 
+    // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
 
     ditto->get_small_peer_info().set_enabled(true);
-
-    ditto->start_sync();
 
     return ditto;
   } catch (const exception &err) {
@@ -128,16 +127,11 @@ public:
       : mtx(new mutex()),
         ditto(init_ditto(std::move(app_id), std::move(online_playground_token),
                          enable_cloud_sync, std::move(persistence_dir),
-                         transports)) {
-    tasks_subscription =
-        ditto->sync().register_subscription("SELECT * FROM tasks");
-  }
+                         transports)) {}
 
   ~Impl() noexcept {
     try {
-      log_debug("Destroying tasks peer instance");
-      tasks_subscription->cancel();
-      tasks_subscription.reset();
+      stop_sync();
     } catch (const exception &err) {
       std::cerr << "Failed to destroy tasks peer instance: " +
                        string(err.what())
@@ -145,7 +139,27 @@ public:
     }
   }
 
-  void stop_sync() { ditto->stop_sync(); }
+  void start_sync() {
+    if (is_sync_active()) {
+      return;
+    }
+
+    ditto->start_sync();
+    tasks_subscription =
+        ditto->sync().register_subscription("SELECT * FROM tasks");
+  }
+
+  void stop_sync() {
+    if (!is_sync_active()) {
+      return;
+    }
+
+    tasks_subscription->cancel();
+    tasks_subscription.reset();
+    ditto->stop_sync();
+  }
+
+  bool is_sync_active() const { return ditto->get_is_sync_active(); }
 
   string add_task(const string &title, bool done) {
     try {
@@ -417,7 +431,11 @@ TasksPeer::~TasksPeer() noexcept {
   }
 }
 
+void TasksPeer::start_sync() { impl->start_sync(); }
+
 void TasksPeer::stop_sync() { impl->stop_sync(); }
+
+bool TasksPeer::is_sync_active() const { return impl->is_sync_active(); }
 
 string TasksPeer::add_task(const string &title, bool done) {
   return impl->add_task(title, done);

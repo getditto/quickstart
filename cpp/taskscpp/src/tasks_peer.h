@@ -71,8 +71,14 @@ public:
                           std::string ditto_persistence_dir,
                           TransportConfig transports);
 
+  /// Start the peer, enabling it to sync tasks with other devices.
+  void start_sync();
+
   /// Stop the peer, disabling it from syncing tasks with other devices.
   void stop_sync();
+
+  /// Return true if peer is currently syncing tasks with other devices.
+  bool is_sync_active() const;
 
   /// Create a new task and add it to the collection.
   ///
