@@ -222,7 +222,7 @@ int main(int argc, const char *argv[]) {
       peer.start_sync();
 
 #ifdef DITTO_QUICKSTART_TUI
-      if (found_tui_command) {
+      if (found_tui_command || !found_non_tui_command) {
         TasksTui tui(peer);
         tui.run();
       } else
