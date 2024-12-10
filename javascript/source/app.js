@@ -25,7 +25,7 @@ const FullScreen = (props) => {
     function onResize() {
       setSize({
         columns: process.stdout.columns,
-        rows: process.stdout.rows,
+        rows: process.stdout.rows - 1,
       });
     }
 
@@ -90,7 +90,10 @@ const TodoApp = ({ ditto }) => {
   const [tasks, setTasks] = useState([]);
   const [mode, setMode] = useState(LIST_MODE);
   const [selected, setSelected] = useState(0);
-  const [subscription, setSubscription] = useState(null);
+  const [syncEnabled, setSyncEnabled] = useState(true);
+
+  // Hold onto the subscription and observer in case we need to cancel them
+  const [_subscription, setSubscription] = useState(null);
   const [_observer, setObserver] = useState(null);
 
   useInput((input, key) => {
@@ -104,12 +107,12 @@ const TodoApp = ({ ditto }) => {
         return;
       }
       if (input === 's') {
-        if (!!subscription) {
-          subscription.cancel();
-          setSubscription(null);
+        if (syncEnabled) {
+          ditto.stopSync();
+          setSyncEnabled(false);
         } else {
-          const subscription = ditto.sync.registerSubscription("SELECT * FROM tasks");
-          setSubscription(subscription);
+          ditto.startSync();
+          setSyncEnabled(true);
         }
       }
     }
@@ -217,11 +220,12 @@ const TodoApp = ({ ditto }) => {
         {Array.from(tasks).map((task, i) => {
           const done = task.done ? " 🟢 " : " ⚪️ ";
           const highlight = selected === i ? "blue" : "";
+          const cursor = selected === i ? "❯ " : "  ";
           return (
             <Box flexDirection="row">
               <Text color={highlight}>
                 <Text>{done}    </Text>
-                <Text>{task.title}</Text>
+                <Text>{cursor}{task.title}</Text>
               </Text>
             </Box>
           )
@@ -230,7 +234,7 @@ const TodoApp = ({ ditto }) => {
     );
   });
 
-  const syncStatus = !!subscription ? "🟢 Sync Active" : "🔴 Sync Inactive";
+  const syncStatus = syncEnabled ? "🟢 Sync Active" : "🔴 Sync Inactive";
   const syncText = <Text>{syncStatus}</Text>;
 
   if (mode === LIST_MODE) {
