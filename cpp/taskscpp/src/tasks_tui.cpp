@@ -123,7 +123,7 @@ private:
       });
     });
     auto bottom_bar = Renderer([this] {
-      return hbox({text("(j,↑: down) (k,↓: up) (Space/Enter: toggle)"
+      return hbox({text("(j↑) (k↓) (Space/Enter: toggle)"
                         " (c: create) (d: delete) (e: edit) (q: quit)") |
                        flex,
                    text(status_text)});

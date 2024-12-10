@@ -1,7 +1,0 @@
-cc_library(
-    name = "libditto",
-    srcs = ["libditto.a"],
-    hdrs = glob(["*.h"]),
-    includes = ["."],
-    visibility = ["//visibility:public"],
-)
