@@ -47,9 +47,13 @@ run-tui: build ## Builds taskscpp and runs it in TUI mode
 	cd $(BUILD_DIR) && ./taskscpp --tui
 
 .PHONY: run-list
-run-list: build ## Builds taskscpp and runs the --list-all command
-	cd $(BUILD_DIR) && ./taskscpp --list-all
+run-list: build ## Builds taskscpp and runs the --list command
+	cd $(BUILD_DIR) && ./taskscpp --list
 
+.PHONY: run-list-all
+run-list-all: build ## Builds taskscpp and runs the --list-all command
+	cd $(BUILD_DIR) && ./taskscpp --list-all
+	
 .PHONY: run-monitor
 run-monitor: build ## Builds taskscpp and runs the --monitor command
 	cd $(BUILD_DIR) && ./taskscpp --monitor
@@ -72,9 +76,9 @@ lint: build ## Runs clang-format -n and clang-tidy on all .cpp and .h files
 # Internet.  For now, just copy from local build tree.
 .PHONY: updatesdk
 updatesdk: ## Copies Ditto.h and libditto.a from SDK build
-	mkdir -p dittosdk
-	cp $(SDKBUILD_DIR)/include/Ditto.h dittosdk/Ditto.h
-	cp $(SDKBUILD_DIR)/build/libditto.a dittosdk/libditto.a
+	mkdir -p sdk
+	cp $(SDKBUILD_DIR)/include/Ditto.h sdk/Ditto.h
+	cp $(SDKBUILD_DIR)/build/libditto.a sdk/libditto.a
 
 .PHONY: clean
 clean: ## Removes all generated files and directories

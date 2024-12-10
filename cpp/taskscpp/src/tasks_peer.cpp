@@ -47,21 +47,24 @@ init_ditto(string app_id, string online_playground_token,
     auto ditto =
         std::make_shared<ditto::Ditto>(identity, std::move(persistence_dir));
 
-    ditto->update_transport_config(
-        [&xport_cfg](ditto::TransportConfig &ditto_xport_cfg) {
-          if (xport_cfg.disable_ble) {
-            ditto_xport_cfg.peer_to_peer.bluetooth_le.enabled = false;
-          }
-          if (xport_cfg.disable_lan) {
-            ditto_xport_cfg.peer_to_peer.lan.enabled = false;
-          }
-          if (xport_cfg.disable_awdl) {
-            ditto_xport_cfg.peer_to_peer.awdl.enabled = false;
-          }
-          if (xport_cfg.disable_wifi_aware) {
-            ditto_xport_cfg.peer_to_peer.wifi_aware.enabled = false;
-          }
-        });
+    if (xport_cfg.disable_ble || xport_cfg.disable_lan ||
+        xport_cfg.disable_awdl || xport_cfg.disable_wifi_aware) {
+      ditto->update_transport_config(
+          [&xport_cfg](ditto::TransportConfig &ditto_xport_cfg) {
+            if (xport_cfg.disable_ble) {
+              ditto_xport_cfg.peer_to_peer.bluetooth_le.enabled = false;
+            }
+            if (xport_cfg.disable_lan) {
+              ditto_xport_cfg.peer_to_peer.lan.enabled = false;
+            }
+            if (xport_cfg.disable_awdl) {
+              ditto_xport_cfg.peer_to_peer.awdl.enabled = false;
+            }
+            if (xport_cfg.disable_wifi_aware) {
+              ditto_xport_cfg.peer_to_peer.wifi_aware.enabled = false;
+            }
+          });
+    }
 
     // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
