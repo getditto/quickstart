@@ -1,5 +1,6 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
-import { Button, Modal, ModalProps, StyleSheet, Text, TextInput, View } from "react-native";
+import { Button, Modal, ModalProps, StyleSheet, Text, TextInput, View } from 'react-native';
 
 type EditTaskModalProps = {
   task: { id: string, title: string } | null,
@@ -10,7 +11,7 @@ type EditTaskModalProps = {
 type Props = EditTaskModalProps & ModalProps;
 
 const EditTaskModal: React.FC<Props> = ({ task, onSubmit, onClose, ...props }) => {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
 
   useEffect(() => {
     if (task) {
@@ -19,9 +20,9 @@ const EditTaskModal: React.FC<Props> = ({ task, onSubmit, onClose, ...props }) =
   }, [task]);
 
   const submit = () => {
-    if (input !== "" && task) {
+    if (input !== '' && task) {
       onSubmit(task.id, input);
-      setInput("");
+      setInput('');
     }
   };
 
@@ -47,26 +48,26 @@ const EditTaskModal: React.FC<Props> = ({ task, onSubmit, onClose, ...props }) =
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: "80%",
+    width: '80%',
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 10,
-    alignItems: "center",
+    alignItems: 'center',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 15,
   },
   input: {
-    width: "100%",
+    width: '100%',
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
     marginBottom: 15,
