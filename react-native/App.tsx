@@ -23,6 +23,7 @@ import NewTaskModal from './components/NewTaskModal';
 import DittoInfo from './components/DittoInfo';
 import DittoSync from './components/DittoSync';
 import TaskDone from './components/TaskDone';
+import EditTaskModal from './components/EditTaskModal';
 
 type Task = {
   id: string;
@@ -58,6 +59,7 @@ const App = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [syncEnabled, setSyncEnabled] = useState(true);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const toggleSync = () => {
@@ -70,6 +72,7 @@ const App = () => {
   };
 
   const createTask = async (title: string) => {
+    if (title === "") return;
     await ditto.current?.store.execute('INSERT INTO tasks DOCUMENTS (:task)', {
       task: {
         title,
@@ -89,6 +92,13 @@ const App = () => {
   const deleteTask = async (task: Task) => {
     await ditto.current?.store.execute('UPDATE tasks SET deleted=true WHERE _id=:id', {
       id: task.id,
+    });
+  };
+
+  const updateTaskTitle = async (taskId: string, newTitle: string) => {
+    await ditto.current?.store.execute('UPDATE tasks SET title=:title WHERE _id=:id', {
+      id: taskId,
+      title: newTitle,
     });
   };
 
@@ -146,7 +156,12 @@ const App = () => {
   const renderItem = ({ item }: { item: Task }) => (
     <View key={item.id} style={styles.taskContainer}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
-      <Text style={styles.taskTitle}>{item.title}</Text>
+      <Text
+        style={styles.taskTitle}
+        onLongPress={() => setEditingTask(item)}
+      >
+        {item.title}
+      </Text>
       <View style={styles.taskButton}>
         <Button title="Delete" color="#DC2626" onPress={() => deleteTask(item)} />
       </View>
@@ -167,10 +182,21 @@ const App = () => {
         }}
         onClose={() => setModalVisible(false)}
       />
+      <EditTaskModal
+        visible={editingTask !== null}
+        task={editingTask}
+        onRequestClose={() => setEditingTask(null)}
+        onSubmit={(taskId, newTitle) => {
+          updateTaskTitle(taskId, newTitle);
+          setEditingTask(null);
+        }}
+        onClose={() => setEditingTask(null)}
+      />
       <FlatList
         contentContainerStyle={styles.listContainer}
         data={tasks}
         renderItem={renderItem}
+        keyExtractor={(item) => item.id}
       />
     </SafeAreaView>
   );
