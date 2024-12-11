@@ -21,6 +21,7 @@ const TaskDone: React.FC<Props> = ({ checked, onPress }) => {
 
 const styles = StyleSheet.create({
   button: {
+    flexShrink: 1,
     marginRight: 8,
   },
 });

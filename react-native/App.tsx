@@ -213,7 +213,6 @@ const styles = StyleSheet.create({
   },
   taskContainer: {
     flex: 1,
-    flexShrink: 1,
     gap: 5,
     flexDirection: 'row',
     paddingVertical: 10,
