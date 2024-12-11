@@ -35,10 +35,10 @@ static string to_json_string(const ditto::QueryResult &result) {
 }
 
 /// Initialize a Ditto instance.
-static shared_ptr<ditto::Ditto>
-init_ditto(string app_id, string online_playground_token,
-           bool enable_cloud_sync, string persistence_dir,
-           TasksPeer::TransportConfig xport_cfg) {
+static shared_ptr<ditto::Ditto> init_ditto(string app_id,
+                                           string online_playground_token,
+                                           bool enable_cloud_sync,
+                                           string persistence_dir) {
   try {
     const auto identity = ditto::Identity::OnlinePlayground(
         std::move(app_id), std::move(online_playground_token),
@@ -47,29 +47,8 @@ init_ditto(string app_id, string online_playground_token,
     auto ditto =
         std::make_shared<ditto::Ditto>(identity, std::move(persistence_dir));
 
-    if (xport_cfg.disable_ble || xport_cfg.disable_lan ||
-        xport_cfg.disable_awdl || xport_cfg.disable_wifi_aware) {
-      ditto->update_transport_config(
-          [&xport_cfg](ditto::TransportConfig &ditto_xport_cfg) {
-            if (xport_cfg.disable_ble) {
-              ditto_xport_cfg.peer_to_peer.bluetooth_le.enabled = false;
-            }
-            if (xport_cfg.disable_lan) {
-              ditto_xport_cfg.peer_to_peer.lan.enabled = false;
-            }
-            if (xport_cfg.disable_awdl) {
-              ditto_xport_cfg.peer_to_peer.awdl.enabled = false;
-            }
-            if (xport_cfg.disable_wifi_aware) {
-              ditto_xport_cfg.peer_to_peer.wifi_aware.enabled = false;
-            }
-          });
-    }
-
     // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
-
-    ditto->get_small_peer_info().set_enabled(true);
 
     return ditto;
   } catch (const exception &err) {
@@ -126,11 +105,10 @@ private:
 
 public:
   Impl(string app_id, string online_playground_token, bool enable_cloud_sync,
-       string persistence_dir, TransportConfig transports)
+       string persistence_dir)
       : mtx(new mutex()),
         ditto(init_ditto(std::move(app_id), std::move(online_playground_token),
-                         enable_cloud_sync, std::move(persistence_dir),
-                         transports)) {}
+                         enable_cloud_sync, std::move(persistence_dir))) {}
 
   ~Impl() noexcept {
     try {
@@ -440,18 +418,15 @@ public:
 TasksPeer TasksPeer::create(string ditto_app_id,
                             string ditto_online_playground_token,
                             bool enable_cloud_sync,
-                            string ditto_persistence_dir,
-                            TransportConfig transports) {
+                            string ditto_persistence_dir) {
   return {std::move(ditto_app_id), std::move(ditto_online_playground_token),
-          enable_cloud_sync, std::move(ditto_persistence_dir), transports};
+          enable_cloud_sync, std::move(ditto_persistence_dir)};
 }
 
 TasksPeer::TasksPeer(string app_id, string online_playground_token,
-                     bool enable_cloud_sync, string persistence_dir,
-                     TasksPeer::TransportConfig transports)
+                     bool enable_cloud_sync, string persistence_dir)
     : impl(new Impl(std::move(app_id), std::move(online_playground_token),
-                    enable_cloud_sync, std::move(persistence_dir),
-                    transports)) {}
+                    enable_cloud_sync, std::move(persistence_dir))) {}
 
 TasksPeer::~TasksPeer() noexcept {
   try {

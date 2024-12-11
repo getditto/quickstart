@@ -15,14 +15,6 @@ public:
   /// Returns a string identifying the version of the Ditto SDK.
   static std::string get_ditto_sdk_version();
 
-  /// By default, all transport types are enabled, but they can be disabled.
-  struct TransportConfig {
-    bool disable_ble = false;
-    bool disable_lan = false;
-    bool disable_awdl = false;
-    bool disable_wifi_aware = false;
-  };
-
   /// A subscription registration returned by @ref
   /// `register_tasks_observer()`.
   class TasksObserver {
@@ -50,8 +42,7 @@ public:
 
   /// Construct a new TasksPeer object.
   TasksPeer(std::string ditto_app_id, std::string ditto_online_playground_token,
-            bool enable_cloud_sync, std::string ditto_persistence_dir,
-            TransportConfig transports);
+            bool enable_cloud_sync, std::string ditto_persistence_dir);
 
   virtual ~TasksPeer() noexcept;
 
@@ -68,8 +59,7 @@ public:
   static TasksPeer create(std::string ditto_app_id,
                           std::string ditto_online_playground_token,
                           bool enable_cloud_sync,
-                          std::string ditto_persistence_dir,
-                          TransportConfig transports);
+                          std::string ditto_persistence_dir);
 
   /// Start the peer, enabling it to sync tasks with other devices.
   void start_sync();

@@ -96,12 +96,6 @@ int main(int argc, const char *argv[]) {
         cxxopts::value<string>(), "TOKEN")
       ("enable-cloud-sync", "Enable cloud synchronization");
 
-    options.add_options("Transports")
-      ("no-ble", "Disable Bluetooth Low Energy transport")
-      ("no-lan", "Disable Wi-Fi transport")
-      ("no-awdl", "Disable Apple Wireless Direct Link transport")
-      ("no-wifi-aware", "Disable Wi-Fi Aware transport");
-
     options.add_options("Logging")
       ("q,quiet", "Disable non-logging output")
       ("error", "Error-level logging")
@@ -200,24 +194,10 @@ int main(int argc, const char *argv[]) {
     // Set this true if we make modifications and need to allow post-sync time.
     bool need_post_sync = false;
 
-    TasksPeer::TransportConfig transports;
-    if (opt_parse.count("no-ble") > 0) {
-      transports.disable_ble = true;
-    }
-    if (opt_parse.count("no-lan") > 0) {
-      transports.disable_lan = true;
-    }
-    if (opt_parse.count("no-awdl") > 0) {
-      transports.disable_awdl = true;
-    }
-    if (opt_parse.count("no-wifi-aware") > 0) {
-      transports.disable_wifi_aware = true;
-    }
-
     // The peer is destroyed at the end of this scope
     {
       TasksPeer peer(app_id, online_playground_token, enable_cloud_sync,
-                     persistence_dir, transports);
+                     persistence_dir);
       peer.insert_initial_tasks();
       peer.start_sync();
 
