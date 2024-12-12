@@ -29,7 +29,7 @@ androidComponents {
             "DITTO_APP_ID",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_APP_ID"]}",
+                "\"${prop["DITTO_APP_ID"]}\"",
                 "Ditto application ID"
             )
         )
@@ -37,7 +37,7 @@ androidComponents {
             "DITTO_PLAYGROUND_TOKEN",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_PLAYGROUND_TOKEN"]}",
+                "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
                 "Ditto online playground authentication token"
             )
         )
@@ -49,7 +49,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "live.ditto.quickstart.tasks.cpp"
+        applicationId = "live.ditto.quickstart.tasks"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
