@@ -1,5 +1,4 @@
 #include "tasks_peer.h"
-#include "task_json.h"
 #include "tasks_log.h"
 #include "transform_container.h"
 
