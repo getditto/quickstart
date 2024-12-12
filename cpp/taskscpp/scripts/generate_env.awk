@@ -26,10 +26,11 @@ BEGIN {
 
 # Match lines of the form TOKEN_NAME = token_value from the input file
 /^[[:space:]]*[A-Z0-9_]+[[:space:]]+=[[:space:]]+/ {
-  print "#define " $1 " \"" $2 "\""
+  print "#define " $1 " \"" $3 "\""
   next
 }
 
 END {
-  print "\n#endif // DITTO_QUICKSTART_ENV_H"
+  print ""
+  print "#endif // DITTO_QUICKSTART_ENV_H"
 }
