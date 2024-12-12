@@ -243,7 +243,7 @@ public:
       : peer(peer), screen(ftxui::ScreenInteractive::Fullscreen()),
         tasks_list(ftxui::Container::Vertical({})) {}
 
-  ~Impl() {}
+  ~Impl() = default;
 
   void run() {
     if (isatty(STDERR_FILENO)) {
