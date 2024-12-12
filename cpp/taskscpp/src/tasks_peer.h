@@ -150,7 +150,7 @@ public:
     TasksObserverHandler &operator=(const TasksObserverHandler &&) = delete;
 
     /// Called when the tasks collection has been updated.
-    virtual void on_tasks_updated(const std::vector<Task> &tasks);
+    virtual void on_tasks_updated(const std::vector<Task> &tasks) = 0;
   };
 
   /// Subscribe to updates to the tasks collection.

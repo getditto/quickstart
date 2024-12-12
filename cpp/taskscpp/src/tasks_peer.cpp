@@ -507,6 +507,3 @@ TasksPeer::TasksObserverHandler::~TasksObserverHandler() noexcept {
     std::cerr << "Error in ~TasksObserverHandler: " << e.what() << std::endl;
   }
 }
-
-void TasksPeer::TasksObserverHandler::on_tasks_updated(
-    const std::vector<Task> &tasks) = 0;
