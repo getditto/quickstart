@@ -509,6 +509,4 @@ TasksPeer::TasksObserverHandler::~TasksObserverHandler() noexcept {
 }
 
 void TasksPeer::TasksObserverHandler::on_tasks_updated(
-    const std::vector<Task> &tasks) {
-  log_warning("TasksObserverHandler::on_tasks_updated should be overridden");
-}
+    const std::vector<Task> &tasks) = 0;
