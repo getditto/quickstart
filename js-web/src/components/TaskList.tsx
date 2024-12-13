@@ -149,8 +149,39 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
     tasks.filter(task => task.done).forEach(task => onDelete(task));
   };
 
+  // Pretty view to show when the list is empty
+  const listFiller = () => {
+    if (tasks.length !== 0) {
+      return null;
+    }
+
+    return (
+      <div className='flex-grow bg-white shadow-md flex flex-col items-center justify-center text-gray-500 space-y-4 py-8'>
+        <svg
+          className="w-24 h-24 text-gray-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1}
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+          />
+        </svg>
+        <h3 className="text-xl font-medium bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+          No tasks yet
+        </h3>
+        <p className="text-gray-400 text-center max-w-sm">
+          Add your first task using the input field below. Your tasks will sync across all your devices.
+        </p>
+      </div>
+    );
+  };
+
   return (
-    <div className='w-full mt-8 max-w-2xl flex flex-col h-[calc(100vh-250px)] px-4'>
+    <div className='w-full mt-8 max-w-2xl flex flex-col h-[calc(100vh-300px)] px-4'>
       {/* Header/Control Panel */}
       <div className='bg-white shadow-lg rounded-t-lg'>
         <div className='flex justify-between items-center px-4 py-3 text-sm text-gray-500 border-b border-gray-200'>
@@ -181,6 +212,8 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
           >Delete completed</button>
         </div>
       </div>
+
+      {listFiller()}
 
       {/* Task List */}
       <div className='bg-white shadow-md overflow-y-auto'>
