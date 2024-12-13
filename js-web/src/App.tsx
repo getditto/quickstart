@@ -22,7 +22,7 @@ const App = () => {
   const ditto = useRef<Ditto | null>(null);
   const tasksSubscription = useRef<SyncSubscription | null>(null);
   const tasksObserver = useRef<StoreObserver | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitialized, setIsInitialized] = useState<Promise<void> | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([
     { id: '1', title: 'apple', done: true, deleted: false },
@@ -35,21 +35,20 @@ const App = () => {
     const initializeDitto = async () => {
       try {
         await init();
-        setIsInitialized(true);
       } catch (e) {
         console.error('Failed to initialize Ditto:', e);
       }
     };
 
-    initializeDitto();
+    setIsInitialized(initializeDitto());
   }, []);
 
   useEffect(() => {
     if (!isInitialized) return;
 
     (async () => {
+      await isInitialized;
       try {
-        await init();
         ditto.current = new Ditto(identity);
         await ditto.current.disableSyncWithV3();
         ditto.current.startSync();
@@ -64,6 +63,11 @@ const App = () => {
       } catch (e) {
         console.error('Failed to initialize Ditto:', e);
       }
+
+      return () => {
+        ditto.current?.close();
+        ditto.current = null;
+      };
     })();
   }, [isInitialized]);
 
