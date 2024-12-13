@@ -12,7 +12,7 @@ const identity: IdentityOnlinePlayground = {
 };
 
 export type Task = {
-  id: string;
+  _id: string;
   title: string;
   done: boolean;
   deleted: boolean;
@@ -24,12 +24,7 @@ const App = () => {
   const tasksObserver = useRef<StoreObserver | null>(null);
   const [isInitialized, setIsInitialized] = useState<Promise<void> | null>(null);
 
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: '1', title: 'apple', done: true, deleted: false },
-    { id: '2', title: 'banana', done: false, deleted: false },
-    { id: '3', title: 'cranberry', done: true, deleted: false },
-    { id: '4', title: 'date', done: false, deleted: false },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     const initializeDitto = async () => {
@@ -72,7 +67,6 @@ const App = () => {
   }, [isInitialized]);
 
   const createTask = async (title: string) => {
-    console.log("Creating", title);
     await ditto.current?.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
       task: {
         title,
@@ -82,18 +76,23 @@ const App = () => {
     });
   };
 
+  const editTask = async (id: string, title: string) => {
+    await ditto.current?.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
+      id,
+      title,
+    });
+  };
+
   const toggleTask = async (task: Task) => {
-    console.log("Toggling", task);
     await ditto.current?.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
-      id: task.id,
+      id: task._id,
       done: !task.done,
     });
   };
 
   const deleteTask = async (task: Task) => {
-    console.log("Deleting", task);
     await ditto.current?.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
-      id: task.id,
+      id: task._id,
     });
   };
 
@@ -101,7 +100,7 @@ const App = () => {
     <div className='h-screen w-full bg-gray-100'>
       <div className='h-full w-full flex flex-col container mx-auto items-center'>
         <DittoInfo appId={identity.appID} token={identity.token} />
-        <TaskList tasks={tasks} onCreate={createTask} onToggle={toggleTask} onDelete={deleteTask} />
+        <TaskList tasks={tasks} onCreate={createTask} onEdit={editTask} onToggle={toggleTask} onDelete={deleteTask} />
       </div>
     </div>
   )

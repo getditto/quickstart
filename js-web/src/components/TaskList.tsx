@@ -3,23 +3,93 @@ import { Task } from '../App';
 
 type ItemProps = {
   task: Task,
+  onEdit: (id: string, title: string) => void,
   onToggle: (task: Task) => void,
   onDelete: (task: Task) => void,
 }
 
-const TaskItem: React.FC<ItemProps> = ({ task, onToggle, onDelete }) => {
+const TaskItem: React.FC<ItemProps> = ({ task, onEdit, onToggle, onDelete }) => {
+  const [editing, setEditing] = useState<boolean>(false);
+  const [editedTitle, setEditedTitle] = useState<string>("");
+
+  const textOrInput = () => {
+    if (!editing) {
+      return (
+        <span
+          className={`flex-grow text-gray-700 ${task.done ? 'line-through text-gray-400' : ''} cursor-pointer hover:bg-gray-100 px-2 py-1 rounded`}
+          onClick={() => {
+            setEditedTitle(task.title);
+            setEditing(true);
+          }}
+        >
+          {task.title}
+        </span>
+      );
+    }
+
+    return (
+      <input
+        type="text"
+        value={editedTitle}
+        className="flex-grow px-2 py-1 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        onChange={(e) => setEditedTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            onEdit(task._id, editedTitle);
+            setEditedTitle("");
+            setEditing(false);
+          } else if (e.key === 'Escape') {
+            setEditedTitle("");
+            setEditing(false);
+          }
+        }}
+        autoFocus
+        onFocus={(e) => e.target.select()}
+        onBlur={() => {
+          onEdit(task._id, editedTitle);
+          setEditedTitle("");
+          setEditing(false);
+        }}
+      />
+    );
+  };
+
+  const handleEditPress = () => {
+    if (editing) {
+      setEditing(false);
+      return;
+    }
+
+    setEditedTitle(task.title);
+    setEditing(true);
+  };
+
   return (
-    <div className='group flex items-center p-4 border-b border-gray-200 hover:bg-gray-50'>
+    <div className='group flex items-center p-2 px-4 border-b border-gray-200 hover:bg-gray-50'>
       <input
         type="checkbox"
         checked={task.done}
         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-4"
         readOnly
-        onChange={() => onToggle(task)}
+        onClick={() => onToggle(task)}
       />
-      <span className={`flex-grow text-gray-700 ${task.done ? 'line-through text-gray-400' : ''}`}>
-        {task.title}
-      </span>
+      {textOrInput()}
+      <button
+        className="invisible group-hover:visible p-1 ml-2 text-gray-400 hover:text-blue-600 transition-colors mr-2"
+        aria-label="Edit task"
+        onClick={handleEditPress}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+          />
+        </svg>
+      </button>
       <button
         className="invisible group-hover:visible p-1 text-gray-400 hover:text-red-600 transition-colors"
         aria-label="Delete task"
@@ -45,24 +115,30 @@ const TaskItem: React.FC<ItemProps> = ({ task, onToggle, onDelete }) => {
 type ListProps = {
   tasks: Task[],
   onCreate: (title: string) => void,
+  onEdit: (id: string, title: string) => void,
   onToggle: (task: Task) => void,
   onDelete: (task: Task) => void,
 }
 
 type Filter = "all" | "done";
 
-const TaskList: React.FC<ListProps> = ({ tasks, onCreate, onToggle, onDelete }) => {
+const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDelete }) => {
   const [filter, setFilter] = useState<Filter>("all");
   const [newTaskTitle, setNewTaskTitle] = useState<string>("");
 
   const taskList = tasks
     .filter((task) => filter === "all" ? true : !task.done)
     .map((task) => (
-      <TaskItem key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
+      <TaskItem
+        key={task._id}
+        task={task}
+        onEdit={onEdit}
+        onToggle={onToggle}
+        onDelete={onDelete}
+      />
     ));
 
   const handleCreate = () => {
-    console.log("HandleCreate", newTaskTitle);
     if (newTaskTitle === "") return;
     onCreate(newTaskTitle);
     setNewTaskTitle("");
