@@ -69,9 +69,9 @@ const TaskList: React.FC<ListProps> = ({ tasks, onCreate, onToggle, onDelete }) 
   };
 
   return (
-    <div className='mx-auto max-w-2xl w-full mt-8'>
+    <div className='w-full mt-8 max-w-2xl flex flex-col h-[calc(100vh-250px)] px-4'>
       {/* Header/Control Panel */}
-      <div className='bg-white shadow-md rounded-t-lg'>
+      <div className='bg-white shadow-lg rounded-t-lg'>
         <div className='flex justify-between items-center px-4 py-3 text-sm text-gray-500 border-b border-gray-200'>
           <span>{tasks.filter(t => !t.done).length} items left</span>
           <div className='space-x-2'>
@@ -83,12 +83,12 @@ const TaskList: React.FC<ListProps> = ({ tasks, onCreate, onToggle, onDelete }) 
       </div>
 
       {/* Task List */}
-      <div className='bg-white shadow-md'>
+      <div className='bg-white shadow-md overflow-y-auto'>
         {taskList}
       </div>
 
       {/* New Task Input */}
-      <div className='bg-white shadow-md rounded-b-lg flex'>
+      <div className='bg-white shadow-md rounded-b-lg flex border border-t-1'>
         <input
           type="text"
           placeholder="What needs to be done?"

@@ -98,9 +98,11 @@ const App = () => {
   };
 
   return (
-    <div className='h-full w-full flex flex-col container mx-auto'>
-      <DittoInfo appId={identity.appID} token={identity.token} />
-      <TaskList tasks={tasks} onCreate={createTask} onToggle={toggleTask} onDelete={deleteTask} />
+    <div className='h-screen w-full bg-gray-100'>
+      <div className='h-full w-full flex flex-col container mx-auto items-center'>
+        <DittoInfo appId={identity.appID} token={identity.token} />
+        <TaskList tasks={tasks} onCreate={createTask} onToggle={toggleTask} onDelete={deleteTask} />
+      </div>
     </div>
   )
 }
