@@ -23,7 +23,7 @@ static vector<Task> tasks_from(const ditto::QueryResult &result) {
   const auto item_count = result.item_count();
   vector<Task> tasks;
   tasks.reserve(item_count);
-  for (auto i = 0; i < item_count; ++i) {
+  for (size_t i = 0; i < item_count; ++i) {
     tasks.emplace_back(task_from(result.get_item(i)));
   }
   return tasks;
@@ -74,8 +74,8 @@ private:
   shared_ptr<ditto::StoreObserver> observer;
 
 public:
-  explicit Impl(shared_ptr<ditto::StoreObserver> observer)
-      : observer(std::move(observer)) {}
+  explicit Impl(shared_ptr<ditto::StoreObserver> ob)
+      : observer(std::move(ob)) {}
 
   ~Impl() noexcept {
     try {
@@ -90,7 +90,7 @@ public:
   bool is_cancelled() const { return observer->is_cancelled(); }
 };
 
-TasksPeer::TasksObserver::TasksObserver(Impl *impl) : impl(impl) {}
+TasksPeer::TasksObserver::TasksObserver(Impl *obs_impl) : impl(obs_impl) {}
 
 TasksPeer::TasksObserver::~TasksObserver() noexcept = default;
 
@@ -159,7 +159,6 @@ public:
       const auto command = "INSERT INTO tasks DOCUMENTS (:newTask)";
       const auto result =
           ditto->get_store().execute(command, {{"newTask", task_args}});
-
       auto task_id = result.mutated_document_ids()[0].to_string();
       log_debug("Added task: " + task_id);
       return task_id;
@@ -173,7 +172,7 @@ public:
     try {
       const auto result =
           ditto->get_store().execute(select_tasks_query(include_deleted_tasks));
-      auto tasks = tasks_from(result);
+      const auto tasks = tasks_from(result);
       log_debug("Retrieved tasks; count=" + to_string(tasks.size()));
       return tasks;
     } catch (const exception &err) {
@@ -190,7 +189,6 @@ public:
         throw invalid_argument("task_id must not be empty");
       }
       const auto query = "SELECT * FROM tasks WHERE _id = :id AND NOT deleted";
-      throw invalid_argument("task_id must not be empty");
       const auto result = ditto->get_store().execute(query, {{"id", task_id}});
       const auto item_count = result.item_count();
       if (item_count == 0) {
@@ -201,7 +199,7 @@ public:
                             "\"");
       }
 
-      auto task = task_from(result.get_item(0));
+      const auto task = task_from(result.get_item(0));
       log_debug("Retrieved task with _id " + task_id);
       return task;
     } catch (const exception &err) {
@@ -346,14 +344,14 @@ public:
     try {
       const auto observer = ditto->get_store().register_observer(
           select_tasks_query(),
-          [callback = std::move(callback)](const ditto::QueryResult &result) {
+          [cb = std::move(callback)](const ditto::QueryResult &result) {
             const auto item_count = result.item_count();
             log_debug("Tasks collection updated; count=" +
                       to_string(item_count));
-            auto tasks = tasks_from(result);
+            const auto tasks = tasks_from(result);
             try {
               log_debug("Invoking observer callback");
-              callback(tasks);
+              cb(tasks);
               log_debug("Observer callback completed");
             } catch (const exception &err) {
               log_error("Error in observer callback: " + string(err.what()));

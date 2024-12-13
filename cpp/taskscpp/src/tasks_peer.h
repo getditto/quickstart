@@ -34,7 +34,7 @@ public:
     bool is_cancelled();
 
   private:
-    class Impl; // private implementation class
+    class Impl; // private implementation class ("pimpl pattern")
     std::shared_ptr<Impl> impl;
     friend class TasksPeer;
     TasksObserver(Impl *impl);

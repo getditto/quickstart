@@ -17,9 +17,9 @@ struct Task {
 
   Task() = default;
 
-  Task(const std::string &id, const std::string &title, bool done = false,
-       bool deleted = false)
-      : _id(id), title(title), done(done), deleted(deleted) {}
+  Task(const std::string &id, const std::string &ttl, bool is_done = false,
+       bool is_deleted = false)
+      : _id(id), title(ttl), done(is_done), deleted(is_deleted) {}
 
   bool operator==(const Task &other) const {
     return _id == other._id &&     //
