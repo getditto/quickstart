@@ -49,7 +49,7 @@ const App = () => {
         ditto.current.startSync();
 
         tasksSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
-        tasksObserver.current = ditto.current.store.registerObserver<Task>('SELECT * FROM tasks WHERE deleted=false', (results) => {
+        tasksObserver.current = ditto.current.store.registerObserver<Task>('SELECT * FROM tasks WHERE deleted=false ORDER BY done', (results) => {
           console.log("Observer", results);
           const tasks = results.items.map((item) => item.value);
           setTasks(tasks);
@@ -67,33 +67,49 @@ const App = () => {
   }, [isInitialized]);
 
   const createTask = async (title: string) => {
-    await ditto.current?.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
-      task: {
-        title,
-        done: false,
-        deleted: false,
-      },
-    });
+    try {
+      await ditto.current?.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
+        task: {
+          title,
+          done: false,
+          deleted: false,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    }
   };
 
   const editTask = async (id: string, title: string) => {
-    await ditto.current?.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
-      id,
-      title,
-    });
+    try {
+      await ditto.current?.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
+        id,
+        title,
+      });
+    } catch (error) {
+      console.error('Failed to edit task:', error);
+    }
   };
 
   const toggleTask = async (task: Task) => {
-    await ditto.current?.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
-      id: task._id,
-      done: !task.done,
-    });
+    try {
+      await ditto.current?.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
+        id: task._id,
+        done: !task.done,
+      });
+    } catch (error) {
+      console.error('Failed to toggle task:', error);
+    }
   };
 
   const deleteTask = async (task: Task) => {
-    await ditto.current?.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
-      id: task._id,
-    });
+    try {
+      await ditto.current?.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
+        id: task._id,
+      });
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
   };
 
   return (

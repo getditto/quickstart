@@ -8,9 +8,17 @@ type ItemProps = {
   onDelete: (task: Task) => void,
 }
 
-const TaskItem: React.FC<ItemProps> = ({ task, onEdit, onToggle, onDelete }) => {
+const TaskItem: React.FC<ItemProps> = React.memo(({ task, onEdit, onToggle, onDelete }) => {
   const [editing, setEditing] = useState<boolean>(false);
   const [editedTitle, setEditedTitle] = useState<string>("");
+
+  const handleEdit = () => {
+    const trimmedTitle = editedTitle.trim();
+    if (trimmedTitle === "") return;
+    onEdit(task._id, trimmedTitle);
+    setEditedTitle("");
+    setEditing(false);
+  };
 
   const textOrInput = () => {
     if (!editing) {
@@ -35,9 +43,7 @@ const TaskItem: React.FC<ItemProps> = ({ task, onEdit, onToggle, onDelete }) => 
         onChange={(e) => setEditedTitle(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
-            onEdit(task._id, editedTitle);
-            setEditedTitle("");
-            setEditing(false);
+            handleEdit();
           } else if (e.key === 'Escape') {
             setEditedTitle("");
             setEditing(false);
@@ -46,22 +52,15 @@ const TaskItem: React.FC<ItemProps> = ({ task, onEdit, onToggle, onDelete }) => 
         autoFocus
         onFocus={(e) => e.target.select()}
         onBlur={() => {
-          onEdit(task._id, editedTitle);
-          setEditedTitle("");
-          setEditing(false);
+          if (!editedTitle || editedTitle === task.title) {
+            setEditedTitle("");
+            setEditing(false);
+            return;
+          }
+          handleEdit();
         }}
       />
     );
-  };
-
-  const handleEditPress = () => {
-    if (editing) {
-      setEditing(false);
-      return;
-    }
-
-    setEditedTitle(task.title);
-    setEditing(true);
   };
 
   return (
@@ -70,14 +69,16 @@ const TaskItem: React.FC<ItemProps> = ({ task, onEdit, onToggle, onDelete }) => 
         type="checkbox"
         checked={task.done}
         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-4"
-        readOnly
-        onClick={() => onToggle(task)}
+        onChange={() => onToggle(task)}
       />
       {textOrInput()}
       <button
         className="invisible group-hover:visible p-1 ml-2 text-gray-400 hover:text-blue-600 transition-colors mr-2"
         aria-label="Edit task"
-        onClick={handleEditPress}
+        onClick={() => {
+          setEditedTitle(task.title);
+          setEditing(true);
+        }}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -110,7 +111,7 @@ const TaskItem: React.FC<ItemProps> = ({ task, onEdit, onToggle, onDelete }) => 
       </button>
     </div>
   );
-};
+});
 
 type ListProps = {
   tasks: Task[],
@@ -120,7 +121,7 @@ type ListProps = {
   onDelete: (task: Task) => void,
 }
 
-type Filter = "all" | "done";
+type Filter = "all" | "active";
 
 const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDelete }) => {
   const [filter, setFilter] = useState<Filter>("all");
@@ -144,6 +145,10 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
     setNewTaskTitle("");
   };
 
+  const deleteCompleted = () => {
+    tasks.filter(task => task.done).forEach(task => onDelete(task));
+  };
+
   return (
     <div className='w-full mt-8 max-w-2xl flex flex-col h-[calc(100vh-250px)] px-4'>
       {/* Header/Control Panel */}
@@ -151,10 +156,29 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
         <div className='flex justify-between items-center px-4 py-3 text-sm text-gray-500 border-b border-gray-200'>
           <span>{tasks.filter(t => !t.done).length} items left</span>
           <div className='space-x-2'>
-            <button onClick={() => setFilter("all")} className='px-2 py-1 rounded hover:border-gray-300 border border-transparent'>All</button>
-            <button onClick={() => setFilter("done")} className='px-2 py-1 rounded hover:border-gray-300 border border-transparent'>Active</button>
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-2 py-1 rounded border ${filter === "all"
+                ? 'border-gray-300 bg-gray-50'
+                : 'border-transparent hover:border-gray-300'
+                }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilter("active")}
+              className={`px-2 py-1 rounded border ${filter === "active"
+                ? 'border-gray-300 bg-gray-50'
+                : 'border-transparent hover:border-gray-300'
+                }`}
+            >
+              Active
+            </button>
           </div>
-          <button className='hover:underline'>Clear completed</button>
+          <button
+            className='hover:underline hover:text-red-600'
+            onClick={deleteCompleted}
+          >Delete completed</button>
         </div>
       </div>
 
