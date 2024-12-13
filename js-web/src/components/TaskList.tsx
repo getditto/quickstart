@@ -221,11 +221,11 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
       </div>
 
       {/* New Task Input */}
-      <div className='bg-white shadow-md rounded-b-lg flex border border-t-1'>
+      <div className='bg-white shadow-md rounded-b-lg flex border-t-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent'>
         <input
           type="text"
           placeholder="What needs to be done?"
-          className="flex-grow px-4 py-3 border-b rounded-bl-lg border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-grow px-4 py-3 rounded-bl-lg border-r border-gray-200 focus:outline-none"
           value={newTaskTitle}
           onChange={(e) => setNewTaskTitle(e.target.value)}
           onKeyDown={(e) => {
