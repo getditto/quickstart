@@ -22,6 +22,8 @@ const App = () => {
   const ditto = useRef<Ditto | null>(null);
   const tasksSubscription = useRef<SyncSubscription | null>(null);
   const tasksObserver = useRef<StoreObserver | null>(null);
+
+  const [syncActive, setSyncActive] = useState<boolean>(true);
   const [isInitialized, setIsInitialized] = useState<Promise<void> | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -65,6 +67,15 @@ const App = () => {
       };
     })();
   }, [isInitialized]);
+
+  const toggleSync = () => {
+    if (syncActive) {
+      ditto.current?.stopSync();
+    } else {
+      ditto.current?.startSync();
+    }
+    setSyncActive(!syncActive);
+  };
 
   const createTask = async (title: string) => {
     try {
@@ -115,7 +126,7 @@ const App = () => {
   return (
     <div className='h-screen w-full bg-gray-100'>
       <div className='h-full w-full flex flex-col container mx-auto items-center'>
-        <DittoInfo appId={identity.appID} token={identity.token} />
+        <DittoInfo appId={identity.appID} token={identity.token} syncEnabled={syncActive} onToggleSync={toggleSync} />
         <TaskList tasks={tasks} onCreate={createTask} onEdit={editTask} onToggle={toggleTask} onDelete={deleteTask} />
       </div>
     </div>
