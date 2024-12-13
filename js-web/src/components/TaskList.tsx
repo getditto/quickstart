@@ -3,9 +3,11 @@ import { Task } from '../App';
 
 type ItemProps = {
   task: Task,
+  onToggle: (task: Task) => void,
+  onDelete: (task: Task) => void,
 }
 
-const TaskItem: React.FC<ItemProps> = ({ task }) => {
+const TaskItem: React.FC<ItemProps> = ({ task, onToggle, onDelete }) => {
   return (
     <div className='group flex items-center p-4 border-b border-gray-200 hover:bg-gray-50'>
       <input
@@ -13,6 +15,7 @@ const TaskItem: React.FC<ItemProps> = ({ task }) => {
         checked={task.done}
         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-4"
         readOnly
+        onChange={() => onToggle(task)}
       />
       <span className={`flex-grow text-gray-700 ${task.done ? 'line-through text-gray-400' : ''}`}>
         {task.title}
@@ -20,6 +23,7 @@ const TaskItem: React.FC<ItemProps> = ({ task }) => {
       <button
         className="invisible group-hover:visible p-1 text-gray-400 hover:text-red-600 transition-colors"
         aria-label="Delete task"
+        onClick={() => onDelete(task)}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -40,18 +44,29 @@ const TaskItem: React.FC<ItemProps> = ({ task }) => {
 
 type ListProps = {
   tasks: Task[],
+  onCreate: (title: string) => void,
+  onToggle: (task: Task) => void,
+  onDelete: (task: Task) => void,
 }
 
 type Filter = "all" | "done";
 
-const TaskList: React.FC<ListProps> = ({ tasks }) => {
+const TaskList: React.FC<ListProps> = ({ tasks, onCreate, onToggle, onDelete }) => {
   const [filter, setFilter] = useState<Filter>("all");
+  const [newTaskTitle, setNewTaskTitle] = useState<string>("");
 
   const taskList = tasks
-    .filter((task) => filter === "done" ? !task.done : false)
+    .filter((task) => filter === "all" ? true : !task.done)
     .map((task) => (
-      <TaskItem key={task.id} task={task} />
+      <TaskItem key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
     ));
+
+  const handleCreate = () => {
+    console.log("HandleCreate", newTaskTitle);
+    if (newTaskTitle === "") return;
+    onCreate(newTaskTitle);
+    setNewTaskTitle("");
+  };
 
   return (
     <div className='mx-auto max-w-2xl w-full mt-8'>
@@ -73,12 +88,24 @@ const TaskList: React.FC<ListProps> = ({ tasks }) => {
       </div>
 
       {/* New Task Input */}
-      <div className='bg-white shadow-md rounded-b-lg'>
+      <div className='bg-white shadow-md rounded-b-lg flex'>
         <input
           type="text"
           placeholder="What needs to be done?"
-          className="w-full px-4 py-3 border-b rounded-b-lg border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-grow px-4 py-3 border-b rounded-bl-lg border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          value={newTaskTitle}
+          onChange={(e) => setNewTaskTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter') return;
+            handleCreate();
+          }}
         />
+        <button
+          className="px-4 py-3 bg-blue-500 text-white font-medium transition-all duration-300 hover:from-blue-500 hover:via-blue-300 hover:to-blue-400 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)] rounded-br-lg hover:bg-blue-600 hover:drop-shadow-md"
+          onClick={handleCreate}
+        >
+          Add Task
+        </button>
       </div>
 
     </div>

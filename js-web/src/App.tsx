@@ -56,8 +56,8 @@ const App = () => {
         tasksSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
         tasksObserver.current = ditto.current.store.registerObserver<Task>('SELECT * FROM tasks WHERE deleted=false', (results) => {
           console.log("Observer", results);
-          // const tasks = results.items.map((item) => item.value);
-          // setTasks(tasks);
+          const tasks = results.items.map((item) => item.value);
+          setTasks(tasks);
         });
 
       } catch (e) {
@@ -71,10 +71,36 @@ const App = () => {
     })();
   }, [isInitialized]);
 
+  const createTask = async (title: string) => {
+    console.log("Creating", title);
+    await ditto.current?.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
+      task: {
+        title,
+        done: false,
+        deleted: false,
+      },
+    });
+  };
+
+  const toggleTask = async (task: Task) => {
+    console.log("Toggling", task);
+    await ditto.current?.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
+      id: task.id,
+      done: !task.done,
+    });
+  };
+
+  const deleteTask = async (task: Task) => {
+    console.log("Deleting", task);
+    await ditto.current?.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
+      id: task.id,
+    });
+  };
+
   return (
     <div className='h-full w-full flex flex-col container mx-auto'>
       <DittoInfo appId={identity.appID} token={identity.token} />
-      <TaskList tasks={tasks} />
+      <TaskList tasks={tasks} onCreate={createTask} onToggle={toggleTask} onDelete={deleteTask} />
     </div>
   )
 }
