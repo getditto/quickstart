@@ -27,8 +27,11 @@ public class Task {
                 (String) map.get("_id"),
                 (String) map.get("title"),
                 Boolean.TRUE.equals(map.get("done")),
-                Boolean.TRUE.equals(map.get("deleted"))
-        );
+                Boolean.TRUE.equals(map.get("deleted")));
+    }
+
+    public String getId() {
+        return id.orElse(null);
     }
 
     public String getTitle() {

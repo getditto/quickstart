@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -28,8 +30,7 @@ import live.ditto.android.DefaultAndroidDittoDependencies;
 import live.ditto.transports.DittoSyncPermissions;
 
 public class MainActivity extends ComponentActivity {
-    private ArrayList<Task> tasks = new ArrayList<>();
-    private TodoAdapter todoAdapter;
+    private TaskAdapter taskAdapter;
 
     Ditto ditto;
     live.ditto.DittoSyncSubscription taskSubscription;
@@ -42,6 +43,34 @@ public class MainActivity extends ComponentActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initDitto();
+
+        // Populate AppID view
+        TextView appId = findViewById(R.id.ditto_app_id);
+        appId.setText(String.format("App ID: %s", DITTO_APP_ID));
+
+        // Populate Playground Token view
+        TextView playgroundToken = findViewById(R.id.ditto_playground_token);
+        playgroundToken.setText(String.format("Playground Token: %s", DITTO_PLAYGROUND_TOKEN));
+
+        // Initialize "add task" fab
+        FloatingActionButton addButton = findViewById(R.id.add_button);
+        addButton.setOnClickListener(v -> showAddTaskModal());
+
+        // Initialize task list
+        RecyclerView taskList = findViewById(R.id.task_list);
+        taskList.setLayoutManager(new LinearLayoutManager(this));
+        taskAdapter = new TaskAdapter();
+        taskList.setAdapter(taskAdapter);
+        taskAdapter.setOnTaskClickListener((task, isChecked) -> {
+            toggleTask(task);
+        });
+        taskAdapter.setOnTaskDeleteListener(this::deleteTask);
+        taskAdapter.setOnTaskLongPressListener(this::showEditTaskModal);
+        taskAdapter.setTasks(List.of());
+    }
+
+    void initDitto() {
         requestPermissions();
 
         try {
@@ -52,9 +81,10 @@ public class MainActivity extends ComponentActivity {
 
             taskSubscription = ditto.sync.registerSubscription("SELECT * FROM tasks");
             taskObserver = ditto.store.registerObserver("SELECT * FROM tasks WHERE deleted=false ORDER BY _id", null, result -> {
-                tasks = result.getItems().stream().map(Task::fromQueryItem).collect(Collectors.toCollection(ArrayList::new));
-                System.out.printf("Observed tasks: %s", tasks);
-                updateTodoList();
+                var tasks = result.getItems().stream().map(Task::fromQueryItem).collect(Collectors.toCollection(ArrayList::new));
+                runOnUiThread(() -> {
+                    taskAdapter.setTasks(new ArrayList<>(tasks));
+                });
                 return Unit.INSTANCE;
             });
 
@@ -62,35 +92,9 @@ public class MainActivity extends ComponentActivity {
         } catch (DittoError e) {
             e.printStackTrace();
         }
-
-        tasks.add(new Task("Gardening"));
-        tasks.add(new Task("Kitchening"));
-        tasks.add(new Task("Cleaning"));
-        tasks.add(new Task("Sleeping"));
-
-        TextView appId = findViewById(R.id.ditto_app_id);
-        appId.setText(String.format("App ID: %s", DITTO_APP_ID));
-
-        TextView playgroundToken = findViewById(R.id.ditto_playground_token);
-        playgroundToken.setText(String.format("Playground Token: %s", DITTO_PLAYGROUND_TOKEN));
-
-
-        RecyclerView todoList = findViewById(R.id.todo_list);
-        todoList.setLayoutManager(new LinearLayoutManager(this));
-
-        todoAdapter = new TodoAdapter();
-        todoList.setAdapter(todoAdapter);
-
-        FloatingActionButton addButton = findViewById(R.id.add_button);
-        addButton.setOnClickListener(v -> showAddTaskModal());
-
-        todoAdapter.setOnTodoClickListener((todo, isChecked) -> {
-            updateTodoList();
-        });
-
-        updateTodoList();
     }
 
+    // Request permissions for Ditto
     void requestPermissions() {
         DittoSyncPermissions permissions = new DittoSyncPermissions(this);
         String[] missing = permissions.missingPermissions(permissions.requiredPermissions());
@@ -99,8 +103,53 @@ public class MainActivity extends ComponentActivity {
         }
     }
 
-    private void updateTodoList() {
-        todoAdapter.setTodos(new ArrayList<>(tasks));
+    private void createTask(String title) {
+        HashMap<String, Object> task = new HashMap<>();
+        task.put("title", title);
+        task.put("done", false);
+        task.put("deleted", false);
+
+        HashMap<String, Object> args = new HashMap<>();
+        args.put("task", task);
+        try {
+            ditto.store.execute("INSERT INTO tasks DOCUMENTS (:task)", args);
+        } catch (DittoError e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void editTaskTitle(Task task, String newTitle) {
+        HashMap<String, Object> args = new HashMap<>();
+        args.put("id", task.getId());
+        args.put("title", newTitle);
+
+        try {
+            ditto.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", args);
+        } catch (DittoError e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void toggleTask(Task task) {
+        HashMap<String, Object> args = new HashMap<>();
+        args.put("id", task.getId());
+        args.put("done", !task.isDone());
+
+        try {
+            ditto.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", args);
+        } catch (DittoError e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void deleteTask(Task task) {
+        HashMap<String, Object> args = new HashMap<>();
+        args.put("id", task.getId());
+        try {
+            ditto.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", args);
+        } catch (DittoError e) {
+            e.printStackTrace();
+        }
     }
 
     private void showAddTaskModal() {
@@ -112,8 +161,7 @@ public class MainActivity extends ComponentActivity {
                 .setPositiveButton("Add", (dialog, which) -> {
                     String text = modalTaskTitle.getText().toString().trim();
                     if (!text.isEmpty()) {
-                        tasks.add(new Task(text));
-                        updateTodoList();
+                        createTask(text);
                     }
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
@@ -124,5 +172,33 @@ public class MainActivity extends ComponentActivity {
         // Show keyboard automatically
         modalTaskTitle.requestFocus();
         Objects.requireNonNull(dialog.getWindow()).setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+    }
+
+    private void showEditTaskModal(Task task) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.modal_edit_task, null);
+        EditText modalEditTaskTitle = dialogView.findViewById(R.id.modal_edit_task_title);
+
+        // Pre-fill the current task title
+        modalEditTaskTitle.setText(task.getTitle());
+        modalEditTaskTitle.setSelection(task.getTitle().length()); // Place cursor at end
+
+        builder.setView(dialogView)
+                .setTitle("Edit Task")
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String newTitle = modalEditTaskTitle.getText().toString().trim();
+                    if (!newTitle.isEmpty()) {
+                        editTaskTitle(task, newTitle);
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Show keyboard automatically
+        modalEditTaskTitle.requestFocus();
+        Objects.requireNonNull(dialog.getWindow())
+                .setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
     }
 }
