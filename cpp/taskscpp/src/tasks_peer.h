@@ -15,31 +15,6 @@ public:
   /// Returns a string identifying the version of the Ditto SDK.
   static std::string get_ditto_sdk_version();
 
-  /// A subscription registration returned by @ref
-  /// `register_tasks_observer()`.
-  class TasksObserver {
-
-  public:
-    virtual ~TasksObserver() noexcept;
-
-    TasksObserver(const TasksObserver &) = delete;
-    TasksObserver(TasksObserver &&) = delete;
-    TasksObserver &operator=(const TasksObserver &) = delete;
-    TasksObserver &operator=(TasksObserver &&) = delete;
-
-    /// Cancel the subscription.
-    void cancel();
-
-    /// Return true if the subscription has been cancelled, or false otherwise.
-    bool is_cancelled();
-
-  private:
-    class Impl; // private implementation class ("pimpl pattern")
-    std::shared_ptr<Impl> impl;
-    friend class TasksPeer;
-    TasksObserver(Impl *impl);
-  };
-
   /// Construct a new TasksPeer object.
   TasksPeer(std::string ditto_app_id, std::string ditto_online_playground_token,
             bool enable_cloud_sync, std::string ditto_persistence_dir);
@@ -126,7 +101,7 @@ public:
   ///
   /// @returns a subscriber object that, when destroyed, will cancel the
   /// subscription.
-  std::shared_ptr<TasksObserver> register_tasks_observer(
+  std::shared_ptr<ditto::StoreObserver> register_tasks_observer(
       std::function<void(const std::vector<Task> &)> callback);
 
   /// Add a set of initial documents to the tasks collection.

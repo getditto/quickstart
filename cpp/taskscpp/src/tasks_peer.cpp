@@ -66,38 +66,6 @@ static shared_ptr<ditto::Ditto> init_ditto(string app_id,
   }
 }
 
-// Private implementation of the TasksPeer::TasksObserver class.
-class TasksPeer::TasksObserver::
-    Impl { // NOLINT(cppcoreguidelines-special-member-functions)
-
-private:
-  shared_ptr<ditto::StoreObserver> observer;
-
-public:
-  explicit Impl(shared_ptr<ditto::StoreObserver> ob)
-      : observer(std::move(ob)) {}
-
-  ~Impl() noexcept {
-    try {
-      observer->cancel();
-    } catch (const exception &err) {
-      log_error("Failed to cancel observer: " + string(err.what()));
-    }
-  }
-
-  void cancel() { observer->cancel(); }
-
-  bool is_cancelled() const { return observer->is_cancelled(); }
-};
-
-TasksPeer::TasksObserver::TasksObserver(Impl *obs_impl) : impl(obs_impl) {}
-
-TasksPeer::TasksObserver::~TasksObserver() noexcept = default;
-
-void TasksPeer::TasksObserver::cancel() { impl->cancel(); }
-
-bool TasksPeer::TasksObserver::is_cancelled() { return impl->is_cancelled(); }
-
 // Private implementation of the TasksPeer class.
 class TasksPeer::Impl { // NOLINT(cppcoreguidelines-special-member-functions)
 private:
@@ -339,19 +307,19 @@ public:
     }
   }
 
-  shared_ptr<TasksPeer::TasksObserver> register_tasks_observer(
+  shared_ptr<ditto::StoreObserver> register_tasks_observer(
       std::function<void(const std::vector<Task> &)> callback) {
     try {
       const auto observer = ditto->get_store().register_observer(
           select_tasks_query(),
-          [cb = std::move(callback)](const ditto::QueryResult &result) {
+          [callback = std::move(callback)](const ditto::QueryResult &result) {
             const auto item_count = result.item_count();
             log_debug("Tasks collection updated; count=" +
                       to_string(item_count));
             const auto tasks = tasks_from(result);
             try {
               log_debug("Invoking observer callback");
-              cb(tasks);
+              callback(tasks);
               log_debug("Observer callback completed");
             } catch (const exception &err) {
               log_error("Error in observer callback: " + string(err.what()));
@@ -359,8 +327,7 @@ public:
           });
 
       log_debug("Registered tasks observer");
-      auto *observer_impl = new TasksObserver::Impl(observer);
-      return shared_ptr<TasksObserver>(new TasksObserver(observer_impl));
+      return observer;
     } catch (const exception &err) {
       log_error("Failed to register observer: " + string(err.what()));
       throw runtime_error("unable to register observer: " + string(err.what()));
@@ -457,7 +424,7 @@ void TasksPeer::delete_task(const string &task_id) {
 
 void TasksPeer::evict_deleted_tasks() { impl->evict_deleted_tasks(); }
 
-shared_ptr<TasksPeer::TasksObserver> TasksPeer::register_tasks_observer(
+shared_ptr<ditto::StoreObserver> TasksPeer::register_tasks_observer(
     function<void(const std::vector<Task> &)> callback) {
   return impl->register_tasks_observer(callback);
 }
