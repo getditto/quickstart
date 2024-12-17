@@ -49,7 +49,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "live.ditto.quickstart.tasks"
+        applicationId = "live.ditto.quickstart.taskscpp"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
@@ -92,12 +92,6 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
         }
     }
 }
