@@ -13,11 +13,6 @@ instructions in the [Ditto C++ Install Guide](https://docs.ditto.live/install-gu
 Then, copy the `Ditto.h` and `libditto.a` files from the SDK into the `sdk/`
 subdirectory of this project.
 
-
-## Permissions (already configured)
-
-- <https://docs.ditto.live/install-guides/swift#kX-Je>
-
 ## Documentation
 
 - [C++ Install Guide](https://docs.ditto.live/install-guides/cpp)
