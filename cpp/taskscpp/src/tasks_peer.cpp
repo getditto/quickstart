@@ -1,5 +1,4 @@
 #include "tasks_peer.h"
-#include "task_json.h"
 #include "tasks_log.h"
 #include "transform_container.h"
 
@@ -17,6 +16,17 @@ using json = nlohmann::json;
 /// Extract a Task object from a QueryResultItem.
 static Task task_from(const ditto::QueryResultItem &item) {
   return json::parse(item.json_string()).template get<Task>();
+}
+
+/// Convert a QueryResult to a collection of Task objects.
+static vector<Task> tasks_from(const ditto::QueryResult &result) {
+  const auto item_count = result.item_count();
+  vector<Task> tasks;
+  tasks.reserve(item_count);
+  for (size_t i = 0; i < item_count; ++i) {
+    tasks.emplace_back(task_from(result.get_item(i)));
+  }
+  return tasks;
 }
 
 /// Convert a QueryResult to a JSON string
@@ -55,38 +65,6 @@ static shared_ptr<ditto::Ditto> init_ditto(string app_id,
     throw runtime_error("unable to initialize Ditto: " + string(err.what()));
   }
 }
-
-// Private implementation of the TasksPeer::TasksObserver class.
-class TasksPeer::TasksObserver::
-    Impl { // NOLINT(cppcoreguidelines-special-member-functions)
-
-private:
-  shared_ptr<ditto::StoreObserver> observer;
-
-public:
-  explicit Impl(shared_ptr<ditto::StoreObserver> observer)
-      : observer(std::move(observer)) {}
-
-  ~Impl() noexcept {
-    try {
-      observer->cancel();
-    } catch (const exception &err) {
-      log_error("Failed to cancel observer: " + string(err.what()));
-    }
-  }
-
-  void cancel() { observer->cancel(); }
-
-  bool is_cancelled() const { return observer->is_cancelled(); }
-};
-
-TasksPeer::TasksObserver::TasksObserver(Impl *impl) : impl(impl) {}
-
-TasksPeer::TasksObserver::~TasksObserver() noexcept = default;
-
-void TasksPeer::TasksObserver::cancel() { impl->cancel(); }
-
-bool TasksPeer::TasksObserver::is_cancelled() { return impl->is_cancelled(); }
 
 // Private implementation of the TasksPeer class.
 class TasksPeer::Impl { // NOLINT(cppcoreguidelines-special-member-functions)
@@ -144,14 +122,11 @@ public:
 
   string add_task(const string &title, bool done) {
     try {
-      lock_guard<mutex> lock(*mtx);
-
       const json task_args = {
           {"title", title}, {"done", done}, {"deleted", false}};
       const auto command = "INSERT INTO tasks DOCUMENTS (:newTask)";
       const auto result =
           ditto->get_store().execute(command, {{"newTask", task_args}});
-
       auto task_id = result.mutated_document_ids()[0].to_string();
       log_debug("Added task: " + task_id);
       return task_id;
@@ -163,21 +138,10 @@ public:
 
   vector<Task> get_tasks(bool include_deleted_tasks) {
     try {
-      lock_guard<mutex> lock(*mtx);
-
       const auto result =
           ditto->get_store().execute(select_tasks_query(include_deleted_tasks));
-      const auto item_count = result.item_count();
-
-      vector<Task> tasks;
-      tasks.reserve(item_count);
-
-      for (size_t i = 0; i < item_count; ++i) {
-        const auto task = task_from(result.get_item(i));
-        tasks.emplace_back(std::move(task));
-      }
-
-      log_debug("Retrieved tasks; count=" + to_string(item_count));
+      const auto tasks = tasks_from(result);
+      log_debug("Retrieved tasks; count=" + to_string(tasks.size()));
       return tasks;
     } catch (const exception &err) {
       log_error("Failed to get tasks: " + string(err.what()));
@@ -190,7 +154,7 @@ public:
       lock_guard<mutex> lock(*mtx);
 
       if (task_id.empty()) {
-        throw invalid_argument("id_substring must not be empty");
+        throw invalid_argument("task_id must not be empty");
       }
       const auto query = "SELECT * FROM tasks WHERE _id = :id AND NOT deleted";
       const auto result = ditto->get_store().execute(query, {{"id", task_id}});
@@ -203,7 +167,7 @@ public:
                             "\"");
       }
 
-      auto task = task_from(result.get_item(0));
+      const auto task = task_from(result.get_item(0));
       log_debug("Retrieved task with _id " + task_id);
       return task;
     } catch (const exception &err) {
@@ -343,20 +307,16 @@ public:
     }
   }
 
-  shared_ptr<TasksPeer::TasksObserver> register_tasks_observer(
-      const std::function<void(const std::vector<Task> &)> &callback) {
+  shared_ptr<ditto::StoreObserver> register_tasks_observer(
+      std::function<void(const std::vector<Task> &)> callback) {
     try {
       const auto observer = ditto->get_store().register_observer(
-          select_tasks_query(), [callback](const ditto::QueryResult &result) {
+          select_tasks_query(),
+          [callback = std::move(callback)](const ditto::QueryResult &result) {
             const auto item_count = result.item_count();
             log_debug("Tasks collection updated; count=" +
                       to_string(item_count));
-            vector<Task> tasks;
-            tasks.reserve(item_count);
-            for (auto i = 0; i < item_count; ++i) {
-              tasks.emplace_back(task_from(result.get_item(i)));
-            }
-
+            const auto tasks = tasks_from(result);
             try {
               log_debug("Invoking observer callback");
               callback(tasks);
@@ -367,8 +327,7 @@ public:
           });
 
       log_debug("Registered tasks observer");
-      auto *observer_impl = new TasksObserver::Impl(observer);
-      return shared_ptr<TasksObserver>(new TasksObserver(observer_impl));
+      return observer;
     } catch (const exception &err) {
       log_error("Failed to register observer: " + string(err.what()));
       throw runtime_error("unable to register observer: " + string(err.what()));
@@ -414,14 +373,6 @@ public:
     }
   }
 }; // class TasksPeer::Impl
-
-TasksPeer TasksPeer::create(string ditto_app_id,
-                            string ditto_online_playground_token,
-                            bool enable_cloud_sync,
-                            string ditto_persistence_dir) {
-  return {std::move(ditto_app_id), std::move(ditto_online_playground_token),
-          enable_cloud_sync, std::move(ditto_persistence_dir)};
-}
 
 TasksPeer::TasksPeer(string app_id, string online_playground_token,
                      bool enable_cloud_sync, string persistence_dir)
@@ -473,17 +424,9 @@ void TasksPeer::delete_task(const string &task_id) {
 
 void TasksPeer::evict_deleted_tasks() { impl->evict_deleted_tasks(); }
 
-shared_ptr<TasksPeer::TasksObserver> TasksPeer::register_tasks_observer(
-    const function<void(const std::vector<Task> &)> &callback) {
+shared_ptr<ditto::StoreObserver> TasksPeer::register_tasks_observer(
+    function<void(const std::vector<Task> &)> callback) {
   return impl->register_tasks_observer(callback);
-}
-
-shared_ptr<TasksPeer::TasksObserver>
-TasksPeer::register_tasks_observer(TasksPeer::TasksObserverHandler *handler) {
-  return impl->register_tasks_observer(
-      [handler](const std::vector<Task> &tasks) {
-        handler->on_tasks_updated(tasks);
-      });
 }
 
 string TasksPeer::execute_dql_query(const string &query) {
@@ -495,20 +438,3 @@ string TasksPeer::get_ditto_sdk_version() {
 }
 
 void TasksPeer::insert_initial_tasks() { impl->insert_initial_tasks(); }
-
-TasksPeer::TasksObserverHandler::TasksObserverHandler() {
-  log_debug("TasksObserverHandler created");
-}
-
-TasksPeer::TasksObserverHandler::~TasksObserverHandler() noexcept {
-  try {
-    log_debug("TasksObserverHandler destroyed");
-  } catch (const std::exception &e) {
-    std::cerr << "Error in ~TasksObserverHandler: " << e.what() << std::endl;
-  }
-}
-
-void TasksPeer::TasksObserverHandler::on_tasks_updated(
-    const std::vector<Task> &tasks) {
-  log_warning("TasksObserverHandler::on_tasks_updated should be overridden");
-}

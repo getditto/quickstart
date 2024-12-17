@@ -25,7 +25,7 @@ ditto::LogLevel get_minimum_log_level() {
 }
 
 void set_minimum_log_level(ditto::LogLevel level) {
-  ditto::Log::set_minimum_log_level(static_cast<ditto::LogLevel>(level));
+  ditto::Log::set_minimum_log_level(level);
 }
 
 void set_log_file(const std::string &path) { ditto::Log::set_log_file(path); }

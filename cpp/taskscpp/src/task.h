@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "Ditto.h"
+
 /// Representation of a to-do item.
 ///
 /// If data members of this struct are changed, the `to_json()` and
@@ -15,9 +17,9 @@ struct Task {
 
   Task() = default;
 
-  Task(const std::string &id, const std::string &title, bool done = false,
-       bool deleted = false)
-      : _id(id), title(title), done(done), deleted(deleted) {}
+  Task(const std::string &id, const std::string &ttl, bool is_done = false,
+       bool is_deleted = false)
+      : _id(id), title(ttl), done(is_done), deleted(is_deleted) {}
 
   bool operator==(const Task &other) const {
     return _id == other._id &&     //
@@ -26,5 +28,15 @@ struct Task {
            deleted == other.deleted;
   }
 };
+
+// For information about how the nlohmann::json library handles
+// serialization/deserialization of C++ types, see
+// <https://github.com/nlohmann/json#arbitrary-types-conversions>
+
+/// Copies data from a Task to a JSON object.
+void to_json(nlohmann::json &j, const Task &task);
+
+/// Copies data from a JSON object to a Task.
+void from_json(const nlohmann::json &j, Task &task);
 
 #endif // DITTO_QUICKSTART_TASK_H

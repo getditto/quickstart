@@ -15,31 +15,6 @@ public:
   /// Returns a string identifying the version of the Ditto SDK.
   static std::string get_ditto_sdk_version();
 
-  /// A subscription registration returned by @ref
-  /// `register_tasks_observer()`.
-  class TasksObserver {
-
-  public:
-    virtual ~TasksObserver() noexcept;
-
-    TasksObserver(const TasksObserver &) = delete;
-    TasksObserver(const TasksObserver &&) = delete;
-    TasksObserver &operator=(const TasksObserver &) = delete;
-    TasksObserver &operator=(const TasksObserver &&) = delete;
-
-    /// Cancel the subscription.
-    void cancel();
-
-    /// Return true if the subscription has been cancelled, or false otherwise.
-    bool is_cancelled();
-
-  private:
-    class Impl; // private implementation class
-    std::shared_ptr<Impl> impl;
-    friend class TasksPeer;
-    TasksObserver(Impl *impl);
-  };
-
   /// Construct a new TasksPeer object.
   TasksPeer(std::string ditto_app_id, std::string ditto_online_playground_token,
             bool enable_cloud_sync, std::string ditto_persistence_dir);
@@ -51,15 +26,6 @@ public:
 
   TasksPeer &operator=(const TasksPeer &) = delete;
   TasksPeer &operator=(TasksPeer &&) = delete;
-
-  /// Construct a new TasksPeer object.
-  ///
-  /// This is provided as an alternative to calling the constructor directly,
-  /// which can be complicated when calling C++ code from another language.
-  static TasksPeer create(std::string ditto_app_id,
-                          std::string ditto_online_playground_token,
-                          bool enable_cloud_sync,
-                          std::string ditto_persistence_dir);
 
   /// Start the peer, enabling it to sync tasks with other devices.
   void start_sync();
@@ -135,39 +101,14 @@ public:
   ///
   /// @returns a subscriber object that, when destroyed, will cancel the
   /// subscription.
-  std::shared_ptr<TasksObserver> register_tasks_observer(
-      const std::function<void(const std::vector<Task> &)> &callback);
-
-  class TasksObserverHandler {
-  public:
-    TasksObserverHandler();
-
-    virtual ~TasksObserverHandler() noexcept;
-
-    TasksObserverHandler(const TasksObserverHandler &) = delete;
-    TasksObserverHandler(const TasksObserverHandler &&) = delete;
-    TasksObserverHandler &operator=(const TasksObserverHandler &) = delete;
-    TasksObserverHandler &operator=(const TasksObserverHandler &&) = delete;
-
-    /// Called when the tasks collection has been updated.
-    virtual void on_tasks_updated(const std::vector<Task> &tasks);
-  };
-
-  /// Subscribe to updates to the tasks collection.
-  ///
-  /// The caller is responsible for ensuring that the handler object outlives
-  /// the subscription.
-  ///
-  /// @returns a subscriber object that, when destroyed, will cancel the
-  /// subscription.
-  std::shared_ptr<TasksObserver>
-  register_tasks_observer(TasksObserverHandler *handler);
+  std::shared_ptr<ditto::StoreObserver> register_tasks_observer(
+      std::function<void(const std::vector<Task> &)> callback);
 
   /// Add a set of initial documents to the tasks collection.
   void insert_initial_tasks();
 
 private:
-  class Impl; // private implementation class
+  class Impl; // private implementation class ("pimpl pattern")
   std::shared_ptr<Impl> impl;
 };
 

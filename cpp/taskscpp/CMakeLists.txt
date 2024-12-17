@@ -35,7 +35,7 @@ if(DITTO_QUICKSTART_TUI)
   include(FetchContent)
   FetchContent_Declare(ftxui
     GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui
-    GIT_TAG v5.0.0
+    GIT_TAG cdf28903a7781f97ba94d30b79c3a4b0c97ccce7 # `v5.0.0` tag.
   )
   FetchContent_GetProperties(ftxui)
   if(NOT ftxui_POPULATED)
@@ -64,6 +64,10 @@ add_dependencies(taskscpp env_h)
 
 # Include the Ditto SDK header and link with the Ditto SDK
 target_include_directories(taskscpp PRIVATE sdk)
+# Note: we are using an absolute path here (rather than unqualified path
+# with `target_link_directories`) to make updates to the `libditto.a` artifact
+# (e.g., from having recompiled the monorepo's C++ SDK or whatnot) force cmake
+# to redo the linkage step.
 target_link_libraries(taskscpp PRIVATE ${CMAKE_SOURCE_DIR}/sdk/libditto.a)
 
 if(DITTO_QUICKSTART_TUI)

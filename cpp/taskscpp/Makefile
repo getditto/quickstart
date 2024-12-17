@@ -12,9 +12,6 @@ XCODE_BUILD_DIR = build-xcode
 
 CPP_SRC_FILES = $(shell find src -type f -name '*.cpp' -o -name '*.h')
 
-# Location of Ditto C++ SDK build directory
-SDKBUILD_DIR=~/getditto/ditto/cpp
-SDKBUILD_ANDROID_DIR=~/getditto/ditto/android/dittocpp/build/outputs/aar
 
 # The "help" target will display all targets marked with a "##" comment.
 .PHONY: help
@@ -53,7 +50,7 @@ run-list: build ## Builds taskscpp and runs the --list command
 .PHONY: run-list-all
 run-list-all: build ## Builds taskscpp and runs the --list-all command
 	cd $(BUILD_DIR) && ./taskscpp --list-all
-	
+
 .PHONY: run-monitor
 run-monitor: build ## Builds taskscpp and runs the --monitor command
 	cd $(BUILD_DIR) && ./taskscpp --monitor
@@ -72,16 +69,8 @@ lint: build ## Runs clang-format -n and clang-tidy on all .cpp and .h files
 	$(CLANG_FORMAT) --dry-run --Werror $(CPP_SRC_FILES)
 	$(CLANG_TIDY) -p $(BUILD_DIR) $(CPP_SRC_FILES)
 
-# TODO: updatesdk should be able to download a published SDK build from the
-# Internet.  For now, just copy from local build tree.
-.PHONY: updatesdk
-updatesdk: ## Copies Ditto.h and libditto.a from SDK build
-	mkdir -p sdk
-	cp $(SDKBUILD_DIR)/include/Ditto.h sdk/Ditto.h
-	cp $(SDKBUILD_DIR)/build/libditto.a sdk/libditto.a
-
 .PHONY: clean
 clean: ## Removes all generated files and directories
-	- rm -rf $(BUILD_DIR)
-	- rm -rf $(XCODE_BUILD_DIR)
-	- rm -f src/env.h
+	- rm -r $(BUILD_DIR)
+	- rm -r $(XCODE_BUILD_DIR)
+	- rm src/env.h

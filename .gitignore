@@ -32,3 +32,4 @@ xcuserdata
 .env
 bazel-*
 build-cmake
+node_modules/

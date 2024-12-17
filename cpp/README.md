@@ -13,11 +13,6 @@ instructions in the [Ditto C++ Install Guide](https://docs.ditto.live/install-gu
 Then, copy the `Ditto.h` and `libditto.a` files from the SDK into the `sdk/`
 subdirectory of this project.
 
-
-## Permissions (already configured)
-
-- <https://docs.ditto.live/install-guides/swift#kX-Je>
-
 ## Documentation
 
 - [C++ Install Guide](https://docs.ditto.live/install-guides/cpp)
@@ -31,7 +26,7 @@ subdirectory of this project.
 Assuming you have Xcode and other prerequisites installed, you can build and run the app by following these steps:
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
-2. Copy the `.env.template` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
+2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
 3. In a shell, navigate to the `quickstart/cpp/taskscpp` directory and run the command `make build` to build the C++ application.
 
 ## Running the Application

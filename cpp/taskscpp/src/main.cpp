@@ -211,7 +211,7 @@ int main(int argc, const char *argv[]) {
         // A thread must hold mtx while using peer or writing output.
         mutex mtx;
 
-        shared_ptr<TasksPeer::TasksObserver> tasks_observer;
+        shared_ptr<ditto::StoreObserver> tasks_observer;
         if (opt_parse.count("monitor") > 0) {
           tasks_observer = peer.register_tasks_observer(
               [quiet, &mtx](const vector<Task> &tasks) {

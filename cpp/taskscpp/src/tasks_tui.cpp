@@ -28,7 +28,7 @@ private:
   // The returned pointer is only valid until the next call to
   // update_tasks_list().
   const Task *active_task() const {
-    for (auto i = 0; i < std::min(tasks.size(), tasks_list->ChildCount());
+    for (size_t i = 0; i < std::min(tasks.size(), tasks_list->ChildCount());
          i++) {
       auto checkbox = tasks_list->ChildAt(i);
       if (checkbox->Active()) {
@@ -239,11 +239,11 @@ private:
   }
 
 public:
-  Impl(TasksPeer &peer)
-      : peer(peer), screen(ftxui::ScreenInteractive::Fullscreen()),
-        tasks_list(ftxui::Container::Vertical({})) {}
+  Impl(TasksPeer &p)
+      : peer(p), tasks_list(ftxui::Container::Vertical({})),
+        screen(ftxui::ScreenInteractive::Fullscreen()) {}
 
-  ~Impl() {}
+  ~Impl() = default;
 
   void run() {
     if (isatty(STDERR_FILENO)) {
