@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "QuickStart Tasks"
+rootProject.name = "QuickStartTasksCPP"
 include(":app")
  
