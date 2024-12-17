@@ -29,4 +29,7 @@ obj/
 packages/
 target/
 xcuserdata
+.env
+bazel-*
+build-cmake
 node_modules/
