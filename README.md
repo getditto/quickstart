@@ -36,7 +36,7 @@ Before you can build and run any of these apps, you will need to:
 1. Create a free account in the [Ditto Portal](https://portal.ditto.live/).
 1. Create an app in the Ditto Portal.
 1. Copy the `.env.sample` file to `.env`.
-   - in a terminal: `cp .env.sample.env`.
+   - in a terminal: `cp .env.sample .env`.
    - in a macOS Finder window, press `⇧⌘.` (SHIFT+CMD+period) to show hidden files.
 1. Save your app ID and online playground token in the `.env` file.
 
