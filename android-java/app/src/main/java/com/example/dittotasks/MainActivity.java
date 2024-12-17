@@ -1,6 +1,7 @@
 package com.example.dittotasks;
 
 import android.app.AlertDialog;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 
 import androidx.activity.ComponentActivity;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -26,14 +28,16 @@ import live.ditto.DittoDependencies;
 import live.ditto.DittoError;
 import live.ditto.DittoIdentity;
 import live.ditto.DittoStoreObserver;
+import live.ditto.DittoSyncSubscription;
 import live.ditto.android.DefaultAndroidDittoDependencies;
 import live.ditto.transports.DittoSyncPermissions;
 
 public class MainActivity extends ComponentActivity {
     private TaskAdapter taskAdapter;
+    private SwitchCompat syncSwitch;
 
     Ditto ditto;
-    live.ditto.DittoSyncSubscription taskSubscription;
+    DittoSyncSubscription taskSubscription;
     DittoStoreObserver taskObserver;
 
     private String DITTO_APP_ID = "";
@@ -57,12 +61,19 @@ public class MainActivity extends ComponentActivity {
         FloatingActionButton addButton = findViewById(R.id.add_button);
         addButton.setOnClickListener(v -> showAddTaskModal());
 
+        // Initialize sync switch
+        syncSwitch = findViewById(R.id.sync_switch);
+        syncSwitch.setChecked(true);
+        syncSwitch.setOnCheckedChangeListener(((buttonView, isChecked) -> {
+            toggleSync();
+        }));
+
         // Initialize task list
         RecyclerView taskList = findViewById(R.id.task_list);
         taskList.setLayoutManager(new LinearLayoutManager(this));
         taskAdapter = new TaskAdapter();
         taskList.setAdapter(taskAdapter);
-        taskAdapter.setOnTaskClickListener((task, isChecked) -> {
+        taskAdapter.setOnTaskToggleListener((task, isChecked) -> {
             toggleTask(task);
         });
         taskAdapter.setOnTaskDeleteListener(this::deleteTask);
@@ -147,6 +158,28 @@ public class MainActivity extends ComponentActivity {
         args.put("id", task.getId());
         try {
             ditto.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", args);
+        } catch (DittoError e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void toggleSync() {
+        if (ditto == null) {
+            return;
+        }
+
+        boolean isSyncActive = ditto.isSyncActive();
+        var nextColor = isSyncActive ? null : ColorStateList.valueOf(0xFFBB86FC);
+        var nextText = isSyncActive ? "Sync Inactive" : "Sync Active";
+        try {
+            if (isSyncActive) {
+                ditto.stopSync();
+            } else {
+                ditto.startSync();
+            }
+            syncSwitch.setChecked(!isSyncActive);
+            syncSwitch.setTrackTintList(nextColor);
+            syncSwitch.setText(nextText);
         } catch (DittoError e) {
             e.printStackTrace();
         }

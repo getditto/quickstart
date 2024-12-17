@@ -38,6 +38,17 @@
             android:textSize="14sp"
             android:textColor="#757575" />
 
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/sync_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:text="Sync Active"
+            android:checked="true"
+            app:trackTint="@color/purple_200"
+            app:thumbTint="@color/gray_400" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/task_list"
             android:layout_width="match_parent"

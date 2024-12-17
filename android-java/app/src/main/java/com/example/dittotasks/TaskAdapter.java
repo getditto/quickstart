@@ -13,12 +13,12 @@ import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
     private List<Task> tasks = new ArrayList<>();
-    private OnTaskClickListener listener;
+    private OnTaskToggleListener toggleListener;
     private OnTaskDeleteListener deleteListener;
     private OnTaskLongPressListener longPressListener;
 
-    public interface OnTaskClickListener {
-        void onTaskChecked(Task task, boolean isChecked);
+    public interface OnTaskToggleListener {
+        void onTaskToggle(Task task, boolean isChecked);
     }
 
     public interface OnTaskDeleteListener {
@@ -29,8 +29,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         void onTaskLongPress(Task task);
     }
 
-    public void setOnTaskClickListener(OnTaskClickListener listener) {
-        this.listener = listener;
+    public void setOnTaskToggleListener(OnTaskToggleListener listener) {
+        this.toggleListener = listener;
     }
 
     public void setOnTaskDeleteListener(OnTaskDeleteListener listener) {
@@ -82,8 +82,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             checkBox.setChecked(task.isDone());
 
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (listener != null) {
-                    listener.onTaskChecked(task, isChecked);
+                if (toggleListener != null) {
+                    toggleListener.onTaskToggle(task, isChecked);
                 }
             });
 
