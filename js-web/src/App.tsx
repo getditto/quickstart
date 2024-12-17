@@ -37,8 +37,8 @@ const App = () => {
       }
     };
 
-    setIsInitialized(initializeDitto());
-  }, []);
+    if (!isInitialized) setIsInitialized(initializeDitto());
+  }, [isInitialized]);
 
   useEffect(() => {
     if (!isInitialized) return;
