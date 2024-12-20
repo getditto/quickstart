@@ -2,16 +2,13 @@ package live.ditto.quickstart.tasks
 
 import android.app.Application
 import android.content.Context
-import live.ditto.Ditto
-import live.ditto.DittoIdentity
-import live.ditto.DittoLogLevel
-import live.ditto.DittoLogger
-import live.ditto.android.DefaultAndroidDittoDependencies
-import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
+import android.util.Log
 
 class TasksApplication : Application() {
 
     companion object {
+        private const val TAG = "TasksApplication"
+
         private var instance: TasksApplication? = null
 
         fun applicationContext(): Context {
@@ -22,29 +19,20 @@ class TasksApplication : Application() {
     init {
         instance = this
     }
-    
+
     override fun onCreate() {
         super.onCreate()
         setupDitto()
     }
 
     private fun setupDitto() {
-        val androidDependencies = DefaultAndroidDittoDependencies(applicationContext)
         val appId = BuildConfig.DITTO_APP_ID
         val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
-        val enableDittoCloudSync = true
 
-        val identity = DittoIdentity.OnlinePlayground(
-            androidDependencies,
-            appId,
-            token,
-            enableDittoCloudSync
-        )
-
-        ditto = Ditto(androidDependencies, identity)
-
-        DittoLogger.minimumLogLevel = DittoLogLevel.DEBUG
-
-        ditto.disableSyncWithV3()
+        try {
+            TasksLib.initDitto(appId, token)
+        } catch (e: Exception) {
+            Log.e(TAG, "unable to initialize Ditto", e)
+        }
     }
 }

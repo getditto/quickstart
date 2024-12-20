@@ -12,10 +12,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import live.ditto.DittoError
-import live.ditto.DittoSyncSubscription
-import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.TasksApplication
+import live.ditto.quickstart.tasks.TasksLib
 import live.ditto.quickstart.tasks.data.Task
 
 // The value of the Sync switch is stored in persistent settings
@@ -37,7 +35,7 @@ class TasksListScreenViewModel : ViewModel() {
     private val _syncEnabled = MutableLiveData(true)
     val syncEnabled: LiveData<Boolean> = _syncEnabled
 
-    private var syncSubscription: DittoSyncSubscription? = null
+    // TODO: private var syncSubscription: DittoSyncSubscription? = null
 
     fun setSyncEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -46,19 +44,19 @@ class TasksListScreenViewModel : ViewModel() {
             }
             _syncEnabled.value = enabled
 
-            if (enabled && !ditto.isSyncActive) {
+            if (enabled && !TasksLib.isSyncActive()) {
                 try {
-                    ditto.startSync()
-                    syncSubscription = ditto.sync.registerSubscription(QUERY)
-                } catch (e: DittoError) {
+                    TasksLib.startSync()
+                    // TODO: syncSubscription = ditto.sync.registerSubscription(QUERY)
+                } catch (e: Exception) {
                     Log.e(TAG, "Unable to start sync", e)
                 }
-            } else if (ditto.isSyncActive) {
+            } else if (TasksLib.isSyncActive()) {
                 try {
-                    syncSubscription?.close()
-                    syncSubscription = null
-                    ditto.stopSync()
-                } catch (e: DittoError) {
+                    // TODO: syncSubscription?.close()
+                    // TODO: syncSubscription = null
+                    TasksLib.stopSync()
+                } catch (e: Exception) {
                     Log.e(TAG, "Unable to stop sync", e)
                 }
             }
@@ -69,10 +67,11 @@ class TasksListScreenViewModel : ViewModel() {
         viewModelScope.launch {
             populateTasksCollection()
 
-            ditto.store.registerObserver(QUERY) { result ->
-                val list = result.items.map { item -> Task.fromJson(item.jsonString()) }
-                tasks.postValue(list)
-            }
+            // TODO: register C++ observer
+//            ditto.store.registerObserver(QUERY) { result ->
+//                val list = result.items.map { item -> Task.fromJson(item.jsonString()) }
+//                tasks.postValue(list)
+//            }
 
             setSyncEnabled(
                 preferencesDataStore.data.map { prefs -> prefs[SYNC_ENABLED_KEY] ?: true }.first()
@@ -92,17 +91,7 @@ class TasksListScreenViewModel : ViewModel() {
 
             tasks.forEach { task ->
                 try {
-                    ditto.store.execute(
-                        "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
-                        mapOf(
-                            "task" to mapOf(
-                                "_id" to task._id,
-                                "title" to task.title,
-                                "done" to task.done,
-                                "deleted" to task.deleted,
-                            )
-                        )
-                    )
+                    TasksLib.insertInitialDocument(task._id, task.title, task.done, task.deleted)
                 } catch (e: Exception) {
                     Log.e(TAG, "Unable to insert initial document", e)
                 }
@@ -113,20 +102,7 @@ class TasksListScreenViewModel : ViewModel() {
     fun toggle(taskId: String) {
         viewModelScope.launch {
             try {
-                val doc = ditto.store.execute(
-                    "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
-                    mapOf("_id" to taskId)
-                ).items.first()
-
-                val done = doc.value["done"] as Boolean
-
-                ditto.store.execute(
-                    "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
-                    mapOf(
-                        "toggled" to !done,
-                        "_id" to taskId
-                    )
-                )
+                TasksLib.toggleDoneState(taskId)
             } catch (e: Exception) {
                 Log.e(TAG, "Unable to toggle done state", e)
             }
@@ -136,10 +112,7 @@ class TasksListScreenViewModel : ViewModel() {
     fun delete(taskId: String) {
         viewModelScope.launch {
             try {
-                ditto.store.execute(
-                    "UPDATE tasks SET deleted = true WHERE _id = :id",
-                    mapOf("id" to taskId)
-                )
+                TasksLib.deleteTask(taskId)
             } catch (e: Exception) {
                 Log.e(TAG, "Unable to set deleted=true", e)
             }

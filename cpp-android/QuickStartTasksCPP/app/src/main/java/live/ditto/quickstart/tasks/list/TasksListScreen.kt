@@ -67,7 +67,7 @@ fun TasksListScreen(navController: NavController) {
                     ) {
                         Column {
                             Text(
-                                text = "Ditto Tasks",
+                                text = "Ditto Tasks C++",
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(

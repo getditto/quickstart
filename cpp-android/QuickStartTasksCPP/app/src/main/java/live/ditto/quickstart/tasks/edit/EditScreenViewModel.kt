@@ -5,7 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
+import live.ditto.quickstart.tasks.TasksLib
 import live.ditto.quickstart.tasks.data.Task
 
 class EditScreenViewModel : ViewModel() {
@@ -26,12 +26,7 @@ class EditScreenViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val item = ditto.store.execute(
-                    "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
-                    mapOf("_id" to taskId)
-                ).items.first()
-
-                val task = Task.fromJson(item.jsonString())
+                val task: Task = TasksLib.getTaskWithId(taskId)
                 _id = task._id
                 title.postValue(task.title)
                 done.postValue(task.done)
@@ -45,33 +40,10 @@ class EditScreenViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 if (_id == null) {
-                    ditto.store.execute(
-                        "INSERT INTO tasks DOCUMENTS (:doc)",
-                        mapOf(
-                            "doc" to mapOf(
-                                "title" to title.value,
-                                "done" to done.value,
-                                "deleted" to false
-                            )
-                        )
-                    )
+                    TasksLib.createTask(title.value ?: "New task", done.value ?: false)
                 } else {
                     _id?.let { id ->
-                        ditto.store.execute(
-                            """
-                            UPDATE tasks
-                            SET
-                              title = :title,
-                              done = :done
-                            WHERE _id = :id
-                            AND NOT deleted
-                            """,
-                            mapOf(
-                                "title" to title.value,
-                                "done" to done.value,
-                                "id" to id
-                            )
-                        )
+                        TasksLib.updateTask(id, title.value ?: "Edited task", done.value ?: false)
                     }
                 }
             } catch (e: Exception) {
@@ -84,10 +56,7 @@ class EditScreenViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 _id?.let { id ->
-                    ditto.store.execute(
-                        "UPDATE tasks SET deleted = true WHERE _id = :id",
-                        mapOf("id" to id)
-                    )
+                    TasksLib.deleteTask(id)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Unable to set deleted=true", e)

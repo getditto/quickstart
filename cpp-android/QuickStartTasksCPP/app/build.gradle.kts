@@ -62,6 +62,7 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags += ""
+                arguments += "-DANDROID_STL=c++_shared"
             }
         }
     }
@@ -85,6 +86,7 @@ android {
     buildFeatures {
         buildConfig = true
         compose = true
+        prefab = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
@@ -92,6 +94,24 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols.add("**/*.so")
+            pickFirsts.add("lib/x86/libc++_shared.so")
+            pickFirsts.add("lib/x86_64/libc++_shared.so")
+            pickFirsts.add("lib/armeabi-v7a/libc++_shared.so")
+            pickFirsts.add("lib/arm64-v8a/libc++_shared.so")
+            pickFirsts.add("lib/x86/libditto.so")
+            pickFirsts.add("lib/x86_64/libditto.so")
+            pickFirsts.add("lib/armeabi-v7a/libditto.so")
+            pickFirsts.add("lib/arm64-v8a/libditto.so")
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
         }
     }
 }
@@ -120,6 +140,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Ditto SDK
-    implementation("live.ditto:ditto:4.8.2")
+    // Ditto C++ SDK
+    implementation("live.ditto:ditto-cpp:4.8.2")
 }

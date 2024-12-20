@@ -49,7 +49,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "live.ditto.quickstart.tasks.cpp"
+        applicationId = "live.ditto.quickstart.tasks"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
