@@ -221,7 +221,7 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
       </div>
 
       {/* New Task Input */}
-      <div className='bg-white shadow-md rounded-b-lg flex border-t-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent'>
+      <div className='bg-white shadow-md rounded-b-lg flex focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent pt-'>
         <input
           type="text"
           placeholder="What needs to be done?"

@@ -1,50 +1,39 @@
-# React + TypeScript + Vite
+# Ditto JS Web Quickstart App 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains Ditto's quickstart app for in-browser web applications.
+This app uses Vite along with Typescript and React, and shows how to include
+the Ditto SDK in a client-side app running in the browser.
 
-Currently, two official plugins are available:
+![JS Web Ditto Screenshot](../.github/assets/js-web-ditto-screenshot.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Getting Started
 
-## Expanding the ESLint configuration
+To get started, you'll first need to create an app in the [Ditto Portal][0]
+with the "Online Playground" authentication type. You'll need to find your
+AppID and Playground Token in order to use this quickstart.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+[0]: https://portal.ditto.live
 
-- Configure the top-level `parserOptions` property like this:
+From the repo root, copy the `.env.sample` file to `.env`, and fill in the
+fields with your AppID and Playground Token:
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```
+cp .sample.env .env
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+The `.env` file should look like this (with your fields filled in):
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+```bash
+#!/usr/bin/env bash
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+# Copy this file from ".env.sample" to ".env", then fill in these values
+# A Ditto AppID and Playground token can be obtained from https://portal.ditto.live
+export DITTO_APP_ID=""
+export DITTO_PLAYGROUND_TOKEN=""
+```
+
+Next, run the quickstart app with the following command:
+
+```
+yarn && yarn dev
 ```

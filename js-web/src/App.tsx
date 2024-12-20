@@ -6,8 +6,8 @@ import TaskList from './components/TaskList';
 
 const identity: IdentityOnlinePlayground = {
   type: 'onlinePlayground',
-  appID: '<YOUR_APP_ID>',
-  token: '<YOUR_PLAYGROUND_TOKEN>',
+  appID: import.meta.env.DITTO_APP_ID,
+  token: import.meta.env.DITTO_PLAYGROUND_TOKEN,
   enableDittoCloudSync: true,
 };
 
@@ -19,6 +19,7 @@ export type Task = {
 };
 
 const App = () => {
+  const [error, setError] = useState<Error | null>(null);
   const ditto = useRef<Ditto | null>(null);
   const tasksSubscription = useRef<SyncSubscription | null>(null);
   const tasksObserver = useRef<StoreObserver | null>(null);
@@ -58,7 +59,7 @@ const App = () => {
         });
 
       } catch (e) {
-        console.error('Failed to initialize Ditto:', e);
+        setError(e as Error);
       }
 
       return () => {
@@ -123,9 +124,29 @@ const App = () => {
     }
   };
 
+  const ErrorMessage: React.FC<{ error: Error }> = ({ error }) => {
+    const [dismissed, setDismissed] = useState(false);
+    if (dismissed) return null;
+
+    return (
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-100 text-red-700 p-6 rounded shadow-lg">
+        <div className="flex justify-between items-center">
+          <p><b>Error</b>: {error.message}</p>
+          <button
+            onClick={() => setDismissed(true)}
+            className="ml-4 text-red-700 hover:text-red-900"
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className='h-screen w-full bg-gray-100'>
       <div className='h-full w-full flex flex-col container mx-auto items-center'>
+        {error && <ErrorMessage error={error} />}
         <DittoInfo appId={identity.appID} token={identity.token} syncEnabled={syncActive} onToggleSync={toggleSync} />
         <TaskList tasks={tasks} onCreate={createTask} onEdit={editTask} onToggle={toggleTask} onDelete={deleteTask} />
       </div>
