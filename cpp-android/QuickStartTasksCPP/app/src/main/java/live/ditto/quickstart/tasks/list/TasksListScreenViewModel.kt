@@ -65,7 +65,7 @@ class TasksListScreenViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            populateTasksCollection()
+            TasksLib.insertInitialDocuments()
 
             // TODO: register C++ observer
 //            ditto.store.registerObserver(QUERY) { result ->
@@ -76,26 +76,6 @@ class TasksListScreenViewModel : ViewModel() {
             setSyncEnabled(
                 preferencesDataStore.data.map { prefs -> prefs[SYNC_ENABLED_KEY] ?: true }.first()
             )
-        }
-    }
-
-    // Add initial tasks to the collection if they have not already been added.
-    private fun populateTasksCollection() {
-        viewModelScope.launch {
-            val tasks = listOf(
-                Task("50191411-4C46-4940-8B72-5F8017A04FA7", "Buy groceries"),
-                Task("6DA283DA-8CFE-4526-A6FA-D385089364E5", "Clean the kitchen"),
-                Task("5303DDF8-0E72-4FEB-9E82-4B007E5797F0", "Schedule dentist appointment"),
-                Task("38411F1B-6B49-4346-90C3-0B16CE97E174", "Pay bills")
-            )
-
-            tasks.forEach { task ->
-                try {
-                    TasksLib.insertInitialDocument(task._id, task.title, task.done, task.deleted)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Unable to insert initial document", e)
-                }
-            }
         }
     }
 

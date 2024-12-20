@@ -21,10 +21,12 @@ public:
 
   virtual ~TasksPeer() noexcept;
 
-  TasksPeer(const TasksPeer &) = default;
-  TasksPeer(TasksPeer &&) = default;
+  TasksPeer(const TasksPeer &) = delete;
+
+  TasksPeer(TasksPeer &&) = delete;
 
   TasksPeer &operator=(const TasksPeer &) = delete;
+
   TasksPeer &operator=(TasksPeer &&) = delete;
 
   /// Start the peer, enabling it to sync tasks with other devices.
@@ -41,18 +43,9 @@ public:
   /// @return the _id of the new task.
   std::string add_task(const std::string &title, bool done);
 
-  /// Get all tasks in the collection, optionally including those that have been
-  /// deleted but are still in the local store.
-  ///
-  /// This method will return a maximum of 1000 tasks.  If there are more tasks
-  /// than that in the collection, some will be ignored.
-  ///
-  /// @return all tasks in the collection, ordered by ID.
-  std::vector<Task> get_tasks(bool include_deleted_tasks = false);
-
   /// Find a task by its ID.
   ///
-  /// @return the Task that exactly matches the specified ID
+  /// @return the Task that has the specified ID
   ///
   /// @throws TaskException if task cannot be retrieved.
   Task get_task(const std::string &task_id);
@@ -60,42 +53,13 @@ public:
   /// Save task properties.
   void update_task(const Task &task);
 
-  /// Find a task by a substring of its ID.
-  ///
-  /// This function is provided for use by command-line interfaces or other
-  /// kinds of apps where entering a full task ID is inconvenient.
-  ///
-  /// @return the Task that matches the specified ID
-  ///
-  /// @throws TaskException if task cannot be found, or if there are multiple
-  /// matches.
-  Task find_matching_task(const std::string &task_id_substring);
-
   /// Mark task as completed or not completed.
   void mark_task_complete(const std::string &task_id, bool done);
 
-  /// Change the title of the specified task
-  void update_task_title(const std::string &task_id, const std::string &title);
-
   /// Delete the specified task from the collection.
   ///
-  /// Note that this marks the task as deleted, and it will no longer appear in
-  /// `get_tasks()` results, but the object remains in the local store until
-  /// @ref `evict_deleted_tasks()` is called.
+  /// Note that this marks the task as deleted, but the object remains in the local store.
   void delete_task(const std::string &task_id);
-
-  /// Remove all deleted tasks from the local store.
-  void evict_deleted_tasks();
-
-  /// Run a DQL query using the peer's Ditto instance.
-  ///
-  /// This function is provided for diagnostic purposes.  It should not be used
-  /// for general application functionality.
-  ///
-  /// @param query DQL query string
-  /// @return JSON result dictionary with `items` and `modified_document_ids`
-  /// arrays.
-  std::string execute_dql_query(const std::string &query);
 
   /// Subscribe to updates to the tasks collection.
   ///
@@ -109,7 +73,7 @@ public:
 
 private:
   class Impl; // private implementation class ("pimpl pattern")
-  std::shared_ptr<Impl> impl;
+  std::unique_ptr<Impl> impl;
 };
 
 #endif // DITTO_QUICKSTART_TASKS_PEER_H
