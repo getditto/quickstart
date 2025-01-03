@@ -3,6 +3,7 @@ package live.ditto.quickstart.tasks
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import java.io.File
 
 class TasksApplication : Application() {
 
@@ -30,7 +31,10 @@ class TasksApplication : Application() {
         val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
 
         try {
-            TasksLib.initDitto(appId, token)
+            val appContext = applicationContext()
+            val persistenceDir = File(appContext.filesDir, "ditto")
+            persistenceDir.mkdirs()
+            TasksLib.initDitto(applicationContext(), appId, token, persistenceDir.path)
         } catch (e: Exception) {
             Log.e(TAG, "unable to initialize Ditto", e)
         }

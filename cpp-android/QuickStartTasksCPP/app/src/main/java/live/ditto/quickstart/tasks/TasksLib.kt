@@ -1,18 +1,28 @@
 package live.ditto.quickstart.tasks
 
+import android.util.Log
 import live.ditto.quickstart.tasks.data.Task
 
 // Wraps the C++ JNI code in a Kotlin object.
 object TasksLib {
+    private const val TAG = "TasksLib"
+
     init {
         // load C++ native library
+        Log.i(TAG, "Loading taskscpp library...")
         System.loadLibrary("taskscpp")
+        Log.i(TAG, "Loaded taskscpp library")
     }
 
     // Initialize the Ditto client.
     //
     // This must be called before any other methods of this object are called.
-    external fun initDitto(appId: String, token: String)
+    external fun initDitto(
+        appContext: android.content.Context,
+        appId: String,
+        token: String,
+        persistenceDir: String
+    )
 
     // Terminate the Ditto client.
     //

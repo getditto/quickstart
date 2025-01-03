@@ -8,6 +8,8 @@
 
 #include "task.h"
 
+#include <jni.h>
+
 /// An agent that can create, read, update, and delete tasks, and sync them with
 /// other devices.
 class TasksPeer {
@@ -16,7 +18,8 @@ public:
   static std::string get_ditto_sdk_version();
 
   /// Construct a new TasksPeer object.
-  TasksPeer(std::string ditto_app_id, std::string ditto_online_playground_token,
+  TasksPeer(JNIEnv *env, jobject context, std::string ditto_app_id,
+            std::string ditto_online_playground_token,
             bool enable_cloud_sync, std::string ditto_persistence_dir);
 
   virtual ~TasksPeer() noexcept;

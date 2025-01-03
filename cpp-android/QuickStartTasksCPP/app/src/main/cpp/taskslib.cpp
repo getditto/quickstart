@@ -1,3 +1,4 @@
+#include <android/log.h>
 #include <jni.h>
 
 #include "jni_util.h"
@@ -5,11 +6,16 @@
 #include "tasks_log.h"
 #include "tasks_peer.h"
 
+#include <atomic>
 #include <string>
 #include <memory>
 #include <mutex>
 
 namespace {
+
+constexpr const char *TAG = "taskslib";
+
+std::atomic<JavaVM *> java_vm{nullptr}; // set in JNI_OnLoad
 
 // This module maintains a singleton C++ TasksPeer instance which performs all the Ditto-related
 // functions, and all methods operate on that singleton.  The mutex must be locked by any thread
@@ -45,21 +51,40 @@ jobject native_task_to_java_task(JNIEnv *env, const Task &native_task) {
 
 } // end anonymous namespace
 
+// JNI_OnLoad is called when the native library is loaded
+extern "C"
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+  __android_log_print(ANDROID_LOG_INFO, TAG, "JNI_OnLoad called");
+  java_vm.store(vm);
+  return JNI_VERSION_1_6;
+}
+
 // These native C++ functions are called by the Kotlin live.ditto.quickstart.tasks.TasksLib object
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_live_ditto_quickstart_tasks_TasksLib_initDitto(JNIEnv *env, jobject thiz, jstring app_id,
-                                                    jstring token) {
+Java_live_ditto_quickstart_tasks_TasksLib_initDitto(JNIEnv *env, jobject thiz, jobject context,
+                                                    jstring app_id,
+                                                    jstring token,
+                                                    jstring persistence_dir) {
   try {
     std::lock_guard<std::mutex> lock(mtx);
     if (peer) {
       throw_java_illegal_state_exception(env, "cannot call initDitto multiple times");
       return;
     }
+    auto vm = java_vm.load();
+    if (vm == nullptr) {
+      throw_java_illegal_state_exception(env, "Java VM has not been initialized");
+      return;
+    }
+    auto thread_env = get_JNIEnv_attached_to_current_thread(vm);
     auto app_id_str = jstring_to_string(env, app_id);
     auto token_str = jstring_to_string(env, token);
-    peer = std::make_shared<TasksPeer>(std::move(app_id_str), std::move(token_str), true, "");
+    auto persistence_dir_str = jstring_to_string(env, persistence_dir);
+    peer = std::make_shared<TasksPeer>(thread_env, context, std::move(app_id_str),
+                                       std::move(token_str),
+                                       true, std::move(persistence_dir_str));
   } catch (const std::exception &err) {
     log_error(std::string("initDitto failed: ") + err.what());
     throw_java_exception(env, err.what());

@@ -1,5 +1,6 @@
 #include "tasks_peer.h"
 #include "tasks_log.h"
+#include "join_string_values.h"
 #include "transform_container.h"
 
 #include "Ditto.h"
@@ -32,7 +33,7 @@ vector<Task> tasks_from(const ditto::QueryResult &result) {
 }
 
 /// Initialize a Ditto instance.
-unique_ptr<ditto::Ditto> init_ditto(string app_id,
+unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env, jobject context, string app_id,
                                     string online_playground_token,
                                     bool enable_cloud_sync,
                                     string persistence_dir) {
@@ -42,7 +43,9 @@ unique_ptr<ditto::Ditto> init_ditto(string app_id,
         enable_cloud_sync);
 
     auto ditto =
-        std::make_unique<ditto::Ditto>(identity, std::move(persistence_dir));
+        make_unique<ditto::Ditto>(identity, std::move(persistence_dir));
+
+    ditto->set_android_context(env, context);
 
     // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
@@ -63,19 +66,20 @@ private:
   shared_ptr<ditto::SyncSubscription> tasks_subscription;
 
 public:
-  Impl(string app_id, string online_playground_token, bool enable_cloud_sync,
+  Impl(JNIEnv *env, jobject context, string app_id, string online_playground_token,
+       bool enable_cloud_sync,
        string persistence_dir)
       : mtx(new mutex()),
-        ditto(init_ditto(std::move(app_id), std::move(online_playground_token),
+        ditto(init_ditto(env, context, std::move(app_id), std::move(online_playground_token),
                          enable_cloud_sync, std::move(persistence_dir))) {}
 
   ~Impl() noexcept {
     try {
       stop_sync();
     } catch (const exception &err) {
-      std::cerr << "Failed to destroy tasks peer instance: " +
-                   string(err.what())
-                << std::endl;
+      cerr << "Failed to destroy tasks peer instance: " +
+              string(err.what())
+           << endl;
     }
   }
 
@@ -213,7 +217,7 @@ public:
   }
 
   shared_ptr<ditto::StoreObserver> register_tasks_observer(
-      std::function<void(const std::vector<Task> &)> callback) {
+      function<void(const vector<Task> &)> callback) {
     try {
       const auto observer = ditto->get_store().register_observer(
           "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id",
@@ -243,7 +247,7 @@ public:
     try {
       lock_guard<mutex> lock(*mtx);
 
-      std::vector<Task> initial_tasks = {
+      vector<Task> initial_tasks = {
           {"50191411-4C46-4940-8B72-5F8017A04FA7", "Buy groceries"},
           {"6DA283DA-8CFE-4526-A6FA-D385089364E5", "Clean the kitchen"},
           {"5303DDF8-0E72-4FEB-9E82-4B007E5797F0",
@@ -264,18 +268,28 @@ public:
                           string(err.what()));
     }
   }
+
+  vector<string> missing_permissions() const {
+    auto result = ditto->missing_permissions();
+    log_warning("Missing permissions: " + join_string_values<>(result));
+    return result;
+  }
+
+  jobjectArray missing_permissions_jni_array() const {
+    return ditto->missing_permissions_jni_array();
+  }
 }; // class TasksPeer::Impl
 
-TasksPeer::TasksPeer(string app_id, string online_playground_token,
+TasksPeer::TasksPeer(JNIEnv *env, jobject context, string app_id, string online_playground_token,
                      bool enable_cloud_sync, string persistence_dir)
-    : impl(new Impl(std::move(app_id), std::move(online_playground_token),
-                    enable_cloud_sync, std::move(persistence_dir))) {}
+    : impl(make_unique<Impl>(env, context, std::move(app_id), std::move(online_playground_token),
+                             enable_cloud_sync, std::move(persistence_dir))) {}
 
 TasksPeer::~TasksPeer() noexcept {
   try {
     log_debug("Destroying TasksPeer instance");
-  } catch (const std::exception &err) {
-    log_error(std::string("exception in TasksPeer destructor: ") + err.what());
+  } catch (const exception &err) {
+    log_error(string("exception in TasksPeer destructor: ") + err.what());
   }
 }
 
@@ -304,7 +318,7 @@ void TasksPeer::delete_task(const string &task_id) {
 }
 
 shared_ptr<ditto::StoreObserver> TasksPeer::register_tasks_observer(
-    function<void(const std::vector<Task> &)> callback) {
+    function<void(const vector<Task> &)> callback) {
   return impl->register_tasks_observer(std::move(callback));
 }
 

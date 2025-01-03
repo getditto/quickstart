@@ -21,4 +21,7 @@ void throw_java_unsupported_operation_exception(JNIEnv *env, const char *msg);
 /// Throw a java.lang.IllegalStateException
 void throw_java_illegal_state_exception(JNIEnv *env, const char *msg);
 
+/// Get JNIEnv* for the current thread
+JNIEnv *get_JNIEnv_attached_to_current_thread(JavaVM *vm);
+
 #endif //QUICKSTARTTASKSCPP_JNI_UTIL_H
