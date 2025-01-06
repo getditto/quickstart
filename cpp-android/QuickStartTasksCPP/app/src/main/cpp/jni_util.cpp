@@ -53,3 +53,17 @@ JNIEnv *get_JNIEnv_attached_to_current_thread(JavaVM *vm) {
   }
   return env;
 }
+
+jobjectArray strings_to_jstrings(JNIEnv *env, const std::vector<std::string> &strings) {
+  const auto count = (int) strings.size();
+  TempLocalRef<jclass> stringClass(env, env->FindClass("java/lang/String"));
+  jobjectArray stringArray = env->NewObjectArray(count,
+                                                 stringClass.get(),
+                                                 nullptr);
+  for (auto i = 0; i < count; ++i) {
+    TempJString js(env, strings[i]);
+    env->SetObjectArrayElement(stringArray, i, js.get());
+  }
+
+  return stringArray;
+}

@@ -284,9 +284,14 @@ Java_live_ditto_quickstart_tasks_TasksLib_setTasksObserver(JNIEnv *env, jobject 
       throw_java_illegal_state_exception(env, "a tasks observer is already set");
       return;
     }
-    javaTasksObserver = env->NewGlobalRef(observer);
+
     JavaVM *vm;
-    env->GetJavaVM(&vm);
+    if (env->GetJavaVM(&vm) != 0 || vm == nullptr) {
+      throw_java_exception(env, "unable to access Java VM");
+      return;
+    }
+
+    javaTasksObserver = env->NewGlobalRef(observer);
     tasksStoreObserver = peer->register_tasks_observer(
         [vm](const std::vector<std::string> &tasksJson) {
           try {
@@ -298,17 +303,8 @@ Java_live_ditto_quickstart_tasks_TasksLib_setTasksObserver(JNIEnv *env, jobject 
             TempAttachedThread attached(vm);
             JNIEnv *env = attached.env();
 
-            // Convert C++ tasksJson to a Java String array
-            const auto tasksCount = (int) tasksJson.size();
-            TempLocalRef<jclass> stringClass(env, env->FindClass("java/lang/String"));
-            TempLocalRef<jobjectArray> stringArray(env,
-                                                   env->NewObjectArray(tasksCount,
-                                                                       stringClass.get(),
-                                                                       nullptr));
-            for (auto i = 0; i < tasksCount; ++i) {
-              TempJString js(env, tasksJson[i]);
-              env->SetObjectArrayElement(stringArray.get(), i, js.get());
-            }
+            // Convert C++ tasksJson string collection to a Java String array
+            TempLocalRef<jobjectArray> stringArray(env, strings_to_jstrings(env, tasksJson));
 
             // Invoke the onTasksUpdated method of the Java observer
             TempLocalRef<jclass> observerClass(env,
@@ -324,7 +320,7 @@ Java_live_ditto_quickstart_tasks_TasksLib_setTasksObserver(JNIEnv *env, jobject 
           }
         });
   } catch (const std::exception &err) {
-    log_error(std::string("addTasksObserver failed: ") + err.what());
+    log_error(std::string("setTasksObserver failed: ") + err.what());
     throw_java_exception(env, err.what());
   }
 }
@@ -334,11 +330,11 @@ JNIEXPORT void JNICALL
 Java_live_ditto_quickstart_tasks_TasksLib_removeTasksObserver(JNIEnv *env, jobject thiz) {
   try {
     std::lock_guard<std::recursive_mutex> lock(mtx);
+    tasksStoreObserver.reset();
     if (javaTasksObserver != nullptr) {
       env->DeleteGlobalRef(javaTasksObserver);
       javaTasksObserver = nullptr;
     }
-    tasksStoreObserver.reset();
   } catch (const std::exception &err) {
     log_error(std::string("removeTasksObserver failed: ") + err.what());
     throw_java_exception(env, err.what());

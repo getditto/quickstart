@@ -5,6 +5,7 @@
 
 #include <string>
 #include <stdexcept>
+#include <vector>
 
 /// Convert a Java String to a C++ std::string
 std::string jstring_to_string(JNIEnv *env, jstring js);
@@ -27,6 +28,11 @@ void throw_java_illegal_argument_exception(JNIEnv *env, const char *msg);
 
 /// Get JNIEnv* for the current thread
 JNIEnv *get_JNIEnv_attached_to_current_thread(JavaVM *vm);
+
+/// Convert a collection of C++ strings to an array of Java Strings.
+///
+/// The caller is responsible for eventually calling env->DeleteLocalRef() on the returned array.
+jobjectArray strings_to_jstrings(JNIEnv *env, const std::vector<std::string> &strings);
 
 /// Takes ownership of a local reference to a Java object, and releases it upon destruction
 template<class T>
@@ -66,8 +72,8 @@ public:
   /// Convert the given null-terminated UTF8 string to a `jstring`.
   ///
   /// The `env` pointer must remain valid until the destructor has been called.
-  TempJString(JNIEnv *env, const char *c_str) : env(env), js(env->NewStringUTF(c_str)) {
-    if (js == nullptr) {
+  TempJString(JNIEnv *env, const char *c_str) : js(env, env->NewStringUTF(c_str)) {
+    if (js.get() == nullptr) {
       throw std::runtime_error("NewStringUTF failed");
     }
   }
@@ -81,13 +87,7 @@ public:
   ///
   /// The returned object is only valid until this object is destroyed.
   jstring get() const noexcept {
-    return js;
-  }
-
-  ~TempJString() noexcept {
-    if (js != nullptr) {
-      env->DeleteLocalRef(js);
-    }
+    return js.get();
   }
 
   TempJString(const TempJString &) = delete;
@@ -99,8 +99,7 @@ public:
   TempJString &operator=(TempJString &&) = delete;
 
 private:
-  JNIEnv *env;
-  jstring js;
+  TempLocalRef<jstring> js;
 };
 
 /// Attaches the current thread to Java VM, then detaches on destruction.
