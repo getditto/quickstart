@@ -3,7 +3,13 @@ package live.ditto.quickstart.tasks
 import android.util.Log
 import live.ditto.quickstart.tasks.data.Task
 
+interface TasksObserver {
+    fun onTasksUpdated(tasksJson: Array<String>)
+}
+
 // Wraps the C++ JNI code in a Kotlin object.
+//
+// The associated C++ code is in cpp/taskslib.cpp.
 object TasksLib {
     private const val TAG = "TasksLib"
 
@@ -41,5 +47,13 @@ object TasksLib {
     external fun updateTask(taskId: String, title: String, done: Boolean)
     external fun toggleDoneState(taskId: String)
     external fun deleteTask(taskId: String)
+
+    // Set an object whose onTasksUpdated() method will be called when the tasks collection changes.
+    //
+    // Only one tasks observer can be set at a time. Use removeTasksObserver() to clear it.
+    external fun setTasksObserver(observer: TasksObserver)
+
+    // Remove the tasks observer.
+    external fun removeTasksObserver()
 }
 

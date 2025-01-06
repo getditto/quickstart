@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import live.ditto.quickstart.tasks.TasksApplication
 import live.ditto.quickstart.tasks.TasksLib
+import live.ditto.quickstart.tasks.TasksObserver
 import live.ditto.quickstart.tasks.data.Task
 
 // The value of the Sync switch is stored in persistent settings
@@ -28,14 +29,22 @@ class TasksListScreenViewModel : ViewModel() {
         private const val QUERY = "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id"
     }
 
+    inner class UpdateHandler : TasksObserver {
+        override fun onTasksUpdated(tasksJson: Array<String>) {
+            val newList = tasksJson.map { Task.fromJson(it) }
+            tasks.postValue(newList)
+        }
+    }
+
     private val preferencesDataStore = TasksApplication.applicationContext().preferencesDataStore
 
     val tasks: MutableLiveData<List<Task>> = MutableLiveData(emptyList())
 
+    private val updateHandler: UpdateHandler = UpdateHandler()
+
     private val _syncEnabled = MutableLiveData(true)
     val syncEnabled: LiveData<Boolean> = _syncEnabled
 
-    // TODO: private var syncSubscription: DittoSyncSubscription? = null
 
     fun setSyncEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -67,16 +76,17 @@ class TasksListScreenViewModel : ViewModel() {
         viewModelScope.launch {
             TasksLib.insertInitialDocuments()
 
-            // TODO: register C++ observer
-//            ditto.store.registerObserver(QUERY) { result ->
-//                val list = result.items.map { item -> Task.fromJson(item.jsonString()) }
-//                tasks.postValue(list)
-//            }
-
             setSyncEnabled(
                 preferencesDataStore.data.map { prefs -> prefs[SYNC_ENABLED_KEY] ?: true }.first()
             )
+
+            TasksLib.setTasksObserver(updateHandler)
         }
+    }
+
+    override fun onCleared() {
+        TasksLib.removeTasksObserver()
+        super.onCleared()
     }
 
     fun toggle(taskId: String) {

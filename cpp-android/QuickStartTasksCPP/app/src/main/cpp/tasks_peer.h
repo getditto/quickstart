@@ -66,10 +66,13 @@ public:
 
   /// Subscribe to updates to the tasks collection.
   ///
+  /// The given callback will be invoked with a vector of strings containing JSON representations
+  /// of the elements in the tasks collection.
+  ///
   /// @returns a subscriber object that, when destroyed, will cancel the
   /// subscription.
   std::shared_ptr<ditto::StoreObserver> register_tasks_observer(
-      std::function<void(const std::vector<Task> &)> callback);
+      std::function<void(const std::vector<std::string> &tasksJson)> callback);
 
   /// Add a set of initial documents to the tasks collection.
   void insert_initial_tasks();

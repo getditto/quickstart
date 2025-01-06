@@ -21,13 +21,13 @@ Task task_from(const ditto::QueryResultItem &item) {
   return json::parse(item.json_string()).template get<Task>();
 }
 
-/// Convert a QueryResult to a collection of Task objects.
-vector<Task> tasks_from(const ditto::QueryResult &result) {
+/// Convert a QueryResult to a collection of JSON objects.
+vector<string> tasks_json_from(const ditto::QueryResult &result) {
   const auto item_count = result.item_count();
-  vector<Task> tasks;
+  vector<string> tasks;
   tasks.reserve(item_count);
   for (size_t i = 0; i < item_count; ++i) {
-    tasks.emplace_back(task_from(result.get_item(i)));
+    tasks.emplace_back(result.get_item(i).json_string());
   }
   return tasks;
 }
@@ -217,7 +217,7 @@ public:
   }
 
   shared_ptr<ditto::StoreObserver> register_tasks_observer(
-      function<void(const vector<Task> &)> callback) {
+      function<void(const vector<string> &)> callback) {
     try {
       const auto observer = ditto->get_store().register_observer(
           "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id",
@@ -225,7 +225,7 @@ public:
             const auto item_count = result.item_count();
             log_debug("Tasks collection updated; count=" +
                       to_string(item_count));
-            const auto tasks = tasks_from(result);
+            const auto tasks = tasks_json_from(result);
             try {
               log_debug("Invoking observer callback");
               callback(tasks);
@@ -318,7 +318,7 @@ void TasksPeer::delete_task(const string &task_id) {
 }
 
 shared_ptr<ditto::StoreObserver> TasksPeer::register_tasks_observer(
-    function<void(const vector<Task> &)> callback) {
+    function<void(const vector<string> &)> callback) {
   return impl->register_tasks_observer(std::move(callback));
 }
 

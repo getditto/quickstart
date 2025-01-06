@@ -1,5 +1,6 @@
 package live.ditto.quickstart.tasks.data
 
+import org.json.JSONObject
 import java.util.UUID
 
 // Kotlin representation of a to-do item.
@@ -12,4 +13,16 @@ data class Task(
     val title: String,
     val done: Boolean = false,
     val deleted: Boolean = false,
-)
+) {
+    companion object {
+        fun fromJson(jsonString: String): Task {
+            val json = JSONObject(jsonString)
+            return Task(
+                _id = json["_id"].toString(),
+                title = json["title"].toString(),
+                done = json["done"] as Boolean,
+                deleted = json["deleted"] as Boolean
+            )
+        }
+    }
+}

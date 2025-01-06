@@ -37,6 +37,10 @@ void throw_java_illegal_state_exception(JNIEnv *env, const char *msg) {
   throw_java_exception(env, msg, "java/lang/IllegalStateException");
 }
 
+void throw_java_illegal_argument_exception(JNIEnv *env, const char *msg) {
+  throw_java_exception(env, msg, "java/lang/IllegalArgumentException");
+}
+
 JNIEnv *get_JNIEnv_attached_to_current_thread(JavaVM *vm) {
   JNIEnv *env = nullptr;
   if (vm == nullptr) {
