@@ -47,6 +47,8 @@ androidComponents {
 android {
     namespace = "live.ditto.quickstart.tasks"
     compileSdk = 35
+    //ndkVersion = "23.1.7779620"  // for Ditto SDK 4.8.x versions
+    ndkVersion = "27.2.12479018" // for Ditto SDK 4.9.x versions
 
     defaultConfig {
         applicationId = "live.ditto.quickstart.taskscpp"
@@ -61,7 +63,7 @@ android {
         }
         externalNativeBuild {
             cmake {
-                cppFlags += ""
+                cppFlags += "-std=c++17"
                 arguments += "-DANDROID_STL=c++_shared"
             }
         }
@@ -98,14 +100,8 @@ android {
         jniLibs {
             useLegacyPackaging = true
             keepDebugSymbols.add("**/*.so")
-            pickFirsts.add("lib/x86/libc++_shared.so")
-            pickFirsts.add("lib/x86_64/libc++_shared.so")
-            pickFirsts.add("lib/armeabi-v7a/libc++_shared.so")
-            pickFirsts.add("lib/arm64-v8a/libc++_shared.so")
-            pickFirsts.add("lib/x86/libditto.so")
-            pickFirsts.add("lib/x86_64/libditto.so")
-            pickFirsts.add("lib/armeabi-v7a/libditto.so")
-            pickFirsts.add("lib/arm64-v8a/libditto.so")
+            pickFirsts.add("lib/**/libditto.so")
+            pickFirsts.add("lib/**/libc++_shared.so")
         }
     }
     externalNativeBuild {
@@ -141,5 +137,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Ditto C++ SDK
-    implementation("live.ditto:ditto-cpp:4.8.2")
+    implementation("live.ditto:ditto-cpp:4.9.2")
 }
