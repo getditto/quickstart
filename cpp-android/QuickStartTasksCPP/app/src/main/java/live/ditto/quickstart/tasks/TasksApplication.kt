@@ -32,9 +32,12 @@ class TasksApplication : Application() {
 
         try {
             val appContext = applicationContext()
+
             val persistenceDir = File(appContext.filesDir, "ditto")
             persistenceDir.mkdirs()
-            TasksLib.initDitto(applicationContext(), appId, token, persistenceDir.path)
+            
+            TasksLib.initDitto(appContext, appId, token, persistenceDir.path)
+            TasksLib.startSync() // TODO: remove this once sync on/off is working in TasksListScreenViewModel
         } catch (e: Exception) {
             Log.e(TAG, "unable to initialize Ditto", e)
         }

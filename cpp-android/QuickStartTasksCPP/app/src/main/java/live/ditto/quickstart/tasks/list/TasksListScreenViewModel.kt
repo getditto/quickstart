@@ -53,22 +53,20 @@ class TasksListScreenViewModel : ViewModel() {
             }
             _syncEnabled.value = enabled
 
-            if (enabled && !TasksLib.isSyncActive()) {
-                try {
-                    TasksLib.startSync()
-                    // TODO: syncSubscription = ditto.sync.registerSubscription(QUERY)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Unable to start sync", e)
-                }
-            } else if (TasksLib.isSyncActive()) {
-                try {
-                    // TODO: syncSubscription?.close()
-                    // TODO: syncSubscription = null
-                    TasksLib.stopSync()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Unable to stop sync", e)
-                }
-            }
+            // TODO: get sync on/off working
+//            if (enabled && !TasksLib.isSyncActive()) {
+//                try {
+//                    TasksLib.startSync()
+//                } catch (e: Exception) {
+//                    Log.e(TAG, "Unable to start sync", e)
+//                }
+//            } else if (!enabled && TasksLib.isSyncActive()) {
+//                try {
+//                    TasksLib.stopSync()
+//                } catch (e: Exception) {
+//                    Log.e(TAG, "Unable to stop sync", e)
+//                }
+//            }
         }
     }
 
