@@ -41,19 +41,6 @@ void throw_java_illegal_argument_exception(JNIEnv *env, const char *msg) {
   throw_java_exception(env, msg, "java/lang/IllegalArgumentException");
 }
 
-JNIEnv *get_JNIEnv_attached_to_current_thread(JavaVM *vm) {
-  JNIEnv *env = nullptr;
-  if (vm == nullptr) {
-    throw std::runtime_error("java_vm is not initialized");
-  }
-  if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
-    if (vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
-      throw std::runtime_error("unable to attach current thread to vm");
-    }
-  }
-  return env;
-}
-
 jobjectArray strings_to_jstrings(JNIEnv *env, const std::vector<std::string> &strings) {
   const auto count = (int) strings.size();
   TempLocalRef<jclass> stringClass(env, env->FindClass("java/lang/String"));

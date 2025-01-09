@@ -36,7 +36,8 @@ vector<string> tasks_json_from(const ditto::QueryResult &result) {
 unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env, jobject context, string app_id,
                                     string online_playground_token,
                                     bool enable_cloud_sync,
-                                    string persistence_dir) {
+                                    string persistence_dir,
+                                    bool is_running_on_emulator) {
   try {
     const auto identity = ditto::Identity::OnlinePlayground(
         std::move(app_id), std::move(online_playground_token),
@@ -44,6 +45,14 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env, jobject context, string app_id,
 
     auto ditto =
         make_unique<ditto::Ditto>(identity, std::move(persistence_dir));
+
+    if (is_running_on_emulator) {
+      // Some transports don't work correctly on emulator, so disable them.
+      ditto->update_transport_config([](ditto::TransportConfig &config) {
+        config.peer_to_peer.bluetooth_le.enabled = false;
+        config.peer_to_peer.wifi_aware.enabled = false;
+      });
+    }
 
     ditto->set_android_context(env, context);
 
@@ -68,10 +77,11 @@ private:
 public:
   Impl(JNIEnv *env, jobject context, string app_id, string online_playground_token,
        bool enable_cloud_sync,
-       string persistence_dir)
+       string persistence_dir,
+       bool is_running_on_emulator)
       : mtx(new mutex()),
         ditto(init_ditto(env, context, std::move(app_id), std::move(online_playground_token),
-                         enable_cloud_sync, std::move(persistence_dir))) {}
+                         enable_cloud_sync, std::move(persistence_dir), is_running_on_emulator)) {}
 
   ~Impl() noexcept {
     try {
@@ -281,9 +291,10 @@ public:
 }; // class TasksPeer::Impl
 
 TasksPeer::TasksPeer(JNIEnv *env, jobject context, string app_id, string online_playground_token,
-                     bool enable_cloud_sync, string persistence_dir)
+                     bool enable_cloud_sync, string persistence_dir, bool is_running_on_emulator)
     : impl(make_unique<Impl>(env, context, std::move(app_id), std::move(online_playground_token),
-                             enable_cloud_sync, std::move(persistence_dir))) {}
+                             enable_cloud_sync, std::move(persistence_dir),
+                             is_running_on_emulator)) {}
 
 TasksPeer::~TasksPeer() noexcept {
   try {

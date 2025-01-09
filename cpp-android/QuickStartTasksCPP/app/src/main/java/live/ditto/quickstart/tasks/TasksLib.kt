@@ -27,7 +27,8 @@ object TasksLib {
         appContext: android.content.Context,
         appId: String,
         token: String,
-        persistenceDir: String
+        persistenceDir: String,
+        isRunningOnEmulator: Boolean
     )
 
     // Terminate the Ditto client.

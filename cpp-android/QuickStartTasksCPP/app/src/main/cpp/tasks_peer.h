@@ -20,7 +20,7 @@ public:
   /// Construct a new TasksPeer object.
   TasksPeer(JNIEnv *env, jobject context, std::string ditto_app_id,
             std::string ditto_online_playground_token,
-            bool enable_cloud_sync, std::string ditto_persistence_dir);
+            bool enable_cloud_sync, std::string ditto_persistence_dir, bool is_running_on_emulator);
 
   virtual ~TasksPeer() noexcept;
 

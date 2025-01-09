@@ -26,9 +26,6 @@ void throw_java_illegal_state_exception(JNIEnv *env, const char *msg);
 /// Throw a java.lang.IllegalArgumentException
 void throw_java_illegal_argument_exception(JNIEnv *env, const char *msg);
 
-/// Get JNIEnv* for the current thread
-JNIEnv *get_JNIEnv_attached_to_current_thread(JavaVM *vm);
-
 /// Convert a collection of C++ strings to an array of Java Strings.
 ///
 /// The caller is responsible for eventually calling env->DeleteLocalRef() on the returned array.
