@@ -32,7 +32,9 @@ public static class MauiProgram
 
     private static Ditto SetupDitto()
     {
-        var ditto = new Ditto(DittoIdentity.OnlinePlayground("YOUR_APP_ID", "YOUR_TOKEN", true));
+        //var dittoAppId = "YOUR_APP_ID";
+        //var dittoToken = "YOUR_TOKEN";
+        var ditto = new Ditto(DittoIdentity.OnlinePlayground(dittoAppId, dittoToken, true));
         ditto.DisableSyncWithV3();
         ditto.StartSync();
 

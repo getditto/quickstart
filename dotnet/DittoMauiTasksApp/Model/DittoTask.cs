@@ -6,27 +6,29 @@ namespace DittoMauiTasksApp
 {
     public partial class DittoTask : ObservableObject
     {
-        public const string CollectionName = "tasks";
-
         [ObservableProperty]
         [property: JsonPropertyName("_id")]
         string id;
 
         [ObservableProperty]
-        [property: JsonPropertyName("body")]
-        string body;
+        [property: JsonPropertyName("title")]
+        string title;
 
         [ObservableProperty]
-        [property: JsonPropertyName("isCompleted")]
-        bool isCompleted;
+        [property: JsonPropertyName("done")]
+        bool done;
 
-        partial void OnIsCompletedChanged(bool value)
+        [ObservableProperty]
+        [property: JsonPropertyName("deleted")]
+        bool deleted;
+
+        partial void OnDoneChanged(bool value)
         {
             var ditto = Utils.ServiceProvider.GetService<Ditto>();
 
-            var updateQuery = $"UPDATE {CollectionName} " +
-                $"SET isCompleted = {value} " +
-                $"WHERE _id = '{Id}' AND isCompleted != {value}";
+            var updateQuery = $"UPDATE tasks " +
+                $"SET done = {value} " +
+                $"WHERE _id = '{Id}' AND done != {value}";
             ditto.Store.ExecuteAsync(updateQuery);
         }
     }

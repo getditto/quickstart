@@ -37,18 +37,18 @@ namespace DittoMauiTasksApp.ViewModels
 
             if (taskData == null)
             {
-                //nothing was entered. 
-                return; 
+                //nothing was entered.
+                return;
             }
 
             var dict = new Dictionary<string, object>
             {
-                {"body", taskData},
-                {"isCompleted", false},
-                { "isDeleted", false }
+                {"title", taskData},
+                {"done", false},
+                {"deleted", false }
             };
 
-            await ditto.Store.ExecuteAsync($"INSERT INTO {DittoTask.CollectionName} DOCUMENTS (:doc1)", new Dictionary<string, object>()
+            await ditto.Store.ExecuteAsync($"INSERT INTO tasks DOCUMENTS (:doc1)", new Dictionary<string, object>()
             {
                 { "doc1", dict }
             });
@@ -57,26 +57,26 @@ namespace DittoMauiTasksApp.ViewModels
         [RelayCommand]
         private void DeleteTask(DittoTask task)
         {
-            var updateQuery = $"UPDATE {DittoTask.CollectionName} " +
-                "SET isDeleted = true " +
+            var updateQuery = $"UPDATE tasks " +
+                "SET deleted = true " +
                 $"WHERE _id = '{task.Id}'";
             ditto.Store.ExecuteAsync(updateQuery);
         }
 
         private void ObserveDittoTasksCollection()
         {
-            var query = $"SELECT * FROM {DittoTask.CollectionName} WHERE isDeleted = false";
+            var query = $"SELECT * FROM tasks WHERE NOT deleted";
 
             ditto.Sync.RegisterSubscription(query);
             ditto.Store.RegisterObserver(query, storeObservationHandler: async (queryResult) =>
             {
                 Tasks = new ObservableCollection<DittoTask>(queryResult.Items.ConvertAll(d =>
                 {
-                    return JsonSerializer.Deserialize<DittoTask>(d.JsonString());
+                    var json = d.JsonString();
+                    var task = JsonSerializer.Deserialize<DittoTask>(json);
+                    return task;
                 }));
             });
-
-            ditto.Store.ExecuteAsync($"EVICT FROM {DittoTask.CollectionName} WHERE isDeleted = false");
         }
     }
 }

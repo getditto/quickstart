@@ -29,10 +29,10 @@
                         ColumnDefinitions="*, Auto">
                         <Label
                             VerticalOptions="Center"
-                            Text="{Binding Body}"/>
+                            Text="{Binding Title}"/>
                         <CheckBox
                             HorizontalOptions="End"
-                            IsChecked="{Binding IsCompleted}"/>
+                            IsChecked="{Binding Done}"/>
                     </Grid>
                 </ViewCell>
             </DataTemplate>
