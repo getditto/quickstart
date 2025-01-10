@@ -29,10 +29,6 @@ void throw_java_exception(JNIEnv *env, const char *msg,
   (*env).ThrowNew(exception_class, msg);
 }
 
-void throw_java_unsupported_operation_exception(JNIEnv *env, const char *msg) {
-  throw_java_exception(env, msg, "java/lang/UnsupportedOperationException");
-}
-
 void throw_java_illegal_state_exception(JNIEnv *env, const char *msg) {
   throw_java_exception(env, msg, "java/lang/IllegalStateException");
 }

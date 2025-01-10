@@ -28,6 +28,15 @@ std::shared_ptr<TasksPeer> peer;
 jobject javaTasksObserver;
 std::shared_ptr<ditto::StoreObserver> tasksStoreObserver;
 
+void remove_observer(JNIEnv *env) {
+  std::lock_guard<std::recursive_mutex> lock(mtx);
+  tasksStoreObserver.reset();
+  if (javaTasksObserver != nullptr) {
+    env->DeleteGlobalRef(javaTasksObserver);
+    javaTasksObserver = nullptr;
+  }
+}
+
 // Create a live.ditto.quickstart.tasks.data.Task object from a C++ Task object.
 jobject native_task_to_java_task(JNIEnv *const env, const Task &native_task) {
   jclass taskClass = env->FindClass("live/ditto/quickstart/tasks/data/Task");
@@ -93,7 +102,7 @@ Java_live_ditto_quickstart_tasks_TasksLib_terminateDitto(JNIEnv *env, jobject th
       throw_java_illegal_state_exception(env, "TasksLib has not been initialized");
       return;
     }
-    // TODO: perform any necessary cleanup before the TasksPeer is destroyed
+    remove_observer(env);
     peer.reset();
   } catch (const std::exception &err) {
     __android_log_print(ANDROID_LOG_ERROR, TAG, "terminateDitto failed: %s", err.what());
@@ -148,6 +157,7 @@ Java_live_ditto_quickstart_tasks_TasksLib_stopSync(JNIEnv *env, jobject thiz) {
       throw_java_illegal_state_exception(env, "TasksLib has not been initialized");
       return;
     }
+    remove_observer(env);
     peer->stop_sync();
   } catch (const std::exception &err) {
     __android_log_print(ANDROID_LOG_ERROR, TAG, "stopSync failed: %s", err.what());
@@ -345,11 +355,7 @@ Java_live_ditto_quickstart_tasks_TasksLib_removeTasksObserver(JNIEnv *env, jobje
                       "Java_live_ditto_quickstart_tasks_TasksLib_removeTasksObserver");
   try {
     std::lock_guard<std::recursive_mutex> lock(mtx);
-    tasksStoreObserver.reset();
-    if (javaTasksObserver != nullptr) {
-      env->DeleteGlobalRef(javaTasksObserver);
-      javaTasksObserver = nullptr;
-    }
+    remove_observer(env);
   } catch (const std::exception &err) {
     __android_log_print(ANDROID_LOG_ERROR, TAG, "removeTasksObserver failed: %s", err.what());
     throw_java_exception(env, err.what());

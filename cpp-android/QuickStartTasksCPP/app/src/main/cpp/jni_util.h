@@ -17,9 +17,6 @@ inline jboolean bool_to_jboolean(bool b) { return b ? JNI_TRUE : JNI_FALSE; }
 void throw_java_exception(JNIEnv *env, const char *msg,
                           const char *exception_class_name = "java/lang/Exception");
 
-/// Throw a java.lang.UnsupportedOperationException
-void throw_java_unsupported_operation_exception(JNIEnv *env, const char *msg);
-
 /// Throw a java.lang.IllegalStateException
 void throw_java_illegal_state_exception(JNIEnv *env, const char *msg);
 
@@ -48,7 +45,7 @@ public:
   }
 
   /// Get the owned local reference.
-  T get() const noexcept { return localRef; }
+  [[nodiscard]] T get() const noexcept { return localRef; }
 
   TempLocalRef(const TempLocalRef<T> &) = delete;
 
@@ -83,7 +80,7 @@ public:
   /// Return converted `jstring`
   ///
   /// The returned object is only valid until this object is destroyed.
-  jstring get() const noexcept {
+  [[nodiscard]] jstring get() const noexcept {
     return js.get();
   }
 
@@ -110,7 +107,7 @@ public:
   }
 
   /// Return JNI environment for the attached thread
-  JNIEnv *env() const noexcept {
+  [[nodiscard]] JNIEnv *env() const noexcept {
     return thread_env;
   }
 
