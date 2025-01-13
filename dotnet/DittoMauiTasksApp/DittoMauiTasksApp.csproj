@@ -20,11 +20,11 @@
         <ApplicationVersion>1</ApplicationVersion>
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
-		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+        <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -47,4 +47,35 @@
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
     </ItemGroup>
+
+    <ItemGroup>
+        <!-- Exclude the files under tools/ from the main target.-->
+        <Compile Remove="tools/**" />
+    </ItemGroup>
+
+    <!-- Target to build the GenerateEnvConstants.dll tool -->
+    <ItemGroup>
+        <ToolsSourceFiles Include="tools/GenerateEnvConstants/**/*.csproj" />
+        <ToolsSourceFiles Include="tools/GenerateEnvConstants/**/*.cs" />
+    </ItemGroup>
+    <Target Name="BuildGenerateEnvConstantsDll" BeforeTargets="GenerateEnvConstants" Inputs="@(ToolsSourceFiles)" Outputs="$(MSBuildThisFileDirectory)tools/bin/GenerateEnvConstants.dll">
+        <PropertyGroup>
+            <ToolsProjectDir>$(MSBuildThisFileDirectory)tools/GenerateEnvConstants</ToolsProjectDir>
+            <OutputDir>$(MSBuildThisFileDirectory)tools/bin</OutputDir>
+        </PropertyGroup>
+
+        <Exec Command="dotnet build $(ToolsProjectDir) -o $(OutputDir)" />
+    </Target>
+
+    <!-- Target to generate the constants from the .env file -->
+    <Target Name="GenerateEnvConstants" BeforeTargets="BeforeCompile" Inputs="../../.env" Outputs="$(MSBuildThisFileDirectory)Generated/EnvConstants.cs">
+        <PropertyGroup>
+            <GeneratedConstantsFile>$(MSBuildThisFileDirectory)Generated/EnvConstants.cs</GeneratedConstantsFile>
+            <GeneratedDll>$(MSBuildThisFileDirectory)tools/bin/GenerateEnvConstants.dll</GeneratedDll>
+        </PropertyGroup>
+
+        <!-- Generate the constants if the .env file has changed -->
+        <Exec Command="dotnet exec $(GeneratedDll) ../../.env $(GeneratedConstantsFile)" />
+    </Target>
+
 </Project>

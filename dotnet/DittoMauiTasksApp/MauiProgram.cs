@@ -1,6 +1,7 @@
 ﻿using DittoMauiTasksApp.Utils;
 using DittoMauiTasksApp.ViewModels;
 using DittoSDK;
+using Generated;
 using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp;
@@ -25,20 +26,19 @@ public static class MauiProgram
         builder.Services.AddSingleton<IPopupService, PopupService>();
         builder.Services.AddTransient<TasksPageviewModel>();
         builder.Services.AddTransient<TasksPage>();
-        builder.Services.AddTransient<PresenceViewerPage>();
 
         return builder.Build();
     }
 
     private static Ditto SetupDitto()
     {
-        //var dittoAppId = "YOUR_APP_ID";
-        //var dittoToken = "YOUR_TOKEN";
-        var ditto = new Ditto(DittoIdentity.OnlinePlayground(dittoAppId, dittoToken, true));
+        var ditto = new Ditto(DittoIdentity.OnlinePlayground(
+            EnvConstants.DITTO_APP_ID,
+            EnvConstants.DITTO_PLAYGROUND_TOKEN,
+            true));
         ditto.DisableSyncWithV3();
         ditto.StartSync();
 
         return ditto;
     }
 }
-
