@@ -5,10 +5,8 @@
              x:Class="DittoMauiTasksApp.TasksPage">
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Add Task"
+        <ToolbarItem Text="Add"
                      Command="{Binding AddTaskCommand}"/>
-        <ToolbarItem IconImageSource="settings.png"
-                     Clicked="SettingsClicked"/>
     </ContentPage.ToolbarItems>
 
     <ListView

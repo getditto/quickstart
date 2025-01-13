@@ -8,11 +8,6 @@ public partial class TasksPage : ContentPage
     {
         InitializeComponent();
 
-        BindingContext = viewModel; 
-    }
-
-    void SettingsClicked(System.Object sender, System.EventArgs e)
-    {
-        Shell.Current.GoToAsync("//PresenceViewerPage");
+        BindingContext = viewModel;
     }
 }
