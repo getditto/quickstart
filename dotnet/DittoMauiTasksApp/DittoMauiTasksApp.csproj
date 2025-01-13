@@ -10,7 +10,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
 
         <!-- Display name -->
-        <ApplicationTitle>DittoMauiTasksApp</ApplicationTitle>
+        <ApplicationTitle>QS Tasks</ApplicationTitle>
 
         <!-- App Identifier -->
         <ApplicationId>com.companyname.dittomauitasksapp</ApplicationId>
