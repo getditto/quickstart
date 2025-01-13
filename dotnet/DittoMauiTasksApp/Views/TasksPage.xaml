@@ -9,33 +9,46 @@
                      Command="{Binding AddTaskCommand}"/>
     </ContentPage.ToolbarItems>
 
-    <ListView
-        x:Name="listView"
-        ItemsSource="{Binding Tasks}"
-        SelectionMode="None">
-        <ListView.ItemTemplate>
-            <DataTemplate>
-                <ViewCell>
-                    <ViewCell.ContextActions>
-                        <MenuItem
-                            Text="Delete"
-                            Command="{Binding Source={x:Reference listView}, Path=BindingContext.DeleteTaskCommand}"
-                            CommandParameter="{Binding}"/>
-                    </ViewCell.ContextActions>
-                    <Grid
-                        Margin="16, 5"
-                        ColumnDefinitions="*, Auto">
-                        <Label
-                            VerticalOptions="Center"
-                            Text="{Binding Title}"/>
-                        <CheckBox
-                            HorizontalOptions="End"
-                            IsChecked="{Binding Done}"/>
-                    </Grid>
-                </ViewCell>
-            </DataTemplate>
-        </ListView.ItemTemplate>
+    <StackLayout>
+        <StackLayout>
+            <Label
+                Text="{Binding AppIdText}"
+                HorizontalOptions="Center"
+                FontSize="Micro"/>
 
-    </ListView>
+            <Label
+                Text="{Binding TokenText}"
+                HorizontalOptions="Center"
+                FontSize="Micro"/>
+        </StackLayout>
 
+        <ListView
+            x:Name="listView"
+            ItemsSource="{Binding Tasks}"
+            SelectionMode="None">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <ViewCell.ContextActions>
+                            <MenuItem
+                                Text="Delete"
+                                Command="{Binding Source={x:Reference listView}, Path=BindingContext.DeleteTaskCommand}"
+                                CommandParameter="{Binding}"/>
+                        </ViewCell.ContextActions>
+                        <Grid
+                            Margin="16, 5"
+                            ColumnDefinitions="*, Auto">
+                            <Label
+                                VerticalOptions="Center"
+                                Text="{Binding Title}"/>
+                            <CheckBox
+                                HorizontalOptions="End"
+                                IsChecked="{Binding Done}"/>
+                        </Grid>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+
+        </ListView>
+    </StackLayout>
 </ContentPage>

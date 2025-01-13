@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DittoMauiTasksApp.Utils;
 using DittoSDK;
+using Generated;
 
 namespace DittoMauiTasksApp.ViewModels
 {
@@ -12,6 +13,9 @@ namespace DittoMauiTasksApp.ViewModels
     {
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
+
+        public string AppIdText { get; } = "App ID: " + EnvConstants.DITTO_APP_ID;
+        public string TokenText { get; } = "Token: " + EnvConstants.DITTO_PLAYGROUND_TOKEN;
 
         [ObservableProperty]
         ObservableCollection<DittoTask> tasks;
@@ -59,8 +63,11 @@ namespace DittoMauiTasksApp.ViewModels
         {
             var updateQuery = $"UPDATE tasks " +
                 "SET deleted = true " +
-                $"WHERE _id = '{task.Id}'";
-            ditto.Store.ExecuteAsync(updateQuery);
+                "WHERE _id = :id";
+            ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>()
+            {
+                { "id", task.Id }
+            });
         }
 
         private void ObserveDittoTasksCollection()
