@@ -15,7 +15,6 @@
                 Text="{Binding AppIdText}"
                 HorizontalOptions="Center"
                 FontSize="Micro"/>
-
             <Label
                 Text="{Binding TokenText}"
                 HorizontalOptions="Center"
@@ -33,6 +32,11 @@
                             <MenuItem
                                 Text="Delete"
                                 Command="{Binding Source={x:Reference listView}, Path=BindingContext.DeleteTaskCommand}"
+                                CommandParameter="{Binding}"
+                                IsDestructive="True"/>
+                            <MenuItem
+                                Text="Edit"
+                                Command="{Binding Source={x:Reference listView}, Path=BindingContext.EditTaskCommand}"
                                 CommandParameter="{Binding}"/>
                         </ViewCell.ContextActions>
                         <Grid
@@ -40,7 +44,22 @@
                             ColumnDefinitions="*, Auto">
                             <Label
                                 VerticalOptions="Center"
-                                Text="{Binding Title}"/>
+                                Text="{Binding Title}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label"
+                                                 Binding="{Binding Done}"
+                                                 Value="True">
+                                        <Setter Property="TextDecorations"
+                                                Value="Strikethrough"/>
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label"
+                                                 Binding="{Binding Done}"
+                                                 Value="False">
+                                        <Setter Property="TextDecorations"
+                                                Value="None"/>
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
                             <CheckBox
                                 HorizontalOptions="End"
                                 IsChecked="{Binding Done}"/>
@@ -48,7 +67,6 @@
                     </ViewCell>
                 </DataTemplate>
             </ListView.ItemTemplate>
-
         </ListView>
     </StackLayout>
 </ContentPage>

@@ -26,10 +26,14 @@ namespace DittoMauiTasksApp
         {
             var ditto = Utils.ServiceProvider.GetService<Ditto>();
 
-            var updateQuery = $"UPDATE tasks " +
-                $"SET done = {value} " +
-                $"WHERE _id = '{Id}' AND done != {value}";
-            ditto.Store.ExecuteAsync(updateQuery);
+            var updateQuery = "UPDATE tasks " +
+                "SET done = :value " +
+                "WHERE _id = :id";
+            ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>
+            {
+                { "value", value },
+                { "id", Id }
+            });
         }
     }
 }

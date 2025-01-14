@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using DittoMauiTasksApp.Utils;
 using DittoSDK;
 using Generated;
+using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp.ViewModels
 {
@@ -13,55 +14,90 @@ namespace DittoMauiTasksApp.ViewModels
     {
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
+        private readonly ILogger<TasksPageviewModel> logger;
 
-        public string AppIdText { get; } = "App ID: " + EnvConstants.DITTO_APP_ID;
-        public string TokenText { get; } = "Token: " + EnvConstants.DITTO_PLAYGROUND_TOKEN;
+        public string AppIdText { get; } = $"App ID: {EnvConstants.DITTO_APP_ID}";
+        public string TokenText { get; } = $"Token: {EnvConstants.DITTO_PLAYGROUND_TOKEN}";
 
         [ObservableProperty]
         ObservableCollection<DittoTask> tasks;
 
-        public TasksPageviewModel(Ditto ditto, IPopupService popupService)
+        public TasksPageviewModel(
+            Ditto ditto, IPopupService popupService, ILogger<TasksPageviewModel> logger)
         {
             this.ditto = ditto;
             this.popupService = popupService;
+            this.logger = logger;
 
             PermissionHelper.CheckPermissions().ContinueWith(async t =>
             {
-                ditto.DisableSyncWithV3();
-                ditto.StartSync();
+                try
+                {
+                    ditto.DisableSyncWithV3();
+                    ditto.StartSync();
 
-                ObserveDittoTasksCollection();
+                    ObserveDittoTasksCollection();
+                }
+                catch (Exception e)
+                {
+                    logger.LogError($"Error: Unable to start Ditto sync: {e.Message}");
+                }
             });
         }
 
         [RelayCommand]
         private async Task AddTaskAsync()
         {
-            string taskData = await popupService.DisplayPromptAsync("Add Task", "Add a new task:");
+            var title = await popupService.DisplayPromptAsync(
+                "Add Task", "Add a new task:", "Task title");
 
-            if (taskData == null)
+            if (string.IsNullOrWhiteSpace(title))
             {
                 //nothing was entered.
                 return;
             }
+            title.Trim();
 
-            var dict = new Dictionary<string, object>
+            var doc = new Dictionary<string, object>
             {
-                {"title", taskData},
+                {"title", title},
                 {"done", false},
                 {"deleted", false }
             };
 
-            await ditto.Store.ExecuteAsync($"INSERT INTO tasks DOCUMENTS (:doc1)", new Dictionary<string, object>()
+            await ditto.Store.ExecuteAsync("INSERT INTO tasks DOCUMENTS (:doc)", new Dictionary<string, object>()
             {
-                { "doc1", dict }
+                { "doc", doc }
+            });
+        }
+
+        [RelayCommand]
+        private async Task EditTaskAsync(DittoTask task)
+        {
+            var newTitle = await popupService.DisplayPromptAsync(
+                "Edit Task", "Change task title:", "Task title", initialValue: task.Title);
+
+            if (string.IsNullOrWhiteSpace(newTitle))
+            {
+                //nothing was entered.
+                return;
+            }
+            newTitle.Trim();
+
+            var updateQuery = "UPDATE tasks " +
+                "SET title = :title " +
+                "WHERE _id = :id";
+            await ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>
+            {
+                {"title", newTitle},
+                {"id", task.Id}
             });
         }
 
         [RelayCommand]
         private void DeleteTask(DittoTask task)
         {
-            var updateQuery = $"UPDATE tasks " +
+            var updateQuery = "UPDATE tasks " +
                 "SET deleted = true " +
                 "WHERE _id = :id";
             ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>()
@@ -72,17 +108,74 @@ namespace DittoMauiTasksApp.ViewModels
 
         private void ObserveDittoTasksCollection()
         {
-            var query = $"SELECT * FROM tasks WHERE NOT deleted";
+            var query = "SELECT * FROM tasks WHERE NOT deleted";
 
             ditto.Sync.RegisterSubscription(query);
-            ditto.Store.RegisterObserver(query, storeObservationHandler: async (queryResult) =>
+            ditto.Store.RegisterObserver(query, async (queryResult) =>
             {
-                Tasks = new ObservableCollection<DittoTask>(queryResult.Items.ConvertAll(d =>
+                try
                 {
-                    var json = d.JsonString();
-                    var task = JsonSerializer.Deserialize<DittoTask>(json);
-                    return task;
-                }));
+                    var newTasks = queryResult.Items.Select(d =>
+                    {
+                        var json = d.JsonString();
+                        var task = JsonSerializer.Deserialize<DittoTask>(json);
+                        return task;
+                    }).OrderBy(t => t.Id).ToList();
+
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        try
+                        {
+                            if (Tasks == null)
+                            {
+                                Tasks = new ObservableCollection<DittoTask>(newTasks);
+                            }
+                            else
+                            {
+                                var oldCount = Tasks.Count;
+                                var newCount = newTasks.Count;
+                                var minCount = Math.Min(oldCount, newCount);
+
+                                for (var i = 0; i < minCount; i++)
+                                {
+                                    var existingTask = Tasks[i];
+                                    var newTask = newTasks[i];
+                                    if (existingTask.Id != newTask.Id)
+                                        existingTask.Id = newTask.Id;
+                                    if (existingTask.Title != newTask.Title)
+                                        existingTask.Title = newTask.Title;
+                                    if (existingTask.Done != newTask.Done)
+                                        existingTask.Done = newTask.Done;
+                                    if (existingTask.Deleted != newTask.Deleted)
+                                        existingTask.Deleted = newTask.Deleted;
+                                }
+
+                                if (oldCount < newCount)
+                                {
+                                    for (var i = oldCount; i < newCount; i++)
+                                    {
+                                        Tasks.Add(newTasks[i]);
+                                    }
+                                }
+                                else if (oldCount > newCount)
+                                {
+                                    for (var i = oldCount - 1; i >= newCount; i--)
+                                    {
+                                        Tasks.RemoveAt(i);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            logger.LogError($"Error: Unable to update list view model: {e.Message}");
+                        }
+                    });
+                }
+                catch (Exception e)
+                {
+                    logger.LogError($"Error: Unable to process tasks collection change: {e.Message}");
+                }
             });
         }
     }
