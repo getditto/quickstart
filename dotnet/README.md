@@ -31,3 +31,8 @@ These commands will build and run the app on the default Android target.
 cd DittoMauiTasksApp
 dotnet build -t:Run -f net8.0-android
 ```
+
+## Other Platforms
+
+Building this app for platforms other than iOS and Android is not supported by
+Ditto at this time.
