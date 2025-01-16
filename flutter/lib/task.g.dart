@@ -9,7 +9,6 @@ part of 'task.dart';
 Task _$TaskFromJson(Map<String, dynamic> json) => Task(
       id: json['_id'] as String?,
       title: json['title'] as String,
-      description: json['description'] as String,
       done: json['done'] as bool,
       deleted: json['deleted'] as bool,
     );
@@ -25,7 +24,6 @@ Map<String, dynamic> _$TaskToJson(Task instance) {
 
   writeNotNull('_id', instance.id);
   val['title'] = instance.title;
-  val['description'] = instance.description;
   val['done'] = instance.done;
   val['deleted'] = instance.deleted;
   return val;

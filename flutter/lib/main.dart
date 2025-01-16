@@ -161,7 +161,6 @@ class _DittoExampleState extends State<DittoExample> {
         secondaryBackground: _dismissibleBackground(false),
         child: CheckboxListTile(
           title: Text(task.title),
-          subtitle: Text(task.description),
           value: task.done,
           onChanged: (value) => _ditto!.store.execute(
             "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",

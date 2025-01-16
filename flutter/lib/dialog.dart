@@ -16,7 +16,6 @@ class _Dialog extends StatefulWidget {
 
 class _DialogState extends State<_Dialog> {
   final _name = TextEditingController();
-  final _description = TextEditingController();
   var _done = false;
 
   @override
@@ -29,7 +28,6 @@ class _DialogState extends State<_Dialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _textInput(_name, "Name"),
-            _textInput(_description, "Description"),
             _doneSwitch,
           ],
         ),
@@ -43,7 +41,6 @@ class _DialogState extends State<_Dialog> {
             onPressed: () {
               final task = Task(
                 title: _name.text,
-                description: _description.text,
                 done: _done,
                 deleted: false,
               );

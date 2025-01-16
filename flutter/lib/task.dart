@@ -7,14 +7,12 @@ class Task {
   @JsonKey(name: "_id", includeIfNull: false)
   final String? id;
   final String title;
-  final String description;
   final bool done;
   final bool deleted;
 
   const Task({
     this.id,
     required this.title,
-    required this.description,
     required this.done,
     required this.deleted,
   });
