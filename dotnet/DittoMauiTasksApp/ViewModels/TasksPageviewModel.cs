@@ -116,11 +116,8 @@ namespace DittoMauiTasksApp.ViewModels
                 try
                 {
                     var newTasks = queryResult.Items.Select(d =>
-                    {
-                        var json = d.JsonString();
-                        var task = JsonSerializer.Deserialize<DittoTask>(json);
-                        return task;
-                    }).OrderBy(t => t.Id).ToList();
+                        JsonSerializer.Deserialize<DittoTask>(d.JsonString())
+                    ).OrderBy(t => t.Id).ToList();
 
                     MainThread.BeginInvokeOnMainThread(() =>
                     {

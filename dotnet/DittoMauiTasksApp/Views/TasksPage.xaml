@@ -24,7 +24,8 @@
         <ListView
             x:Name="listView"
             ItemsSource="{Binding Tasks}"
-            SelectionMode="None">
+            SelectionMode="None"
+            CachingStrategy="RecycleElementAndDataTemplate">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <ViewCell>
