@@ -21,19 +21,5 @@ namespace DittoMauiTasksApp
         [ObservableProperty]
         [property: JsonPropertyName("deleted")]
         bool deleted;
-
-        // partial void OnDoneChanged(bool value)
-        // {
-        //     var ditto = Utils.ServiceProvider.GetService<Ditto>();
-
-        //     var updateQuery = "UPDATE tasks " +
-        //         "SET done = :value " +
-        //         "WHERE _id = :id";
-        //     ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>
-        //     {
-        //         { "value", value },
-        //         { "id", Id }
-        //     });
-        // }
     }
 }

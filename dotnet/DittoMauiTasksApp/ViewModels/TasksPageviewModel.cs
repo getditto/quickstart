@@ -19,6 +19,8 @@ namespace DittoMauiTasksApp.ViewModels
         public string AppIdText { get; } = $"App ID: {EnvConstants.DITTO_APP_ID}";
         public string TokenText { get; } = $"Token: {EnvConstants.DITTO_PLAYGROUND_TOKEN}";
 
+        static string Timestamp() => DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+
         [ObservableProperty]
         ObservableCollection<DittoTask> tasks;
 
@@ -40,7 +42,7 @@ namespace DittoMauiTasksApp.ViewModels
                 }
                 catch (Exception e)
                 {
-                    logger.LogError($"Error: Unable to start Ditto sync: {e.Message}");
+                    logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
                 }
             });
         }
@@ -64,8 +66,8 @@ namespace DittoMauiTasksApp.ViewModels
                 {"done", false},
                 {"deleted", false }
             };
-
-            await ditto.Store.ExecuteAsync("INSERT INTO tasks DOCUMENTS (:doc)", new Dictionary<string, object>()
+            var query = "INSERT INTO tasks DOCUMENTS (:doc)";
+            await ditto.Store.ExecuteAsync(query, new Dictionary<string, object>()
             {
                 { "doc", doc }
             });
@@ -106,6 +108,48 @@ namespace DittoMauiTasksApp.ViewModels
             });
         }
 
+        [RelayCommand]
+        private Task UpdateTaskDoneAsync(DittoTask task)
+        {
+            if (task == null)
+            {
+                logger.LogWarning("TasksPageviewModel: UpdateTaskDoneAsync called with null task");
+                return Task.CompletedTask;
+            }
+
+            var taskId = task.Id;
+            var newDoneState = task.Done;
+
+            // Fire-and-forget the Ditto update to avoid blocking the UI
+            // thread while handling a checkbox change
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    logger.LogDebug($"{Timestamp()}: Updating task done state in Ditto: {taskId} to {newDoneState}");
+
+                    // Update the task done state only if it has changed, to
+                    // avoid unnecessary calls to the store observer callback.
+                    var updateQuery = "UPDATE tasks " +
+                        "SET done = :newDoneState " +
+                        "WHERE _id = :id AND done != :newDoneState";
+                    var result = await ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>
+                    {
+                        { "newDoneState", newDoneState },
+                        { "id", taskId }
+                    });
+                    logger.LogDebug($"T{Timestamp()}: Update result row count: {result.MutatedDocumentIds.Count}");
+                }
+                catch (Exception e)
+                {
+                    logger.LogError($"TasksPageviewModel: Error updating task done state for {taskId}: {e.Message}");
+                }
+            });
+
+            logger.LogDebug($"{Timestamp()}: returning from UpdateTaskDoneAsync for task {taskId}");
+            return Task.CompletedTask;
+        }
+
         private void ObserveDittoTasksCollection()
         {
             var query = "SELECT * FROM tasks WHERE NOT deleted";
@@ -119,12 +163,15 @@ namespace DittoMauiTasksApp.ViewModels
                         JsonSerializer.Deserialize<DittoTask>(d.JsonString())
                     ).OrderBy(t => t.Id).ToList();
 
+                    logger.LogDebug($"{Timestamp()}: Observer callback invoked; task count: {newTasks.Count}");
+
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
                         try
                         {
                             if (Tasks == null)
                             {
+                                logger.LogDebug($"{Timestamp()}: Creating new observable tasks collection");
                                 Tasks = new ObservableCollection<DittoTask>(newTasks);
                             }
                             else
@@ -137,20 +184,31 @@ namespace DittoMauiTasksApp.ViewModels
                                 {
                                     var existingTask = Tasks[i];
                                     var newTask = newTasks[i];
-                                    if (existingTask.Id != newTask.Id)
+                                    logger.LogDebug($"{Timestamp()}: Updating task: {existingTask.Id}->{newTask.Id} at index {i}");
+                                    if (existingTask.Id != newTask.Id) {
                                         existingTask.Id = newTask.Id;
-                                    if (existingTask.Title != newTask.Title)
+                                    }
+                                    if (existingTask.Title != newTask.Title) {
+                                        logger.LogDebug($"{Timestamp()}: Updating task title: {newTask.Id} to \"{newTask.Title}\"");
                                         existingTask.Title = newTask.Title;
-                                    if (existingTask.Done != newTask.Done)
+                                    }
+                                    if (existingTask.Done != newTask.Done) {
+                                        logger.LogDebug($"{Timestamp()}: Updating task done state: {newTask.Id} to {newTask.Done}");
                                         existingTask.Done = newTask.Done;
-                                    if (existingTask.Deleted != newTask.Deleted)
+                                    } else {
+                                        logger.LogDebug($"{Timestamp()}: Task done state unchanged: {newTask.Id}");
+                                    }
+                                    if (existingTask.Deleted != newTask.Deleted) {
+                                        logger.LogDebug($"{Timestamp()}: Updating task deleted state: {newTask.Id} to {newTask.Deleted}");
                                         existingTask.Deleted = newTask.Deleted;
+                                    }
                                 }
 
                                 if (oldCount < newCount)
                                 {
                                     for (var i = oldCount; i < newCount; i++)
                                     {
+                                        logger.LogDebug($"{Timestamp()}: Adding new task to collection: {newTasks[i].Id}");
                                         Tasks.Add(newTasks[i]);
                                     }
                                 }
@@ -158,6 +216,7 @@ namespace DittoMauiTasksApp.ViewModels
                                 {
                                     for (var i = oldCount - 1; i >= newCount; i--)
                                     {
+                                        logger.LogDebug($"{Timestamp()}: Removing task from collection: {Tasks[i].Id}");
                                         Tasks.RemoveAt(i);
                                     }
                                 }
@@ -165,13 +224,13 @@ namespace DittoMauiTasksApp.ViewModels
                         }
                         catch (Exception e)
                         {
-                            logger.LogError($"Error: Unable to update list view model: {e.Message}");
+                            logger.LogError($"TasksPageviewModel: Error: Unable to update list view model: {e.Message}");
                         }
                     });
                 }
                 catch (Exception e)
                 {
-                    logger.LogError($"Error: Unable to process tasks collection change: {e.Message}");
+                    logger.LogError($"TasksPageviewModel: Error: Unable to process tasks collection change: {e.Message}");
                 }
             });
         }

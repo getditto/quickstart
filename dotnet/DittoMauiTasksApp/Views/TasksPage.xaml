@@ -63,7 +63,8 @@
                             </Label>
                             <CheckBox
                                 HorizontalOptions="End"
-                                IsChecked="{Binding Done}"/>
+                                IsChecked="{Binding Done}"
+                                CheckedChanged="OnCheckBoxCheckedChanged"/>
                         </Grid>
                     </ViewCell>
                 </DataTemplate>
