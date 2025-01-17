@@ -8,8 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = "REPLACE_ME_WITH_YOUR_APP_ID";
-const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
+const appID = "";
+const token = "";
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
@@ -40,7 +40,7 @@ class _DittoExampleState extends State<DittoExample> {
       Permission.bluetoothScan
     ].request();
 
-    final identity = await OnlinePlaygroundIdentity.create(
+    final identity = OnlinePlaygroundIdentity(
       appID: appID,
       token: token,
     );
@@ -51,10 +51,10 @@ class _DittoExampleState extends State<DittoExample> {
 
     final ditto = await Ditto.open(
       identity: identity,
-      persistenceDirectory: persistenceDirectory,
+      persistenceDirectory: persistenceDirectory.path,
     );
 
-    await ditto.startSync();
+    ditto.startSync();
 
     setState(() => _ditto = ditto);
   }
@@ -160,7 +160,12 @@ class _DittoExampleState extends State<DittoExample> {
         background: _dismissibleBackground(true),
         secondaryBackground: _dismissibleBackground(false),
         child: CheckboxListTile(
-          title: Text(task.title),
+          title: GestureDetector(
+            onLongPress: () {
+              showAddTaskDialog(context, task);
+            },
+            child: Text(task.title),
+          ),
           value: task.done,
           onChanged: (value) => _ditto!.store.execute(
             "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",

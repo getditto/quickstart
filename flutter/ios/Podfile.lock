@@ -1,10 +1,8 @@
 PODS:
-  - device_info_plus (0.0.1):
+  - ditto_live (4.9.0-rc.1):
+    - DittoFlutterIOS (= 4.9.0-rc.1)
     - Flutter
-  - ditto_live (4.8.0-rc.11):
-    - DittoFlutterIOS (= 4.8.0-rc.11)
-    - Flutter
-  - DittoFlutterIOS (4.8.0-rc.11)
+  - DittoFlutterIOS (4.9.0-rc.1)
   - Flutter (1.0.0)
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -13,7 +11,6 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
-  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - ditto_live (from `.symlinks/plugins/ditto_live/ios`)
   - Flutter (from `Flutter`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
@@ -24,8 +21,6 @@ SPEC REPOS:
     - DittoFlutterIOS
 
 EXTERNAL SOURCES:
-  device_info_plus:
-    :path: ".symlinks/plugins/device_info_plus/ios"
   ditto_live:
     :path: ".symlinks/plugins/ditto_live/ios"
   Flutter:
@@ -36,9 +31,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
 
 SPEC CHECKSUMS:
-  device_info_plus: 97af1d7e84681a90d0693e63169a5d50e0839a0d
-  ditto_live: 4b2d012080280e823c47b787a7236bb8937ea6dc
-  DittoFlutterIOS: eba21eda20892586910c04f9b9c0277151662b69
+  ditto_live: 2fc56d4cd55b601b232e1b69e9b7b0dff5e5a783
+  DittoFlutterIOS: e4d2cc551e9c47d6a3a9fdefaa231bbbb6564d01
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2

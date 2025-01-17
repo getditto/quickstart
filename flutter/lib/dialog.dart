@@ -2,26 +2,28 @@ import 'package:flutter/material.dart';
 
 import 'task.dart';
 
-Future<Task?> showAddTaskDialog(BuildContext context) => showDialog<Task>(
+Future<Task?> showAddTaskDialog(BuildContext context, [Task? task]) =>
+    showDialog<Task>(
       context: context,
-      builder: (context) => const _Dialog(),
+      builder: (context) => _Dialog(task),
     );
 
 class _Dialog extends StatefulWidget {
-  const _Dialog();
+  final Task? taskToEdit;
+  const _Dialog(this.taskToEdit);
 
   @override
   State<_Dialog> createState() => _DialogState();
 }
 
 class _DialogState extends State<_Dialog> {
-  final _name = TextEditingController();
-  var _done = false;
+  late final _name = TextEditingController(text: widget.taskToEdit?.title);
+  late var _done = widget.taskToEdit?.done ?? false;
 
   @override
   Widget build(BuildContext context) => AlertDialog(
         icon: const Icon(Icons.add_task),
-        title: const Text("Add Task"),
+        title: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
         contentPadding: EdgeInsets.zero,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -37,7 +39,7 @@ class _DialogState extends State<_Dialog> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           ElevatedButton(
-            child: const Text("Add Task"),
+            child: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
             onPressed: () {
               final task = Task(
                 title: _name.text,
