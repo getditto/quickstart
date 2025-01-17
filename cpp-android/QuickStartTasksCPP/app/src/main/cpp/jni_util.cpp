@@ -23,9 +23,6 @@ std::string jstring_to_string(JNIEnv *env, jstring js) {
 void throw_java_exception(JNIEnv *env, const char *msg,
                           const char *exception_class_name) {
   jclass exception_class = (*env).FindClass(exception_class_name);
-  if (!exception_class) {
-    return;
-  }
   (*env).ThrowNew(exception_class, msg);
 }
 
