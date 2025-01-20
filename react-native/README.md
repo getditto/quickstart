@@ -17,10 +17,7 @@ A sample React Native application that lets you create tasks and sync them with 
 ### Install Dependencies
 
 ```bash
-# Using npm
-npm install
-
-# Using yarn
+# Project is set up to work seamlessly with yarn
 yarn install
 ```
 
@@ -34,10 +31,6 @@ Running the `start` script launches the "Metro" dev tool, which will build the i
 After running the start command, press `i` to launch the iOS simulator or `a` to launch the Android emulator.
 
 ```bash
-# Using npm
-npm start
-
-# Using yarn
 yarn start
 ```
 
