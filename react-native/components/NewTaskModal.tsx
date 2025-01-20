@@ -30,7 +30,7 @@ const NewTaskModal: React.FC<Props> = ({ onSubmit, onClose, ...props }) => {
         </View>
       </View>
     </Modal>
-  )
+  );
 };
 
 const styles = StyleSheet.create({

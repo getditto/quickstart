@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
   fabText: {
     color: '#fff',
     fontSize: 30,
-  }
+  },
 });
 
 export default Fab;

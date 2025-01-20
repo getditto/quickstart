@@ -14,7 +14,7 @@ const DittoInfo: React.FC<Props> = ({ appId, token }) => {
       <Text style={styles.info}>{`Token: ${token}`}</Text>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   view: {
