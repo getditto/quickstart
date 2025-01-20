@@ -21,10 +21,6 @@ A sample React Native application that lets you create tasks and sync them with 
 yarn install
 ```
 
-### Configure App Credentials
-
-Navigate to the `App.tsx` file and replace `<Your-App-ID>` and `<Your-Token>` with your actual `appID` and `token` obtained from the Ditto Portal.
-
 ### Run the Application
 
 Running the `start` script launches the "Metro" dev tool, which will build the iOS or Android apps on demand.
