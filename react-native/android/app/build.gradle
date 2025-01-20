@@ -112,15 +112,11 @@ android {
              keepDebugSymbols.add("**/libcpp.so")
          }
 
-        pickFirst 'lib/x86/libjsi.so'
-        pickFirst 'lib/x86_64/libjsi.so'
-        pickFirst 'lib/armeabi-v7a/libjsi.so'
-        pickFirst 'lib/arm64-v8a/libjsi.so'
-
-        pickFirst 'lib/x86/libdittoffi.so'
-        pickFirst 'lib/x86_64/libdittoffi.so'
-        pickFirst 'lib/armeabi-v7a/libdittoffi.so'
-        pickFirst 'lib/arm64-v8a/libdittoffi.so'
+        pickFirst 'lib/**/libdittoffi.so'
+        pickFirst 'lib/**/libjsi.so'
+        pickFirst 'lib/**/libreact_nativemodule_core.so'
+        pickFirst 'lib/**/libturbomodulejsijni.so'
+        pickFirst 'lib/**/libreactnative.so'
     }
 }
 
