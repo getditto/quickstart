@@ -38,7 +38,6 @@ public static class MauiProgram
             EnvConstants.DITTO_PLAYGROUND_TOKEN,
             true));
         ditto.DisableSyncWithV3();
-        ditto.StartSync();
 
         return ditto;
     }
