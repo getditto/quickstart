@@ -18,7 +18,7 @@
                        VerticalOptions="Center"/>
                 <Switch IsToggled="{Binding IsSyncEnabled}"
                         VerticalOptions="Center"
-                        Margin="{OnPlatform iOS='10,0,0,0', Default='0'}" />
+                        Margin="{OnPlatform iOS='10,0,0,0', Default='0'}"/>
             </HorizontalStackLayout>
             <Label
                 Text="{Binding AppIdText}"

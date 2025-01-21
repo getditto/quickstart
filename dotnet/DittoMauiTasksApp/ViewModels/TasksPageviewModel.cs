@@ -40,6 +40,7 @@ namespace DittoMauiTasksApp.ViewModels
             {
                 try
                 {
+                    await InsertInitialTasks();
                     ObserveDittoTasksCollection();
                     StartSync();
                 }
@@ -76,6 +77,57 @@ namespace DittoMauiTasksApp.ViewModels
                     logger.LogError($"TasksPageviewModel: Error cancelling store observer: {e.Message}");
                 }
                 storeObserver = null;
+            }
+        }
+
+        private async Task InsertInitialTasks()
+        {
+            try
+            {
+                var initialTasks = new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        {"_id", "50191411-4C46-4940-8B72-5F8017A04FA7"},
+                        {"title", "Buy groceries"},
+                        {"done", false},
+                        {"deleted", false}
+                    },
+                    new Dictionary<string, object>
+                    {
+                        {"_id", "6DA283DA-8CFE-4526-A6FA-D385089364E5"},
+                        {"title", "Clean the kitchen"},
+                        {"done", false},
+                        {"deleted", false}
+                    },
+                    new Dictionary<string, object>
+                    {
+                        {"_id", "5303DDF8-0E72-4FEB-9E82-4B007E5797F0"},
+                        {"title", "Schedule dentist appointment"},
+                        {"done", false},
+                        {"deleted", false}
+                    },
+                    new Dictionary<string, object>
+                    {
+                        {"_id", "38411F1B-6B49-4346-90C3-0B16CE97E174"},
+                        {"title", "Pay bills"},
+                        {"done", false},
+                        {"deleted", false}
+                    }
+                };
+
+                var insertCommand = "INSERT INTO tasks INITIAL DOCUMENTS (:task)";
+                foreach (var task in initialTasks)
+                {
+                    await ditto.Store.ExecuteAsync(insertCommand, new Dictionary<string, object>()
+                    {
+                        { "task", task }
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"TasksPageviewModel: Error adding initial tasks: {e.Message}");
             }
         }
 
