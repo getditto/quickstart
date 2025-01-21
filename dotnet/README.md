@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-1. Install the .NET 8.0 SDK from <https://dotnet.microsoft.com/en-us/download/dotnet/8.0>
-2. In this directory, run `sudo dotnet workload restore` to install the required dependencies.
+1. Install the .NET 9 SDK from <https://dotnet.microsoft.com/en-us/download/dotnet/9.0>
+2. Run `sudo dotnet workload install maui` to install the required dependencies.
 3. Create an application at <https://portal.ditto.live>. Make note of the app ID and online playground token
 4. Copy the `.env.template` file at the top level of the quickstart repo to `.env` and add your app ID and online playground token.
 5. If you want to build and test the app for iOS, install Xcode from the Mac App Store.
