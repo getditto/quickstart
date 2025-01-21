@@ -34,6 +34,8 @@ edit, and delete tasks in the app.
 If you run the app on additional devices or emulators, the data will be synced
 between them.
 
+Compatible with Android Automotive OS (AAOS)
+
 ## A Guided Tour of the Android App Source Code
 
 The Android app is a simple to-do list app that demonstrates how to use the
