@@ -47,9 +47,11 @@ androidComponents {
 android {
     namespace = "live.ditto.quickstart.tasks"
     compileSdk = 35
+    //ndkVersion = "23.1.7779620"  // for Ditto SDK 4.8.x versions
+    ndkVersion = "27.2.12479018" // for Ditto SDK 4.9.x versions
 
     defaultConfig {
-        applicationId = "live.ditto.quickstart.tasks"
+        applicationId = "live.ditto.quickstart.taskscpp"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
@@ -58,6 +60,12 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+                arguments += "-DANDROID_STL=c++_shared"
+            }
         }
     }
 
@@ -80,6 +88,7 @@ android {
     buildFeatures {
         buildConfig = true
         compose = true
+        prefab = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
@@ -87,6 +96,18 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols.add("**/*.so")
+            pickFirsts.add("lib/**/libditto.so")
+            pickFirsts.add("lib/**/libc++_shared.so")
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
         }
     }
 }
@@ -115,6 +136,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Ditto SDK
-    implementation("live.ditto:ditto:4.8.2")
+    // Ditto C++ SDK
+    implementation("live.ditto:ditto-cpp:4.9.2")
 }
