@@ -43,6 +43,7 @@ class _DittoExampleState extends State<DittoExample> {
     final identity = OnlinePlaygroundIdentity(
       appID: appID,
       token: token,
+      enableDittoCloudSync: false
     );
 
     final dataDir = await getApplicationDocumentsDirectory();
@@ -53,6 +54,13 @@ class _DittoExampleState extends State<DittoExample> {
       identity: identity,
       persistenceDirectory: persistenceDirectory.path,
     );
+
+    ditto.updateTransportConfig((config) {
+      config.setAllPeerToPeerEnabled(true);
+      config.connect.webSocketUrls.add(
+        "wss://$appID.cloud.ditto.live",
+      );
+    });
 
     ditto.startSync();
 
