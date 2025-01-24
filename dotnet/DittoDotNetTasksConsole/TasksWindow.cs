@@ -92,6 +92,11 @@ public class TasksWindow : Window
 
         public IList ToList() => _tasks;
 
+        public ToDoTask TaskAtIndex(int index)
+        {
+            return _tasks[index];
+        }
+
         public void UpdateTasks(IList<ToDoTask> newTasks)
         {
             // Note: Simply replacing the collection with a new one will cause
@@ -127,7 +132,7 @@ public class TasksWindow : Window
     private readonly TasksPeer _peer;
     private TasksListDataSource _dataSource;
 
-    public TasksWindow(TasksPeer peer) : base($"Ditto Tasks - {Application.QuitKey} to exit")
+    public TasksWindow(TasksPeer peer) : base($"Ditto Tasks")
     {
         _peer = peer;
         _dataSource = new(peer);
@@ -139,16 +144,14 @@ public class TasksWindow : Window
 
         // Header panel
 
-        Add(new Label
+        Add(new Label("App ID: " + _peer.AppId)
         {
-            Text = "App ID: " + _peer.AppId,
             X = Pos.Center(),
             Y = 0,
         });
 
-        Add(new Label
+        Add(new Label("Playground Token: " + _peer.PlaygroundToken)
         {
-            Text = "Playground Token: " + _peer.PlaygroundToken,
             X = Pos.Center(),
             Y = 1,
         });
@@ -178,6 +181,21 @@ public class TasksWindow : Window
         {
             switch (keyEvent.KeyEvent.Key)
             {
+                case Key.c:
+                    HandleCreateCommand();
+                    keyEvent.Handled = true;
+                    break;
+
+                case Key.e:
+                    var index = tasksListView.SelectedItem;
+                    if (index >= 0 && index < _dataSource.Count)
+                    {
+                        var task = _dataSource.TaskAtIndex(index);
+                        HandleEditCommand(task);
+                    }
+                    keyEvent.Handled = true;
+                    break;
+
                 case Key.q:
                 case Key.q | Key.CtrlMask:
                 case Key.F4 | Key.AltMask:
@@ -218,6 +236,45 @@ public class TasksWindow : Window
         });
     }
 
+    private void HandleCreateCommand()
+    {
+        var title = ShowInputDialog("Create Task", "Enter the title of the new task:");
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await _peer.AddTask(title);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex);
+                }
+            });
+        }
+    }
+
+    private void HandleEditCommand(ToDoTask task)
+    {
+        var title = ShowInputDialog("Edit Task", "Enter the new title of the task:", task.Title);
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            var id = task.Id;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await _peer.UpdateTaskTitle(id, title);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex);
+                }
+            });
+        }
+    }
+
     private void HandleQuitCommand()
     {
         var result = MessageBox.Query("Quit", "Do you really want to quit?", "Yes", "No");
@@ -225,5 +282,63 @@ public class TasksWindow : Window
         {
             Application.RequestStop();
         }
+    }
+
+    private string ShowInputDialog(string title, string message, string initialValue = "")
+    {
+        string userInput = null;
+
+        var textField = new TextField(initialValue)
+        {
+            X = 1,
+            Y = 2,
+            Width = Dim.Fill() - 2,
+        };
+
+        textField.KeyDown += (keyEvent) =>
+        {
+            if (keyEvent.KeyEvent.Key == Key.Enter)
+            {
+                var text = textField.Text.ToString();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    userInput = text;
+                    Application.RequestStop();
+                }
+            }
+        };
+
+        var okButton = new Button("OK");
+        okButton.Clicked += () =>
+        {
+            userInput = textField.Text.ToString();
+            Application.RequestStop();
+        };
+
+        var dialog = new Dialog(title, 0, 0, okButton, new Button("Cancel"))
+        {
+            X = Pos.Center(),
+            Y = Pos.Center(),
+        };
+
+        var label = new Label(message)
+        {
+            X = 1,
+            Y = 1,
+        };
+        dialog.Add(label);
+
+        dialog.Add(textField);
+
+        // Set the initial focus to the input field
+        Application.Iteration += () =>
+        {
+            textField.SetFocus();
+            Application.Iteration -= null; // Ensure this only runs once
+        };
+
+        Application.Run(dialog);
+
+        return userInput;
     }
 }
