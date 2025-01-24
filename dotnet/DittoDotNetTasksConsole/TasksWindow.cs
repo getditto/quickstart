@@ -1,11 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-
-using DittoSDK;
 
 using Terminal.Gui;
 using Terminal.Gui.Graphs;
@@ -18,12 +15,12 @@ public class TasksWindow : Window
     /// </summary>
     class TasksListDataSource : IListDataSource
     {
-        // TODO: Does this need to be ObservableCollection or will a List suffice?
-        private ObservableCollection<DittoTask> _tasks;
+        private readonly List<ToDoTask> _tasks = new();
+        private readonly TasksPeer _peer;
 
-        public TasksListDataSource(ObservableCollection<DittoTask> tasks)
+        public TasksListDataSource(TasksPeer peer)
         {
-            _tasks = tasks;
+            _peer = peer;
         }
 
         public int Count => _tasks.Count;
@@ -80,16 +77,13 @@ public class TasksWindow : Window
             }
         }
 
-        public IList ToList()
-        {
-            return _tasks;
-        }
+        public IList ToList() => _tasks;
 
-        public void UpdateTasks(IList<DittoTask> newTasks)
+        public void UpdateTasks(IList<ToDoTask> newTasks)
         {
-            // Note: Simply replacing the ObservableCollection with a new one
-            // will cause the ListView to lose its selection state.  So we
-            // update the existing collection in place.
+            // Note: Simply replacing the collection with a new one will cause
+            // the ListView to lose its selection state.  So we update the
+            // existing collection in place.
 
             var oldCount = _tasks.Count;
             var newCount = newTasks.Count;
@@ -117,14 +111,13 @@ public class TasksWindow : Window
         }
     }
 
-    private readonly DittoTasksPeer _peer;
+    private readonly TasksPeer _peer;
     private TasksListDataSource _dataSource;
-    private DittoStoreObserver _observer;
 
-    public TasksWindow(DittoTasksPeer peer) : base($"Ditto Tasks - {Application.QuitKey} to exit")
+    public TasksWindow(TasksPeer peer) : base($"Ditto Tasks - {Application.QuitKey} to exit")
     {
         _peer = peer;
-        _dataSource = new(new());
+        _dataSource = new(peer);
 
         X = 0;
         Y = 0;
@@ -165,9 +158,25 @@ public class TasksWindow : Window
             Source = _dataSource,
             AllowsMarking = true,
         };
+
+        // The list view is the only focusable control in the window,
+        // so it handles all mouse and keyboard input.
+        tasksListView.KeyPress += (keyEvent) =>
+        {
+            switch (keyEvent.KeyEvent.Key)
+            {
+                case Key.q:
+                case Key.q | Key.CtrlMask:
+                case Key.F4 | Key.AltMask:
+                    HandleQuitCommand();
+                    keyEvent.Handled = true;
+                    break;
+            }
+        };
+
         Add(tasksListView);
 
-        _observer = peer.ObserveTasksCollection(async (tasks) =>
+        peer.ObserveTasksCollection(async (tasks) =>
         {
             await Task.Run(() =>
             {
@@ -194,5 +203,14 @@ public class TasksWindow : Window
             X = Pos.Center(),
             Y = Pos.Bottom(this) - 3,
         });
+    }
+
+    private void HandleQuitCommand()
+    {
+        var result = MessageBox.Query("Quit", "Do you really want to quit?", "Yes", "No");
+        if (result == 0)
+        {
+            Application.RequestStop();
+        }
     }
 }

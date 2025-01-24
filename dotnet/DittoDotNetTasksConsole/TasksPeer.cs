@@ -10,7 +10,7 @@ using DittoSDK;
 /// <summary>
 /// Encapsulates use of the Ditto SDK and the 'tasks' collection.
 /// </summary>
-public class DittoTasksPeer : IDisposable
+public class TasksPeer : IDisposable
 {
     private const string query = "SELECT * FROM tasks WHERE NOT deleted";
 
@@ -22,10 +22,10 @@ public class DittoTasksPeer : IDisposable
     /// <summary>
     /// Creates a new synchronizing TasksPeer instance.
     /// </summary>
-    public static async Task<DittoTasksPeer> CreateTasksPeer(
+    public static async Task<TasksPeer> Create(
         string appId, string playgroundToken)
     {
-        var peer = new DittoTasksPeer(appId, playgroundToken);
+        var peer = new TasksPeer(appId, playgroundToken);
 
         await peer.InsertInitialTasks();
 
@@ -39,7 +39,7 @@ public class DittoTasksPeer : IDisposable
     /// </summary>
     /// <param name="appId">Ditto application ID</param>
     /// <param name="playgroundToken">Ditto online playground token</param>
-    public DittoTasksPeer(string appId, string playgroundToken)
+    public TasksPeer(string appId, string playgroundToken)
     {
         AppId = appId;
         PlaygroundToken = playgroundToken;
@@ -196,7 +196,7 @@ public class DittoTasksPeer : IDisposable
     /// <summary>
     /// Specify a handler to be called asynchronously when the tasks collection changes.
     /// </summary>
-    public DittoStoreObserver ObserveTasksCollection(Func<IList<DittoTask>, Task> handler)
+    public DittoStoreObserver ObserveTasksCollection(Func<IList<ToDoTask>, Task> handler)
     {
         return ditto.Store.RegisterObserver(query, async (queryResult) =>
         {
@@ -204,7 +204,7 @@ public class DittoTasksPeer : IDisposable
             {
                 // Deserialize the JSON documents into DittoTask objects
                 var tasks = queryResult.Items.Select(d =>
-                    JsonSerializer.Deserialize<DittoTask>(d.JsonString())
+                    JsonSerializer.Deserialize<ToDoTask>(d.JsonString())
                 ).OrderBy(t => t.Id).ToList();
 
                 await handler(tasks);

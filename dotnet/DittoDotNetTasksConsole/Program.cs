@@ -10,9 +10,9 @@ public static class Program
     {
         try
         {
-            using var peer = await DittoTasksPeer.CreateTasksPeer(
+            using var peer = await TasksPeer.Create(
                 EnvConstants.DITTO_APP_ID, EnvConstants.DITTO_PLAYGROUND_TOKEN);
-            RunConsoleUi(peer);
+            RunTerminalGui(peer);
         }
         catch (Exception ex)
         {
@@ -20,7 +20,7 @@ public static class Program
         }
     }
 
-    private static void RunConsoleUi(DittoTasksPeer peer)
+    private static void RunTerminalGui(TasksPeer peer)
     {
         try
         {

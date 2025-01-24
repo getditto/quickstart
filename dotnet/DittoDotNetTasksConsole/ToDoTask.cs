@@ -4,7 +4,11 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Representation of a document in the Ditto 'tasks' collection.
 /// </summary>
-public class DittoTask
+/// <remarks>
+/// This class is named <c>ToDoTask</c> rather than <c>Task</c> to avoid
+/// conflicts with the <c>System.Threading.Tasks.Task</c> class.
+/// </remarks>
+public class ToDoTask
 {
     [JsonPropertyName("_id")]
     public string Id { get; set; }
