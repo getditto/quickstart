@@ -2,10 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 using DittoSDK;
+
 using Terminal.Gui;
+using Terminal.Gui.Graphs;
 using NStack;
 
 public class TasksWindow : Window
@@ -36,15 +39,7 @@ public class TasksWindow : Window
 
         public int Length
         {
-            get
-            {
-                int maxLength = 0;
-                foreach (var task in _tasks)
-                {
-                    maxLength = Math.Max(maxLength, task.Title.Length);
-                }
-                return maxLength;
-            }
+            get => _tasks.Max(t => t.Title?.Length ?? 0);
         }
 
         public void SetMark(int item, bool value)
@@ -92,6 +87,10 @@ public class TasksWindow : Window
 
         public void UpdateTasks(IList<DittoTask> newTasks)
         {
+            // Note: Simply replacing the ObservableCollection with a new one
+            // will cause the ListView to lose its selection state.  So we
+            // update the existing collection in place.
+
             var oldCount = _tasks.Count;
             var newCount = newTasks.Count;
             var count = Math.Min(oldCount, newCount);
@@ -118,26 +117,51 @@ public class TasksWindow : Window
         }
     }
 
-    private readonly TasksPeer _peer;
+    private readonly DittoTasksPeer _peer;
     private TasksListDataSource _dataSource;
     private DittoStoreObserver _observer;
 
-    public TasksWindow(TasksPeer peer) : base($"Ditto Tasks - {Application.QuitKey} to exit")
+    public TasksWindow(DittoTasksPeer peer) : base($"Ditto Tasks - {Application.QuitKey} to exit")
     {
-        this._peer = peer;
-        _dataSource = new TasksListDataSource(new());
+        _peer = peer;
+        _dataSource = new(new());
 
         X = 0;
-        Y = 1;
+        Y = 0;
         Width = Dim.Fill();
         Height = Dim.Fill();
+
+        // Header panel
+
+        Add(new Label
+        {
+            Text = "App ID: " + _peer.AppId,
+            X = Pos.Center(),
+            Y = 0,
+        });
+
+        Add(new Label
+        {
+            Text = "Playground Token: " + _peer.PlaygroundToken,
+            X = Pos.Center(),
+            Y = 1,
+        });
+
+        Add(new LineView(Orientation.Horizontal)
+        {
+            X = 0,
+            Y = 2,
+            Width = Dim.Fill(),
+        });
+
+        // List panel
 
         var tasksListView = new ListView
         {
             X = 0,
-            Y = 1,
+            Y = 3,
             Width = Dim.Fill(),
-            Height = Dim.Fill(),
+            Height = Dim.Fill() - 2,
             Source = _dataSource,
             AllowsMarking = true,
         };
@@ -154,35 +178,21 @@ public class TasksWindow : Window
                 });
             });
         });
-    }
 
-    public override bool ProcessKey(KeyEvent keyEvent)
-    {
-        if (keyEvent.Key == Key.Q)
-        {
-            Application.RequestStop();
-            return true;
-        }
-        return base.ProcessKey(keyEvent);
-    }
+        // Footer panel
 
-    public override bool OnKeyDown(KeyEvent keyEvent)
-    {
-        if (keyEvent.Key == Key.Q)
+        Add(new LineView(Orientation.Horizontal)
         {
-            Application.RequestStop();
-            return true;
-        }
-        return base.OnKeyDown(keyEvent);
-    }
+            X = 0,
+            Y = Pos.Bottom(this) - 4,
+            Width = Dim.Fill(),
+        });
 
-    public override bool OnKeyUp(KeyEvent keyEvent)
-    {
-        if (keyEvent.Key == Key.Q)
+        Add(new Label
         {
-            Application.RequestStop();
-            return true;
-        }
-        return base.OnKeyUp(keyEvent);
+            Text = "(j↑) (k↓) (Space/Enter: toggle) (c: create) (d: delete) (e: edit) (q: quit)",
+            X = Pos.Center(),
+            Y = Pos.Bottom(this) - 3,
+        });
     }
 }

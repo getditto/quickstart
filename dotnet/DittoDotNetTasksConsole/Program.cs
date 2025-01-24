@@ -6,14 +6,13 @@ using Terminal.Gui;
 
 public static class Program
 {
-
     public static async Task Main(string[] args)
     {
         try
         {
-            using var peer = await TasksPeer.CreateTasksPeer(
+            using var peer = await DittoTasksPeer.CreateTasksPeer(
                 EnvConstants.DITTO_APP_ID, EnvConstants.DITTO_PLAYGROUND_TOKEN);
-            RunTerminalUi(peer);
+            RunConsoleUi(peer);
         }
         catch (Exception ex)
         {
@@ -21,19 +20,12 @@ public static class Program
         }
     }
 
-    private static void RunTerminalUi(TasksPeer peer)
+    private static void RunConsoleUi(DittoTasksPeer peer)
     {
         try
         {
             Application.Init();
             Application.Top.Add(new TasksWindow(peer));
-            Application.Top.KeyPress += (keyEventArgs) =>
-            {
-                if (keyEventArgs.KeyEvent.Key == Key.Q)
-                {
-                    Application.RequestStop();
-                }
-            };
             Application.Run();
         }
         finally

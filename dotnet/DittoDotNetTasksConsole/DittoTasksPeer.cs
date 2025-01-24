@@ -10,19 +10,22 @@ using DittoSDK;
 /// <summary>
 /// Encapsulates use of the Ditto SDK and the 'tasks' collection.
 /// </summary>
-public class TasksPeer : IDisposable
+public class DittoTasksPeer : IDisposable
 {
     private const string query = "SELECT * FROM tasks WHERE NOT deleted";
+
+    public string AppId { get; private set; }
+    public string PlaygroundToken { get; private set; }
 
     private Ditto ditto;
 
     /// <summary>
     /// Creates a new synchronizing TasksPeer instance.
     /// </summary>
-    public static async Task<TasksPeer> CreateTasksPeer(
+    public static async Task<DittoTasksPeer> CreateTasksPeer(
         string appId, string playgroundToken)
     {
-        var peer = new TasksPeer(appId, playgroundToken);
+        var peer = new DittoTasksPeer(appId, playgroundToken);
 
         await peer.InsertInitialTasks();
 
@@ -36,8 +39,11 @@ public class TasksPeer : IDisposable
     /// </summary>
     /// <param name="appId">Ditto application ID</param>
     /// <param name="playgroundToken">Ditto online playground token</param>
-    public TasksPeer(string appId, string playgroundToken)
+    public DittoTasksPeer(string appId, string playgroundToken)
     {
+        AppId = appId;
+        PlaygroundToken = playgroundToken;
+
         var tempDir = Path.Combine(
             Path.GetTempPath(),
             "DittoDotNetTasksConsole-" + Guid.NewGuid().ToString());
