@@ -92,9 +92,19 @@ public class TasksWindow : Window
 
         public IList ToList() => _tasks;
 
+        /// <summary>
+        /// Get the task at the specified index, or <c>null</c> if the index is out of range.
+        /// </summary>
         public ToDoTask TaskAtIndex(int index)
         {
-            return _tasks[index];
+            try
+            {
+                return _tasks[index];
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return null;
+            }
         }
 
         public void UpdateTasks(IList<ToDoTask> newTasks)
@@ -186,14 +196,26 @@ public class TasksWindow : Window
                     keyEvent.Handled = true;
                     break;
 
-                case Key.e:
-                    var index = tasksListView.SelectedItem;
-                    if (index >= 0 && index < _dataSource.Count)
+                case Key.d:
                     {
-                        var task = _dataSource.TaskAtIndex(index);
-                        HandleEditCommand(task);
+                        var task = _dataSource.TaskAtIndex(tasksListView.SelectedItem);
+                        if (task != null)
+                        {
+                            HandleDeleteCommand(task);
+                        }
+                        keyEvent.Handled = true;
                     }
-                    keyEvent.Handled = true;
+                    break;
+
+                case Key.e:
+                    {
+                        var task = _dataSource.TaskAtIndex(tasksListView.SelectedItem);
+                        if (task != null)
+                        {
+                            HandleEditCommand(task);
+                        }
+                        keyEvent.Handled = true;
+                    }
                     break;
 
                 case Key.q:
@@ -238,9 +260,12 @@ public class TasksWindow : Window
 
     private void HandleCreateCommand()
     {
-        var title = ShowInputDialog("Create Task", "Enter the title of the new task:");
+        var title = ShowTextInputDialog(
+            "Create Task",
+            "Enter the title of the new task:");
         if (!string.IsNullOrWhiteSpace(title))
         {
+            title.Trim();
             Task.Run(async () =>
             {
                 try
@@ -255,17 +280,45 @@ public class TasksWindow : Window
         }
     }
 
-    private void HandleEditCommand(ToDoTask task)
+    private void HandleDeleteCommand(ToDoTask task)
     {
-        var title = ShowInputDialog("Edit Task", "Enter the new title of the task:", task.Title);
-        if (!string.IsNullOrWhiteSpace(title))
+        var response = MessageBox.Query(
+            "Delete Task",
+            "Delete this task?",
+            "Yes", "No");
+        if (response == 0)
         {
             var id = task.Id;
             Task.Run(async () =>
             {
                 try
                 {
-                    await _peer.UpdateTaskTitle(id, title);
+                    await _peer.DeleteTask(id);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex);
+                }
+            });
+        }
+    }
+
+    private void HandleEditCommand(ToDoTask task)
+    {
+        var originalTitle = task.Title;
+        var newTitle = ShowTextInputDialog(
+            "Edit Task",
+            "Enter the new title for the task:",
+            originalTitle);
+        if (!string.IsNullOrWhiteSpace(newTitle) && newTitle != originalTitle)
+        {
+            newTitle.Trim();
+            var id = task.Id;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await _peer.UpdateTaskTitle(id, newTitle);
                 }
                 catch (Exception ex)
                 {
@@ -284,7 +337,11 @@ public class TasksWindow : Window
         }
     }
 
-    private string ShowInputDialog(string title, string message, string initialValue = "")
+    /// <summary>
+    /// Display a dialog box to prompt the user for text input.
+    /// </summary>
+    /// <returns><c>null</c> if user cancels; otherwise returns contents of text field</returns>
+    private string ShowTextInputDialog(string title, string message, string initialValue = "")
     {
         string userInput = null;
 
