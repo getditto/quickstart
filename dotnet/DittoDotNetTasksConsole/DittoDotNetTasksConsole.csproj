@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Ditto" Version="4.9.2" />
+    <PackageReference Include="Terminal.Gui" Version="1.17.1" />
   </ItemGroup>
 
   <ItemGroup>
