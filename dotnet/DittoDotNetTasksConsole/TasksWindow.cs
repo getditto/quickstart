@@ -47,6 +47,19 @@ public class TasksWindow : Window
             }
 
             _tasks[item].Done = value;
+
+            var id = _tasks[item].Id;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await _peer.UpdateTaskDone(id, value);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex);
+                }
+            });
         }
 
         public void Render(ListView container, ConsoleDriver driver, bool selected, int item, int col, int line, int width, int start = 0)
