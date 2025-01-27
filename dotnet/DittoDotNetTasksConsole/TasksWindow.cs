@@ -154,22 +154,30 @@ public class TasksWindow : Window
 
         // Header panel
 
-        Add(new Label("App ID: " + _peer.AppId)
+        var syncStatusLabel = new Label
         {
             X = Pos.Center(),
             Y = 0,
-        });
+            Text = SyncStatusLabelText(),
+        };
+        Add(syncStatusLabel);
 
-        Add(new Label("Playground Token: " + _peer.PlaygroundToken)
+        Add(new Label("App ID: " + _peer.AppId)
         {
             X = Pos.Center(),
             Y = 1,
         });
 
+        Add(new Label("Playground Token: " + _peer.PlaygroundToken)
+        {
+            X = Pos.Center(),
+            Y = 2,
+        });
+
         Add(new LineView(Orientation.Horizontal)
         {
             X = 0,
-            Y = 2,
+            Y = 3,
             Width = Dim.Fill(),
         });
 
@@ -178,7 +186,7 @@ public class TasksWindow : Window
         var tasksListView = new ListView
         {
             X = 0,
-            Y = 3,
+            Y = 4,
             Width = Dim.Fill(),
             Height = Dim.Fill() - 2,
             Source = _dataSource,
@@ -218,10 +226,20 @@ public class TasksWindow : Window
                     }
                     break;
 
+                // TODO
+                // case Key.j:
+                // case Key.k:
+
                 case Key.q:
                 case Key.q | Key.CtrlMask:
                 case Key.F4 | Key.AltMask:
                     HandleQuitCommand();
+                    keyEvent.Handled = true;
+                    break;
+
+                case Key.s:
+                    HandleToggleSyncCommand();
+                    syncStatusLabel.Text = SyncStatusLabelText();
                     keyEvent.Handled = true;
                     break;
             }
@@ -256,6 +274,12 @@ public class TasksWindow : Window
             X = Pos.Center(),
             Y = Pos.Bottom(this) - 3,
         });
+    }
+
+    private string SyncStatusLabelText()
+    {
+        return "Sync: " + (_peer.IsSyncActive ? "Active" : "Inactive")
+            + " (s: toggle)";
     }
 
     private void HandleCreateCommand()
@@ -334,6 +358,18 @@ public class TasksWindow : Window
         if (result == 0)
         {
             Application.RequestStop();
+        }
+    }
+
+    private void HandleToggleSyncCommand()
+    {
+        if (_peer.IsSyncActive)
+        {
+            _peer.StopSync();
+        }
+        else
+        {
+            _peer.StartSync();
         }
     }
 

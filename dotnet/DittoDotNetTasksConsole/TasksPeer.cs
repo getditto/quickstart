@@ -17,6 +17,11 @@ public class TasksPeer : IDisposable
     public string AppId { get; private set; }
     public string PlaygroundToken { get; private set; }
 
+    public bool IsSyncActive
+    {
+        get => ditto.IsSyncActive;
+    }
+
     private Ditto ditto;
 
     /// <summary>
@@ -202,7 +207,7 @@ public class TasksPeer : IDisposable
         {
             try
             {
-                // Deserialize the JSON documents into DittoTask objects
+                // Deserialize the JSON documents into ToDoTask objects
                 var tasks = queryResult.Items.Select(d =>
                     JsonSerializer.Deserialize<ToDoTask>(d.JsonString())
                 ).OrderBy(t => t.Id).ToList();
