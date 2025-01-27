@@ -10,13 +10,13 @@ using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp.ViewModels
 {
-    public partial class TasksPageviewModel : ObservableObject, IDisposable
+    public partial class TasksPageviewModel : ObservableObject
     {
+        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted";
+
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
         private readonly ILogger<TasksPageviewModel> logger;
-
-        private readonly string query = "SELECT * FROM tasks WHERE NOT deleted";
         private DittoStoreObserver storeObserver;
         private DittoSyncSubscription syncSubscription;
 
@@ -278,34 +278,7 @@ namespace DittoMauiTasksApp.ViewModels
                             }
                             else
                             {
-                                var oldCount = Tasks.Count;
-                                var newCount = newTasks.Count;
-                                var minCount = Math.Min(oldCount, newCount);
-
-                                for (var i = 0; i < minCount; i++)
-                                {
-                                    var existingTask = Tasks[i];
-                                    var newTask = newTasks[i];
-                                    existingTask.Id = newTask.Id;
-                                    existingTask.Title = newTask.Title;
-                                    existingTask.Done = newTask.Done;
-                                    existingTask.Deleted = newTask.Deleted;
-                                }
-
-                                if (oldCount < newCount)
-                                {
-                                    for (var i = oldCount; i < newCount; i++)
-                                    {
-                                        Tasks.Add(newTasks[i]);
-                                    }
-                                }
-                                else if (oldCount > newCount)
-                                {
-                                    for (var i = oldCount - 1; i >= newCount; i--)
-                                    {
-                                        Tasks.RemoveAt(i);
-                                    }
-                                }
+                                UpdateTasks(newTasks);
                             }
                         }
                         catch (Exception e)
@@ -319,6 +292,38 @@ namespace DittoMauiTasksApp.ViewModels
                     logger.LogError($"TasksPageviewModel: Error: Unable to process tasks collection change: {e.Message}");
                 }
             });
+        }
+
+        private void UpdateTasks(List<DittoTask> newTasks)
+        {
+            var oldCount = Tasks.Count;
+            var newCount = newTasks.Count;
+            var minCount = Math.Min(oldCount, newCount);
+
+            for (var i = 0; i < minCount; i++)
+            {
+                var existingTask = Tasks[i];
+                var newTask = newTasks[i];
+                existingTask.Id = newTask.Id;
+                existingTask.Title = newTask.Title;
+                existingTask.Done = newTask.Done;
+                existingTask.Deleted = newTask.Deleted;
+            }
+
+            if (oldCount < newCount)
+            {
+                for (var i = oldCount; i < newCount; i++)
+                {
+                    Tasks.Add(newTasks[i]);
+                }
+            }
+            else if (oldCount > newCount)
+            {
+                for (var i = oldCount - 1; i >= newCount; i--)
+                {
+                    Tasks.RemoveAt(i);
+                }
+            }
         }
 
         partial void OnIsSyncEnabledChanged(bool value)

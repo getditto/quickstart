@@ -33,5 +33,5 @@ xcuserdata
 bazel-*
 build-cmake
 node_modules/
-bin/
+
 
