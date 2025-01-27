@@ -26,7 +26,7 @@ These commands will build and run the app on the default iOS target:
 
 ```
 cd DittoMauiTasksApp
-dotnet build -t:Run -f net8.0-ios
+dotnet build -t:Run -f net9.0-ios
 ```
 
 ### Building and Running the App on Android
@@ -35,7 +35,7 @@ These commands will build and run the app on the default Android target:
 
 ```
 cd DittoMauiTasksApp
-dotnet build -t:Run -f net8.0-android
+dotnet build -t:Run -f net9.0-android
 ```
 
 ### Other MAUI Platforms
