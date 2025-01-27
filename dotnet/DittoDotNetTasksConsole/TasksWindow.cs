@@ -8,10 +8,13 @@ using Terminal.Gui;
 using Terminal.Gui.Graphs;
 using NStack;
 
+/// <summary>
+/// A Terminal.Gui window that displays a list of tasks and allows the user to interact with them.
+/// </summary>
 public class TasksWindow : Window
 {
     /// <summary>
-    /// Terminal.Gui data source adapter for the tasks list retrieved from Ditto.
+    /// Terminal.Gui data-source adapter for the tasks list retrieved from Ditto.
     /// </summary>
     class TasksListDataSource : IListDataSource
     {
@@ -140,7 +143,7 @@ public class TasksWindow : Window
     }
 
     private readonly TasksPeer _peer;
-    private TasksListDataSource _dataSource;
+    private readonly TasksListDataSource _dataSource;
 
     public TasksWindow(TasksPeer peer) : base($"Ditto Tasks")
     {
@@ -226,9 +229,15 @@ public class TasksWindow : Window
                     }
                     break;
 
-                // TODO
-                // case Key.j:
-                // case Key.k:
+                case Key.j:
+                    tasksListView.ProcessKey(new KeyEvent(Key.CursorDown, new KeyModifiers()));
+                    keyEvent.Handled = true;
+                    break;
+
+                case Key.k:
+                    tasksListView.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
+                    keyEvent.Handled = true;
+                    break;
 
                 case Key.q:
                 case Key.q | Key.CtrlMask:
