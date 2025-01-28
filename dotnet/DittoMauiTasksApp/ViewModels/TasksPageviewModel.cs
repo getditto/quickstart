@@ -17,7 +17,6 @@ namespace DittoMauiTasksApp.ViewModels
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
         private readonly ILogger<TasksPageviewModel> logger;
-        private DittoStoreObserver storeObserver;
         private DittoSyncSubscription syncSubscription;
 
         public string AppIdText { get; } = $"App ID: {EnvConstants.DITTO_APP_ID}";
@@ -49,35 +48,6 @@ namespace DittoMauiTasksApp.ViewModels
                     logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
                 }
             });
-        }
-
-        public void Dispose()
-        {
-            if (syncSubscription != null)
-            {
-                try
-                {
-                    syncSubscription.Cancel();
-                }
-                catch (Exception e)
-                {
-                    logger.LogError($"TasksPageviewModel: Error cancelling sync subscription: {e.Message}");
-                }
-                syncSubscription = null;
-            }
-
-            if (storeObserver != null)
-            {
-                try
-                {
-                    storeObserver.Cancel();
-                }
-                catch (Exception e)
-                {
-                    logger.LogError($"TasksPageviewModel: Error cancelling store observer: {e.Message}");
-                }
-                storeObserver = null;
-            }
         }
 
         private async Task InsertInitialTasks()
@@ -260,7 +230,7 @@ namespace DittoMauiTasksApp.ViewModels
 
         private void ObserveDittoTasksCollection()
         {
-            storeObserver = ditto.Store.RegisterObserver(query, async (queryResult) =>
+            ditto.Store.RegisterObserver(SelectQuery, async (queryResult) =>
             {
                 try
                 {
@@ -343,7 +313,7 @@ namespace DittoMauiTasksApp.ViewModels
             try
             {
                 ditto.StartSync();
-                syncSubscription = ditto.Sync.RegisterSubscription(query);
+                syncSubscription = ditto.Sync.RegisterSubscription(SelectQuery);
             }
             catch (Exception e)
             {
