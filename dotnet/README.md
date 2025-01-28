@@ -28,11 +28,8 @@ These commands will build and run the console app on Windows, macOS, and Linux:
 ```
 cd DittoDotNetTasksConsole
 dotnet build
-dotnet run 2>/dev/null
+dotnet run
 ```
-
-Note that standard error output must be redirected to `/dev/null` so that it
-will not interfere with console terminal output.
 
 
 ## .NET MAUI App

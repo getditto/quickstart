@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
+using DittoSDK;
 using Generated;
 using Terminal.Gui;
 
@@ -10,6 +11,10 @@ public static class Program
     {
         try
         {
+            // Disable Ditto's standard-error logging, which would interfere
+            // with the the Terminal.Gui UI.
+            DittoLogger.SetLoggingEnabled(false);
+
             using var peer = await TasksPeer.Create(
                 EnvConstants.DITTO_APP_ID, EnvConstants.DITTO_PLAYGROUND_TOKEN);
             RunTerminalGui(peer);
