@@ -260,7 +260,7 @@ namespace DittoMauiTasksApp.ViewModels
 
         private void ObserveDittoTasksCollection()
         {
-            storeObserver = ditto.Store.RegisterObserver(query, async (queryResult) =>
+            storeObserver = ditto.Store.RegisterObserver(SelectQuery, async (queryResult) =>
             {
                 try
                 {
@@ -343,7 +343,7 @@ namespace DittoMauiTasksApp.ViewModels
             try
             {
                 ditto.StartSync();
-                syncSubscription = ditto.Sync.RegisterSubscription(query);
+                syncSubscription = ditto.Sync.RegisterSubscription(SelectQuery);
             }
             catch (Exception e)
             {
