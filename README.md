@@ -29,14 +29,17 @@ build and run them.
 
 ## Apps
 
-- [iOS](ios/#readme)
-- [Android](android/#readme)
-- [React Native](react-native/#readme)
-- [JavaScript](javascript/#readme)
+- [Android Kotlin](android-kotlin/#readme)
+- [Android Java](android-java/#readme)
+- [Android C++](android-cpp/#readme)
+- [C++ TUI](cpp/#readme)
 - [Flutter](flutter/#readme)
+- [Javascript Web](javascript-web/#readme)
+- [Javascript TUI](javascript-tui/#readme)
 - [.NET](dotnet/#readme)
-- [C++](cpp/#readme)
-- [Rust](rust/#readme)
+- [React Native](react-native/#readme)
+- [Rust TUI](rust/#readme)
+- [Swift](swift/#readme)
 
 ## 🔨 Building
 
