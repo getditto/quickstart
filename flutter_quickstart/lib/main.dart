@@ -43,6 +43,8 @@ class _DittoExampleState extends State<DittoExample> {
       ].request();
     }
 
+    await Ditto.init();
+
     final identity = OnlinePlaygroundIdentity(
         appID: appID, token: token, enableDittoCloudSync: false);
 
