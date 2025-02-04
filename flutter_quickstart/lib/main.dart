@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ditto_live/ditto_live.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
@@ -33,12 +34,14 @@ class _DittoExampleState extends State<DittoExample> {
   }
 
   Future<void> _initDitto() async {
-    await [
-      Permission.bluetoothConnect,
-      Permission.bluetoothAdvertise,
-      Permission.nearbyWifiDevices,
-      Permission.bluetoothScan
-    ].request();
+    if (!kIsWeb) {
+      await [
+        Permission.bluetoothConnect,
+        Permission.bluetoothAdvertise,
+        Permission.nearbyWifiDevices,
+        Permission.bluetoothScan
+      ].request();
+    }
 
     final identity = OnlinePlaygroundIdentity(
         appID: appID, token: token, enableDittoCloudSync: false);
