@@ -1,4 +1,4 @@
-#!/usr/bin/env/awk -f
+#!/usr/bin/env awk -f
 
 # This script is used to generate the "env.h" file that contains C++ definitions
 # corresponding to the values in the ".env" file at the repository root.
