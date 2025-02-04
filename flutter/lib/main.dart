@@ -8,8 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = "";
-const token = "";
+const appID = String.fromEnvironment("DITTO_APP_ID");
+const token = String.fromEnvironment("DITTO_PLAYGROUND_TOKEN");
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
@@ -43,7 +43,7 @@ class _DittoExampleState extends State<DittoExample> {
     final identity = OnlinePlaygroundIdentity(
       appID: appID,
       token: token,
-      enableDittoCloudSync: false
+      enableDittoCloudSync: false,
     );
 
     final dataDir = await getApplicationDocumentsDirectory();
@@ -102,6 +102,7 @@ class _DittoExampleState extends State<DittoExample> {
       body: Column(
         children: [
           _portalInfo,
+          _syncTile,
           const Divider(height: 1),
           Expanded(child: _tasksList),
         ],
@@ -130,16 +131,12 @@ class _DittoExampleState extends State<DittoExample> {
         child: const Icon(Icons.add_task),
       );
 
-  Widget get _portalInfo => const Column(children: [
-        Text(
-          "AppID: $appID",
-          style: TextStyle(fontSize: 12),
-        ),
-        Text(
-          "Token: $token",
-          style: TextStyle(fontSize: 12),
-        ),
-      ]);
+  Widget get _portalInfo => const Column(
+        children: [
+          Text("AppID: $appID"),
+          Text("Token: $token"),
+        ],
+      );
 
   Widget get _tasksList => DqlBuilder(
         ditto: _ditto!,
@@ -190,5 +187,19 @@ class _DittoExampleState extends State<DittoExample> {
             child: Icon(Icons.delete),
           ),
         ),
+      );
+
+  Widget get _syncTile => SwitchListTile.adaptive(
+        title: const Text("Sync Enabled"),
+        value: _ditto!.isSyncActive,
+        onChanged: (value) {
+          if (value) {
+            _ditto!.startSync();
+          } else {
+            _ditto!.stopSync();
+          }
+
+          setState(() {});
+        },
       );
 }
