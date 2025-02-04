@@ -37,17 +37,6 @@ flutter pub get
  for more details)
 
 
-#### Update Flutter Application with Ditto Credentials
-
-- Open the lib/main.dart file or the appropriate configuration file where Ditto is initialized
-- Update the code with the App ID and Playground Token from your Ditto Application
-
-```dart
-const appID = "REPLACE_ME_WITH_YOUR_APP_ID";
-const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
-```
-
-
 ### 4. Run the Application
 
 #### Run the Application on Android
@@ -56,7 +45,9 @@ const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
 - Run the following command in the terminal from the root of the application
 
 ```bash
-flutter run
+flutter run \
+    --dart-define DITTO_APP_ID=<your app id> \
+    --dart-define DITTO_PLAYGROUND_TOKEN=<your playground token>
 ```
 - Select the Android Emulator/Device
 
@@ -73,7 +64,9 @@ Please choose one (or "q" to quit):
 Run the following command in the terminal and select the iOS Simulator/Device
 
 ```bash
-flutter run
+flutter run \
+    --dart-define DITTO_APP_ID=<your app id> \
+    --dart-define DITTO_PLAYGROUND_TOKEN=<your playground token>
 ```
 
 
