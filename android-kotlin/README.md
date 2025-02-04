@@ -24,8 +24,8 @@ Assuming you have Android Studio and other prerequisites installed, you can
 build and run the app by following these steps:
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
-2. Copy the `.env.template` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
-3. Launch Android Studio and open the `quickstart/android` directory.
+2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
+3. Launch Android Studio and open the `quickstart/android-kotlin` directory.
 4. In Android Studio, select a connected Android device, or create and launch an Android emulator and select it as the destination, then choose the **Run > Run 'app'** menu item.
 
 The app will build and run on the selected device or emulator.  You can add,
@@ -33,6 +33,8 @@ edit, and delete tasks in the app.
 
 If you run the app on additional devices or emulators, the data will be synced
 between them.
+
+Compatible with Android Automotive OS (AAOS)
 
 ## A Guided Tour of the Android App Source Code
 

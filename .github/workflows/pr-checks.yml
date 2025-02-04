@@ -49,7 +49,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Clippy
-        run: "(cd rust; cargo clippy)"
+        run: "(cd rust-tui; cargo clippy)"
 
       - name: Build
-        run: "(cd rust; cargo build)"
+        run: "(cd rust-tui; cargo build)"
