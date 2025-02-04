@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = "";
-const token = "";
+const appID = "REPLACE_ME_WITH_YOUR_APP_ID";
+const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
@@ -23,6 +23,7 @@ class DittoExample extends StatefulWidget {
 
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
+  bool syncEnabled = false;
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _DittoExampleState extends State<DittoExample> {
     });
 
     ditto.startSync();
+    syncEnabled = true;
 
     setState(() => _ditto = ditto);
   }
@@ -99,6 +101,7 @@ class _DittoExampleState extends State<DittoExample> {
       body: Column(
         children: [
           _portalInfo,
+          _syncButton,
           const Divider(height: 1),
           Expanded(child: _tasksList),
         ],
@@ -137,6 +140,28 @@ class _DittoExampleState extends State<DittoExample> {
           style: TextStyle(fontSize: 12),
         ),
       ]);
+
+  Widget get _syncButton {
+    Color bgColor = syncEnabled ? Colors.green : Colors.grey;
+    String text = syncEnabled ? "Sync Enabled" : "Sync Disabled";
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      TextButton(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.all(bgColor),
+        ),
+        child: Text(text, style: const TextStyle(color: Colors.white)),
+        onPressed: () {
+          if (syncEnabled) {
+            _ditto!.stopSync();
+            syncEnabled = false;
+          } else {
+            _ditto!.startSync();
+            syncEnabled = true;
+          }
+        },
+      ),
+    ]);
+  }
 
   Widget get _tasksList => DqlBuilder(
         ditto: _ditto!,
