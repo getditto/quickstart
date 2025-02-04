@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DittoMauiTasksApp.Utils;
 using DittoSDK;
-using Generated;
 using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp.ViewModels
@@ -19,8 +18,8 @@ namespace DittoMauiTasksApp.ViewModels
         private readonly ILogger<TasksPageviewModel> logger;
         private DittoSyncSubscription syncSubscription;
 
-        public string AppIdText { get; } = $"App ID: {EnvConstants.DITTO_APP_ID}";
-        public string TokenText { get; } = $"Token: {EnvConstants.DITTO_PLAYGROUND_TOKEN}";
+        public string AppIdText { get; } = $"App ID: {MauiProgram.AppId}";
+        public string TokenText { get; } = $"Token: {MauiProgram.PlaygroundToken}";
 
         [ObservableProperty]
         ObservableCollection<DittoTask> tasks;
