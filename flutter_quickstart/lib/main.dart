@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:ditto_live/ditto_live.dart';
-import 'package:ditto_live_example/dialog.dart';
-import 'package:ditto_live_example/dql_builder.dart';
-import 'package:ditto_live_example/task.dart';
+import 'package:flutter_quickstart/dialog.dart';
+import 'package:flutter_quickstart/dql_builder.dart';
+import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -41,10 +41,7 @@ class _DittoExampleState extends State<DittoExample> {
     ].request();
 
     final identity = OnlinePlaygroundIdentity(
-      appID: appID,
-      token: token,
-      enableDittoCloudSync: false
-    );
+        appID: appID, token: token, enableDittoCloudSync: false);
 
     final dataDir = await getApplicationDocumentsDirectory();
     final persistenceDirectory = Directory("${dataDir.path}/ditto");

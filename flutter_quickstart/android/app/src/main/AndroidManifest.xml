@@ -28,7 +28,7 @@
         tools:targetApi="tiramisu" />
 
     <application
-        android:label="ditto_live_example"
+        android:label="flutter_quickstart"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

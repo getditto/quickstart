@@ -1,4 +1,4 @@
-package com.example.ditto_live_example
+package com.example.flutter_quickstart
 
 import io.flutter.embedding.android.FlutterActivity
 
