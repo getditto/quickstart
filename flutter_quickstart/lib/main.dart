@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
@@ -48,17 +46,14 @@ class _DittoExampleState extends State<DittoExample> {
     final identity = OnlinePlaygroundIdentity(
         appID: appID, token: token, enableDittoCloudSync: false);
 
-    final dataDir = await getApplicationDocumentsDirectory();
-    final persistenceDirectory = Directory("${dataDir.path}/ditto");
-    await persistenceDirectory.create(recursive: true);
-
     final ditto = await Ditto.open(
-      identity: identity,
-      persistenceDirectory: persistenceDirectory.path,
-    );
+        identity: identity,
+        persistenceDirectory: await getPersistenceDirectory("ditto"));
 
     ditto.updateTransportConfig((config) {
-      config.setAllPeerToPeerEnabled(true);
+      if (!kIsWeb) {
+        config.setAllPeerToPeerEnabled(true);
+      }
       config.connect.webSocketUrls.add(
         "wss://$appID.cloud.ditto.live",
       );
