@@ -1,13 +1,18 @@
-﻿using DittoMauiTasksApp.Utils;
+﻿using System.Reflection;
+
+using Microsoft.Extensions.Logging;
+
+using DittoMauiTasksApp.Utils;
 using DittoMauiTasksApp.ViewModels;
 using DittoSDK;
-using Generated;
-using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp;
 
 public static class MauiProgram
 {
+    public static string AppId { get; private set; } = "";
+    public static string PlaygroundToken { get; private set; } = "";
+
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
@@ -33,12 +38,67 @@ public static class MauiProgram
 
     private static Ditto SetupDitto()
     {
+        var envVars = LoadEnvVariables();
+        AppId = envVars["DITTO_APP_ID"];
+        PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"];
+
         var ditto = new Ditto(DittoIdentity.OnlinePlayground(
-            EnvConstants.DITTO_APP_ID,
-            EnvConstants.DITTO_PLAYGROUND_TOKEN,
-            true));
+            AppId, PlaygroundToken, true));
         ditto.DisableSyncWithV3();
 
         return ditto;
+    }
+
+    /// <summary>
+    /// Load environment variables from the embedded .env resource file.
+    /// </summary>
+    static Dictionary<string, string> LoadEnvVariables()
+    {
+        var envVars = new Dictionary<string, string>();
+
+        var assembly = Assembly.GetExecutingAssembly();
+
+        string resourceName = "DittoMauiTasksApp..env";
+
+        using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+        {
+            if (stream == null)
+            {
+                var availableResources = string.Join(Environment.NewLine, assembly.GetManifestResourceNames());
+                throw new InvalidOperationException($"Resource '{resourceName}' not found. Available resources: {availableResources}");
+            }
+
+            using (var reader = new StreamReader(stream))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    line = line.Trim();
+
+                    if (string.IsNullOrEmpty(line) || line.StartsWith("#"))
+                    {
+                        continue;
+                    }
+
+                    int separatorIndex = line.IndexOf('=');
+                    if (separatorIndex < 0)
+                    {
+                        continue;
+                    }
+
+                    string key = line.Substring(0, separatorIndex).Trim();
+                    string value = line.Substring(separatorIndex + 1).Trim();
+
+                    if (value.StartsWith("\"") && value.EndsWith("\"") && value.Length >= 2)
+                    {
+                        value = value.Substring(1, value.Length - 2);
+                    }
+
+                    envVars[key] = value;
+                }
+            }
+        }
+
+        return envVars;
     }
 }
