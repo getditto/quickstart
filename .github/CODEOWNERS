@@ -1,0 +1,21 @@
+#
+# .github/CODEOWNERS
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+
+# Global
+* @getditto/sdk-engineers
+
+# SDK-specific owners
+/android-cpp/ @kristopherjohnson @danielhenrymantilla
+/android-java/ @phatblat @anyercastillo
+/android-kotlin/ @phatblat @anyercastillo
+/cpp-tui/ @kristopherjohnson @danielhenrymantilla
+/dotnet-maui/ @busec0 @phatblat
+/dotnet-tui/ @busec0 @phatblat
+/flutter_quickstart/ @cameron1024 @teodorciuraru
+/javascript-tui/ @konstantinbe @pvditto @teodorciuraru
+/javascript-web/ @konstantinbe @pvditto @teodorciuraru
+/react-native/ @teodorciuraru @kristopherjohnson
+/rust-tui/ @kristopherjohnson @danielhenrymantilla
+/swift/ @phatblat @konstantinbe
