@@ -55,7 +55,7 @@ add_custom_command(
   DEPENDS ${ENV_INPUT} ${ENV_SCRIPT}
   COMMENT "Generating env.h"
 )
-add_custom_target(env_h DEPENDS ${ENV_H})
+add_custom_target(env_h DEPENDS ${ENV_H} ${ENV_SCRIPT})
 
 # Compile all the .cpp files in the src directory to build taskscpp
 file(GLOB_RECURSE SOURCES "src/*.cpp")
