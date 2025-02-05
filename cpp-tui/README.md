@@ -23,7 +23,7 @@ subdirectory of this project.
 
 ## Building the Application
 
-Assuming you have Xcode and other prerequisites installed, you can build and run the app by following these steps:
+Assuming you have the prerequisites installed, you can build and run the app by following these steps:
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
 2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
