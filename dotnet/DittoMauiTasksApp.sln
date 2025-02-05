@@ -5,21 +5,27 @@ VisualStudioVersion = 25.0.1706.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DittoMauiTasksApp", "DittoMauiTasksApp\DittoMauiTasksApp.csproj", "{2C1F0F93-46E0-40EF-8070-BE744701BE3B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DittoDotNetTasksConsole", "DittoDotNetTasksConsole\DittoDotNetTasksConsole.csproj", "{802B887F-704B-4DD9-AC3C-05B81723225D}"
+EndProject
 Global
-    GlobalSection(SolutionConfigurationPlatforms) = preSolution
-        Debug|Any CPU = Debug|Any CPU
-        Release|Any CPU = Release|Any CPU
-    EndGlobalSection
-    GlobalSection(ProjectConfigurationPlatforms) = postSolution
-        {2C1F0F93-46E0-40EF-8070-BE744701BE3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-        {2C1F0F93-46E0-40EF-8070-BE744701BE3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-        {2C1F0F93-46E0-40EF-8070-BE744701BE3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-        {2C1F0F93-46E0-40EF-8070-BE744701BE3B}.Release|Any CPU.Build.0 = Release|Any CPU
-    EndGlobalSection
-    GlobalSection(SolutionProperties) = preSolution
-        HideSolutionNode = FALSE
-    EndGlobalSection
-    GlobalSection(ExtensibilityGlobals) = postSolution
-        SolutionGuid = {410AF556-919F-47A6-867E-EC5BFCD393E0}
-    EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2C1F0F93-46E0-40EF-8070-BE744701BE3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C1F0F93-46E0-40EF-8070-BE744701BE3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C1F0F93-46E0-40EF-8070-BE744701BE3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C1F0F93-46E0-40EF-8070-BE744701BE3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{802B887F-704B-4DD9-AC3C-05B81723225D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{802B887F-704B-4DD9-AC3C-05B81723225D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{802B887F-704B-4DD9-AC3C-05B81723225D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{802B887F-704B-4DD9-AC3C-05B81723225D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {410AF556-919F-47A6-867E-EC5BFCD393E0}
+	EndGlobalSection
 EndGlobal
