@@ -11,15 +11,14 @@ This is a basic task application that demonstrates how to use Ditto's peer-to-pe
 - Clone the repository from GitHub. Open a terminal and run the following command:
 
 ```bash
-git clone https://github.com/getditto/demoapp-flutter
+git clone https://github.com/getditto/quickstart
 ```
 
 - Navigate to the project directory:
 
 ```bash
-cd demoapp-flutter
+cd quickstart/flutter_quickstart
 ```
-
 
 ### 2. Install Dependencies
 
@@ -58,6 +57,7 @@ const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
 ```bash
 flutter run
 ```
+
 - Select the Android Emulator/Device
 
 ```text
@@ -94,7 +94,6 @@ Please choose one (or "q" to quit):
 
 *Note: Android Emulators cannot connect to iOS Simulators for offline sync due to platform limitations*
 
-
 # Additional Resources
 
 Explore the following links and resources to learn more about Ditto:
@@ -111,9 +110,3 @@ Explore the following links and resources to learn more about Ditto:
 - [Ditto Data Store CRUD](https://docs.ditto.live/crud/create)
 - [Ditto Data Sync Subscriptions](https://docs.ditto.live/sync/subscriptions-management)
 - [Ditto Query Language](https://docs.ditto.live/dql)
-
-
-
-
-
-
