@@ -29,17 +29,18 @@ build and run them.
 
 ## Apps
 
-- [Android Kotlin](android-kotlin/#readme)
-- [Android Java](android-java/#readme)
-- [Android C++](android-cpp/#readme)
-- [C++ TUI](cpp/#readme)
-- [Flutter](flutter/#readme)
-- [Javascript Web](javascript-web/#readme)
-- [Javascript TUI](javascript-tui/#readme)
-- [.NET](dotnet/#readme)
-- [React Native](react-native/#readme)
-- [Rust TUI](rust/#readme)
-- [Swift](swift/#readme)
+- [Android Kotlin](android-kotlin/README.md)
+- [Android Java](android-java/README.md)
+- [Android C++](android-cpp/README.md)
+- [C++ TUI](cpp-tui/README.md)
+- [C# .NET MAUI](dotnet-maui/README.md)
+- [C# .NET TUI](dotnet/README.md)
+- [Flutter](flutter_quickstart/README.md)
+- [Javascript TUI](javascript-tui/README.md)
+- [Javascript Web](javascript-web/README.md)
+- [React Native](react-native/README.md)
+- [Rust TUI](rust/README.md)
+- [Swift](swift/README.md)
 
 ## 🔨 Building
 
