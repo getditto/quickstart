@@ -1,0 +1,216 @@
+import 'package:ditto_live/ditto_live.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_quickstart/dialog.dart';
+import 'package:flutter_quickstart/dql_builder.dart';
+import 'package:flutter_quickstart/task.dart';
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+const appID = "REPLACE_ME_WITH_YOUR_APP_ID";
+const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
+
+Future<void> main() async {
+  runApp(const MaterialApp(home: DittoExample()));
+}
+
+class DittoExample extends StatefulWidget {
+  const DittoExample({super.key});
+
+  @override
+  State<DittoExample> createState() => _DittoExampleState();
+}
+
+class _DittoExampleState extends State<DittoExample> {
+  Ditto? _ditto;
+  bool syncEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _initDitto();
+  }
+
+  Future<void> _initDitto() async {
+    if (!kIsWeb) {
+      await [
+        Permission.bluetoothConnect,
+        Permission.bluetoothAdvertise,
+        Permission.nearbyWifiDevices,
+        Permission.bluetoothScan
+      ].request();
+    }
+
+    await Ditto.init();
+
+    final identity = OnlinePlaygroundIdentity(
+        appID: appID, token: token, enableDittoCloudSync: false);
+
+    final ditto = await Ditto.open(
+        identity: identity,
+        persistenceDirectory: await getPersistenceDirectory("ditto"));
+
+    ditto.updateTransportConfig((config) {
+      if (!kIsWeb) {
+        config.setAllPeerToPeerEnabled(true);
+      }
+      config.connect.webSocketUrls.add(
+        "wss://$appID.cloud.ditto.live",
+      );
+    });
+
+    ditto.startSync();
+    syncEnabled = true;
+
+    setState(() => _ditto = ditto);
+  }
+
+  Future<void> _addTask() async {
+    final task = await showAddTaskDialog(context);
+    if (task == null) return;
+
+    await _ditto!.store.execute(
+      "INSERT INTO tasks DOCUMENTS (:task)",
+      arguments: {"task": task.toJson()},
+    );
+  }
+
+  Future<void> _clearTasks() async {
+    await _ditto!.store.execute("EVICT FROM tasks WHERE true");
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ditto = _ditto;
+
+    if (ditto == null) return _loading;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Ditto Tasks"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear),
+            tooltip: "Clear",
+            onPressed: _clearTasks,
+          ),
+        ],
+      ),
+      floatingActionButton: _fab,
+      body: Column(
+        children: [
+          _portalInfo,
+          _syncButton,
+          const Divider(height: 1),
+          Expanded(child: _tasksList),
+        ],
+      ),
+    );
+  }
+
+  Widget get _loading => Scaffold(
+        appBar: AppBar(title: const Text("Ditto Tasks")),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+            crossAxisAlignment:
+                CrossAxisAlignment.center, // Center horizontally
+            children: [
+              const CircularProgressIndicator(),
+              const Text("Ensure your AppID and Token are correct"),
+              _portalInfo
+            ],
+          ),
+        ),
+      );
+
+  Widget get _fab => FloatingActionButton(
+        onPressed: _addTask,
+        child: const Icon(Icons.add_task),
+      );
+
+  Widget get _portalInfo => const Column(children: [
+        Text(
+          "AppID: $appID",
+          style: TextStyle(fontSize: 12),
+        ),
+        Text(
+          "Token: $token",
+          style: TextStyle(fontSize: 12),
+        ),
+      ]);
+
+  Widget get _syncButton {
+    Color bgColor = syncEnabled ? Colors.green : Colors.grey;
+    String text = syncEnabled ? "Sync Enabled" : "Sync Disabled";
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      TextButton(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.all(bgColor),
+        ),
+        child: Text(text, style: const TextStyle(color: Colors.white)),
+        onPressed: () {
+          if (syncEnabled) {
+            _ditto!.stopSync();
+            syncEnabled = false;
+          } else {
+            _ditto!.startSync();
+            syncEnabled = true;
+          }
+        },
+      ),
+    ]);
+  }
+
+  Widget get _tasksList => DqlBuilder(
+        ditto: _ditto!,
+        query: "SELECT * FROM tasks WHERE deleted = false",
+        builder: (context, response) {
+          final tasks = response.items.map((r) => r.value).map(Task.fromJson);
+          return ListView(
+            children: tasks.map(_singleTask).toList(),
+          );
+        },
+      );
+
+  Widget _singleTask(Task task) => Dismissible(
+        key: Key("${task.id}-${task.title}"),
+        onDismissed: (direction) async {
+          await _ditto!.store.execute(
+            "UPDATE tasks SET deleted = true WHERE _id = '${task.id}'",
+          );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Deleted Task ${task.title}")),
+            );
+          }
+        },
+        background: _dismissibleBackground(true),
+        secondaryBackground: _dismissibleBackground(false),
+        child: CheckboxListTile(
+          title: GestureDetector(
+            onLongPress: () {
+              showAddTaskDialog(context, task);
+            },
+            child: Text(task.title),
+          ),
+          value: task.done,
+          onChanged: (value) => _ditto!.store.execute(
+            "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",
+          ),
+        ),
+      );
+
+  Widget _dismissibleBackground(bool primary) => Container(
+        color: Colors.red,
+        child: Align(
+          alignment: primary ? Alignment.centerLeft : Alignment.centerRight,
+          child: const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Icon(Icons.delete),
+          ),
+        ),
+      );
+}

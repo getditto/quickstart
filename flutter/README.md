@@ -1,1 +1,0 @@
-# Ditto Flutter Quickstart App 🚀
