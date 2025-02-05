@@ -1,4 +1,4 @@
-# Ditto C++/Android Quickstart App 🚀
+# Ditto C++ Android Quickstart App 🚀
 
 ## Prerequisites
 

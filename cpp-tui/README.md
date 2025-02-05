@@ -1,4 +1,4 @@
-# Ditto C++ QuickStart Tasks App
+# Ditto C++ Console QuickStart Tasks App
 
 ## Prerequisites
 

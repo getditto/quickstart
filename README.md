@@ -34,12 +34,12 @@ build and run them.
 - [Android C++](android-cpp/README.md)
 - [C++ TUI](cpp-tui/README.md)
 - [C# .NET MAUI](dotnet-maui/README.md)
-- [C# .NET TUI](dotnet/README.md)
+- [C# .NET TUI](dotnet-tui/README.md)
 - [Flutter](flutter_quickstart/README.md)
 - [Javascript TUI](javascript-tui/README.md)
 - [Javascript Web](javascript-web/README.md)
 - [React Native](react-native/README.md)
-- [Rust TUI](rust/README.md)
+- [Rust TUI](rust-tui/README.md)
 - [Swift](swift/README.md)
 
 ## 🔨 Building

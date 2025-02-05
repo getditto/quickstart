@@ -1,4 +1,4 @@
-# Ditto Android Quickstart App 🚀
+# Ditto Android Java Quickstart App 🚀
 
 ## Dependencies
 

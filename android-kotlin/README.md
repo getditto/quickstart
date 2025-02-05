@@ -1,4 +1,4 @@
-# Ditto Android Quickstart App 🚀
+# Ditto Android Kotlin Quickstart App 🚀
 
 ## Prerequisites
 
