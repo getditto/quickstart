@@ -4,11 +4,10 @@ import 'package:flutter_quickstart/dialog.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = "REPLACE_ME_WITH_YOUR_APP_ID";
-const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
+const appID = String.fromEnvironment("DITTO_APP_ID");
+const token = String.fromEnvironment("DITTO_PLAYGROUND_TOKEN");
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
