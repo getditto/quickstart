@@ -77,6 +77,13 @@ async fn main() -> Result<()> {
 }
 
 fn try_init_ditto(app_id: AppId, token: String) -> Result<Ditto> {
+    // We use a temporary directory to store Ditto's local database.  This
+    // means that data will not be persistent between runs of the
+    // application, but it allows us to run multiple instances of the
+    // application concurrently on the same machine.  For a production
+    // application, we would want to store the database in a more permanent
+    // location, and if multiple instances are needed, ensure that each
+    // instance has its own persistence directory.
     let ditto = Ditto::builder()
         .with_root(Arc::new(TempRoot::new()))
         .with_identity(|root| OnlinePlayground::new(root, app_id.clone(), token, true, None))?

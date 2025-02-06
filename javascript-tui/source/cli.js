@@ -32,6 +32,13 @@ const cli = meow(
 
 console.log("Flags:", cli.flags);
 
+// We use a temporary directory to store Ditto's local database.  This
+// means that data will not be persistent between runs of the
+// application, but it allows us to run multiple instances of the
+// application concurrently on the same machine.  For a production
+// application, we would want to store the database in a more permanent
+// location, and if multiple instances are needed, ensure that each
+// instance has its own persistence directory.
 const tempdir = temporaryDirectory();
 
 // Grab appID and token from CLI or .env in that order
