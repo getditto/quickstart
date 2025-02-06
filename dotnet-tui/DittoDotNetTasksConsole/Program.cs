@@ -44,6 +44,9 @@ public static class Program
         }
     }
 
+    /// <summary>
+    /// Reads values from the embedded .env file resource.
+    /// </summary>
     private static Dictionary<string, string> LoadEnvVariables()
     {
         var envVars = new Dictionary<string, string>();
