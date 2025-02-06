@@ -90,9 +90,7 @@ class _DittoExampleState extends State<DittoExample> {
 
   @override
   Widget build(BuildContext context) {
-    final ditto = _ditto;
-
-    if (ditto == null) return _loading;
+    if (_ditto == null) return _loading;
 
     return Scaffold(
       appBar: AppBar(
@@ -110,7 +108,7 @@ class _DittoExampleState extends State<DittoExample> {
         children: [
           _portalInfo,
           _syncTile,
-          const Divider(height: 1),
+          const Divider(),
           Expanded(child: _tasksList),
         ],
       ),
@@ -139,14 +137,8 @@ class _DittoExampleState extends State<DittoExample> {
       );
 
   Widget get _portalInfo => const Column(children: [
-        Text(
-          "AppID: $appID",
-          style: TextStyle(fontSize: 12),
-        ),
-        Text(
-          "Token: $token",
-          style: TextStyle(fontSize: 12),
-        ),
+        Text("AppID: $appID"),
+        Text("Token: $token"),
       ]);
 
   Widget get _syncTile => SwitchListTile(
@@ -164,8 +156,8 @@ class _DittoExampleState extends State<DittoExample> {
   Widget get _tasksList => DqlBuilder(
         ditto: _ditto!,
         query: "SELECT * FROM tasks WHERE deleted = false",
-        builder: (context, response) {
-          final tasks = response.items.map((r) => r.value).map(Task.fromJson);
+        builder: (context, result) {
+          final tasks = result.items.map((r) => r.value).map(Task.fromJson);
           return ListView(
             children: tasks.map(_singleTask).toList(),
           );
