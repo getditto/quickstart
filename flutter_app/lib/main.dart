@@ -188,15 +188,22 @@ class _DittoExampleState extends State<DittoExample> {
         background: _dismissibleBackground(true),
         secondaryBackground: _dismissibleBackground(false),
         child: CheckboxListTile(
-          title: GestureDetector(
-            onLongPress: () {
-              showAddTaskDialog(context, task);
-            },
-            child: Text(task.title),
-          ),
+          title: Text(task.title),
           value: task.done,
           onChanged: (value) => _ditto!.store.execute(
             "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",
+          ),
+          secondary: IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: "Edit Task",
+            onPressed: () async {
+              final newTask = await showAddTaskDialog(context, task);
+              if (newTask == null) return;
+
+              _ditto!.store.execute(
+                "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
+              );
+            },
           ),
         ),
       );
