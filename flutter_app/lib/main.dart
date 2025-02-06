@@ -22,7 +22,6 @@ class DittoExample extends StatefulWidget {
 
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
-  bool syncEnabled = false;
 
   @override
   void initState() {
@@ -60,7 +59,6 @@ class _DittoExampleState extends State<DittoExample> {
     });
 
     ditto.startSync();
-    syncEnabled = true;
 
     setState(() => _ditto = ditto);
   }
@@ -100,7 +98,7 @@ class _DittoExampleState extends State<DittoExample> {
       body: Column(
         children: [
           _portalInfo,
-          _syncButton,
+          _syncTile,
           const Divider(height: 1),
           Expanded(child: _tasksList),
         ],
@@ -140,27 +138,17 @@ class _DittoExampleState extends State<DittoExample> {
         ),
       ]);
 
-  Widget get _syncButton {
-    Color bgColor = syncEnabled ? Colors.green : Colors.grey;
-    String text = syncEnabled ? "Sync Enabled" : "Sync Disabled";
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      TextButton(
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all(bgColor),
-        ),
-        child: Text(text, style: const TextStyle(color: Colors.white)),
-        onPressed: () {
-          if (syncEnabled) {
-            _ditto!.stopSync();
-            syncEnabled = false;
+  Widget get _syncTile => SwitchListTile(
+        title: const Text("Sync Active"),
+        value: _ditto!.isSyncActive,
+        onChanged: (value) {
+          if (value) {
+            setState(() => _ditto!.startSync());
           } else {
-            _ditto!.startSync();
-            syncEnabled = true;
+            setState(() => _ditto!.stopSync());
           }
         },
-      ),
-    ]);
-  }
+      );
 
   Widget get _tasksList => DqlBuilder(
         ditto: _ditto!,
