@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 const appID = String.fromEnvironment("DITTO_APP_ID");
@@ -43,11 +46,19 @@ class _DittoExampleState extends State<DittoExample> {
     await Ditto.init();
 
     final identity = OnlinePlaygroundIdentity(
-        appID: appID, token: token, enableDittoCloudSync: false);
+      appID: appID,
+      token: token,
+      enableDittoCloudSync: false,
+    );
+
+    final documentsDir = await getApplicationDocumentsDirectory();
+    final persistenceDirectory = Directory("${documentsDir.path}/ditto");
+    await persistenceDirectory.create();
 
     final ditto = await Ditto.open(
-        identity: identity,
-        persistenceDirectory: await getPersistenceDirectory("ditto"));
+      identity: identity,
+      persistenceDirectory: persistenceDirectory.path,
+    );
 
     ditto.updateTransportConfig((config) {
       if (!kIsWeb) {
