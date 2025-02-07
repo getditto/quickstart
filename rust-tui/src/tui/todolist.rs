@@ -154,7 +154,7 @@ impl Todolist {
         let table = Table::new(rows, Constraint::from_percentages([30, 70]))
             .header(header)
             .highlight_symbol("❯❯ ")
-            .highlight_style(Style::new().bold().blue())
+            .row_highlight_style(Style::new().bold().blue())
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
