@@ -47,9 +47,7 @@ class _DittoExampleState extends State<DittoExample> {
     final identity = OnlinePlaygroundIdentity(
         appID: appID, token: token, enableDittoCloudSync: false);
 
-    final ditto = await Ditto.open(
-        identity: identity,
-        persistenceDirectory: await getPersistenceDirectory("ditto"));
+    final ditto = await Ditto.open(identity: identity);
 
     ditto.updateTransportConfig((config) {
       if (!kIsWeb) {
