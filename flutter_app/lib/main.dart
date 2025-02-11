@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
@@ -7,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = "REPLACE_ME_WITH_YOUR_APP_ID";
-const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
+const appID = "<replace with your app ID>";
+const token = "<replace with your playground token>";
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
@@ -23,7 +25,6 @@ class DittoExample extends StatefulWidget {
 
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
-  bool syncEnabled = false;
 
   @override
   void initState() {
@@ -45,11 +46,19 @@ class _DittoExampleState extends State<DittoExample> {
     await Ditto.init();
 
     final identity = OnlinePlaygroundIdentity(
-        appID: appID, token: token, enableDittoCloudSync: false);
+      appID: appID,
+      token: token,
+      enableDittoCloudSync: false,
+    );
+
+    final documentsDir = await getApplicationDocumentsDirectory();
+    final persistenceDirectory = Directory("${documentsDir.path}/ditto");
+    await persistenceDirectory.create();
 
     final ditto = await Ditto.open(
-        identity: identity,
-        persistenceDirectory: await getPersistenceDirectory("ditto"));
+      identity: identity,
+      persistenceDirectory: persistenceDirectory.path,
+    );
 
     ditto.updateTransportConfig((config) {
       if (!kIsWeb) {
@@ -61,7 +70,6 @@ class _DittoExampleState extends State<DittoExample> {
     });
 
     ditto.startSync();
-    syncEnabled = true;
 
     setState(() => _ditto = ditto);
   }
@@ -82,9 +90,7 @@ class _DittoExampleState extends State<DittoExample> {
 
   @override
   Widget build(BuildContext context) {
-    final ditto = _ditto;
-
-    if (ditto == null) return _loading;
+    if (_ditto == null) return _loading;
 
     return Scaffold(
       appBar: AppBar(
@@ -101,8 +107,8 @@ class _DittoExampleState extends State<DittoExample> {
       body: Column(
         children: [
           _portalInfo,
-          _syncButton,
-          const Divider(height: 1),
+          _syncTile,
+          const Divider(),
           Expanded(child: _tasksList),
         ],
       ),
@@ -131,43 +137,27 @@ class _DittoExampleState extends State<DittoExample> {
       );
 
   Widget get _portalInfo => const Column(children: [
-        Text(
-          "AppID: $appID",
-          style: TextStyle(fontSize: 12),
-        ),
-        Text(
-          "Token: $token",
-          style: TextStyle(fontSize: 12),
-        ),
+        Text("AppID: $appID"),
+        Text("Token: $token"),
       ]);
 
-  Widget get _syncButton {
-    Color bgColor = syncEnabled ? Colors.green : Colors.grey;
-    String text = syncEnabled ? "Sync Enabled" : "Sync Disabled";
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      TextButton(
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all(bgColor),
-        ),
-        child: Text(text, style: const TextStyle(color: Colors.white)),
-        onPressed: () {
-          if (syncEnabled) {
-            _ditto!.stopSync();
-            syncEnabled = false;
+  Widget get _syncTile => SwitchListTile(
+        title: const Text("Sync Active"),
+        value: _ditto!.isSyncActive,
+        onChanged: (value) {
+          if (value) {
+            setState(() => _ditto!.startSync());
           } else {
-            _ditto!.startSync();
-            syncEnabled = true;
+            setState(() => _ditto!.stopSync());
           }
         },
-      ),
-    ]);
-  }
+      );
 
   Widget get _tasksList => DqlBuilder(
         ditto: _ditto!,
         query: "SELECT * FROM tasks WHERE deleted = false",
-        builder: (context, response) {
-          final tasks = response.items.map((r) => r.value).map(Task.fromJson);
+        builder: (context, result) {
+          final tasks = result.items.map((r) => r.value).map(Task.fromJson);
           return ListView(
             children: tasks.map(_singleTask).toList(),
           );
@@ -190,15 +180,22 @@ class _DittoExampleState extends State<DittoExample> {
         background: _dismissibleBackground(true),
         secondaryBackground: _dismissibleBackground(false),
         child: CheckboxListTile(
-          title: GestureDetector(
-            onLongPress: () {
-              showAddTaskDialog(context, task);
-            },
-            child: Text(task.title),
-          ),
+          title: Text(task.title),
           value: task.done,
           onChanged: (value) => _ditto!.store.execute(
             "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",
+          ),
+          secondary: IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: "Edit Task",
+            onPressed: () async {
+              final newTask = await showAddTaskDialog(context, task);
+              if (newTask == null) return;
+
+              _ditto!.store.execute(
+                "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
+              );
+            },
           ),
         ),
       );

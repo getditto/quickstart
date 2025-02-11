@@ -35,18 +35,6 @@ flutter pub get
 - Navigate to your application and obtain the App ID and Playground Token (see [Sync Credentials](https://docs.ditto.live/get-started/sync-credentials)
  for more details)
 
-
-#### Update Flutter Application with Ditto Credentials
-
-- Open the lib/main.dart file or the appropriate configuration file where Ditto is initialized
-- Update the code with the App ID and Playground Token from your Ditto Application
-
-```dart
-const appID = "REPLACE_ME_WITH_YOUR_APP_ID";
-const token = "REPLACE_ME_WITH_YOUR_PLAYGROUND_TOKEN";
-```
-
-
 ### 4. Run the Application
 
 #### Run the Application on Android
