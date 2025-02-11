@@ -17,6 +17,7 @@ import {
   SyncSubscription,
   TransportConfig,
 } from '@dittolive/ditto';
+import {DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN} from '@env';
 
 import Fab from './components/Fab';
 import NewTaskModal from './components/NewTaskModal';
@@ -34,8 +35,8 @@ type Task = {
 
 const identity: IdentityOnlinePlayground = {
   type: 'onlinePlayground',
-  appID: '<YOUR APP ID>',
-  token: '<YOUR PLAYGROUND TOKEN>',
+  appID: DITTO_APP_ID,
+  token: DITTO_PLAYGROUND_TOKEN,
 };
 
 async function requestPermissions() {

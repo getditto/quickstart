@@ -17,16 +17,9 @@ A sample React Native application that lets you create tasks and sync them with 
 ### Install Dependencies
 
 ```bash
-# Using npm
-npm install
-
-# Using yarn
+# Project is set up to work seamlessly with yarn
 yarn install
 ```
-
-### Configure App Credentials
-
-Navigate to the `App.tsx` file and replace `<Your-App-ID>` and `<Your-Token>` with your actual `appID` and `token` obtained from the Ditto Portal.
 
 ### Run the Application
 
@@ -34,17 +27,13 @@ Running the `start` script launches the "Metro" dev tool, which will build the i
 After running the start command, press `i` to launch the iOS simulator or `a` to launch the Android emulator.
 
 ```bash
-# Using npm
-npm start
-
-# Using yarn
 yarn start
 ```
 
 For iOS:
 
 ```bash
-(cd ios && RCT_NEW_ARCH_ENABLED=1 pod install)
+(cd ios && pod install)
 yarn react-native run-ios
 ```
 
