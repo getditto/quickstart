@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = String.fromEnvironment("DITTO_APP_ID");
-const token = String.fromEnvironment("DITTO_PLAYGROUND_TOKEN");
+const appID = "<replace with your app ID>";
+const token = "<replace with your playground token>";
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));

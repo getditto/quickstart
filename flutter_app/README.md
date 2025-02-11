@@ -43,9 +43,7 @@ flutter pub get
 - Run the following command in the terminal from the root of the application
 
 ```bash
-flutter run \
-  --dart-define DITTO_APP_ID="<your app ID>" \
-  --dart-define DITTO_PLAYGROUND_TOKEN="<your playground token>"
+flutter run
 ```
 
 - Select the Android Emulator/Device
@@ -63,9 +61,7 @@ Please choose one (or "q" to quit):
 Run the following command in the terminal and select the iOS Simulator/Device
 
 ```bash
-flutter run \
-  --dart-define DITTO_APP_ID="<your app ID>" \
-  --dart-define DITTO_PLAYGROUND_TOKEN="<your playground token>"
+flutter run
 ```
 
 
