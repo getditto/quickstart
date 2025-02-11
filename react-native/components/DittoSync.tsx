@@ -7,8 +7,8 @@ const DittoSync: React.FC<SwitchProps> = (props) => {
       <Text style={styles.text}>Sync Enabled</Text>
       <Switch thumbColor="#fff" trackColor={{ true: '#6D28D9' }} {...props} />
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'flex-start'
+    alignItems: 'flex-start',
   },
   text: {
     flexGrow: 1,

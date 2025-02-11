@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   Text,
   StyleSheet,
@@ -73,33 +73,33 @@ const App = () => {
   };
 
   const createTask = async (title: string) => {
-    if (title === "") return;
+    if (title === '') {return;}
     await ditto.current?.store.execute('INSERT INTO tasks DOCUMENTS (:task)', {
       task: {
         title,
         done: false,
         deleted: false,
-      }
+      },
     });
   };
 
   const toggleTask = async (task: Task) => {
     await ditto.current?.store.execute('UPDATE tasks SET done=:done WHERE _id=:id', {
-      id: task.id,
-      done: !task.done,
+        id: task.id,
+        done: !task.done,
     });
   };
 
   const deleteTask = async (task: Task) => {
     await ditto.current?.store.execute('UPDATE tasks SET deleted=true WHERE _id=:id', {
-      id: task.id,
+        id: task.id,
     });
   };
 
   const updateTaskTitle = async (taskId: string, newTitle: string) => {
     await ditto.current?.store.execute('UPDATE tasks SET title=:title WHERE _id=:id', {
-      id: taskId,
-      title: newTitle,
+        id: taskId,
+        title: newTitle,
     });
   };
 
@@ -125,14 +125,14 @@ const App = () => {
 
       // Subscribe to task updates
       taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted', response => {
-        const fetchedTasks: Task[] = response.items.map(doc => ({
-          id: doc.value._id,
-          title: doc.value.title as string,
-          done: doc.value.done,
-          deleted: doc.value.deleted,
-        }));
+          const fetchedTasks: Task[] = response.items.map(doc => ({
+            id: doc.value._id,
+            title: doc.value.title as string,
+            done: doc.value.done,
+            deleted: doc.value.deleted,
+          }));
 
-        setTasks(fetchedTasks);
+          setTasks(fetchedTasks);
       });
     } catch (error) {
       console.error('Error syncing tasks:', error);
@@ -154,7 +154,7 @@ const App = () => {
     })();
   }, []);
 
-  const renderItem = ({ item }: { item: Task }) => (
+  const renderItem = ({item}: {item: Task}) => (
     <View key={item.id} style={styles.taskContainer}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
       <Text
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   taskButton: {
     flexShrink: 1,
     alignSelf: 'center',
-  }
+  },
 });
 
 export default App;
