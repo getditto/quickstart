@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 using DittoSDK;
@@ -36,6 +37,14 @@ public static class Program
         {
             Application.Init();
             Application.Top.Add(new TasksWindow(peer));
+
+            // Sleep when idle, reducing CPU usage.
+            Application.MainLoop.AddIdle(() =>
+            {
+                Thread.Sleep(50);
+                return true;
+            });
+
             Application.Run();
         }
         finally
