@@ -1,7 +1,12 @@
 # Ditto Quickstart Apps 🚀
 
-This repo contains apps for many of our supported programming languages to show
-how Ditto works as quickly as possible.
+This repo contains apps that demonstrate how to use the Ditto SDK for supported
+programming languages and platforms.
+
+See Ditto's [Getting Started](https://docs.ditto.live/home/introduction)
+documentation for more information.
+
+For support, please contact Ditto Support (<support@ditto.live>).
 
 ## Obtaining your Ditto Identity
 
@@ -41,12 +46,6 @@ build and run them.
 - [React Native](react-native/README.md)
 - [Rust TUI](rust-tui/README.md)
 - [Swift](swift/README.md)
-
-## 🔨 Building
-
-This repo uses [just](https://just.systems/) to launch various build commands.
-Run `just` without any arguments to view a list of the available recipes.
-The full commands can be viewed in the root [`justfile`](justfile).
 
 ## 📄 License
 
