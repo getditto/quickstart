@@ -1,8 +1,19 @@
-# Ditto Flutter Demo App
+# Ditto Flutter Quickstart Demo App
 
 This is a basic task application that demonstrates how to use Ditto's peer-to-peer data sync within your Flutter Application.
 
 ![alt text](image.png)
+
+## Prerequisites
+
+- Dart SDK installed
+- Flutter SDK installed (tested on 3.24/3.27)
+- Java Virtual Machine (JVM) 11 installed 
+- Git command line installed (Windows requirement)
+- XCode installed (for iOS development)
+- Android Studio installed (for managing the Android SDK)
+- Android SDK installed
+- IDE of choice (Android Studio, VS Code, etc)
 
 ## Getting Started
 
@@ -17,20 +28,24 @@ git clone https://github.com/getditto/quickstart
 - Navigate to the project directory:
 
 ```bash
-cd quickstart/flutter_quickstart
+cd quickstart/flutter_app
 ```
 
 ### 2. Install Dependencies
 
-Install the necessary dependencies.
+Install the necessary flutter dependencies.
 
 ```bash
 flutter pub get
 ```
 
 ### 3. Configure Ditto
+> [!NOTE] 
+>If you haven't created a Ditto Portal account, you can sign up at [Ditto Portal](https://portal.ditto.live) or checkout [this video](https://www.youtube.com/watch?v=1aLiDkgl0Dc) on how to setup a Ditto Portal account.
+>
 
 #### Obtain App ID and Playground Token
+
 - Log in to your Ditto Portal account
 - Navigate to your application and obtain the App ID and Playground Token (see [Sync Credentials](https://docs.ditto.live/get-started/sync-credentials)
  for more details)
@@ -57,14 +72,17 @@ Please choose one (or "q" to quit):
 
 #### Run the Application on iOS
 
+> [!NOTE]
+> If you are going to use a physical iPhone, you will need to update the Team under Signing & Capabilities in XCode.  You can open the ios/Runnder.xcodeproj file in XCode and then set your team from the Runner Target -> Singing & Capabilities tab.
+>
+
 - Ensure you have an iOS Simulator running or connect a physical iOS device
+ 
 Run the following command in the terminal and select the iOS Simulator/Device
 
 ```bash
 flutter run
 ```
-
-
 - Select the iOS Simulator/Device
 
 ```text
@@ -80,7 +98,9 @@ Please choose one (or "q" to quit):
 - Disconnect from your current WiFi network while keeping WiFi enabled on the device to allow for LAN connections
 - Create new Tasks and update the Done status of existing tasks
 
-*Note: Android Emulators cannot connect to iOS Simulators for offline sync due to platform limitations*
+> [!NOTE]
+>Android Emulators cannot connect to iOS Simulators for offline sync due to platform limitations
+>
 
 # Additional Resources
 

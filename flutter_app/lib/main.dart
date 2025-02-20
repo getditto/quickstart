@@ -33,6 +33,17 @@ class _DittoExampleState extends State<DittoExample> {
     _initDitto();
   }
 
+  /// Initializes the Ditto instance with necessary permissions and configuration.
+  /// https://docs.ditto.live/sdk/latest/install-guides/flutter#step-3-import-and-initialize-the-ditto-sdk
+  ///
+  /// This function:
+  /// 1. Requests required Bluetooth and WiFi permissions on non-web platforms
+  /// 2. Initializes the Ditto SDK
+  /// 3. Sets up online playground identity with the provided app ID and token
+  /// 4. Creates and configures persistence directory for local data storage
+  /// 5. Enables peer-to-peer communication on non-web platforms
+  /// 6. Configures WebSocket connection to Ditto cloud
+  /// 7. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
     if (!kIsWeb) {
       await [
@@ -78,6 +89,7 @@ class _DittoExampleState extends State<DittoExample> {
     final task = await showAddTaskDialog(context);
     if (task == null) return;
 
+    // https://docs.ditto.live/sdk/latest/crud/create
     await _ditto!.store.execute(
       "INSERT INTO tasks DOCUMENTS (:task)",
       arguments: {"task": task.toJson()},
@@ -85,6 +97,7 @@ class _DittoExampleState extends State<DittoExample> {
   }
 
   Future<void> _clearTasks() async {
+    // https://docs.ditto.live/sdk/latest/crud/delete#evicting-data
     await _ditto!.store.execute("EVICT FROM tasks WHERE true");
   }
 
@@ -164,9 +177,13 @@ class _DittoExampleState extends State<DittoExample> {
         },
       );
 
+
   Widget _singleTask(Task task) => Dismissible(
         key: Key("${task.id}-${task.title}"),
         onDismissed: (direction) async {
+
+          // Use the Soft-Delete pattern
+          // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
           await _ditto!.store.execute(
             "UPDATE tasks SET deleted = true WHERE _id = '${task.id}'",
           );
@@ -192,6 +209,7 @@ class _DittoExampleState extends State<DittoExample> {
               final newTask = await showAddTaskDialog(context, task);
               if (newTask == null) return;
 
+              https://docs.ditto.live/sdk/latest/crud/update
               _ditto!.store.execute(
                 "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
               );

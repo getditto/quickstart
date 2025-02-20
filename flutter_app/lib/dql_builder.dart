@@ -22,18 +22,24 @@ class DqlBuilder extends StatefulWidget {
 }
 
 class _DqlBuilderState extends State<DqlBuilder> {
+
+  // https://docs.ditto.live/sdk/latest/crud/observing-data-changes
   StoreObserver? _observer;
+
+  // https://docs.ditto.live/sdk/latest/sync/syncing-data
   SyncSubscription? _subscription;
 
   @override
   void initState() {
     super.initState();
 
+    //registers observer so when any documents change callback is called
     final observer = widget.ditto.store.registerObserver(
       widget.query,
       arguments: widget.queryArgs ?? {},
     );
 
+    //registers a subscription, setting up which documents should be synced to the device
     final subscription = widget.ditto.sync.registerSubscription(
       widget.query,
       arguments: widget.queryArgs ?? {},
