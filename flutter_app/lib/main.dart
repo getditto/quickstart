@@ -209,7 +209,7 @@ class _DittoExampleState extends State<DittoExample> {
               final newTask = await showAddTaskDialog(context, task);
               if (newTask == null) return;
 
-              https://docs.ditto.live/sdk/latest/crud/update
+              // https://docs.ditto.live/sdk/latest/crud/update
               _ditto!.store.execute(
                 "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
               );
