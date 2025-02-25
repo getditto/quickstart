@@ -1,12 +1,9 @@
-import 'dart:io';
-
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 const appID = "<replace with your app ID>";
@@ -40,10 +37,9 @@ class _DittoExampleState extends State<DittoExample> {
   /// 1. Requests required Bluetooth and WiFi permissions on non-web platforms
   /// 2. Initializes the Ditto SDK
   /// 3. Sets up online playground identity with the provided app ID and token
-  /// 4. Creates and configures persistence directory for local data storage
-  /// 5. Enables peer-to-peer communication on non-web platforms
-  /// 6. Configures WebSocket connection to Ditto cloud
-  /// 7. Starts sync and updates the app state with the configured Ditto instance
+  /// 4. Enables peer-to-peer communication on non-web platforms
+  /// 5. Configures WebSocket connection to Ditto cloud
+  /// 6. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
     if (!kIsWeb) {
       await [
@@ -59,25 +55,13 @@ class _DittoExampleState extends State<DittoExample> {
     final identity = OnlinePlaygroundIdentity(
       appID: appID,
       token: token,
-      enableDittoCloudSync: false,
     );
 
-    final documentsDir = await getApplicationDocumentsDirectory();
-    final persistenceDirectory = Directory("${documentsDir.path}/ditto");
-    await persistenceDirectory.create();
-
-    final ditto = await Ditto.open(
-      identity: identity,
-      persistenceDirectory: persistenceDirectory.path,
-    );
+    final ditto = await Ditto.open(identity: identity);
 
     ditto.updateTransportConfig((config) {
-      if (!kIsWeb) {
-        config.setAllPeerToPeerEnabled(true);
-      }
-      config.connect.webSocketUrls.add(
-        "wss://$appID.cloud.ditto.live",
-      );
+      // Note: this will not enable peer-to-peer sync on the web platform
+      config.setAllPeerToPeerEnabled(true);
     });
 
     ditto.startSync();
@@ -177,11 +161,9 @@ class _DittoExampleState extends State<DittoExample> {
         },
       );
 
-
   Widget _singleTask(Task task) => Dismissible(
         key: Key("${task.id}-${task.title}"),
         onDismissed: (direction) async {
-
           // Use the Soft-Delete pattern
           // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
           await _ditto!.store.execute(
