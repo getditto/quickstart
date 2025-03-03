@@ -14,12 +14,12 @@ class DittoManager: ObservableObject {
                 // This is required to be set to false to use the correct URLs
                 // This only disables cloud sync when the webSocketURL is not set explicitly
                 enableDittoCloudSync: false, 
-                customAuthURL: URL(string: Env.CUSTOM_AUTH_URL)
+                customAuthURL: URL(string: Env.DITTO_CUSTOM_AUTH_URL)
             )
         )
         // Set the Ditto Websocket URL
         var config = DittoTransportConfig()
-        config.connect.webSocketURLs.insert(Env.WEBSOCKET_URL)
+        config.connect.webSocketURLs.insert(Env.DITTO_WEBSOCKET_URL)
 
         // Enable all P2P transports
         config.enableAllPeerToPeer()
