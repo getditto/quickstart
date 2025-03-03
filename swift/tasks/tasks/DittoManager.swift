@@ -7,13 +7,24 @@ class DittoManager: ObservableObject {
     static var shared = DittoManager()
 
     init() {
+        // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
         ditto = Ditto(
             identity: .onlinePlayground(
                 appID: Env.DITTO_APP_ID,
                 token: Env.DITTO_PLAYGROUND_TOKEN,
-                enableDittoCloudSync: true
+                // This is required to be set to false to use the correct URLs
+                // This only disables cloud sync when the webSocketURL is not set explicitly
+                enableDittoCloudSync: false, 
+                customAuthURL: URL(string: Env.DITTO_AUTH_URL)
             )
         )
+        // Set the Ditto Websocket URL
+        var config = DittoTransportConfig()
+        config.connect.webSocketURLs.insert(Env.DITTO_WEBSOCKET_URL)
+
+        // Enable all P2P transports
+        config.enableAllPeerToPeer()
+        ditto.transportConfig = config
 
         // disable sync with v3 peers, required for DQL
         do {

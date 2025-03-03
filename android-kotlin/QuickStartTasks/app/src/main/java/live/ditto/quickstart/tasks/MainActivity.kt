@@ -17,6 +17,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestMissingPermissions() {
+        // requesting permissions at runtime
+        // https://docs.ditto.live/sdk/latest/install-guides/kotlin#requesting-permissions-at-runtime
         val missingPermissions = DittoSyncPermissions(this).missingPermissions()
         if (missingPermissions.isNotEmpty()) {
             this.requestPermissions(missingPermissions, 0)

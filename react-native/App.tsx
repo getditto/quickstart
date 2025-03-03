@@ -17,7 +17,7 @@ import {
   SyncSubscription,
   TransportConfig,
 } from '@dittolive/ditto';
-import {DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN} from '@env';
+import {DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, DITTO_AUTH_URL, DITTO_WEBSOCKET_URL} from '@env';
 
 import Fab from './components/Fab';
 import NewTaskModal from './components/NewTaskModal';
@@ -33,10 +33,13 @@ type Task = {
   deleted: boolean,
 };
 
+// https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
 const identity: IdentityOnlinePlayground = {
   type: 'onlinePlayground',
   appID: DITTO_APP_ID,
   token: DITTO_PLAYGROUND_TOKEN,
+  customAuthURL: DITTO_AUTH_URL,
+  enableDittoCloudSync: false,
 };
 
 async function requestPermissions() {
@@ -63,6 +66,7 @@ const App = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
 
+  // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
   const toggleSync = () => {
     if (syncEnabled) {
       ditto.current?.stopSync();
@@ -72,6 +76,7 @@ const App = () => {
     setSyncEnabled(!syncEnabled);
   };
 
+  // https://docs.ditto.live/sdk/latest/crud/create
   const createTask = async (title: string) => {
     if (title === '') {return;}
     await ditto.current?.store.execute('INSERT INTO tasks DOCUMENTS (:task)', {
@@ -83,6 +88,7 @@ const App = () => {
     });
   };
 
+  // https://docs.ditto.live/sdk/latest/crud/update
   const toggleTask = async (task: Task) => {
     await ditto.current?.store.execute('UPDATE tasks SET done=:done WHERE _id=:id', {
         id: task.id,
@@ -90,6 +96,7 @@ const App = () => {
     });
   };
 
+  // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
   const deleteTask = async (task: Task) => {
     await ditto.current?.store.execute('UPDATE tasks SET deleted=true WHERE _id=:id', {
         id: task.id,
@@ -105,6 +112,8 @@ const App = () => {
 
   const initDitto = async () => {
     try {
+
+      // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
       ditto.current = new Ditto(identity);
 
       // Initialize transport config
@@ -113,6 +122,7 @@ const App = () => {
         transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
         transportsConfig.peerToPeer.lan.isEnabled = true;
         transportsConfig.peerToPeer.lan.isMdnsEnabled = true;
+        transportsConfig.connect.websocketURLs.push(DITTO_WEBSOCKET_URL);
 
         if (Platform.OS === 'ios') {
           transportsConfig.peerToPeer.awdl.isEnabled = true;
@@ -121,9 +131,12 @@ const App = () => {
       }
 
       ditto.current.startSync();
+      
+      // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions 
       taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
       // Subscribe to task updates
+      // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
       taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted', response => {
           const fetchedTasks: Task[] = response.items.map(doc => ({
             id: doc.value._id,
