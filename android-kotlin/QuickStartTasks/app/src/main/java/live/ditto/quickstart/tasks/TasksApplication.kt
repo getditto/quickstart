@@ -70,7 +70,5 @@ class TasksApplication : Application() {
 
         // disable sync with v3 peers, required for syncing with the Ditto Cloud (Big Peer)
         ditto.disableSyncWithV3()
-
-        DittoLogger.minimumLogLevel = DittoLogLevel.DEBUG
     }
 }
