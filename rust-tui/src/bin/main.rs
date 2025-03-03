@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
-use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto};
+use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
@@ -16,6 +16,14 @@ pub struct Cli {
     #[clap(long, env = "DITTO_PLAYGROUND_TOKEN")]
     token: String,
 
+    /// The custom auth URL this app should use for authentication
+    #[clap(long, env = "DITTO_AUTH_URL")]
+    custom_auth_url: String,
+
+    /// The websocket URL this app should use for authentication
+    #[clap(long, env = "DITTO_WEBSOCKET_URL")]
+    websocket_url: String,
+    
     /// Path to write logs on disk
     #[clap(long, default_value = "/tmp/ditto-quickstart.log")]
     log: PathBuf,
@@ -44,7 +52,11 @@ async fn main() -> Result<()> {
     let (terminal, _cleanup) = term::init_crossterm()?;
 
     // Initialize and launch app
-    let ditto = try_init_ditto(cli.app_id, cli.token)?;
+    let ditto = try_init_ditto(
+        cli.app_id, 
+        cli.token, 
+        cli.custom_auth_url, 
+        cli.websocket_url)?;
     let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, ditto)
         .context("failed to start tui task")?;
     tracing::info!(success = true, "Initialized!");
@@ -76,9 +88,13 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn try_init_ditto(app_id: AppId, token: String) -> Result<Ditto> {
-    // We use a temporary directory to store Ditto's local database.  This
-    // means that data will not be persistent between runs of the
+fn try_init_ditto(
+    app_id: AppId, 
+    token: String, 
+    custom_auth_url: String, 
+    websocket_url: String) -> Result<Ditto> {
+    // We use a temporary directory to store Ditto's local database.  
+    // This means that data will not be persistent between runs of the
     // application, but it allows us to run multiple instances of the
     // application concurrently on the same machine.  For a production
     // application, we would want to store the database in a more permanent
@@ -86,9 +102,24 @@ fn try_init_ditto(app_id: AppId, token: String) -> Result<Ditto> {
     // instance has its own persistence directory.
     let ditto = Ditto::builder()
         .with_root(Arc::new(TempRoot::new()))
-        .with_identity(|root| OnlinePlayground::new(root, app_id.clone(), token, true, None))?
+        .with_identity(|root| OnlinePlayground::new(
+            root, 
+            app_id.clone(), 
+            token, 
+            true, 
+            Some(custom_auth_url.as_str())
+        ))?
         .build()?;
+
+    // Set the websocket URL
+    ditto.update_transport_config(|config| {
+        config.connect.websocket_urls.insert(websocket_url);
+    });
+
+    // Disable sync with v3 peers, required for DQL
     _ = ditto.disable_sync_with_v3();
+
+    // Start sync
     _ = ditto.start_sync();
 
     tracing::info!(%app_id, "Started Ditto!");
