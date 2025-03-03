@@ -50,6 +50,14 @@ flutter pub get
 - Navigate to your application and obtain the App ID and Playground Token (see [Sync Credentials](https://docs.ditto.live/get-started/sync-credentials)
  for more details)
 
+Edit the files in `lib/main.dart` with the appID and playground token:
+
+```dart
+const appID = "<replace with your app ID>";
+const token = "<replace with your playground token>";
+```
+
+
 ### 4. Run the Application
 
 #### Run the Application on Android
@@ -76,6 +84,12 @@ Please choose one (or "q" to quit):
 > If you are going to use a physical iPhone, you will need to update the Team under Signing & Capabilities in XCode.  You can open the ios/Runnder.xcodeproj file in XCode and then set your team from the Runner Target -> Singing & Capabilities tab.
 >
 
+- Ensure that cocoapods is up to date
+
+```bash
+gem install cocoapods
+```
+
 - Ensure you have an iOS Simulator running or connect a physical iOS device
  
 Run the following command in the terminal and select the iOS Simulator/Device
@@ -90,7 +104,6 @@ flutter run
 [2]: Mac Designed for iPad (mac-designed-for-ipad)
 Please choose one (or "q" to quit):
 ```
-
 
 ### 5. Sync-Data Offline
 
