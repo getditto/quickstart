@@ -48,7 +48,12 @@ class TasksListScreenViewModel : ViewModel() {
 
             if (enabled && !ditto.isSyncActive) {
                 try {
+                    // starting sync
+                    // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
                     ditto.startSync()
+
+                    // register subscription
+                    // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
                     syncSubscription = ditto.sync.registerSubscription(QUERY)
                 } catch (e: DittoError) {
                     Log.e(TAG, "Unable to start sync", e)
@@ -69,6 +74,8 @@ class TasksListScreenViewModel : ViewModel() {
         viewModelScope.launch {
             populateTasksCollection()
 
+            // register observer for live query
+            // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
             ditto.store.registerObserver(QUERY) { result ->
                 val list = result.items.map { item -> Task.fromJson(item.jsonString()) }
                 tasks.postValue(list)
@@ -92,6 +99,8 @@ class TasksListScreenViewModel : ViewModel() {
 
             tasks.forEach { task ->
                 try {
+                    // Add tasks into the ditto collection using DQL INSERT statement
+                    // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
                     ditto.store.execute(
                         "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
                         mapOf(
@@ -120,6 +129,8 @@ class TasksListScreenViewModel : ViewModel() {
 
                 val done = doc.value["done"] as Boolean
 
+                // Update tasks into the ditto collection using DQL UPDATE statement
+                // https://docs.ditto.live/sdk/latest/crud/update#updating
                 ditto.store.execute(
                     "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
                     mapOf(
@@ -136,6 +147,8 @@ class TasksListScreenViewModel : ViewModel() {
     fun delete(taskId: String) {
         viewModelScope.launch {
             try {
+                // UPDATE DQL Statement using Soft-Delete pattern
+                // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
                 ditto.store.execute(
                     "UPDATE tasks SET deleted = true WHERE _id = :id",
                     mapOf("id" to taskId)

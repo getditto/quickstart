@@ -45,6 +45,8 @@ class EditScreenViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 if (_id == null) {
+                    // Add tasks into the ditto collection using DQL INSERT statement
+                    // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
                     ditto.store.execute(
                         "INSERT INTO tasks DOCUMENTS (:doc)",
                         mapOf(
@@ -56,6 +58,8 @@ class EditScreenViewModel : ViewModel() {
                         )
                     )
                 } else {
+                    // Update tasks into the ditto collection using DQL UPDATE statement
+                    // https://docs.ditto.live/sdk/latest/crud/update#updating
                     _id?.let { id ->
                         ditto.store.execute(
                             """
@@ -81,6 +85,8 @@ class EditScreenViewModel : ViewModel() {
     }
 
     fun delete() {
+        // UPDATE DQL Statement using Soft-Delete pattern
+        // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
         viewModelScope.launch {
             try {
                 _id?.let { id ->
