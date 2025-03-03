@@ -68,7 +68,7 @@ class TasksApplication : Application() {
         transportConfig.enableAllPeerToPeer()
         ditto.transportConfig = transportConfig
 
-        // disable sync with v3 peers, required for DQL
+        // disable sync with v3 peers, required for syncing with the Ditto Cloud (Big Peer)
         ditto.disableSyncWithV3()
 
         DittoLogger.minimumLogLevel = DittoLogLevel.DEBUG
