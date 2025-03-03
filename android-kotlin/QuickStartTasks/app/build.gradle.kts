@@ -47,10 +47,10 @@ androidComponents {
         )
 
         it.buildConfigFields.put(
-            "DITTO_CUSTOM_AUTH_URL",
+            "DITTO_AUTH_URL",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_CUSTOM_AUTH_URL"]}",
+                "${prop["DITTO_AUTH_URL"]}",
                 "Ditto Auth URL"
             )
         )

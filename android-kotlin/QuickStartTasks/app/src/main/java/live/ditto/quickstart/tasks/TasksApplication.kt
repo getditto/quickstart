@@ -35,7 +35,7 @@ class TasksApplication : Application() {
         //read values from build.gradle.kts (Module:app) which reads from environment file
         val appId = BuildConfig.DITTO_APP_ID
         val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
-        val authUrl = BuildConfig.DITTO_CUSTOM_AUTH_URL
+        val authUrl = BuildConfig.DITTO_AUTH_URL
         val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
 
         /*  This is required to be set to false to use the
