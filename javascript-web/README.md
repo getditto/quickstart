@@ -27,10 +27,10 @@ The `.env` file should look like this (with your fields filled in):
 #!/usr/bin/env bash
 
 # Copy this file from ".env.sample" to ".env", then fill in these values
-# A Ditto AppID and Playground token can be obtained from https://portal.ditto.live
+# A Ditto AppID, Playground token, Auth URL, and Websocket URL can be obtained from https://portal.ditto.live
 DITTO_APP_ID=""
 DITTO_PLAYGROUND_TOKEN=""
-DITTO_CUSTOM_AUTH_URL=""
+DITTO_AUTH_URL=""
 DITTO_WEBSOCKET_URL=""
 ```
 

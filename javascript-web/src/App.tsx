@@ -8,7 +8,7 @@ const identity: IdentityOnlinePlayground = {
   type: 'onlinePlayground',
   appID: import.meta.env.DITTO_APP_ID,
   token: import.meta.env.DITTO_PLAYGROUND_TOKEN,
-  customAuthURL: import.meta.env.DITTO_CUSTOM_AUTH_URL,
+  customAuthURL: import.meta.env.DITTO_AUTH_URL,
   enableDittoCloudSync: false,
 };
 

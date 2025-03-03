@@ -43,8 +43,10 @@ public class MainActivity extends ComponentActivity {
 
     private String DITTO_APP_ID = "";
     private String DITTO_PLAYGROUND_TOKEN = "";
-    private String DITTO_CUSTOM_AUTH_URL = "";
+    private String DITTO_AUTH_URL = "";
     private String DITTO_WEBSOCKET_URL = "";
+
+    // This is required to be set to false to use the correct URLs
     private Boolean DITTO_ENABLE_CLOUD_SYNC = false;
 
     @Override
@@ -100,7 +102,7 @@ public class MainActivity extends ComponentActivity {
                             DITTO_APP_ID,
                             DITTO_PLAYGROUND_TOKEN,
                             DITTO_ENABLE_CLOUD_SYNC, // This is required to be set to false to use the correct URLs
-                            DITTO_CUSTOM_AUTH_URL);
+                            DITTO_AUTH_URL);
             ditto = new Ditto(androidDependencies, identity);
 
             // Set the Ditto Websocket URL

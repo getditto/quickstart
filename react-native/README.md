@@ -10,7 +10,7 @@ A sample React Native application that lets you create tasks and sync them with 
 ## Prerequisites
 
 - **Ditto Portal Account**: Ensure you have a Ditto account. Sign up [here](https://portal.ditto.live/signup).
-- **App Credentials**: After registration, create an application within the Ditto Portal to obtain your `appID` and `token`. Visit the [Ditto Portal](https://portal.ditto.live/) to manage your applications.
+- **App Credentials**: After registration, create an application within the Ditto Portal to obtain your `AppID`, `Online Playground Token`, `Auth URL`, and `Websocket URL`. Visit the [Ditto Portal](https://portal.ditto.live/) to manage your applications.
 
 ## Getting Started
 

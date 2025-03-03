@@ -126,9 +126,11 @@ const TodoApp = ({ ditto }) => {
   useEffect(() => {
     // Inline async context
     (async () => {
+      // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
       const subscription = ditto.sync.registerSubscription("SELECT * FROM tasks");
       setSubscription(subscription);
 
+      // https://docs.ditto.live/sdk/latest/crud/observing-data-changes
       const observer = ditto.store.registerObserver("SELECT * FROM tasks WHERE NOT deleted ORDER BY _id", (result) => {
         const tasks = result.items.map(item => item.value);
         setTasks(tasks);
@@ -263,6 +265,7 @@ const TodoApp = ({ ditto }) => {
   }
 };
 
+// https://docs.ditto.live/sdk/latest/crud/update
 const toggleDone = async (ditto, task) => {
   await ditto.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
     id: task._id,
@@ -270,6 +273,7 @@ const toggleDone = async (ditto, task) => {
   });
 }
 
+// https://docs.ditto.live/sdk/latest/crud/create
 const createTask = async (ditto, title) => {
   await ditto.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
     task: {
@@ -280,12 +284,14 @@ const createTask = async (ditto, title) => {
   });
 };
 
+// https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
 const deleteTask = async (ditto, task) => {
   await ditto.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
     id: task._id,
   });
 };
 
+// https://docs.ditto.live/sdk/latest/crud/update
 const updateTask = async (ditto, id, title) => {
   await ditto.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
     id: id,

@@ -27,7 +27,7 @@ To obtain your Ditto identity and configure the quickstart apps with it, follow 
 1. Copy the `.env.sample` file to `.env`.
    - in a terminal: `cp .env.sample .env`.
    - in a macOS Finder window, press `⇧⌘.` (SHIFT+CMD+period) to show hidden files.
-1. Save your app ID and online playground token in the `.env` file.
+1. Save your App ID, Online Playground Token, Auth URL, and WebSocket URL in the `.env` file.
 
 Please see the app-specific README files for details on the tools necessary to
 build and run them.
