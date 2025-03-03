@@ -28,8 +28,10 @@ The `.env` file should look like this (with your fields filled in):
 
 # Copy this file from ".env.sample" to ".env", then fill in these values
 # A Ditto AppID and Playground token can be obtained from https://portal.ditto.live
-export DITTO_APP_ID=""
-export DITTO_PLAYGROUND_TOKEN=""
+DITTO_APP_ID=""
+DITTO_PLAYGROUND_TOKEN=""
+DITTO_CUSTOM_AUTH_URL=""
+DITTO_WEBSOCKET_URL=""
 ```
 
 Next, run the quickstart app with the following command:
