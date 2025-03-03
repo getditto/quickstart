@@ -52,6 +52,30 @@ yarn react-native run-android
 
 - Limitation: React Native's Fast Refresh must be disabled and it's something we're working on fixing.
 
+
+## iOS Installation
+ If you encounter an issue with iOS installing pod files, check your terminal to make sure your environment is set up correctly.
+For example:
+```bash
+❯ pod install
+
+[!] Invalid `Podfile` file: cannot load such file -- /Users/xxxx/Developer/ditto/quickstart/react-native/node_modules/react-native/scripts/react_native_pods.rb
+Debugger listening on ws://127.0.0.1:59620/xxxxx-xxxx-xxxx-xxxx-xxxxxxxxx
+For help, see: https://nodejs.org/en/docs/inspector
+Debugger attached.
+Waiting for the debugger to disconnect....
+
+ #  from /Users/xxxx/Developer/ditto/quickstart/react-native/ios/Podfile:2
+ #  -------------------------------------------
+ #  # Resolve react_native_pods.rb with node to allow for hoisting
+ >  require Pod::Executable.execute_command('node', ['-p',
+ #    'require.resolve(
+ #  -------------------------------------------
+``` 
+
+This error is usually an issue with the terminal setup.  If you are using the terminal in your IDE, we suggest you use the terminal app that comes with iOS to see if this is an issue with your terminal setup.
+
+
 ### Troubleshooting
 
 Should you encounter any issues, please refer to the [Ditto documentation](https://docs.ditto.live/) or check the FAQs on the Ditto Portal.
