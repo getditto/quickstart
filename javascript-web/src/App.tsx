@@ -57,6 +57,7 @@ const App = () => {
         config.connect.websocketURLs.push(import.meta.env.DITTO_WEBSOCKET_URL);
         ditto.current?.setTransportConfig(config)
 
+        // Disable sync with v3 peers, required for syncing with the Ditto Cloud (BigPeer)
         await ditto.current.disableSyncWithV3();
         ditto.current.startSync();
 
