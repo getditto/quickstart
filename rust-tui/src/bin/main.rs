@@ -106,7 +106,7 @@ fn try_init_ditto(
             root, 
             app_id.clone(), 
             token, 
-            true, 
+            false, // This is required to be set to false to use the correct URLs
             Some(custom_auth_url.as_str())
         ))?
         .build()?;
