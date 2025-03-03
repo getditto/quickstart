@@ -31,6 +31,7 @@ import live.ditto.DittoStoreObserver;
 import live.ditto.DittoSyncSubscription;
 import live.ditto.android.DefaultAndroidDittoDependencies;
 import live.ditto.transports.DittoSyncPermissions;
+import live.ditto.transports.DittoTransportConfig;
 
 public class MainActivity extends ComponentActivity {
     private TaskAdapter taskAdapter;
@@ -42,6 +43,9 @@ public class MainActivity extends ComponentActivity {
 
     private String DITTO_APP_ID = "";
     private String DITTO_PLAYGROUND_TOKEN = "";
+    private String DITTO_CUSTOM_AUTH_URL = "";
+    private String DITTO_WEBSOCKET_URL = "";
+    private Boolean DITTO_ENABLE_CLOUD_SYNC = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -86,11 +90,36 @@ public class MainActivity extends ComponentActivity {
 
         try {
             DittoDependencies androidDependencies = new DefaultAndroidDittoDependencies(getApplicationContext());
-            var identity = new DittoIdentity.OnlinePlayground(androidDependencies, DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN);
+            /*
+             *  Setup Ditto Identity
+             *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
+             */
+            var identity = new DittoIdentity
+                    .OnlinePlayground(
+                            androidDependencies,
+                            DITTO_APP_ID,
+                            DITTO_PLAYGROUND_TOKEN,
+                            DITTO_ENABLE_CLOUD_SYNC, // This is required to be set to false to use the correct URLs
+                            DITTO_CUSTOM_AUTH_URL);
             ditto = new Ditto(androidDependencies, identity);
+
+            // Set the Ditto Websocket URL
+            DittoTransportConfig config = new DittoTransportConfig();
+            config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
+
+            // Enable all P2P transports
+            config.enableAllPeerToPeer();
+            ditto.setTransportConfig(config);
+
+            // disable sync with v3 peers, required for DQL
             ditto.disableSyncWithV3();
 
+            // register subscription
+            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
             taskSubscription = ditto.sync.registerSubscription("SELECT * FROM tasks");
+
+            // register observer for live query
+            // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
             taskObserver = ditto.store.registerObserver("SELECT * FROM tasks WHERE deleted=false ORDER BY _id", null, result -> {
                 var tasks = result.getItems().stream().map(Task::fromQueryItem).collect(Collectors.toCollection(ArrayList::new));
                 runOnUiThread(() -> {
@@ -106,6 +135,7 @@ public class MainActivity extends ComponentActivity {
     }
 
     // Request permissions for Ditto
+    // https://docs.ditto.live/sdk/latest/install-guides/java#requesting-permissions-at-runtime
     void requestPermissions() {
         DittoSyncPermissions permissions = new DittoSyncPermissions(this);
         String[] missing = permissions.missingPermissions(permissions.requiredPermissions());
@@ -123,6 +153,9 @@ public class MainActivity extends ComponentActivity {
         HashMap<String, Object> args = new HashMap<>();
         args.put("task", task);
         try {
+
+            // Add tasks into the ditto collection using DQL INSERT statement
+            // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
             ditto.store.execute("INSERT INTO tasks DOCUMENTS (:task)", args);
         } catch (DittoError e) {
             e.printStackTrace();
@@ -135,6 +168,8 @@ public class MainActivity extends ComponentActivity {
         args.put("title", newTitle);
 
         try {
+            // Update tasks into the ditto collection using DQL UPDATE statement
+            // https://docs.ditto.live/sdk/latest/crud/update#updating
             ditto.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", args);
         } catch (DittoError e) {
             e.printStackTrace();
@@ -147,6 +182,8 @@ public class MainActivity extends ComponentActivity {
         args.put("done", !task.isDone());
 
         try {
+            // Update tasks into the ditto collection using DQL UPDATE statement
+            // https://docs.ditto.live/sdk/latest/crud/update#updating
             ditto.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", args);
         } catch (DittoError e) {
             e.printStackTrace();
@@ -157,6 +194,8 @@ public class MainActivity extends ComponentActivity {
         HashMap<String, Object> args = new HashMap<>();
         args.put("id", task.getId());
         try {
+            // UPDATE DQL Statement using Soft-Delete pattern
+            // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
             ditto.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", args);
         } catch (DittoError e) {
             e.printStackTrace();
@@ -171,6 +210,9 @@ public class MainActivity extends ComponentActivity {
         boolean isSyncActive = ditto.isSyncActive();
         var nextColor = isSyncActive ? null : ColorStateList.valueOf(0xFFBB86FC);
         var nextText = isSyncActive ? "Sync Inactive" : "Sync Active";
+
+        // implement Ditto Sync
+        // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
         try {
             if (isSyncActive) {
                 ditto.stopSync();

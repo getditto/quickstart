@@ -16,7 +16,8 @@ In `app/src/main/java/com/example/dittotasks/MainActivity.java`, find the follow
 ```java
 private String DITTO_APP_ID = "";
 private String DITTO_PLAYGROUND_TOKEN = "";
+private String DITTO_CUSTOM_AUTH_URL = "";
+private String DITTO_WEBSOCKET_URL = "";
 ```
 
-Paste your own AppID and Playground Token into these variables, then click the Run button in
-Android Studio to launch the app in an emulator.
+Paste your own AppID, Playground Token, Auth URL, and Websocket URL into these variables, then click the Run button in Android Studio to launch the app in an emulator.
