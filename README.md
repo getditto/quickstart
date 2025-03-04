@@ -3,7 +3,7 @@
 This repo contains apps that demonstrate how to use the Ditto SDK for supported
 programming languages and platforms.
 
-See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts)
+See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts/quickstarts-landing)
 documentation for more information.
 
 For support, please contact Ditto Support (<support@ditto.live>).
