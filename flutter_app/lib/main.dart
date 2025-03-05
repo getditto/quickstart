@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path/path.dart' as p;
 
-const appID = "<replace with your app ID>";
-const token = "<replace with your playground token>";
+const appID = "caf9e870-d416-4b1c-9ab4-fb6e8319dd25";
+const token = "cb639c76-5633-44dd-ad28-03a5a43f092e";
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
@@ -18,6 +22,21 @@ class DittoExample extends StatefulWidget {
 
   @override
   State<DittoExample> createState() => _DittoExampleState();
+}
+
+List<String> paths(String path) {
+  if (FileSystemEntity.isFileSync(path)) {
+    return [path];
+  }
+
+  if (FileSystemEntity.isDirectorySync(path)) {
+    return Directory(path)
+        .listSync()
+        .expand((entity) => paths(entity.path))
+        .toList();
+  }
+
+  throw "no links :(";
 }
 
 class _DittoExampleState extends State<DittoExample> {
@@ -52,12 +71,41 @@ class _DittoExampleState extends State<DittoExample> {
 
     await Ditto.init();
 
+    DittoLogger.isEnabled = false;
+
     final identity = OnlinePlaygroundIdentity(
       appID: appID,
       token: token,
     );
 
-    final ditto = await Ditto.open(identity: identity);
+    final docsDir = await getApplicationDocumentsDirectory();
+    final dir = "${docsDir.path}/ditto";
+    Directory(dir).createSync();
+
+    final lockfiles = [
+      "__ditto_lock_file",
+      "ditto_replication/__ditto_store_lock_file",
+      "ditto_attachments/__ditto_store_lock_file",
+      "ditto_auth/__ditto_store_lock_file",
+    ];
+
+    for (final path in lockfiles) {
+      try {
+        await File("$dir/$path").delete();
+      } catch (e) {
+        print("FAILED TO REMOVE LOCK");
+        print(e);
+      }
+    }
+
+    for (final path in paths(dir)) {
+      if (path.contains("lock")) {
+        print("path: $path");
+      }
+    }
+
+    final ditto =
+        await Ditto.open(identity: identity, persistenceDirectory: dir);
 
     ditto.updateTransportConfig((config) {
       // Note: this will not enable peer-to-peer sync on the web platform
