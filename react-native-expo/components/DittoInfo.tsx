@@ -1,10 +1,10 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 type Props = {
-  appId: string;
-  token: string;
-};
+  appId: string,
+  token: string,
+}
 
 const DittoInfo: React.FC<Props> = ({ appId, token }) => {
   return (
@@ -24,12 +24,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    textAlign: "center",
-    fontWeight: "bold",
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   info: {
     paddingTop: 10,
-    textAlign: "center",
+    textAlign: 'center',
   },
 });
 

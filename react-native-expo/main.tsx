@@ -1,5 +1,5 @@
 import { registerRootComponent } from "expo";
-import App from "../react-native/App";
+import App from "./App";
 
 function Main() {
   return <App />;
