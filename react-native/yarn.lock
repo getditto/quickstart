@@ -1550,14 +1550,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dittolive/ditto@npm:4.10.0-rc.2":
-  version: 4.10.0-rc.2
-  resolution: "@dittolive/ditto@npm:4.10.0-rc.2"
+"@dittolive/ditto@npm:4.10.0-rc.3":
+  version: 4.10.0-rc.3
+  resolution: "@dittolive/ditto@npm:4.10.0-rc.3"
   dependencies:
     "@expo/config-plugins": ^9.0.11
     cbor-redux: ^1.0.0
     expo-build-properties: ^0.13.1
-  checksum: ca85e785c8d3fa3ba671b3980d8fa78ca52ba35c757d30f7a11dcd7950b90c917951bf6645d9496bafec754839c73543b871595c4eb742de3b616f591592893b
+  checksum: f01a0759f0a20fdc89ecd60726a765503c465e89dfe6b65bea06390aead262c8ef2d281d897b86f43e59a91d89e84acdc05cbe360b0afa4406a9936ba616ee2f
   languageName: node
   linkType: hard
 
@@ -1604,8 +1604,8 @@ __metadata:
   linkType: hard
 
 "@expo/config-plugins@npm:^9.0.11":
-  version: 9.0.16
-  resolution: "@expo/config-plugins@npm:9.0.16"
+  version: 9.0.17
+  resolution: "@expo/config-plugins@npm:9.0.17"
   dependencies:
     "@expo/config-types": ^52.0.5
     "@expo/json-file": ~9.0.2
@@ -1621,7 +1621,7 @@ __metadata:
     slugify: ^1.6.6
     xcode: ^3.0.1
     xml2js: 0.6.0
-  checksum: 717a8868c9a3a718c21461a1679897da5cc6bf97ff0b4b361fed3f453004bad97ac29ba7bd1e24614b04f103af950fb7014bddb23f74e19e7364b0a75591f3c6
+  checksum: 5f415a3f4b399024d904d5c6e7b807d52f0efb6eddd217e458fa7d26d04b882f45462aa525ee8e49d404aecfc508e2a829ebd168f9a3b949a215a33699b0b92f
   languageName: node
   linkType: hard
 
@@ -2959,7 +2959,7 @@ __metadata:
     "@babel/core": ^7.20.0
     "@babel/preset-env": ^7.20.0
     "@babel/runtime": ^7.20.0
-    "@dittolive/ditto": 4.10.0-rc.2
+    "@dittolive/ditto": 4.10.0-rc.3
     "@react-native/babel-preset": 0.75.3
     "@react-native/eslint-config": 0.75.3
     "@react-native/metro-config": 0.75.3

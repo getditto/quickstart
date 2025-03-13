@@ -54,6 +54,7 @@ async function requestPermissions() {
 }
 
 const App = () => {
+  const collection = 'newsyncscope';
   const ditto = useRef<Ditto | null>(null);
   const taskSubscription = useRef<SyncSubscription | null>(null);
   const taskObserver = useRef<StoreObserver | null>(null);
@@ -73,34 +74,48 @@ const App = () => {
   };
 
   const createTask = async (title: string) => {
-    if (title === '') {return;}
-    await ditto.current?.store.execute('INSERT INTO tasks DOCUMENTS (:task)', {
-      task: {
-        title,
-        done: false,
-        deleted: false,
+    if (title === '') {
+      return;
+    }
+    await ditto.current?.store.execute(
+      `INSERT INTO newsynccoll2 DOCUMENTS (:task)`,
+      {
+        task: {
+          title,
+          done: false,
+          deleted: false,
+        },
       },
-    });
+    );
   };
 
   const toggleTask = async (task: Task) => {
-    await ditto.current?.store.execute('UPDATE tasks SET done=:done WHERE _id=:id', {
+    await ditto.current?.store.execute(
+      `UPDATE newsynccoll2 SET done=:done WHERE _id=:id`,
+      {
         id: task.id,
         done: !task.done,
-    });
+      },
+    );
   };
 
   const deleteTask = async (task: Task) => {
-    await ditto.current?.store.execute('UPDATE tasks SET deleted=true WHERE _id=:id', {
+    await ditto.current?.store.execute(
+      `UPDATE newsynccoll2 SET deleted=true WHERE _id=:id`,
+      {
         id: task.id,
-    });
+      },
+    );
   };
 
   const updateTaskTitle = async (taskId: string, newTitle: string) => {
-    await ditto.current?.store.execute('UPDATE tasks SET title=:title WHERE _id=:id', {
+    await ditto.current?.store.execute(
+      `UPDATE newsynccoll2 SET title=:title WHERE _id=:id`,
+      {
         id: taskId,
         title: newTitle,
-    });
+      },
+    );
   };
 
   const initDitto = async () => {
@@ -120,11 +135,26 @@ const App = () => {
         ditto.current.setTransportConfig(transportsConfig);
       }
 
+      Logger.minimumLogLevel = 'Debug';
+
       ditto.current.startSync();
-      taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
+
+      taskSubscription.current = ditto.current.sync.registerSubscription(
+        `SELECT * FROM newsynccoll2`,
+      );
+
+      await ditto.current.store.execute(
+        "ALTER SYSTEM SET USER_COLLECTION_SYNC_SCOPES TO { \
+        'cars': 'AllPeers', \
+        'testdb': 'AllPeers', \
+        'newsynccoll2': 'SmallPeersOnly', \
+        'localonlydb': 'LocalPeerOnly'}",
+      );
 
       // Subscribe to task updates
-      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted', response => {
+      taskObserver.current = ditto.current.store.registerObserver(
+        `SELECT * FROM newsynccoll2 WHERE NOT deleted`,
+        response => {
           const fetchedTasks: Task[] = response.items.map(doc => ({
             id: doc.value._id,
             title: doc.value.title as string,
@@ -133,7 +163,8 @@ const App = () => {
           }));
 
           setTasks(fetchedTasks);
-      });
+        },
+      );
     } catch (error) {
       console.error('Error syncing tasks:', error);
     }
@@ -157,14 +188,15 @@ const App = () => {
   const renderItem = ({item}: {item: Task}) => (
     <View key={item.id} style={styles.taskContainer}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
-      <Text
-        style={styles.taskTitle}
-        onLongPress={() => setEditingTask(item)}
-      >
+      <Text style={styles.taskTitle} onLongPress={() => setEditingTask(item)}>
         {item.title}
       </Text>
       <View style={styles.taskButton}>
-        <Button title="Delete" color="#DC2626" onPress={() => deleteTask(item)} />
+        <Button
+          title="Delete"
+          color="#DC2626"
+          onPress={() => deleteTask(item)}
+        />
       </View>
     </View>
   );
@@ -177,7 +209,7 @@ const App = () => {
       <NewTaskModal
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
-        onSubmit={(task) => {
+        onSubmit={task => {
           createTask(task);
           setModalVisible(false);
         }}
@@ -197,7 +229,7 @@ const App = () => {
         contentContainerStyle={styles.listContainer}
         data={tasks}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
       />
     </SafeAreaView>
   );
