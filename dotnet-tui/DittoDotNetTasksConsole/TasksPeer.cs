@@ -28,9 +28,12 @@ public class TasksPeer : IDisposable
     /// Creates a new synchronizing TasksPeer instance.
     /// </summary>
     public static async Task<TasksPeer> Create(
-        string appId, string playgroundToken, string authUrl)
+        string appId, 
+        string playgroundToken, 
+        string authUrl, 
+        string websocketUrl)
     {
-        var peer = new TasksPeer(appId, playgroundToken, authUrl);
+        var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
 
         await peer.InsertInitialTasks();
 
@@ -44,8 +47,9 @@ public class TasksPeer : IDisposable
     /// </summary>
     /// <param name="appId">Ditto application ID</param>
     /// <param name="playgroundToken">Ditto online playground token</param>
-    /// <param name="authUrl">Ditto Cloud URL Endpoint</param>
-    public TasksPeer(string appId, string playgroundToken, string authUrl)
+    /// <param name="authUrl">Ditto Auth URL</param>
+    /// <param name="websocketUrl">Ditto Websocket URL</param>
+    public TasksPeer(string appId, string playgroundToken, string authUrl, string websocketUrl)
     {
         AppId = appId;
         PlaygroundToken = playgroundToken;
@@ -69,6 +73,13 @@ public class TasksPeer : IDisposable
             authUrl);
 
         ditto = new Ditto(identity, tempDir);
+        
+        // Optionally enable all P2P transports if using P2P Sync
+        // Do not call this if only using Ditto Cloud Sync
+        ditto.TransportConfig.EnableAllPeerToPeer();
+        
+        // Add the websocket URL to the transport configuration.
+        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
 
         // This is necessary to support DQL.
         ditto.DisableSyncWithV3();

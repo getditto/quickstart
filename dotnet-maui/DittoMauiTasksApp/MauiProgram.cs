@@ -12,8 +12,6 @@ public static class MauiProgram
 {
     public static string AppId { get; private set; } = "";
     public static string PlaygroundToken { get; private set; } = "";
-    
-    public static string AuthUrl { get; private set; } = "";
 
     public static MauiApp CreateMauiApp()
     {
@@ -43,10 +41,18 @@ public static class MauiProgram
         var envVars = LoadEnvVariables();
         AppId = envVars["DITTO_APP_ID"];
         PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"];
-        AuthUrl = envVars["DITTO_AUTH_URL"];
+        var authUrl = envVars["DITTO_AUTH_URL"];
+        var websocketUrl = envVars["DITTO_WEBSOCKET_URL"];
         
         var ditto = new Ditto(DittoIdentity.OnlinePlayground(
-            AppId, PlaygroundToken, false, AuthUrl));
+            AppId, PlaygroundToken, false, authUrl));
+        
+        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
+        // Optionally enable all P2P transports if using P2P Sync
+        // Do not call this if only using Ditto Cloud Sync
+        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
+        
+        //required 
         ditto.DisableSyncWithV3();
 
         return ditto;
