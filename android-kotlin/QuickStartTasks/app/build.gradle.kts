@@ -138,5 +138,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Ditto SDK
-    implementation("live.ditto:ditto:4.8.2")
+    implementation("live.ditto:ditto:4.10.0")
 }
