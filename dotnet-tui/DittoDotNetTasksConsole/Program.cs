@@ -17,8 +17,9 @@ public static class Program
             var env = LoadEnvVariables();
             var appId = env["DITTO_APP_ID"];
             var playgroundToken = env["DITTO_PLAYGROUND_TOKEN"];
+            var authUrl = env["DITTO_AUTH_URL"];
 
-            using var peer = await TasksPeer.Create(appId, playgroundToken);
+            using var peer = await TasksPeer.Create(appId, playgroundToken, authUrl);
 
             // Disable Ditto's standard-error logging, which would interfere
             // with the the Terminal.Gui UI.

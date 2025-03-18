@@ -16,7 +16,7 @@ public class TasksPeer : IDisposable
 
     public string AppId { get; private set; }
     public string PlaygroundToken { get; private set; }
-
+    
     public bool IsSyncActive
     {
         get => ditto.IsSyncActive;
@@ -28,9 +28,9 @@ public class TasksPeer : IDisposable
     /// Creates a new synchronizing TasksPeer instance.
     /// </summary>
     public static async Task<TasksPeer> Create(
-        string appId, string playgroundToken)
+        string appId, string playgroundToken, string authUrl)
     {
-        var peer = new TasksPeer(appId, playgroundToken);
+        var peer = new TasksPeer(appId, playgroundToken, authUrl);
 
         await peer.InsertInitialTasks();
 
@@ -44,7 +44,8 @@ public class TasksPeer : IDisposable
     /// </summary>
     /// <param name="appId">Ditto application ID</param>
     /// <param name="playgroundToken">Ditto online playground token</param>
-    public TasksPeer(string appId, string playgroundToken)
+    /// <param name="authUrl">Ditto Cloud URL Endpoint</param>
+    public TasksPeer(string appId, string playgroundToken, string authUrl)
     {
         AppId = appId;
         PlaygroundToken = playgroundToken;
@@ -61,7 +62,11 @@ public class TasksPeer : IDisposable
             "DittoDotNetTasksConsole-" + Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
 
-        var identity = DittoIdentity.OnlinePlayground(appId, playgroundToken, true);
+        var identity = DittoIdentity.OnlinePlayground(
+            appId, 
+            playgroundToken, 
+            false, 
+            authUrl);
 
         ditto = new Ditto(identity, tempDir);
 
