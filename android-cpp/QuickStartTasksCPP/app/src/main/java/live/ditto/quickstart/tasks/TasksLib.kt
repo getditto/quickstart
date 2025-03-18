@@ -28,7 +28,9 @@ object TasksLib {
         appId: String,
         token: String,
         persistenceDir: String,
-        isRunningOnEmulator: Boolean
+        isRunningOnEmulator: Boolean,
+        customAuthUrl: String,
+        websocketUrl: String
     )
 
     // Terminate the Ditto client.

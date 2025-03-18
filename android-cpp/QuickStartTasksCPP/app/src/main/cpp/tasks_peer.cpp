@@ -33,24 +33,36 @@ vector<string> tasks_json_from(const ditto::QueryResult &result) {
 }
 
 /// Initialize a Ditto instance.
-unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env, jobject context, string app_id,
+unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
+                                    jobject context,
+                                    string app_id,
                                     string online_playground_token,
                                     bool enable_cloud_sync,
                                     string persistence_dir,
-                                    bool is_running_on_emulator) {
+                                    bool is_running_on_emulator,
+                                    string custom_url,
+                                    const string& websocket_url) {
   try {
+
+    // TODO UPDATE TO USE CUSTOM URL AND WEBSOCKET
+    // Docs:  https://docs.ditto.live/sdk/latest/install-guides/cpp#importing-and-initializing-ditto
+
     const auto identity = ditto::Identity::OnlinePlayground(
-        std::move(app_id), std::move(online_playground_token),
-        enable_cloud_sync);
+        std::move(app_id),
+        std::move(online_playground_token),
+        enable_cloud_sync,
+        std::move(custom_url)
+        );
 
     auto ditto =
         make_unique<ditto::Ditto>(identity, std::move(persistence_dir));
 
     if (is_running_on_emulator) {
       // Some transports don't work correctly on emulator, so disable them.
-      ditto->update_transport_config([](ditto::TransportConfig &config) {
+      ditto->update_transport_config([websocket_url](ditto::TransportConfig &config) {
         config.peer_to_peer.bluetooth_le.enabled = false;
         config.peer_to_peer.wifi_aware.enabled = false;
+        config.connect.websocket_urls.insert(websocket_url);
       });
     }
 
@@ -75,13 +87,27 @@ private:
   shared_ptr<ditto::SyncSubscription> tasks_subscription;
 
 public:
-  Impl(JNIEnv *env, jobject context, string app_id, string online_playground_token,
+  Impl(JNIEnv *env,
+       jobject context,
+       string app_id,
+       string online_playground_token,
        bool enable_cloud_sync,
        string persistence_dir,
-       bool is_running_on_emulator)
+       bool is_running_on_emulator,
+       string custom_auth_url,
+       string websocket_url)
       : mtx(new mutex()),
-        ditto(init_ditto(env, context, std::move(app_id), std::move(online_playground_token),
-                         enable_cloud_sync, std::move(persistence_dir), is_running_on_emulator)) {}
+        ditto(init_ditto(
+                env,
+                context,
+                std::move(app_id),
+                std::move(online_playground_token),
+                enable_cloud_sync,
+                std::move(persistence_dir),
+                is_running_on_emulator,
+                std::move(custom_auth_url),
+                std::move(websocket_url)
+                )) {}
 
   ~Impl() noexcept {
     try {
@@ -291,10 +317,11 @@ public:
 }; // class TasksPeer::Impl
 
 TasksPeer::TasksPeer(JNIEnv *env, jobject context, string app_id, string online_playground_token,
-                     bool enable_cloud_sync, string persistence_dir, bool is_running_on_emulator)
+                     bool enable_cloud_sync, string persistence_dir, bool is_running_on_emulator,
+                     string custom_auth_url, string websocket_url)
     : impl(make_unique<Impl>(env, context, std::move(app_id), std::move(online_playground_token),
                              enable_cloud_sync, std::move(persistence_dir),
-                             is_running_on_emulator)) {}
+                             is_running_on_emulator, std::move(custom_auth_url), std::move(websocket_url))) {}
 
 TasksPeer::~TasksPeer() noexcept {
   try {

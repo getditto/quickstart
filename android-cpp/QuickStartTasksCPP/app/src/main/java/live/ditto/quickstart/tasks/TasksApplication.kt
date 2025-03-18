@@ -75,6 +75,8 @@ class TasksApplication : Application() {
     private fun setupDitto() {
         val appId = BuildConfig.DITTO_APP_ID
         val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
+        val authUrl = BuildConfig.DITTO_AUTH_URL
+        val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
 
         try {
             val appContext = applicationContext()
@@ -87,7 +89,9 @@ class TasksApplication : Application() {
                 appId,
                 token,
                 persistenceDir.path,
-                isProbablyRunningOnEmulator
+                isProbablyRunningOnEmulator,
+                authUrl,
+                webSocketURL
             )
             TasksLib.startSync()
         } catch (e: Exception) {
