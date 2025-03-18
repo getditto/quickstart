@@ -119,14 +119,8 @@ const App = () => {
       // Initialize transport config
       {
         const transportsConfig = new TransportConfig();
-        transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
-        transportsConfig.peerToPeer.lan.isEnabled = true;
-        transportsConfig.peerToPeer.lan.isMdnsEnabled = true;
+        transportsConfig.setAllPeerToPeerEnabled(true);
         transportsConfig.connect.websocketURLs.push(DITTO_WEBSOCKET_URL);
-
-        if (Platform.OS === 'ios') {
-          transportsConfig.peerToPeer.awdl.isEnabled = true;
-        }
         ditto.current.setTransportConfig(transportsConfig);
       }
 
