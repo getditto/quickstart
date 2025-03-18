@@ -14,7 +14,7 @@ path = "src/bin/main.rs"
 
 [dependencies]
 # Ditto dependenceis
-dittolive-ditto = "4.9.0-rc.1"
+dittolive-ditto = "4.10.0"
 
 # External dependencies
 anyhow = "1"

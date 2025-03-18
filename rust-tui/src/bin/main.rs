@@ -111,8 +111,9 @@ fn try_init_ditto(
         ))?
         .build()?;
 
-    // Set the websocket URL
     ditto.update_transport_config(|config| {
+        config.enable_all_peer_to_peer();
+        //set websocket url
         config.connect.websocket_urls.insert(websocket_url);
     });
 
