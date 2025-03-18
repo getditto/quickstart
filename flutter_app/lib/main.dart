@@ -6,10 +6,10 @@ import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = "a5b00eeb-401e-4eb2-81b2-a390c83ae322";
-const token = "352e4c12-422a-4ce1-9824-c41894f079c6";
-const websocketUrl = "wss://mongo-connector-preview-1.ditto.dittolive.app";
-const authUrl = "https://mongo-connector-preview-1.ditto.dittolive.app";
+const appID = "<put your Ditto Portal AppId here>";
+const token = "<put your Ditto Portal Playground Token here>";
+const websocketUrl = "<put your Ditto Portal Websocket URL here>";
+const authUrl = "<put your Ditto Portal Auth URL here>";
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
