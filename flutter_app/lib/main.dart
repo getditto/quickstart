@@ -6,8 +6,10 @@ import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = "<replace with your app ID>";
-const token = "<replace with your playground token>";
+const appID = "a5b00eeb-401e-4eb2-81b2-a390c83ae322";
+const token = "352e4c12-422a-4ce1-9824-c41894f079c6";
+const websocketUrl = "wss://mongo-connector-preview-1.ditto.dittolive.app";
+const authUrl = "https://mongo-connector-preview-1.ditto.dittolive.app";
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
@@ -53,15 +55,17 @@ class _DittoExampleState extends State<DittoExample> {
     await Ditto.init();
 
     final identity = OnlinePlaygroundIdentity(
-      appID: appID,
-      token: token,
-    );
+        appID: appID,
+        token: token,
+        enableDittoCloudSync: false,
+        customAuthUrl: authUrl);
 
     final ditto = await Ditto.open(identity: identity);
 
     ditto.updateTransportConfig((config) {
       // Note: this will not enable peer-to-peer sync on the web platform
       config.setAllPeerToPeerEnabled(true);
+      config.connect.webSocketUrls.add(websocketUrl);
     });
 
     ditto.startSync();
