@@ -47,15 +47,24 @@ static string to_json_string(const ditto::QueryResult &result) {
 /// Initialize a Ditto instance.
 static shared_ptr<ditto::Ditto> init_ditto(string app_id,
                                            string online_playground_token,
+                                           string websocket_url,
+                                           string auth_url,
                                            bool enable_cloud_sync,
                                            string persistence_dir) {
   try {
     const auto identity = ditto::Identity::OnlinePlayground(
-        std::move(app_id), std::move(online_playground_token),
-        enable_cloud_sync);
+        std::move(app_id), 
+        std::move(online_playground_token),
+        enable_cloud_sync,
+        std::move(auth_url));
 
     auto ditto =
         std::make_shared<ditto::Ditto>(identity, std::move(persistence_dir));
+
+    ditto->update_transport_config([websocket_url](ditto::TransportConfig &config) {
+      config.enable_all_peer_to_peer();
+      config.connect.websocket_urls.insert(websocket_url);
+    });
 
     // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
@@ -82,11 +91,22 @@ private:
   }
 
 public:
-  Impl(string app_id, string online_playground_token, bool enable_cloud_sync,
-       string persistence_dir)
+  Impl(
+    string app_id, 
+    string online_playground_token, 
+    string websocket_url,
+    string auth_url,
+    bool enable_cloud_sync,
+    string persistence_dir)
       : mtx(new mutex()),
-        ditto(init_ditto(std::move(app_id), std::move(online_playground_token),
-                         enable_cloud_sync, std::move(persistence_dir))) {}
+        ditto(
+          init_ditto(
+            std::move(app_id), 
+            std::move(online_playground_token),
+            std::move(websocket_url), 
+            std::move(auth_url),
+            enable_cloud_sync, 
+            std::move(persistence_dir))) {}
 
   ~Impl() noexcept {
     try {
@@ -374,10 +394,20 @@ public:
   }
 }; // class TasksPeer::Impl
 
-TasksPeer::TasksPeer(string app_id, string online_playground_token,
-                     bool enable_cloud_sync, string persistence_dir)
-    : impl(new Impl(std::move(app_id), std::move(online_playground_token),
-                    enable_cloud_sync, std::move(persistence_dir))) {}
+TasksPeer::TasksPeer(
+  string app_id, 
+  string online_playground_token,
+  string websocket_url,
+  string auth_url,
+  bool enable_cloud_sync, 
+  string persistence_dir)
+    : impl(new Impl(
+      std::move(app_id), 
+      std::move(online_playground_token),
+      std::move(websocket_url),
+      std::move(auth_url),
+      enable_cloud_sync, 
+      std::move(persistence_dir))) {}
 
 TasksPeer::~TasksPeer() noexcept {
   try {

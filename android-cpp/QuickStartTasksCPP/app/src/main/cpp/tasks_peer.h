@@ -26,7 +26,7 @@ public:
             std::string ditto_persistence_dir,
             bool is_running_on_emulator,
             std::string ditto_custom_auth_url,
-            std::string ditto_websocket_url);
+            const std::string& ditto_websocket_url);
 
   virtual ~TasksPeer() noexcept;
 
