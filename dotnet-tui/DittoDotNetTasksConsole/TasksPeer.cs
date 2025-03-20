@@ -69,7 +69,7 @@ public class TasksPeer : IDisposable
         var identity = DittoIdentity.OnlinePlayground(
             appId, 
             playgroundToken, 
-            false, 
+            false, // This is required to be set to false to use the correct URLs
             authUrl);
 
         ditto = new Ditto(identity, tempDir);
