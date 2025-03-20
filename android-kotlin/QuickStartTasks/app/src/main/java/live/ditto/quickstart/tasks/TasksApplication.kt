@@ -38,13 +38,7 @@ class TasksApplication : Application() {
         val authUrl = BuildConfig.DITTO_AUTH_URL
         val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
 
-        /*  This is required to be set to false to use the
-         * correct URLs.  
-         * /
-         * This only disables cloud sync when the 
-         * webSocketURL is not set explicitly
-        */
-        val enableDittoCloudSync = false 
+        val enableDittoCloudSync = false
 
         /*
          *  Setup Ditto Identity
