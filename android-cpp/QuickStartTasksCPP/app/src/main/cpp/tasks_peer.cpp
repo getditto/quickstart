@@ -60,6 +60,12 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
     if (is_running_on_emulator) {
       // Some transports don't work correctly on emulator, so disable them.
       ditto->update_transport_config([websocket_url](ditto::TransportConfig &config) {
+          config.peer_to_peer.bluetooth_le.enabled = false;
+          config.peer_to_peer.wifi_aware.enabled = false;
+          config.connect.websocket_urls.insert(websocket_url);
+      });
+    } else {
+      ditto->update_transport_config([websocket_url](ditto::TransportConfig &config) {
           config.enable_all_peer_to_peer();
           config.connect.websocket_urls.insert(websocket_url);
       });
