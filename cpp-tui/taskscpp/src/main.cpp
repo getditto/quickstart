@@ -94,6 +94,10 @@ int main(int argc, const char *argv[]) {
         cxxopts::value<string>(), "APP_ID")
       ("online-playground-token", "Ditto Online Playground token",
         cxxopts::value<string>(), "TOKEN")
+      ("websocket-url", "Ditto WebSocket URL",
+        cxxopts::value<string>(), "WEBSOCKET_URL")
+      ("auth-url", "Ditto Auth URL",
+        cxxopts::value<string>(), "AUTH_URL")
       ("enable-cloud-sync", "Enable cloud synchronization");
 
     options.add_options("Logging")
