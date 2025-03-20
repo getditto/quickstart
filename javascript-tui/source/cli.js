@@ -61,13 +61,15 @@ console.log("Using appId", appID, " and token ", token, " and authURL ", authURL
 // https://docs.ditto.live/sdk/latest/install-guides/nodejs#installing-the-demo-task-app
 const ditto = new Ditto({
   type: "onlinePlayground",
-  appID,
-  token,
-  authURL,
+  appID: appID,
+  token: token,
+  customAuthURL: authURL,
+  enableDittoCloudSync: false
 }, tempdir);
 
 const transportConfig = new TransportConfig();
 transportConfig.connect.websocketURLs.push(websocketURL);
+transportConfig.setAllPeerToPeerEnabled(true);
 ditto.setTransportConfig(transportConfig);
 
 await ditto.disableSyncWithV3();

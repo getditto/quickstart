@@ -33,4 +33,3 @@ npm start 2>/dev/null
 
 > NOTE: the `2>/dev/null` silences log output on stderr, because the logs
   interfere with the TUI rendering
-
