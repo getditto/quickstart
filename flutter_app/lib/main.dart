@@ -57,7 +57,8 @@ class _DittoExampleState extends State<DittoExample> {
     final identity = OnlinePlaygroundIdentity(
         appID: appID,
         token: token,
-        enableDittoCloudSync: false,
+        enableDittoCloudSync:
+            false, // This is required to be set to false to use the correct URLs
         customAuthUrl: authUrl);
 
     final ditto = await Ditto.open(identity: identity);

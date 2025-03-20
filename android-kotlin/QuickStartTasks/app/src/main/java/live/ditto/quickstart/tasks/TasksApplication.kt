@@ -55,7 +55,7 @@ class TasksApplication : Application() {
             appId = appId,
             token = token,
             customAuthUrl = authUrl,
-            enableDittoCloudSync = enableDittoCloudSync
+            enableDittoCloudSync = enableDittoCloudSync // This is required to be set to false to use the correct URLs
         )
 
         ditto = Ditto(androidDependencies, identity)

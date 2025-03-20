@@ -44,8 +44,12 @@ public static class MauiProgram
         var authUrl = envVars["DITTO_AUTH_URL"];
         var websocketUrl = envVars["DITTO_WEBSOCKET_URL"];
         
-        var ditto = new Ditto(DittoIdentity.OnlinePlayground(
-            AppId, PlaygroundToken, false, authUrl));
+        var ditto = new Ditto(DittoIdentity
+        .OnlinePlayground(
+            AppId, 
+            PlaygroundToken, 
+            false,  // This is required to be set to false to use the correct URLs
+            authUrl));
         
         ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
         // Optionally enable all P2P transports if using P2P Sync

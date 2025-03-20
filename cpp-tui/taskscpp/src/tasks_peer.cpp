@@ -105,7 +105,7 @@ public:
             std::move(online_playground_token),
             std::move(websocket_url), 
             std::move(auth_url),
-            enable_cloud_sync, 
+            enable_cloud_sync,    // This is required to be set to false to use the correct URLs
             std::move(persistence_dir))) {}
 
   ~Impl() noexcept {

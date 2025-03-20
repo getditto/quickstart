@@ -50,7 +50,7 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
     const auto identity = ditto::Identity::OnlinePlayground(
         std::move(app_id),
         std::move(online_playground_token),
-        enable_cloud_sync,
+        enable_cloud_sync,                  // This is required to be set to false to use the correct URLs
         std::move(custom_url)
         );
 
