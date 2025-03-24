@@ -91,12 +91,6 @@ public class DittoService implements DisposableBean {
 
                     peerToPeer.wifiAware().isEnabled(true);
                 })
-                .listen(listen -> {
-                    listen.tcp()
-                            .isEnabled(true)
-                            .interfaceIp(environment.getRequiredProperty(DittoConfigurationKeys.TRANSPORT_TCP_BASE_ADDRESS))
-                            .port(Integer.parseInt(environment.getRequiredProperty(DittoConfigurationKeys.TRANSPORT_TCP_PORT)));
-                })
                 .connect(connect -> {
                     if (configurationName.equals("online")) {
                         connect.addWebsocketUrls(environment.getRequiredProperty(DittoEnvironmentConfiguration.DITTO_WEBSOCKET_URL));
