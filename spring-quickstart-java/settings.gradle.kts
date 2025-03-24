@@ -3,5 +3,3 @@ plugins {
 }
 
 rootProject.name = "spring-quickstart-java"
-
-//includeBuild("../..")
