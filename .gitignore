@@ -34,3 +34,4 @@ bazel-*
 build-cmake
 node_modules/
 .dart_tool/
+secret.properties
