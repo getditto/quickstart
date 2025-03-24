@@ -38,11 +38,39 @@ fun loadEnvProperties(): Properties {
 dependencies {
     implementation("live.ditto:ditto-java:4.11.0-dev")
 
+    // This will include binaries for all the supported platforms and architectures
+    implementation("live.ditto:ditto-binaries:4.11.0-dev")
+    
+    // To reduce your module artifact's size, only include the necessary platforms and architectures
+    /*
+    // macOS Apple Silicon
 	implementation("live.ditto:ditto-binaries:4.11.0-dev") {
 		capabilities {
-			requireFeature("macos-arm64")
+			requireCapability("live.ditto:ditto-binaries-macos-arm64")
 		}
 	}
+	
+	// macOS Intel
+	implementation("live.ditto:ditto-binaries:4.11.0-dev") {
+		capabilities {
+			requireCapability("live.ditto:ditto-binaries-macos-x64")
+		}
+	}
+	
+	// Windows x86_64
+	implementation("live.ditto:ditto-binaries:4.11.0-dev") {
+		capabilities {
+			requireCapability("live.ditto:ditto-binaries-windows-x64")
+		}
+	}
+	
+	// Linux x86_64
+	implementation("live.ditto:ditto-binaries:4.11.0-dev") {
+		capabilities {
+			requireCapability("live.ditto:ditto-binaries-linux-x64")
+		}
+	}
+	*/
 
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
