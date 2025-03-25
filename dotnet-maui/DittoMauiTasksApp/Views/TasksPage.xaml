@@ -9,7 +9,8 @@
                      Command="{Binding AddTaskCommand}"/>
     </ContentPage.ToolbarItems>
 
-    <StackLayout>
+    <Grid
+        RowDefinitions="Auto, *">
         <VerticalStackLayout
             Margin="16, 5">
             <HorizontalStackLayout
@@ -30,54 +31,62 @@
                 FontSize="Micro"/>
         </VerticalStackLayout>
 
-        <ListView
-            x:Name="listView"
+        <CollectionView
+            x:Name="collectionView"
+            Grid.Row="1"
             ItemsSource="{Binding Tasks}"
-            SelectionMode="None"
-            CachingStrategy="RecycleElementAndDataTemplate">
-            <ListView.ItemTemplate>
+            SelectionMode="None">
+            <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <ViewCell>
-                        <ViewCell.ContextActions>
-                            <MenuItem
-                                Text="Delete"
-                                Command="{Binding Source={x:Reference listView}, Path=BindingContext.DeleteTaskCommand}"
-                                CommandParameter="{Binding}"
-                                IsDestructive="True"/>
-                            <MenuItem
-                                Text="Edit"
-                                Command="{Binding Source={x:Reference listView}, Path=BindingContext.EditTaskCommand}"
-                                CommandParameter="{Binding}"/>
-                        </ViewCell.ContextActions>
+                    <SwipeView>
+                        <SwipeView.RightItems>
+                            <SwipeItems>
+                                <SwipeItem
+                                    Text="Delete"
+                                    BackgroundColor="Red"
+                                    Command="{Binding Source={x:Reference collectionView}, Path=BindingContext.DeleteTaskCommand}"
+                                    CommandParameter="{Binding}" />
+                                <SwipeItem
+                                    Text="Edit"
+                                    BackgroundColor="Orange"
+                                    Command="{Binding Source={x:Reference collectionView}, Path=BindingContext.EditTaskCommand}"
+                                    CommandParameter="{Binding}" />
+                            </SwipeItems>
+                        </SwipeView.RightItems>
+
                         <Grid
-                            Margin="16, 5"
+                            Margin="16,5"
                             ColumnDefinitions="*, Auto">
                             <Label
                                 VerticalOptions="Center"
                                 Text="{Binding Title}">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label"
-                                                 Binding="{Binding Done}"
-                                                 Value="True">
-                                        <Setter Property="TextDecorations"
-                                                Value="Strikethrough"/>
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Label"
-                                                 Binding="{Binding Done}"
-                                                 Value="False">
-                                        <Setter Property="TextDecorations"
-                                                Value="None"/>
-                                    </DataTrigger>
-                                </Label.Triggers>
+                                <Label.Style>
+                                    <Style TargetType="Label">
+                                        <Setter Property="TextDecorations" Value="None" />
+                                        <Style.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding Done}"
+                                                         Value="True">
+                                                <Setter Property="TextDecorations" Value="Strikethrough" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Label.Style>
                             </Label>
-                            <CheckBox
-                                HorizontalOptions="End"
-                                IsChecked="{Binding Done}"
-                                CheckedChanged="OnCheckBoxCheckedChanged"/>
+                            <Grid Grid.Column="1"
+                                  Padding="8"
+                                  HorizontalOptions="End"
+                                  VerticalOptions="Center">
+                                <CheckBox
+                                    WidthRequest="32"
+                                    HeightRequest="32"
+                                    IsChecked="{Binding Done}"
+                                    CheckedChanged="OnCheckBoxCheckedChanged" />
+                            </Grid>
                         </Grid>
-                    </ViewCell>
+                    </SwipeView>
                 </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-    </StackLayout>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
 </ContentPage>
