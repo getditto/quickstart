@@ -1,13 +1,14 @@
 package com.ditto.example.spring.quickstart.service;
 
 import com.ditto.example.spring.quickstart.configuration.DittoConfigurationKeys;
-import com.ditto.example.spring.quickstart.configuration.DittoEnvironmentConfiguration;
+import com.ditto.example.spring.quickstart.configuration.DittoSecretsConfiguration;
 import com.ditto.java.*;
 import com.ditto.java.transports.DittoTransportConfig;
 import jakarta.annotation.Nonnull;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 @Component
-@PropertySource("classpath:secret.properties")
 public class DittoService implements DisposableBean {
     private static final String DITTO_SYNC_STATE_COLLECTION = "spring_sync_state";
     private static final String DITTO_SYNC_STATE_ID = "sync_state";
@@ -38,82 +38,60 @@ public class DittoService implements DisposableBean {
     @Nonnull
     private final Sinks.Many<Boolean> mutableSyncStatePublisher = Sinks.many().replay().latestOrDefault(false);
 
+    private final Logger logger = LoggerFactory.getLogger(DittoService.class);
+
     DittoService(@Nonnull final Environment environment) {
-        File dittoDir = new File(environment.getRequiredProperty(DittoConfigurationKeys.DITTO_DIR));
-
-        dittoDir.mkdirs();
-
-        DittoDependencies dependencies = new DefaultDittoDependencies(dittoDir);
-
-        String configurationName = environment.getRequiredProperty(DittoConfigurationKeys.CONFIGURATION).toLowerCase();
-        DittoIdentity identity = switch (configurationName) {
-            case "online" ->
-                new DittoIdentity.OnlinePlayground(
-                        environment.getRequiredProperty(DittoEnvironmentConfiguration.DITTO_APP_ID),
-                        environment.getRequiredProperty(DittoEnvironmentConfiguration.DITTO_PLAYGROUND_TOKEN),
-                        true,
-                        environment.getRequiredProperty(DittoEnvironmentConfiguration.DITTO_AUTH_URL)
-                );
-            case "offline" ->
-                new DittoIdentity.OfflinePlayground(
-                        environment.getRequiredProperty(DittoEnvironmentConfiguration.DITTO_APP_ID)
-                );
-            default ->
-                throw new IllegalArgumentException("%s requires to be set to 'online' or 'offline'".formatted(DittoConfigurationKeys.CONFIGURATION));
-        };
-
-        this.ditto = new Ditto.Builder(dependencies)
-                .setIdentity(identity)
-                .build();
-
-        if (configurationName.equals("offline")) {
-            try {
-                this.ditto.setOfflineOnlyLicenseToken(
-                        environment.getRequiredProperty(DittoConfigurationKeys.IDENTITY_OFFLINE_LICENSE_KEY)
-                );
-            } catch (DittoError e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        this.ditto.setDeviceName("Spring Java");
         try {
+            File dittoDir = new File(environment.getRequiredProperty(DittoConfigurationKeys.DITTO_DIR));
+            dittoDir.mkdirs();
+
+            DittoDependencies dependencies = new DefaultDittoDependencies(dittoDir);
+
+            /*
+             *  Setup Ditto Identity
+             *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
+             */
+            DittoIdentity identity = new DittoIdentity.OnlinePlayground(
+                    DittoSecretsConfiguration.DITTO_APP_ID,
+                    DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
+                    // This is required to be set to false to use the correct URLs
+                    false,
+                    DittoSecretsConfiguration.DITTO_AUTH_URL
+            );
+
+            this.ditto = new Ditto.Builder(dependencies)
+                    .setIdentity(identity)
+                    .build();
+
+            this.ditto.setDeviceName("Spring Java");
+
+            // disable sync with v3 peers, required for DQL
             this.ditto.disableSyncWithV3();
+
+            DittoTransportConfig transportConfig = new DittoTransportConfig.Builder()
+                    .connect(connect -> {
+                        // Set the Ditto Websocket URL
+                        connect.addWebsocketUrls(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
+                    })
+                    .build();
+
+            logger.info("Transport config: {}", transportConfig);
+
+            this.ditto.setTransportConfig(
+                    transportConfig
+            );
+
+            presenceObserver = observePeersPresence();
+
+            syncStateObserver = setupAndObserveSyncState();
         } catch (DittoError e) {
             throw new RuntimeException(e);
         }
-
-        DittoTransportConfig transportConfig = new DittoTransportConfig.Builder()
-                .peerToPeer(peerToPeer -> {
-                    peerToPeer.bluetoothLe().isEnabled(true);
-
-                    peerToPeer.lan().isEnabled(true);
-
-                    peerToPeer.wifiAware().isEnabled(true);
-                })
-                .connect(connect -> {
-                    if (configurationName.equals("online")) {
-                        connect.addWebsocketUrls(environment.getRequiredProperty(DittoEnvironmentConfiguration.DITTO_WEBSOCKET_URL));
-                    } else {
-                        connect.setWebsocketUrls();
-                    }
-                })
-                .build();
-
-        System.out.printf("Transport config: %s%n", transportConfig);
-
-        this.ditto.setTransportConfig(
-                transportConfig
-        );
-
-        presenceObserver = observePeersPresence();
-
-        syncStateObserver = setupAndObserveSyncState();
     }
 
     @Override
     public void destroy() throws Exception {
-        System.out.println("Ditto is being closed");
+        logger.info("Ditto is being closed");
 
         presenceObserver.close();
         syncStateObserver.close();
@@ -140,11 +118,11 @@ public class DittoService implements DisposableBean {
 
     private DittoPresenceObserver observePeersPresence() {
         return ditto.getPresence().observe((graph) -> {
-            System.out.printf("Peers connected: %d%n", graph.getRemotePeers().size());
+            logger.info("Peers connected: {}", graph.getRemotePeers().size());
             for (DittoPeer peer : graph.getRemotePeers()) {
-                System.out.printf("Peer: %s%n", peer.getDeviceName());
+                logger.info("Peer: {}", peer.getDeviceName());
                 for (DittoConnection connection : peer.getConnections()) {
-                    System.out.printf("\t- %s %s %s%n", connection.getId(), connection.getConnectionType(), connection.getApproximateDistanceInMeters());
+                    logger.info("\t- {} {} {}", connection.getId(), connection.getConnectionType(), connection.getApproximateDistanceInMeters());
                 }
             }
         });
