@@ -13,7 +13,10 @@
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
 2. Copy the `.env.template` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
-3. Synchronize your project with the Gradle file by clicking File > Sync Project with Gradle Files
+3. Synchronize your project with the Gradle file by clicking Build > Sync Project with Gradle Files.
+4. Open a terminal and run the following command to launch the app:
+   - `./gradlew bootRun`
+5. Open http://localhost:8080 in a browser to interact with the app.
 
 ## Additional Resources
 
