@@ -16,28 +16,28 @@ dependencies {
     // To reduce your module artifact's size, consider including just the necessary platforms and architectures
     /*
     // macOS Apple Silicon
-    implementation("live.ditto:ditto-binaries:4.11.0-dev") {
+    implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
         capabilities {
             requireCapability("live.ditto:ditto-binaries-macos-arm64")
         }
     }
-    
+
     // macOS Intel
-    implementation("live.ditto:ditto-binaries:4.11.0-dev") {
+    implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
         capabilities {
             requireCapability("live.ditto:ditto-binaries-macos-x64")
         }
     }
-    
+
     // Windows x86_64
-    implementation("live.ditto:ditto-binaries:4.11.0-dev") {
+    implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
         capabilities {
             requireCapability("live.ditto:ditto-binaries-windows-x64")
         }
     }
-    
+
     // Linux x86_64
-    implementation("live.ditto:ditto-binaries:4.11.0-dev") {
+    implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
         capabilities {
             requireCapability("live.ditto:ditto-binaries-linux-x64")
         }
