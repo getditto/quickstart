@@ -9,10 +9,6 @@ plugins {
 group = "live.ditto.example.spring"
 version = "0.0.1-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
-
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
