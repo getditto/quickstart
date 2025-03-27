@@ -86,8 +86,8 @@ public class DittoTaskService {
 
         return Flux.create(emitter -> {
             Ditto ditto = dittoService.getDitto();
-            DittoSyncSubscription subscription = ditto.getSync().registerSubscription(selectQuery);
             try {
+                DittoSyncSubscription subscription = ditto.getSync().registerSubscription(selectQuery);
                 DittoStoreObserver observer = ditto.getStore().registerObserver(selectQuery, results -> {
                     emitter.next(results.getItems().stream().map(this::itemToTask).toList());
                 });
