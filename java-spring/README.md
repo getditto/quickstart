@@ -1,13 +1,8 @@
 # Ditto Java Server Quickstart App 🚀
 
-## Dependencies
+## Prerequisites
 
-- Java Development Kit (JDK) version 17
-- One of the following platforms and architectures:
-  - Windows x86_64
-  - MacOS arm64 (Apple Silicon) or x86_64 (Intel)
-  - Linux x86_64
-
+For more information, see - [Java Install Guide](https://docs.ditto.live/sdk/latest/install-guides/java/server)
 
 ## Getting Started
 
