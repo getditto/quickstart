@@ -1,5 +1,7 @@
 use anyhow::Context;
 use anyhow::Result;
+use chrono::DateTime;
+use chrono::Local;
 use crossterm::event::Event;
 use dittolive_ditto::store::StoreObserver;
 use dittolive_ditto::sync::SyncSubscription;
@@ -19,6 +21,8 @@ use uuid::Uuid;
 use crate::key;
 
 use super::EventResult;
+
+const DATE_FORMAT: &str = "%d-%m-%Y %H:%M";
 
 pub struct Todolist {
     /// Our handle to the Ditto peer, used to create observers and subscriptions
@@ -49,17 +53,98 @@ pub struct Todolist {
     /// the title being typed by the user.
     pub create_task_title: Option<String>,
 
+    /// Input buffers for the "new todo" dialog
+    ///
+    /// Index 0 is the title buffer, index 1 is the due date buffer
+    pub create_input_buffers: [String; 2],
+
     /// Holds the contents of an existing TODO title to be edited
     pub edit_task: Option<(String, String)>, // (ID, title)
+}
+
+#[derive(Debug)]
+enum CreateEventTab {
+    Title,
+    DueDate,
+}
+
+impl CreateEventTab {
+    fn flip(&self) -> Self {
+        match self {
+            Self::Title => Self::DueDate,
+            Self::DueDate => Self::Title,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct InputBuffers {
+    title: String,
+    due_date: String,
+}
+
+impl Default for InputBuffers {
+    fn default() -> Self {
+        Self {
+            title: String::new(),
+            due_date: String::new(),
+        }
+    }
+}
+
+impl InputBuffers {
+    fn new(title: String, due_date: Option<DueDate>) -> Self {
+        Self {
+            title,
+            due_date: due_date
+                .map(|date| date.format(DATE_FORMAT).to_string())
+                .unwrap_or(String::new()),
+        }
+    }
+
+    fn clear(&mut self) {
+        self.title.clear();
+        self.due_date.clear();
+    }
+
+    fn push_title(&mut self, ch: char) {
+        self.title.push(ch);
+    }
+
+    fn push_date(&mut self, ch: char) {
+        self.due_date.push(ch);
+    }
+
+    fn read_title(&self) -> String {
+        self.title.to_string()
+    }
+
+    fn read_date(&self) -> Option<DueDate> {
+        self.due_date.parse().ok()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.title.is_empty() || self.due_date.is_empty()
+    }
 }
 
 /// Mode enum used to decide how to interpret keystrokes
 #[derive(Debug)]
 pub enum TodoMode {
     Normal,
-    CreateTask { buffer: String },
-    EditTask { id: String, buffer: String },
+    CreateTask {
+        buffer: InputBuffers,
+        tab: CreateEventTab,
+    },
+    EditTask {
+        id: String,
+        buffer: InputBuffers,
+        tab: CreateEventTab,
+    },
 }
+
+// Type alias for date time with local timezone conversion
+type DueDate = DateTime<Local>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodoItem {
@@ -68,15 +153,17 @@ pub struct TodoItem {
     title: String,
     done: bool,
     deleted: bool,
+    due_date: Option<DueDate>,
 }
 
 impl TodoItem {
-    pub fn new(title: String) -> Self {
+    pub fn new(title: String, due_date: Option<DueDate>) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
             title,
             done: false,
             deleted: false,
+            due_date,
         }
     }
 }
@@ -108,6 +195,7 @@ impl Todolist {
             tasks_subscription,
             mode: TodoMode::Normal,
             create_task_title: None,
+            create_input_buffers: Default::default(),
             edit_task: None,
         })
     }
@@ -122,7 +210,7 @@ impl Todolist {
     fn render_todo_table(&mut self, area: Rect, buf: &mut Buffer) {
         let tasks = self.tasks_rx.borrow().clone();
 
-        let header = ["Done".bold(), "Title".bold()]
+        let header = ["Done".bold(), "Title".bold(), "Due".bold()]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>();
@@ -132,10 +220,11 @@ impl Todolist {
                 let done = doc.done;
                 let done = if done { " ✅ " } else { " ☐ " };
                 let title = &doc.title;
-
+                let due_date = format_due_date(doc.due_date);
                 [
                     Cell::from(Text::from(done.to_string())),
                     Cell::from(Text::raw(title)),
+                    Cell::from(Text::raw(due_date)),
                 ]
                 .into_iter()
                 .collect::<Row>()
@@ -151,7 +240,7 @@ impl Todolist {
             .into_iter()
             .collect::<Line>();
 
-        let table = Table::new(rows, Constraint::from_percentages([30, 70]))
+        let table = Table::new(rows, Constraint::from_percentages([30, 70, 10]))
             .header(header)
             .highlight_symbol("❯❯ ")
             .row_highlight_style(Style::new().bold().blue())
@@ -167,8 +256,8 @@ impl Todolist {
 
     /// Render "new todo" prompt if `create_task_title` is "Some"
     fn render_new_todo_prompt(&self, area: Rect, buf: &mut Buffer) {
-        let title = match &self.mode {
-            TodoMode::CreateTask { buffer } => buffer,
+        let buffer = match &self.mode {
+            TodoMode::CreateTask { buffer, .. } => buffer,
             TodoMode::EditTask { buffer, .. } => buffer,
             _ => {
                 return;
@@ -184,7 +273,7 @@ impl Todolist {
             .padding(Padding::uniform(1))
             .render(space, buf);
         let space = space.inner(Margin::new(2, 2));
-        Line::raw(title).render(space, buf);
+        Line::raw(buffer.read_title()).render(space, buf);
     }
 
     /// Apply a terminal event to update the todolist state
@@ -193,7 +282,8 @@ impl Todolist {
             // Normal:c -> Goto create mode
             (TodoMode::Normal, key!(Char('c'))) => {
                 self.mode = TodoMode::CreateTask {
-                    buffer: String::new(),
+                    buffer: InputBuffers::default(),
+                    tab: CreateEventTab::Title,
                 };
             }
             // Normal:d -> Delete task
@@ -214,7 +304,8 @@ impl Todolist {
                     .context("failed to get todo from list")?;
                 self.mode = TodoMode::EditTask {
                     id: item.id.to_string(),
-                    buffer: item.title.to_string(),
+                    buffer: InputBuffers::new(item.title, item.due_date),
+                    tab: CreateEventTab::Title,
                 };
             }
             (TodoMode::Normal, key!(Char('s'))) => {
@@ -237,40 +328,48 @@ impl Todolist {
                 self.try_toggle_done().await?;
             }
             // Create task typing
-            (TodoMode::CreateTask { buffer }, key!(Char(ch))) => {
-                buffer.push(*ch);
-            }
+            (TodoMode::CreateTask { buffer, tab }, key!(Char(ch))) => match tab {
+                CreateEventTab::Title => buffer.push_title(*ch),
+                CreateEventTab::DueDate => buffer.push_date(*ch),
+            },
             // Submit create task
-            (TodoMode::CreateTask { buffer }, key!(Enter)) => {
+            (TodoMode::CreateTask { buffer, .. }, key!(Enter)) => {
                 if !buffer.is_empty() {
-                    let title = std::mem::take(buffer);
-                    self.try_create_new_todo(title).await?;
+                    let title = buffer.read_title();
+                    let due_date = buffer.read_date();
+                    self.try_create_new_todo(title, due_date).await?;
                     self.mode = TodoMode::Normal;
                 }
             }
             // Submit edit task
-            (TodoMode::EditTask { id, buffer }, key!(Enter)) => {
+            (TodoMode::EditTask { id, buffer, .. }, key!(Enter)) => {
                 if !buffer.is_empty() {
-                    let title = std::mem::take(buffer);
+                    let title = buffer.read_title();
                     let id = id.clone();
-                    self.try_edit_todo(&id, &title).await?;
+                    let due_date = buffer.read_date();
+                    self.try_edit_todo(&id, &title, due_date).await?;
                     self.mode = TodoMode::Normal;
                 }
             }
             // Edit task typing
-            (TodoMode::EditTask { buffer, .. }, key!(Char(ch))) => {
-                buffer.push(*ch);
-            }
+            (TodoMode::EditTask { buffer, tab, .. }, key!(Char(ch))) => match tab {
+                CreateEventTab::Title => buffer.push_title(*ch),
+                CreateEventTab::DueDate => buffer.push_date(*ch),
+            },
             // Backspace
             (
-                TodoMode::CreateTask { buffer } | TodoMode::EditTask { buffer, .. },
+                TodoMode::CreateTask { buffer, tab, .. } | TodoMode::EditTask { buffer, tab, .. },
                 key!(Backspace),
-            ) => {
-                if buffer.is_empty() {
-                    self.mode = TodoMode::Normal;
-                } else {
-                    buffer.pop();
+            ) => match tab {
+                CreateEventTab::Title => {
+                    buffer.title.pop();
                 }
+                CreateEventTab::DueDate => {
+                    buffer.due_date.pop();
+                }
+            },
+            (TodoMode::CreateTask { tab, .. } | TodoMode::EditTask { tab, .. }, key!(Tab)) => {
+                *tab = tab.flip();
             }
             _ => {
                 return Ok(EventResult::Ignored);
@@ -353,8 +452,12 @@ impl Todolist {
     }
 
     /// Create a new task todo with the given title
-    pub async fn try_create_new_todo(&mut self, title: String) -> Result<()> {
-        let task = TodoItem::new(title);
+    pub async fn try_create_new_todo(
+        &mut self,
+        title: String,
+        due_date: Option<DueDate>,
+    ) -> Result<()> {
+        let task = TodoItem::new(title, due_date);
         self.ditto
             .store()
             .execute(
@@ -366,15 +469,25 @@ impl Todolist {
     }
 
     /// Set the title of the task with the given ID
-    pub async fn try_edit_todo(&mut self, id: &str, title: &str) -> Result<()> {
+    pub async fn try_edit_todo(
+        &mut self,
+        id: &str,
+        title: &str,
+        due_date: Option<DueDate>,
+    ) -> Result<()> {
         self.ditto
             .store()
             .execute(
-                "UPDATE tasks SET title=:title WHERE _id=:id",
-                Some(serde_json::json!({ "title": title, "id": id }).into()),
+                "UPDATE tasks SET title=:title, due_date=:due_date WHERE _id=:id",
+                Some(serde_json::json!({ "title": title, "due_date": due_date, "id": id }).into()),
             )
             .await?;
 
         Ok(())
     }
+}
+
+fn format_due_date(date: Option<DueDate>) -> String {
+    date.map(|date| date.format("%d-%m-%Y %H:%M").to_string())
+        .unwrap_or_else(|| "N/A".to_string())
 }
