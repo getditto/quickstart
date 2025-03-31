@@ -49,7 +49,7 @@ public static class MauiProgram
             AppId, 
             PlaygroundToken, 
             false,  // This is required to be set to false to use the correct URLs
-            authUrl));
+            authUrl), Path.Combine(FileSystem.Current.AppDataDirectory, "ditto"));
         
         ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
         // Optionally enable all P2P transports if using P2P Sync
