@@ -2,6 +2,8 @@ use anyhow::Context;
 use anyhow::Result;
 use chrono::DateTime;
 use chrono::Local;
+use chrono::NaiveDateTime;
+use chrono::NaiveTime;
 use crossterm::event::Event;
 use dittolive_ditto::store::StoreObserver;
 use dittolive_ditto::sync::SyncSubscription;
@@ -63,7 +65,7 @@ pub struct Todolist {
 }
 
 #[derive(Debug)]
-enum CreateEventTab {
+pub enum CreateEventTab {
     Title,
     DueDate,
 }
@@ -78,7 +80,7 @@ impl CreateEventTab {
 }
 
 #[derive(Debug)]
-struct InputBuffers {
+pub struct InputBuffers {
     title: String,
     due_date: String,
 }
@@ -102,11 +104,6 @@ impl InputBuffers {
         }
     }
 
-    fn clear(&mut self) {
-        self.title.clear();
-        self.due_date.clear();
-    }
-
     fn push_title(&mut self, ch: char) {
         self.title.push(ch);
     }
@@ -119,8 +116,15 @@ impl InputBuffers {
         self.title.to_string()
     }
 
-    fn read_date(&self) -> Option<DueDate> {
-        self.due_date.parse().ok()
+    fn read_date(&self) -> Option<DateTime<Local>> {
+        NaiveDateTime::parse_from_str(&self.due_date, DATE_FORMAT)
+            .ok()
+            .map(|naive| to_datetime(naive))
+            .flatten()
+    }
+
+    fn read_date_raw(&self) -> String {
+        self.due_date.to_string()
     }
 
     fn is_empty(&self) -> bool {
@@ -240,7 +244,7 @@ impl Todolist {
             .into_iter()
             .collect::<Line>();
 
-        let table = Table::new(rows, Constraint::from_percentages([30, 70, 10]))
+        let table = Table::new(rows, Constraint::from_percentages([20, 60, 20]))
             .header(header)
             .highlight_symbol("❯❯ ")
             .row_highlight_style(Style::new().bold().blue())
@@ -264,16 +268,30 @@ impl Todolist {
             }
         };
 
-        let space = area.inner(Margin::new(2, 2));
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(80), Constraint::Percentage(30)].as_ref())
+            .split(area);
+
+        let space = layout[0].inner(Margin::new(2, 2));
         Clear.render(space, buf);
         Block::bordered()
             .border_type(BorderType::Rounded)
             .title(" New Todo ")
+            .render(space, buf);
+        let space = space.inner(Margin::new(2, 2));
+        Line::raw(buffer.read_title()).render(space, buf);
+
+        let space = layout[1].inner(Margin::new(2, 2));
+        Clear.render(space, buf);
+        Block::bordered()
+            .border_type(BorderType::Rounded)
+            .title(" Due Date ")
             .title_bottom(" (Esc: back) ")
             .padding(Padding::uniform(1))
             .render(space, buf);
         let space = space.inner(Margin::new(2, 2));
-        Line::raw(buffer.read_title()).render(space, buf);
+        Line::raw(buffer.read_date_raw()).render(space, buf);
     }
 
     /// Apply a terminal event to update the todolist state
@@ -490,4 +508,8 @@ impl Todolist {
 fn format_due_date(date: Option<DueDate>) -> String {
     date.map(|date| date.format("%d-%m-%Y %H:%M").to_string())
         .unwrap_or_else(|| "N/A".to_string())
+}
+
+fn to_datetime(date: NaiveDateTime) -> Option<DateTime<Local>> {
+    date.and_local_timezone(Local).earliest()
 }
