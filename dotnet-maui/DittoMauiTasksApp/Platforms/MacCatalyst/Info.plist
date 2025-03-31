@@ -26,5 +26,15 @@
         </array>
         <key>XSAppIconAssets</key>
         <string>Assets.xcassets/appicon.appiconset</string>
+        <key>NSBluetoothAlwaysUsageDescription</key>
+        <string>Uses Bluetooth to connect and sync with nearby devices</string>
+        <key>NSBluetoothPeripheralUsageDescription</key>
+        <string>Uses Bluetooth to connect and sync with nearby devices</string>
+        <key>NSLocalNetworkUsageDescription</key>
+        <string>Uses WiFi to connect and sync with nearby devices</string>
+        <key>NSBonjourServices</key>
+        <array>
+            <string>_http-alt._tcp.</string>
+        </array>
     </dict>
 </plist>
