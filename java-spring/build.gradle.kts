@@ -22,13 +22,6 @@ dependencies {
         }
     }
 
-    // macOS Intel
-    implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
-        capabilities {
-            requireCapability("live.ditto:ditto-binaries-macos-x64")
-        }
-    }
-
     // Windows x86_64
     implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
         capabilities {
