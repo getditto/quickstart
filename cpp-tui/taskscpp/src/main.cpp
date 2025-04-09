@@ -94,6 +94,10 @@ int main(int argc, const char *argv[]) {
         cxxopts::value<string>(), "APP_ID")
       ("online-playground-token", "Ditto Online Playground token",
         cxxopts::value<string>(), "TOKEN")
+      ("websocket-url", "Ditto WebSocket URL",
+        cxxopts::value<string>(), "WEBSOCKET_URL")
+      ("auth-url", "Ditto Auth URL",
+        cxxopts::value<string>(), "AUTH_URL")
       ("enable-cloud-sync", "Enable cloud synchronization");
 
     options.add_options("Logging")
@@ -187,6 +191,15 @@ int main(int argc, const char *argv[]) {
         opt_parse.count("online-playground-token") > 0
             ? opt_parse["online-playground-token"].as<string>()
             : DITTO_PLAYGROUND_TOKEN;
+    const auto websocket_url =
+        opt_parse.count("websocket-url") > 0
+            ? opt_parse["websocket-url"].as<string>()
+            : DITTO_WEBSOCKET_URL;
+    const auto auth_url =
+        opt_parse.count("auth-url") > 0
+            ? opt_parse["auth-url"].as<string>()
+            : DITTO_AUTH_URL;
+
     const auto enable_cloud_sync = opt_parse.count("enable-cloud-sync") > 0;
 
     const auto quiet = opt_parse["quiet"].as<bool>();
@@ -196,8 +209,13 @@ int main(int argc, const char *argv[]) {
 
     // The peer is destroyed at the end of this scope
     {
-      TasksPeer peer(app_id, online_playground_token, enable_cloud_sync,
-                     persistence_dir);
+      TasksPeer peer(
+        app_id, 
+        online_playground_token, 
+        websocket_url,
+        auth_url,
+        enable_cloud_sync,
+        persistence_dir);
       peer.insert_initial_tasks();
       peer.start_sync();
 

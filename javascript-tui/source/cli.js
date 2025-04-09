@@ -4,7 +4,7 @@ import { render } from 'ink';
 import meow from 'meow';
 import App from './app.js';
 import dotenv from 'dotenv';
-import { Ditto } from '@dittolive/ditto';
+import { Ditto, TransportConfig } from '@dittolive/ditto';
 import { temporaryDirectory } from 'tempy';
 
 const config = dotenv.config({ path: "../.env" });
@@ -16,6 +16,8 @@ const cli = meow(
     Options
       --app-id [env: DITTO_APP_ID] Your Ditto AppID
       --playground-token [env: DITTO_PLAYGROUND_TOKEN] An OnlinePlayground token
+      --auth-url [env: DITTO_AUTH_URL] The auth URL
+      --websocket-url [env: DITTO_WEBSOCKET_URL] The websocket URL
   `,
   {
     importMeta: import.meta,
@@ -24,6 +26,12 @@ const cli = meow(
         type: "string"
       },
       playgroundToken: {
+        type: "string"
+      },
+      authURL: {
+        type: "string"
+      },
+      websocketURL: {
         type: "string"
       }
     }
@@ -44,12 +52,26 @@ const tempdir = temporaryDirectory();
 // Grab appID and token from CLI or .env in that order
 const appID = cli.flags.appId ?? process.env.DITTO_APP_ID;
 const token = cli.flags.playgroundToken ?? process.env.DITTO_PLAYGROUND_TOKEN;
-console.log("Using appId", appID, " and token ", token);
+const authURL = cli.flags.authURL ?? process.env.DITTO_AUTH_URL;
+const websocketURL = cli.flags.websocketURL ?? process.env.DITTO_WEBSOCKET_URL;
+
+console.log("Using appId", appID, " and token ", token, " and authURL ", authURL, " and websocketURL ", websocketURL);
+
+// Create a new Ditto instance with the identity
+// https://docs.ditto.live/sdk/latest/install-guides/nodejs#installing-the-demo-task-app
 const ditto = new Ditto({
   type: "onlinePlayground",
-  appID,
-  token,
+  appID: appID,
+  token: token,
+  customAuthURL: authURL,
+  enableDittoCloudSync: false
 }, tempdir);
+
+const transportConfig = new TransportConfig();
+transportConfig.connect.websocketURLs.push(websocketURL);
+transportConfig.setAllPeerToPeerEnabled(true);
+ditto.setTransportConfig(transportConfig);
+
 await ditto.disableSyncWithV3();
 ditto.startSync();
 

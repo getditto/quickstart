@@ -7,15 +7,15 @@
 * @getditto/sdk-engineers
 
 # SDK-specific owners
-/android-cpp/        @kristopherjohnson @danielhenrymantilla
+/android-cpp/        @kristopherjohnson @teodorciuraru
 /android-java/       @phatblat @anyercastillo
 /android-kotlin/     @phatblat @anyercastillo
-/cpp-tui/            @kristopherjohnson @danielhenrymantilla
+/cpp-tui/            @kristopherjohnson @teodorciuraru
 /dotnet-maui/        @busec0 @phatblat
 /dotnet-tui/         @busec0 @phatblat
 /flutter_quickstart/ @cameron1024 @teodorciuraru
 /javascript-tui/     @konstantinbe @pvditto @teodorciuraru
 /javascript-web/     @konstantinbe @pvditto @teodorciuraru
 /react-native/       @teodorciuraru @kristopherjohnson
-/rust-tui/           @kristopherjohnson @danielhenrymantilla
+/rust-tui/           @kristopherjohnson @cameron1024
 /swift/              @phatblat @konstantinbe

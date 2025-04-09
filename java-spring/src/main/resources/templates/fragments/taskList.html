@@ -1,0 +1,23 @@
+<ul id="task_list" th:fragment="taskListFrag (tasks)">
+    <li th:each="item : ${tasks}">
+        <button type="button"
+                th:attr="hx-post=@{~/tasks/{id}/toggle(id=${item.id})}"
+                hx-swap="none"
+                style="border: none; background: none; font-size: 1.2em; cursor: pointer;">
+            <span th:text="${item.done} ? '✔' : '☐'">☐</span>
+        </button>
+        <span th:style="${item.done} ? 'text-decoration: line-through;' : ''"
+              th:text="${item.title}">Sample Todo</span>
+        <button type="button"
+                th:attr="hx-get=@{~/tasks/{id}/edit-form(id=${item.id})},hx-target=@{#edit-form-{id}(id=${item.id})}"
+                hx-swap="innerHTML">
+            Edit
+        </button>
+        <button type="button"
+                th:attr="hx-delete=@{~/tasks/{id}(id=${item.id})}"
+                hx-swap="none">
+            Delete
+        </button>
+        <div th:id="@{edit-form-{id}(id=${item.id})}"></div>
+    </li>
+</ul>

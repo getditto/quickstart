@@ -16,7 +16,7 @@ public class TasksPeer : IDisposable
 
     public string AppId { get; private set; }
     public string PlaygroundToken { get; private set; }
-
+    
     public bool IsSyncActive
     {
         get => ditto.IsSyncActive;
@@ -28,9 +28,12 @@ public class TasksPeer : IDisposable
     /// Creates a new synchronizing TasksPeer instance.
     /// </summary>
     public static async Task<TasksPeer> Create(
-        string appId, string playgroundToken)
+        string appId, 
+        string playgroundToken, 
+        string authUrl, 
+        string websocketUrl)
     {
-        var peer = new TasksPeer(appId, playgroundToken);
+        var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
 
         await peer.InsertInitialTasks();
 
@@ -44,7 +47,9 @@ public class TasksPeer : IDisposable
     /// </summary>
     /// <param name="appId">Ditto application ID</param>
     /// <param name="playgroundToken">Ditto online playground token</param>
-    public TasksPeer(string appId, string playgroundToken)
+    /// <param name="authUrl">Ditto Auth URL</param>
+    /// <param name="websocketUrl">Ditto Websocket URL</param>
+    public TasksPeer(string appId, string playgroundToken, string authUrl, string websocketUrl)
     {
         AppId = appId;
         PlaygroundToken = playgroundToken;
@@ -61,9 +66,20 @@ public class TasksPeer : IDisposable
             "DittoDotNetTasksConsole-" + Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
 
-        var identity = DittoIdentity.OnlinePlayground(appId, playgroundToken, true);
+        var identity = DittoIdentity.OnlinePlayground(
+            appId, 
+            playgroundToken, 
+            false, // This is required to be set to false to use the correct URLs
+            authUrl);
 
         ditto = new Ditto(identity, tempDir);
+        
+        // Optionally enable all P2P transports if using P2P Sync
+        // Do not call this if only using Ditto Cloud Sync
+        ditto.TransportConfig.EnableAllPeerToPeer();
+        
+        // Add the websocket URL to the transport configuration.
+        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
 
         // This is necessary to support DQL.
         ditto.DisableSyncWithV3();

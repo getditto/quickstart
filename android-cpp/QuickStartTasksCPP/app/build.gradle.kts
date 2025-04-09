@@ -20,8 +20,12 @@ fun loadEnvProperties(): Properties {
     return properties
 }
 
-// Define BuildConfig.DITTO_APP_ID and BuildConfig.DITTO_PLAYGROUND_TOKEN
+// Define BuildConfig.DITTO_APP_ID, BuildConfig.DITTO_PLAYGROUND_TOKEN,
+// BuildConfig.DITTO_CUSTOM_AUTH_URL, BuildConfig.DITTO_WEBSOCKET_URL
 // based on values in the .env file
+//
+// More information can be found here:
+// https://docs.ditto.live/sdk/latest/install-guides/cpp#importing-and-initializing-ditto
 androidComponents {
     onVariants {
         val prop = loadEnvProperties()
@@ -39,6 +43,23 @@ androidComponents {
                 "String",
                 "${prop["DITTO_PLAYGROUND_TOKEN"]}",
                 "Ditto online playground authentication token"
+            )
+        )
+        it.buildConfigFields.put(
+            "DITTO_AUTH_URL",
+            BuildConfigField(
+                "String",
+                "${prop["DITTO_AUTH_URL"]}",
+                "Ditto Auth URL"
+            )
+        )
+
+        it.buildConfigFields.put(
+            "DITTO_WEBSOCKET_URL",
+            BuildConfigField(
+                "String",
+                "${prop["DITTO_WEBSOCKET_URL"]}",
+                "Ditto Websocket URL"
             )
         )
     }
@@ -137,5 +158,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Ditto C++ SDK
-    implementation("live.ditto:ditto-cpp:4.9.2")
+    implementation("live.ditto:ditto-cpp:4.10.0")
 }

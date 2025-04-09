@@ -3,7 +3,7 @@
 This repo contains apps that demonstrate how to use the Ditto SDK for supported
 programming languages and platforms.
 
-See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts)
+See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts/quickstarts-landing)
 documentation for more information.
 
 For support, please contact Ditto Support (<support@ditto.live>).
@@ -27,7 +27,7 @@ To obtain your Ditto identity and configure the quickstart apps with it, follow 
 1. Copy the `.env.sample` file to `.env`.
    - in a terminal: `cp .env.sample .env`.
    - in a macOS Finder window, press `⇧⌘.` (SHIFT+CMD+period) to show hidden files.
-1. Save your app ID and online playground token in the `.env` file.
+1. Save your App ID, Online Playground Token, Auth URL, and WebSocket URL in the `.env` file.
 
 Please see the app-specific README files for details on the tools necessary to
 build and run them.
@@ -37,6 +37,7 @@ build and run them.
 - [Android Kotlin](android-kotlin/README.md)
 - [Android Java](android-java/README.md)
 - [Android C++](android-cpp/README.md)
+- [Java Server](java-spring/README.md)
 - [C++ TUI](cpp-tui/README.md)
 - [C# .NET MAUI](dotnet-maui/README.md)
 - [C# .NET TUI](dotnet-tui/README.md)

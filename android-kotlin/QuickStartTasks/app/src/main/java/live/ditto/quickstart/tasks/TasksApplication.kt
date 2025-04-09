@@ -8,6 +8,7 @@ import live.ditto.DittoLogLevel
 import live.ditto.DittoLogger
 import live.ditto.android.DefaultAndroidDittoDependencies
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
+import live.ditto.transports.DittoTransportConfig
 
 class TasksApplication : Application() {
 
@@ -30,21 +31,38 @@ class TasksApplication : Application() {
 
     private fun setupDitto() {
         val androidDependencies = DefaultAndroidDittoDependencies(applicationContext)
+
+        //read values from build.gradle.kts (Module:app) which reads from environment file
         val appId = BuildConfig.DITTO_APP_ID
         val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
-        val enableDittoCloudSync = true
+        val authUrl = BuildConfig.DITTO_AUTH_URL
+        val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
 
+        val enableDittoCloudSync = false
+
+        /*
+         *  Setup Ditto Identity
+         *  https://docs.ditto.live/sdk/latest/install-guides/kotlin#integrating-and-initializing
+         */
         val identity = DittoIdentity.OnlinePlayground(
-            androidDependencies,
-            appId,
-            token,
-            enableDittoCloudSync
+            dependencies = androidDependencies,
+            appId = appId,
+            token = token,
+            customAuthUrl = authUrl,
+            enableDittoCloudSync = enableDittoCloudSync // This is required to be set to false to use the correct URLs
         )
 
         ditto = Ditto(androidDependencies, identity)
 
-        DittoLogger.minimumLogLevel = DittoLogLevel.DEBUG
+        // Set the Ditto Websocket URL
+        val transportConfig = DittoTransportConfig()
+        transportConfig.connect.websocketUrls.add(webSocketURL)
 
+        // Enable all P2P transports
+        transportConfig.enableAllPeerToPeer()
+        ditto.transportConfig = transportConfig
+
+        // disable sync with v3 peers, required for syncing with the Ditto Cloud (Big Peer)
         ditto.disableSyncWithV3()
     }
 }

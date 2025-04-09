@@ -1,4 +1,4 @@
-import { Ditto, IdentityOnlinePlayground, StoreObserver, SyncSubscription, init } from '@dittolive/ditto';
+import { Ditto, TransportConfig, IdentityOnlinePlayground, StoreObserver, SyncSubscription, init } from '@dittolive/ditto';
 import './App.css'
 import DittoInfo from './components/DittoInfo'
 import { useEffect, useRef, useState } from 'react';
@@ -8,7 +8,8 @@ const identity: IdentityOnlinePlayground = {
   type: 'onlinePlayground',
   appID: import.meta.env.DITTO_APP_ID,
   token: import.meta.env.DITTO_PLAYGROUND_TOKEN,
-  enableDittoCloudSync: true,
+  customAuthURL: import.meta.env.DITTO_AUTH_URL,
+  enableDittoCloudSync: false,
 };
 
 export type Task = {
@@ -47,11 +48,23 @@ const App = () => {
     (async () => {
       await isInitialized;
       try {
+
+        // Create a new Ditto instance with the identity
+        // https://docs.ditto.live/sdk/latest/install-guides/js#integrating-ditto-and-starting-sync
         ditto.current = new Ditto(identity);
+
+        const config = new TransportConfig();
+        config.connect.websocketURLs.push(import.meta.env.DITTO_WEBSOCKET_URL);
+        ditto.current?.setTransportConfig(config)
+
+        // Disable sync with v3 peers, required for syncing with the Ditto Cloud (BigPeer)
         await ditto.current.disableSyncWithV3();
         ditto.current.startSync();
 
+        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
         tasksSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
+
+        // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#store-observer-with-query-arguments
         tasksObserver.current = ditto.current.store.registerObserver<Task>('SELECT * FROM tasks WHERE deleted=false ORDER BY done', (results) => {
           console.log("Observer", results);
           const tasks = results.items.map((item) => item.value);
@@ -78,6 +91,7 @@ const App = () => {
     setSyncActive(!syncActive);
   };
 
+  // https://docs.ditto.live/sdk/latest/crud/create
   const createTask = async (title: string) => {
     try {
       await ditto.current?.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
@@ -92,6 +106,7 @@ const App = () => {
     }
   };
 
+  // https://docs.ditto.live/sdk/latest/crud/update
   const editTask = async (id: string, title: string) => {
     try {
       await ditto.current?.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
@@ -114,6 +129,7 @@ const App = () => {
     }
   };
 
+  // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
   const deleteTask = async (task: Task) => {
     try {
       await ditto.current?.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {

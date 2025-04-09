@@ -63,11 +63,15 @@ jobject native_task_to_java_task(JNIEnv *const env, const Task &native_task) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_live_ditto_quickstart_tasks_TasksLib_initDitto(JNIEnv *env, jobject thiz, jobject context,
+Java_live_ditto_quickstart_tasks_TasksLib_initDitto(JNIEnv *env,
+                                                    jobject thiz,
+                                                    jobject context,
                                                     jstring app_id,
                                                     jstring token,
                                                     jstring persistence_dir,
-                                                    jboolean is_running_on_emulator) {
+                                                    jboolean is_running_on_emulator,
+                                                    jstring custom_auth_url,
+                                                    jstring websocket_url) {
   __android_log_print(ANDROID_LOG_DEBUG, TAG,
                       "Java_live_ditto_quickstart_tasks_TasksLib_initDitto; SDK version: %s; emulator: %s",
                       TasksPeer::get_ditto_sdk_version().c_str(),
@@ -81,10 +85,21 @@ Java_live_ditto_quickstart_tasks_TasksLib_initDitto(JNIEnv *env, jobject thiz, j
     auto app_id_str = jstring_to_string(env, app_id);
     auto token_str = jstring_to_string(env, token);
     auto persistence_dir_str = jstring_to_string(env, persistence_dir);
-    peer = std::make_shared<TasksPeer>(env, context, std::move(app_id_str),
-                                       std::move(token_str),
-                                       true, std::move(persistence_dir_str),
-                                       is_running_on_emulator);
+    auto custom_auth_url_str = jstring_to_string(env, custom_auth_url);
+    auto websocket_url_str = jstring_to_string(env, websocket_url);
+
+    peer = std::make_shared<TasksPeer>(
+                        env,
+                        context,
+                        std::move(app_id_str),
+                        std::move(token_str),
+                        true,
+                        std::move(persistence_dir_str),
+                        is_running_on_emulator,
+                        std::move(custom_auth_url_str),
+                        std::move(websocket_url_str)
+                        );
+
   } catch (const std::exception &err) {
     __android_log_print(ANDROID_LOG_ERROR, TAG, "initDitto failed: %s", err.what());
     throw_java_exception(env, err.what());

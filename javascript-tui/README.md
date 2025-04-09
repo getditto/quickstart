@@ -17,9 +17,11 @@ cp .env.sample .env
 #!/usr/bin/env bash
 
 # Copy this file from ".env.sample" to ".env", then fill in these values
-# A Ditto AppID and Playground token can be obtained from https://portal.ditto.live
-export DITTO_APP_ID=""
-export DITTO_PLAYGROUND_TOKEN=""
+# A Ditto AppID, Playground token, Auth URL, and Websocket URL can be obtained from https://portal.ditto.live
+DITTO_APP_ID=""
+DITTO_PLAYGROUND_TOKEN=""
+DITTO_AUTH_URL=""
+DITTO_WEBSOCKET_URL=""
 ```
 
 Next, make sure you have `npm` installed, then run the following:
@@ -31,4 +33,3 @@ npm start 2>/dev/null
 
 > NOTE: the `2>/dev/null` silences log output on stderr, because the logs
   interfere with the TUI rendering
-

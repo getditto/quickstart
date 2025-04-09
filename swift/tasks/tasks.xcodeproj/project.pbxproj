@@ -108,7 +108,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 41F869852CECF42500DC7268 /* Build configuration list for PBXProject "Tasks" */;
+			buildConfigurationList = 41F869852CECF42500DC7268 /* Build configuration list for PBXProject "tasks" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -365,7 +365,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		41F869852CECF42500DC7268 /* Build configuration list for PBXProject "Tasks" */ = {
+		41F869852CECF42500DC7268 /* Build configuration list for PBXProject "tasks" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				41F869962CECF42600DC7268 /* Debug */,
@@ -391,7 +391,7 @@
 			repositoryURL = "https://github.com/getditto/DittoSwiftPackage";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 4.8.2;
+				minimumVersion = 4.10.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

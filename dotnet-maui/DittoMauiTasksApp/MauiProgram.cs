@@ -41,9 +41,22 @@ public static class MauiProgram
         var envVars = LoadEnvVariables();
         AppId = envVars["DITTO_APP_ID"];
         PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"];
-
-        var ditto = new Ditto(DittoIdentity.OnlinePlayground(
-            AppId, PlaygroundToken, true));
+        var authUrl = envVars["DITTO_AUTH_URL"];
+        var websocketUrl = envVars["DITTO_WEBSOCKET_URL"];
+        
+        var ditto = new Ditto(DittoIdentity
+        .OnlinePlayground(
+            AppId, 
+            PlaygroundToken, 
+            false,  // This is required to be set to false to use the correct URLs
+            authUrl));
+        
+        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
+        // Optionally enable all P2P transports if using P2P Sync
+        // Do not call this if only using Ditto Cloud Sync
+        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
+        
+        //required 
         ditto.DisableSyncWithV3();
 
         return ditto;
@@ -55,9 +68,7 @@ public static class MauiProgram
     static Dictionary<string, string> LoadEnvVariables()
     {
         var envVars = new Dictionary<string, string>();
-
         var assembly = Assembly.GetExecutingAssembly();
-
         string resourceName = "DittoMauiTasksApp..env";
 
         using (Stream stream = assembly.GetManifestResourceStream(resourceName))
