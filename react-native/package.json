@@ -16,6 +16,9 @@
     "react-native": "0.75.3",
     "react-native-bouncy-checkbox": "^4.1.2"
   },
+  "resolutions": {
+    "image-size": "1.2.1"
+  },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@babel/preset-env": "^7.20.0",
