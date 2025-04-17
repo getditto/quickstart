@@ -34,13 +34,26 @@ type Task = {
 };
 
 // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
-const identity: IdentityOnlinePlayground = {
+const dittoCloudIdentity: IdentityOnlinePlayground = {
+  type: 'onlinePlayground',
+  appID: DITTO_APP_ID,
+  token: DITTO_PLAYGROUND_TOKEN,
+};
+
+const customBYOC: IdentityOnlinePlayground = {
   type: 'onlinePlayground',
   appID: DITTO_APP_ID,
   token: DITTO_PLAYGROUND_TOKEN,
   customAuthURL: DITTO_AUTH_URL,
   enableDittoCloudSync: false,
 };
+
+var identity;
+if (typeof DITTO_AUTH_URL === 'string' && DITTO_AUTH_URL.length > 0) {
+  identity = customBYOC;
+} else {
+  identity = dittoCloudIdentity;
+}
 
 async function requestPermissions() {
   const permissions = [
@@ -119,8 +132,17 @@ const App = () => {
       // Initialize transport config
       {
         const transportsConfig = new TransportConfig();
-        transportsConfig.setAllPeerToPeerEnabled(true);
-        transportsConfig.connect.websocketURLs.push(DITTO_WEBSOCKET_URL);
+        transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
+        transportsConfig.peerToPeer.lan.isEnabled = true;
+
+        if (Platform.OS === 'ios') {
+          transportsConfig.peerToPeer.awdl.isEnabled = true;
+        }
+
+        if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
+          transportsConfig.connect.websocketURLs.push(DITTO_WEBSOCKET_URL);
+        }
+
         ditto.current.setTransportConfig(transportsConfig);
       }
 
