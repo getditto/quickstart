@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
-use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto };
+use dittolive_ditto::{fs::TempRoot, AppId, Ditto, prelude::*};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
@@ -102,13 +102,37 @@ fn try_init_ditto(
     // instance has its own persistence directory.
     let ditto = Ditto::builder()
         .with_root(Arc::new(TempRoot::new()))
-        .with_identity(|root| OnlinePlayground::new(
-            root, 
-            app_id.clone(), 
-            token, 
-            false, // This is required to be set to false to use the correct URLs
-            Some(custom_auth_url.as_str())
-        ))?
+        .with_identity(|ditto_root| {
+            let provider = "dummyProvider".to_string();
+            struct EventHandler {
+                token: String,
+                provider: String,
+            }
+            impl DittoAuthenticationEventHandler for EventHandler {
+                fn authentication_required(&self, auth: DittoAuthenticator) {
+                    let _feedback = auth
+                        .login_with_token_and_feedback(&self.token, &self.provider)
+                        .unwrap();
+                }
+
+                fn authentication_expiring_soon(&self, auth: DittoAuthenticator, _: Duration) {
+                    let _feedback = auth
+                        .login_with_token_and_feedback(&self.token, &self.provider)
+                        .unwrap();
+                }
+            }
+            let event_handler = EventHandler {
+                token,
+                provider,
+            };
+            OnlineWithAuthentication::new(
+                ditto_root,
+                app_id.clone(),
+                event_handler,
+                true,
+                Some(&custom_auth_url),
+            )
+        })?
         .build()?;
 
     ditto.update_transport_config(|config| {
