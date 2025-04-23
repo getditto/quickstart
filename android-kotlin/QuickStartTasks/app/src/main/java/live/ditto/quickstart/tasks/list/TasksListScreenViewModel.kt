@@ -112,7 +112,7 @@ class TasksListScreenViewModel : ViewModel() {
                             )
                         )
                     )
-                } catch (e: Exception) {
+                } catch (e: DittoError) {
                     Log.e(TAG, "Unable to insert initial document", e)
                 }
             }
@@ -138,7 +138,7 @@ class TasksListScreenViewModel : ViewModel() {
                         "_id" to taskId
                     )
                 )
-            } catch (e: Exception) {
+            } catch (e: DittoError) {
                 Log.e(TAG, "Unable to toggle done state", e)
             }
         }
@@ -153,7 +153,7 @@ class TasksListScreenViewModel : ViewModel() {
                     "UPDATE tasks SET deleted = true WHERE _id = :id",
                     mapOf("id" to taskId)
                 )
-            } catch (e: Exception) {
+            } catch (e: DittoError) {
                 Log.e(TAG, "Unable to set deleted=true", e)
             }
         }
