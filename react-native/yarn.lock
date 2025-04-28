@@ -1043,10 +1043,10 @@
     "@deno/shim-deno-test" "^0.4.0"
     which "^2.0.2"
 
-"@dittolive/ditto@4.10.0":
-  version "4.10.0"
-  resolved "https://registry.yarnpkg.com/@dittolive/ditto/-/ditto-4.10.0.tgz#e451a53037308e82cbdeefcfef1dcf052d990b71"
-  integrity sha512-ONBp6oHn5WWWcwpsKWPzuP5dJK1+Vs1S885dFvL7TuRRW3J+6zXDr73IHFnq62KIlnMNotqXEpf5S/cs8K5E1A==
+"@dittolive/ditto@4.10.2":
+  version "4.10.2"
+  resolved "https://registry.yarnpkg.com/@dittolive/ditto/-/ditto-4.10.2.tgz#4e77b010a178432ba999369e3df8bba9c376cce8"
+  integrity sha512-cZTw+xrgE18ps77UKXC8tYDlghf4JzNoDGqtPFqVNoUzi5VA3aPfYwFq62VlSRJxVQUPhEEvDV/sE56h5tw4KQ==
   dependencies:
     "@expo/config-plugins" "^9.0.11"
     cbor-redux "^1.0.0"

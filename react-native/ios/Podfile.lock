@@ -1,7 +1,7 @@
 PODS:
   - boost (1.84.0)
-  - DittoReactNative (4.10.0):
-    - DittoReactNativeIOS (= 4.10.0)
+  - DittoReactNative (4.10.2):
+    - DittoReactNativeIOS (= 4.10.2)
     - DoubleConversion
     - glog
     - hermes-engine
@@ -25,7 +25,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - DittoReactNativeIOS (4.10.0)
+  - DittoReactNativeIOS (4.10.2)
   - DoubleConversion (1.1.6)
   - fast_float (6.1.4)
   - FBLazyVector (0.79.1)
@@ -1910,8 +1910,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
-  DittoReactNative: 3da080de12535e0a0466f79760f3e4e614816125
-  DittoReactNativeIOS: 0b0cd95d127e676d3e866d0444334d66f153cd62
+  DittoReactNative: 454bbe05b2795db9e47d8093005e96e74e9215ab
+  DittoReactNativeIOS: a949083ef12c571ca72a3dde2274d91737f7c053
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
   FBLazyVector: abbac80c6f89e71a8c55c7e92ec015c8a9496753
