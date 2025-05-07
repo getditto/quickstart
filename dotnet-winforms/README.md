@@ -1,4 +1,4 @@
-# Ditto .NET Console Quickstart App 🚀
+# Ditto .NET WinForms Quickstart App 🚀
 
 
 ## Prerequisites
@@ -18,7 +18,7 @@
 
 This is a Windows Form Application is targeting [.NET 8.0](https://learn.microsoft.com/en-us/dotnet/desktop/winforms/whats-new/net80?view=netdesktop-9.0) using the new open source version of [Windows Forms](https://learn.microsoft.com/en-us/dotnet/desktop/winforms/overview/).  
 
-This is not compatabile with the Windows version of .NET (4.x) - nor is it compatable with libraries that target .NET Standard 2.0.   Ditto requires libraries target modern .NET Standard 2.1 versions.
+This is not compatabile with the Windows version of .NET Framework (4.x) - nor is it compatable with libraries that target .NET Standard 2.0.   Ditto requires libraries target modern .NET Standard 2.1 versions.
 
 To run the app open the TasksApp folder in Visual Studio for Windows and select the solution file in it (DittoTaskApp.sln).  
 
