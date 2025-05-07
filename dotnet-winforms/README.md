@@ -18,7 +18,7 @@
 
 This is a Windows Form Application is targeting [.NET 8.0](https://learn.microsoft.com/en-us/dotnet/desktop/winforms/whats-new/net80?view=netdesktop-9.0) using the new open source version of [Windows Forms](https://learn.microsoft.com/en-us/dotnet/desktop/winforms/overview/).  
 
-This is not compatabile with the Windows version of .NET Framework (4.x) - nor is it compatable with libraries that target .NET Standard 2.0.   Ditto requires libraries target modern .NET Standard 2.1 versions. If you need support for these versions, please [contact us](https://www.ditto.com/schedule-a-demo).
+This is not compatabile with the Windows version of .NET Framework (4.x) - nor is it compatable with libraries that target .NET Standard 2.0.   Ditto requires libraries target modern .NET Standard 2.1 versions. If you need support for .NET Standard 2.0, please [contact us](https://www.ditto.com/schedule-a-demo).
 
 To run the app open the TasksApp folder in Visual Studio for Windows and select the solution file in it (DittoTaskApp.sln).  
 
