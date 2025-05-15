@@ -50,7 +50,7 @@ summary of the key parts of integration with Ditto.
 
 ### Adding the Ditto SDK
 
-In `gradle/build.gradle.kts`, you will see this line that causes Android Studio
+In `app/build.gradle.kts`, you will see this line that causes Android Studio
 to download the Ditto SDK from Maven Central and add it to the project:
 
 ```kotlin
