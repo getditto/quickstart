@@ -68,9 +68,30 @@ jobs:
       - name: Install Dependencies
         run: |
           cd javascript-web
-          npm install
+          npm ci
 
       - name: Run linter
         run: |
           cd javascript-web
           npm run lint
+
+  js-node:
+    name: js-node lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Dependencies
+        run: |
+          cd javascript-tui
+          npm ci
+
+      - name: Run linter and tests
+        run: |
+          cd javascript-node
+          npm run test
