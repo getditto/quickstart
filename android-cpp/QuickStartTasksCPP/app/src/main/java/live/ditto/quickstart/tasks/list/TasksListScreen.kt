@@ -2,6 +2,7 @@ package live.ditto.quickstart.tasks.list
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,6 +19,7 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -28,6 +30,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
@@ -48,6 +51,7 @@ import java.util.UUID
 fun TasksListScreen(navController: NavController) {
     val tasksListViewModel: TasksListScreenViewModel = viewModel()
     val tasks: List<Task> by tasksListViewModel.tasks.observeAsState(emptyList())
+    val syncEnabled: Boolean by tasksListViewModel.syncEnabled.observeAsState(true)
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteDialogTaskId by remember { mutableStateOf("") }
@@ -80,7 +84,23 @@ fun TasksListScreen(navController: NavController) {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = colorResource(id = R.color.blue_700),
                     titleContentColor = Color.White
-                )
+                ),
+                actions = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Sync",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(end = 10.dp),
+                            color = Color.White
+                        )
+                        Switch(
+                            checked = syncEnabled,
+                            onCheckedChange = { isChecked ->
+                                tasksListViewModel.setSyncEnabled(isChecked)
+                            }
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
