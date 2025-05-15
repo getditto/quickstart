@@ -55,7 +55,7 @@ jobs:
         run: "(cd rust-tui; cargo build)"
 
   js-web:
-    name: js-web lint
+    name: javascript-web lint
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -66,17 +66,15 @@ jobs:
           node-version: "20"
 
       - name: Install Dependencies
-        run: |
-          cd javascript-web
-          npm ci
+        working-directory: javascript-web
+        run: npm ci
 
       - name: Run linter
-        run: |
-          cd javascript-web
-          npm run lint
+        working-directory: javascript-web
+        run: npm run lint
 
   js-node:
-    name: js-node lint
+    name: javascript-tui lint
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -87,11 +85,9 @@ jobs:
           node-version: "20"
 
       - name: Install Dependencies
-        run: |
-          cd javascript-tui
-          npm ci
+        working-directory: javascript-tui
+        run: npm ci
 
       - name: Run linter and tests
-        run: |
-          cd javascript-node
-          npm run test
+        working-directory: javascript-tui
+        run: npm run test
