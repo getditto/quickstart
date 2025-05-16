@@ -65,16 +65,18 @@ const App = () => {
         config.connect.websocketURLs.push(import.meta.env.DITTO_WEBSOCKET_URL);
         ditto.current?.setTransportConfig(config);
 
-        // Disable sync with v3 peers, required for syncing with the Ditto Cloud (BigPeer)
+        // disable sync with v3 peers, required for DQL
         await ditto.current.disableSyncWithV3();
         ditto.current.startSync();
 
+        // Register a subscription, which determines what data syncs to this peer
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
         tasksSubscription.current = ditto.current.sync.registerSubscription(
           'SELECT * FROM tasks',
         );
 
-        // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#store-observer-with-query-arguments
+        // Register observer, which runs against the local database on this peer
+        // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
         tasksObserver.current = ditto.current.store.registerObserver<Task>(
           'SELECT * FROM tasks WHERE deleted=false ORDER BY done',
           (results) => {

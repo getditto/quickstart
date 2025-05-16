@@ -52,7 +52,7 @@ class TasksListScreenViewModel : ViewModel() {
                     // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
                     ditto.startSync()
 
-                    // register subscription
+                    // Register a subscription, which determines what data syncs to this peer
                     // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
                     syncSubscription = ditto.sync.registerSubscription(QUERY)
                 } catch (e: DittoError) {
@@ -74,7 +74,7 @@ class TasksListScreenViewModel : ViewModel() {
         viewModelScope.launch {
             populateTasksCollection()
 
-            // register observer for live query
+            // Register observer, which runs against the local database on this peer
             // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
             ditto.store.registerObserver(QUERY) { result ->
                 val list = result.items.map { item -> Task.fromJson(item.jsonString()) }

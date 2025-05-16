@@ -33,13 +33,15 @@ class _DqlBuilderState extends State<DqlBuilder> {
   void initState() {
     super.initState();
 
-    //registers observer so when any documents change callback is called
+    // Register observer, which runs against the local database on this peer
+    // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
     final observer = widget.ditto.store.registerObserver(
       widget.query,
       arguments: widget.queryArgs ?? {},
     );
 
-    //registers a subscription, setting up which documents should be synced to the device
+    // Register a subscription, which determines what data syncs to this peer
+    // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
     final subscription = widget.ditto.sync.registerSubscription(
       widget.query,
       arguments: widget.queryArgs ?? {},
@@ -62,11 +64,15 @@ class _DqlBuilderState extends State<DqlBuilder> {
       _observer?.cancel();
       _subscription?.cancel();
 
+      // Register observer, which runs against the local database on this peer
+      // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
       final observer = widget.ditto.store.registerObserver(
         widget.query,
         arguments: widget.queryArgs ?? {},
       );
 
+      // Register a subscription, which determines what data syncs to this peer
+      // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
       final subscription = widget.ditto.sync.registerSubscription(
         widget.query,
         arguments: widget.queryArgs ?? {},

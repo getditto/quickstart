@@ -22,6 +22,8 @@ class TasksListScreenViewModel: ObservableObject {
     init() {
         populateTasksCollection()
 
+        // Register observer, which runs against the local database on this peer
+        // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
         storeObserver = try? dittoStore.registerObserver(query: observerQuery) {
             [weak self] result in
             guard let self = self else { return }
@@ -54,6 +56,9 @@ class TasksListScreenViewModel: ObservableObject {
     private func startSync() throws {
         do {
             try ditto.startSync()
+
+            // Register a subscription, which determines what data syncs to this peer
+            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
             subscription = try dittoSync.registerSubscription(query: subscriptionQuery)
         } catch {
             print(

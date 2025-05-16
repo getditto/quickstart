@@ -84,7 +84,9 @@ transportConfig.connect.websocketURLs.push(websocketURL);
 transportConfig.setAllPeerToPeerEnabled(true);
 ditto.setTransportConfig(transportConfig);
 
+// disable sync with v3 peers, required for DQL
 await ditto.disableSyncWithV3();
+
 ditto.startSync();
 
 process.on('uncaughtException', err => {

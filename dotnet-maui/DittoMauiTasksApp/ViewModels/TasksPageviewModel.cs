@@ -229,6 +229,8 @@ namespace DittoMauiTasksApp.ViewModels
 
         private void ObserveDittoTasksCollection()
         {
+            // Register observer, which runs against the local database on this peer
+            // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
             ditto.Store.RegisterObserver(SelectQuery, async (queryResult) =>
             {
                 try
@@ -312,6 +314,9 @@ namespace DittoMauiTasksApp.ViewModels
             try
             {
                 ditto.StartSync();
+
+                // Register a subscription, which determines what data syncs to this peer
+                // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
                 syncSubscription = ditto.Sync.RegisterSubscription(SelectQuery);
             }
             catch (Exception e)
