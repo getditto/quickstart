@@ -133,14 +133,14 @@ const TodoApp = ({ditto}) => {
 		// Inline async context
 		(async () => {
 			// Register a subscription, which determines what data syncs to this peer
-            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+			// https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
 			const subscription = ditto.sync.registerSubscription(
 				'SELECT * FROM tasks',
 			);
 			setSubscription(subscription);
 
 			// Register observer, which runs against the local database on this peer
-            // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
+			// https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
 			const observer = ditto.store.registerObserver(
 				'SELECT * FROM tasks WHERE NOT deleted ORDER BY _id',
 				result => {
