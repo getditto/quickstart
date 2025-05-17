@@ -56,7 +56,7 @@ public static class MauiProgram
         // Do not call this if only using Ditto Cloud Sync
         ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
         
-        //required 
+        // disable sync with v3 peers, required for DQL
         ditto.DisableSyncWithV3();
 
         return ditto;

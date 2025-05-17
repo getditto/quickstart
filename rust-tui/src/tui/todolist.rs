@@ -84,10 +84,16 @@ impl TodoItem {
 impl Todolist {
     pub fn new(ditto: Ditto) -> Result<Self> {
         let (tasks_tx, tasks_rx) = watch::channel(Vec::new());
+
+        // Register a subscription, which determines what data syncs to this peer
+        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
         let tasks_subscription = ditto
             .sync()
             .register_subscription("SELECT * FROM tasks", None)?;
         let tasks_subscription = Some(tasks_subscription);
+
+        // register observer for live query
+        // Register observer, which runs against the local database on this peer
         let tasks_observer = ditto.store().register_observer(
             "SELECT * FROM tasks WHERE deleted=false ORDER BY _id",
             None,

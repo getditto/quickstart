@@ -62,7 +62,7 @@ class TasksApplication : Application() {
         transportConfig.enableAllPeerToPeer()
         ditto.transportConfig = transportConfig
 
-        // disable sync with v3 peers, required for syncing with the Ditto Cloud (Big Peer)
+        // disable sync with v3 peers, required for DQL
         ditto.disableSyncWithV3()
     }
 }

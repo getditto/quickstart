@@ -1,6 +1,7 @@
 package live.ditto.quickstart.tasks.data
 
 import android.util.Log
+import org.json.JSONException
 import org.json.JSONObject
 import java.util.UUID
 
@@ -22,7 +23,7 @@ data class Task(
                     done = json["done"] as Boolean,
                     deleted = json["deleted"] as Boolean
                 )
-            } catch (e: Exception) {
+            } catch (e: JSONException) {
                 Log.e(TAG, "Unable to convert JSON to Task", e)
                 Task(title = "", done = false, deleted = false)
             }

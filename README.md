@@ -3,7 +3,7 @@
 This repo contains apps that demonstrate how to use the Ditto SDK for supported
 programming languages and platforms.
 
-See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts)
+See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts/quickstarts-landing)
 documentation for more information.
 
 For support, please contact Ditto Support (<support@ditto.live>).
@@ -37,9 +37,11 @@ build and run them.
 - [Android Kotlin](android-kotlin/README.md)
 - [Android Java](android-java/README.md)
 - [Android C++](android-cpp/README.md)
+- [Java Server](java-spring/README.md)
 - [C++ TUI](cpp-tui/README.md)
 - [C# .NET MAUI](dotnet-maui/README.md)
 - [C# .NET TUI](dotnet-tui/README.md)
+- [C# .NET Win Forms](dotnet-winforms/README.md)
 - [Flutter](flutter_quickstart/README.md)
 - [Javascript TUI](javascript-tui/README.md)
 - [Javascript Web](javascript-web/README.md)

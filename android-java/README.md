@@ -1,22 +1,67 @@
 # Ditto Android Java Quickstart App 🚀
 
-## Dependencies
+## Prerequisites
 
-- A modern JDK installation
-- Android Studio
+After you have completed the [common prerequisites] you will need the following:
 
-## Getting Started
+- [Android Studio](https://developer.android.com/studio) Ladybug or newer
 
-To get started, you'll first need to create an app in the [Ditto Portal] with the
-"Online Playground" authentication type. You'll need to find your AppId, Online Playground Token, Auth URL, and Websocket URL (at the top of the page) in order to use this quickstart.
+## Permissions (already configured)
 
-In `app/src/main/java/com/example/dittotasks/MainActivity.java`, find the following variables:
+- <https://docs.ditto.live/sdk/latest/install-guides/java/android#configuring-permissions>
 
-```java
-private String DITTO_APP_ID = "";
-private String DITTO_PLAYGROUND_TOKEN = "";
-private String DITTO_AUTH_URL = "";
-private String DITTO_WEBSOCKET_URL = "";
+## Documentation
+
+- [Install Guide](https://docs.ditto.live/sdk/latest/install-guides/java/android)
+- [API Reference](https://software.ditto.live/android/Ditto/4.8.2/api-reference/)
+- [SDK Release Notes](https://docs.ditto.live/sdk/latest/release-notes/java)
+
+[common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
+
+## Building and Running the Android Application
+
+Assuming you have Android Studio and other prerequisites installed, you can
+build and run the app by following these steps:
+
+1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
+2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your App ID, Online Playground Token, Auth URL, and Websocket URL.
+3. Launch Android Studio and open the `quickstart/android-java` directory.
+4. In Android Studio, select a connected Android device, or create and launch an Android emulator and select it as the destination, then choose the **Run > Run 'app'** menu item.
+
+The app will build and run on the selected device or emulator.  You can add,
+edit, and delete tasks in the app.
+
+If you run the app on additional devices or emulators, the data will be synced
+between them.
+
+Compatible with Android Automotive OS (AAOS)
+
+## A Guided Tour of the Android App Source Code
+
+The Android app is a simple to-do list app that demonstrates how to use the
+Ditto Android SDK to sync data with other devices.
+It is implemented using Java  and
+[Jetpack Compose](https://developer.android.com/compose), which is a modern
+toolkit for building native Android UI.
+
+It is assumed that the reader is familiar with Android development and with
+Compose, but needs some guidance on how to use Ditto.  The following is a
+summary of the key parts of integration with Ditto.
+
+### Adding the Ditto SDK
+
+In `app/build.gradle.kts`, you will see this line that causes Android Studio
+to download the Ditto SDK from Maven Central and add it to the project:
+
+```kotlin
+    implementation(libs.ditto)
 ```
 
-Paste your own AppID, Playground Token, Auth URL, and Websocket URL into these variables, then click the Run button in Android Studio to launch the app in an emulator.
+This line in `gradle/libs.versions.toml` specifies which version of the Ditto
+SDK to use:
+
+```kotlin
+ditto = "4.10.0"
+```
+
+To use a newer version of the SDK, change the version number on this line.
