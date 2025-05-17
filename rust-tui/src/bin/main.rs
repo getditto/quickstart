@@ -117,7 +117,7 @@ fn try_init_ditto(
         config.connect.websocket_urls.insert(websocket_url);
     });
 
-    // Disable sync with v3 peers, required for syncing with the Ditto Cloud (BigPeer)
+    // disable sync with v3 peers, required for DQL
     _ = ditto.disable_sync_with_v3();
 
     // Start sync

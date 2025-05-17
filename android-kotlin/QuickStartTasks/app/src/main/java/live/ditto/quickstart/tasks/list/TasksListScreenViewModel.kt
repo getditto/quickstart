@@ -52,7 +52,7 @@ class TasksListScreenViewModel : ViewModel() {
                     // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
                     ditto.startSync()
 
-                    // register subscription
+                    // Register a subscription, which determines what data syncs to this peer
                     // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
                     syncSubscription = ditto.sync.registerSubscription(QUERY)
                 } catch (e: DittoError) {
@@ -74,7 +74,7 @@ class TasksListScreenViewModel : ViewModel() {
         viewModelScope.launch {
             populateTasksCollection()
 
-            // register observer for live query
+            // Register observer, which runs against the local database on this peer
             // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
             ditto.store.registerObserver(QUERY) { result ->
                 val list = result.items.map { item -> Task.fromJson(item.jsonString()) }
@@ -112,7 +112,7 @@ class TasksListScreenViewModel : ViewModel() {
                             )
                         )
                     )
-                } catch (e: Exception) {
+                } catch (e: DittoError) {
                     Log.e(TAG, "Unable to insert initial document", e)
                 }
             }
@@ -138,7 +138,7 @@ class TasksListScreenViewModel : ViewModel() {
                         "_id" to taskId
                     )
                 )
-            } catch (e: Exception) {
+            } catch (e: DittoError) {
                 Log.e(TAG, "Unable to toggle done state", e)
             }
         }
@@ -153,7 +153,7 @@ class TasksListScreenViewModel : ViewModel() {
                     "UPDATE tasks SET deleted = true WHERE _id = :id",
                     mapOf("id" to taskId)
                 )
-            } catch (e: Exception) {
+            } catch (e: DittoError) {
                 Log.e(TAG, "Unable to set deleted=true", e)
             }
         }

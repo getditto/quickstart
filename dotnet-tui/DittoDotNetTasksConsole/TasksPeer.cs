@@ -81,7 +81,7 @@ public class TasksPeer : IDisposable
         // Add the websocket URL to the transport configuration.
         ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
 
-        // This is necessary to support DQL.
+        // disable sync with v3 peers, required for DQL
         ditto.DisableSyncWithV3();
     }
 
@@ -226,6 +226,8 @@ public class TasksPeer : IDisposable
     /// </summary>
     public DittoStoreObserver ObserveTasksCollection(Func<IList<ToDoTask>, Task> handler)
     {
+        // Register observer, which runs against the local database on this peer
+        // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
         return ditto.Store.RegisterObserver(query, async (queryResult) =>
         {
             try
@@ -250,6 +252,9 @@ public class TasksPeer : IDisposable
     public void StartSync()
     {
         ditto.StartSync();
+
+        // Register a subscription, which determines what data syncs to this peer
+        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
         ditto.Sync.RegisterSubscription(query);
     }
 

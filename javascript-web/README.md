@@ -37,5 +37,5 @@ DITTO_WEBSOCKET_URL=""
 Next, run the quickstart app with the following command:
 
 ```
-yarn && yarn dev
+npm && npm run dev
 ```

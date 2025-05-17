@@ -2,133 +2,139 @@ import React, { useState } from 'react';
 import { Task } from '../App';
 
 type ItemProps = {
-  task: Task,
-  onEdit: (id: string, title: string) => void,
-  onToggle: (task: Task) => void,
-  onDelete: (task: Task) => void,
-}
+  task: Task;
+  onEdit: (id: string, title: string) => void;
+  onToggle: (task: Task) => void;
+  onDelete: (task: Task) => void;
+};
 
-const TaskItem: React.FC<ItemProps> = React.memo(({ task, onEdit, onToggle, onDelete }) => {
-  const [editing, setEditing] = useState<boolean>(false);
-  const [editedTitle, setEditedTitle] = useState<string>("");
+const TaskItem: React.FC<ItemProps> = React.memo(
+  ({ task, onEdit, onToggle, onDelete }) => {
+    const [editing, setEditing] = useState<boolean>(false);
+    const [editedTitle, setEditedTitle] = useState<string>('');
 
-  const handleEdit = () => {
-    const trimmedTitle = editedTitle.trim();
-    if (trimmedTitle === "") return;
-    onEdit(task._id, trimmedTitle);
-    setEditedTitle("");
-    setEditing(false);
-  };
+    const handleEdit = () => {
+      const trimmedTitle = editedTitle.trim();
+      if (trimmedTitle === '') return;
+      onEdit(task._id, trimmedTitle);
+      setEditedTitle('');
+      setEditing(false);
+    };
 
-  const textOrInput = () => {
-    if (!editing) {
+    const textOrInput = () => {
+      if (!editing) {
+        return (
+          <span
+            className={`flex-grow text-gray-700 ${task.done ? 'line-through text-gray-400' : ''} cursor-pointer hover:bg-gray-100 px-2 py-1 rounded`}
+            onClick={() => {
+              setEditedTitle(task.title);
+              setEditing(true);
+            }}
+          >
+            {task.title}
+          </span>
+        );
+      }
+
       return (
-        <span
-          className={`flex-grow text-gray-700 ${task.done ? 'line-through text-gray-400' : ''} cursor-pointer hover:bg-gray-100 px-2 py-1 rounded`}
+        <input
+          type="text"
+          value={editedTitle}
+          className="flex-grow px-2 py-1 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          onChange={(e) => setEditedTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleEdit();
+            } else if (e.key === 'Escape') {
+              setEditedTitle('');
+              setEditing(false);
+            }
+          }}
+          autoFocus
+          onFocus={(e) => e.target.select()}
+          onBlur={() => {
+            if (!editedTitle || editedTitle === task.title) {
+              setEditedTitle('');
+              setEditing(false);
+              return;
+            }
+            handleEdit();
+          }}
+        />
+      );
+    };
+
+    return (
+      <div className="group flex items-center p-2 px-4 border-b border-gray-200 hover:bg-gray-50">
+        <input
+          type="checkbox"
+          checked={task.done}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-4"
+          onChange={() => onToggle(task)}
+        />
+        {textOrInput()}
+        <button
+          className="invisible group-hover:visible p-1 ml-2 text-gray-400 hover:text-blue-600 transition-colors mr-2"
+          aria-label="Edit task"
           onClick={() => {
             setEditedTitle(task.title);
             setEditing(true);
           }}
         >
-          {task.title}
-        </span>
-      );
-    }
-
-    return (
-      <input
-        type="text"
-        value={editedTitle}
-        className="flex-grow px-2 py-1 border rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        onChange={(e) => setEditedTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            handleEdit();
-          } else if (e.key === 'Escape') {
-            setEditedTitle("");
-            setEditing(false);
-          }
-        }}
-        autoFocus
-        onFocus={(e) => e.target.select()}
-        onBlur={() => {
-          if (!editedTitle || editedTitle === task.title) {
-            setEditedTitle("");
-            setEditing(false);
-            return;
-          }
-          handleEdit();
-        }}
-      />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
+        </button>
+        <button
+          className="invisible group-hover:visible p-1 text-gray-400 hover:text-red-600 transition-colors"
+          aria-label="Delete task"
+          onClick={() => onDelete(task)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
     );
-  };
-
-  return (
-    <div className='group flex items-center p-2 px-4 border-b border-gray-200 hover:bg-gray-50'>
-      <input
-        type="checkbox"
-        checked={task.done}
-        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-4"
-        onChange={() => onToggle(task)}
-      />
-      {textOrInput()}
-      <button
-        className="invisible group-hover:visible p-1 ml-2 text-gray-400 hover:text-blue-600 transition-colors mr-2"
-        aria-label="Edit task"
-        onClick={() => {
-          setEditedTitle(task.title);
-          setEditing(true);
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-          />
-        </svg>
-      </button>
-      <button
-        className="invisible group-hover:visible p-1 text-gray-400 hover:text-red-600 transition-colors"
-        aria-label="Delete task"
-        onClick={() => onDelete(task)}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
-    </div>
-  );
-});
+  },
+);
 
 type ListProps = {
-  tasks: Task[],
-  onCreate: (title: string) => void,
-  onEdit: (id: string, title: string) => void,
-  onToggle: (task: Task) => void,
-  onDelete: (task: Task) => void,
-}
+  tasks: Task[];
+  onCreate: (title: string) => void;
+  onEdit: (id: string, title: string) => void;
+  onToggle: (task: Task) => void;
+  onDelete: (task: Task) => void;
+};
 
-type Filter = "all" | "active";
+type Filter = 'all' | 'active';
 
-const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDelete }) => {
-  const [filter, setFilter] = useState<Filter>("all");
-  const [newTaskTitle, setNewTaskTitle] = useState<string>("");
+const TaskList: React.FC<ListProps> = ({
+  tasks,
+  onEdit,
+  onCreate,
+  onToggle,
+  onDelete,
+}) => {
+  const [filter, setFilter] = useState<Filter>('all');
+  const [newTaskTitle, setNewTaskTitle] = useState<string>('');
 
   const taskList = tasks
-    .filter((task) => filter === "all" ? true : !task.done)
+    .filter((task) => (filter === 'all' ? true : !task.done))
     .map((task) => (
       <TaskItem
         key={task._id}
@@ -140,13 +146,13 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
     ));
 
   const handleCreate = () => {
-    if (newTaskTitle === "") return;
+    if (newTaskTitle === '') return;
     onCreate(newTaskTitle);
-    setNewTaskTitle("");
+    setNewTaskTitle('');
   };
 
   const deleteCompleted = () => {
-    tasks.filter(task => task.done).forEach(task => onDelete(task));
+    tasks.filter((task) => task.done).forEach((task) => onDelete(task));
   };
 
   // Pretty view to show when the list is empty
@@ -156,7 +162,7 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
     }
 
     return (
-      <div className='flex-grow bg-white shadow-md flex flex-col items-center justify-center text-gray-500 space-y-4 py-8'>
+      <div className="flex-grow bg-white shadow-md flex flex-col items-center justify-center text-gray-500 space-y-4 py-8">
         <svg
           className="w-24 h-24 text-gray-300"
           fill="none"
@@ -174,54 +180,57 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
           No tasks yet
         </h3>
         <p className="text-gray-400 text-center max-w-sm">
-          Add your first task using the input field below. Your tasks will sync across all your devices.
+          Add your first task using the input field below. Your tasks will sync
+          across all your devices.
         </p>
       </div>
     );
   };
 
   return (
-    <div className='w-full mt-8 max-w-2xl flex flex-col h-[calc(100vh-300px)] px-4'>
+    <div className="w-full mt-8 max-w-2xl flex flex-col h-[calc(100vh-300px)] px-4">
       {/* Header/Control Panel */}
-      <div className='bg-white shadow-lg rounded-t-lg'>
-        <div className='flex justify-between items-center px-4 py-3 text-sm text-gray-500 border-b border-gray-200'>
-          <span>{tasks.filter(t => !t.done).length} items left</span>
-          <div className='space-x-2'>
+      <div className="bg-white shadow-lg rounded-t-lg">
+        <div className="flex justify-between items-center px-4 py-3 text-sm text-gray-500 border-b border-gray-200">
+          <span>{tasks.filter((t) => !t.done).length} items left</span>
+          <div className="space-x-2">
             <button
-              onClick={() => setFilter("all")}
-              className={`px-2 py-1 rounded border ${filter === "all"
-                ? 'border-gray-300 bg-gray-50'
-                : 'border-transparent hover:border-gray-300'
-                }`}
+              onClick={() => setFilter('all')}
+              className={`px-2 py-1 rounded border ${
+                filter === 'all'
+                  ? 'border-gray-300 bg-gray-50'
+                  : 'border-transparent hover:border-gray-300'
+              }`}
             >
               All
             </button>
             <button
-              onClick={() => setFilter("active")}
-              className={`px-2 py-1 rounded border ${filter === "active"
-                ? 'border-gray-300 bg-gray-50'
-                : 'border-transparent hover:border-gray-300'
-                }`}
+              onClick={() => setFilter('active')}
+              className={`px-2 py-1 rounded border ${
+                filter === 'active'
+                  ? 'border-gray-300 bg-gray-50'
+                  : 'border-transparent hover:border-gray-300'
+              }`}
             >
               Active
             </button>
           </div>
           <button
-            className='hover:underline hover:text-red-600'
+            className="hover:underline hover:text-red-600"
             onClick={deleteCompleted}
-          >Delete completed</button>
+          >
+            Delete completed
+          </button>
         </div>
       </div>
 
       {listFiller()}
 
       {/* Task List */}
-      <div className='bg-white shadow-md overflow-y-auto'>
-        {taskList}
-      </div>
+      <div className="bg-white shadow-md overflow-y-auto">{taskList}</div>
 
       {/* New Task Input */}
-      <div className='bg-white shadow-md rounded-b-lg flex focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent pt-'>
+      <div className="bg-white shadow-md rounded-b-lg flex focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent pt-">
         <input
           type="text"
           placeholder="What needs to be done?"
@@ -240,7 +249,6 @@ const TaskList: React.FC<ListProps> = ({ tasks, onEdit, onCreate, onToggle, onDe
           Add Task
         </button>
       </div>
-
     </div>
   );
 };

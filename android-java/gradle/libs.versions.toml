@@ -1,7 +1,7 @@
 [versions]
+ditto = "4.10.0"
 agp = "8.7.3"
 constraintlayout = "2.2.0"
-ditto = "4.10.0"
 kotlin = "2.0.0"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -39,4 +39,3 @@ recyclerview-v7 = { module = "com.android.support:recyclerview-v7", version.ref 
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-

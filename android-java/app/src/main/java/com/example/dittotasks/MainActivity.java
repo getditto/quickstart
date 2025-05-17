@@ -41,10 +41,10 @@ public class MainActivity extends ComponentActivity {
     DittoSyncSubscription taskSubscription;
     DittoStoreObserver taskObserver;
 
-    private String DITTO_APP_ID = "<put your Ditto Portal App ID here>";
-    private String DITTO_PLAYGROUND_TOKEN = "<put your Ditto Portal Playground Token here>";
-    private String DITTO_AUTH_URL = "<put your Ditto Portal Auth URL here>";
-    private String DITTO_WEBSOCKET_URL = "<put your Ditto Portal WebSocket URL here>";
+    private String DITTO_APP_ID = BuildConfig.DITTO_APP_ID;
+    private String DITTO_PLAYGROUND_TOKEN = BuildConfig.DITTO_PLAYGROUND_TOKEN;
+    private String DITTO_AUTH_URL = BuildConfig.DITTO_AUTH_URL;
+    private String DITTO_WEBSOCKET_URL = BuildConfig.DITTO_WEBSOCKET_URL;
 
     // This is required to be set to false to use the correct URLs
     private Boolean DITTO_ENABLE_CLOUD_SYNC = false;

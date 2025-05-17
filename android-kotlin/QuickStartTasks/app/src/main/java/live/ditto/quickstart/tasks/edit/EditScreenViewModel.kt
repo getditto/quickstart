@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import live.ditto.DittoError
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.data.Task
 
@@ -35,7 +36,7 @@ class EditScreenViewModel : ViewModel() {
                 _id = task._id
                 title.postValue(task.title)
                 done.postValue(task.done)
-            } catch (e: Exception) {
+            } catch (e: DittoError) {
                 Log.e(TAG, "Unable to setup view task data", e)
             }
         }
@@ -78,7 +79,7 @@ class EditScreenViewModel : ViewModel() {
                         )
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: DittoError) {
                 Log.e(TAG, "Unable to save task", e)
             }
         }
@@ -95,7 +96,7 @@ class EditScreenViewModel : ViewModel() {
                         mapOf("id" to id)
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: DittoError) {
                 Log.e(TAG, "Unable to set deleted=true", e)
             }
         }

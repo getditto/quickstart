@@ -53,3 +53,41 @@ jobs:
 
       - name: Build
         run: "(cd rust-tui; cargo build)"
+
+  js-web:
+    name: javascript-web lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Dependencies
+        working-directory: javascript-web
+        run: npm ci
+
+      - name: Run linter
+        working-directory: javascript-web
+        run: npm run lint
+
+  js-node:
+    name: javascript-tui lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Dependencies
+        working-directory: javascript-tui
+        run: npm ci
+
+      - name: Run linter and tests
+        working-directory: javascript-tui
+        run: npm run test

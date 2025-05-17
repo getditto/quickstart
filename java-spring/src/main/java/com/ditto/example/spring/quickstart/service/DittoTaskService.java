@@ -1,0 +1,123 @@
+package com.ditto.example.spring.quickstart.service;
+
+import com.ditto.java.*;
+import jakarta.annotation.Nonnull;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@Component
+public class DittoTaskService {
+    private static final String TASKS_COLLECTION_NAME = "tasks";
+
+    private final DittoService dittoService;
+
+    public DittoTaskService(DittoService dittoService) {
+        this.dittoService = dittoService;
+    }
+
+    public void addTask(@Nonnull String title) {
+        try {
+            dittoService.getDitto().getStore().execute(
+                    "INSERT INTO %s DOCUMENTS (:newTask)".formatted(TASKS_COLLECTION_NAME),
+                    Map.of(
+                            "newTask",
+                            Map.of(
+                                    "_id", UUID.randomUUID().toString(),
+                                    "title", title,
+                                    "done", false,
+                                    "deleted", false
+                            )
+                    )
+            ).toCompletableFuture().join();
+        } catch (DittoError e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void toggleTaskDone(@Nonnull String taskId) {
+        try {
+            DittoQueryResult tasks = dittoService.getDitto().getStore().execute(
+                    "SELECT * FROM %s WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
+                    Map.of("taskId", taskId)
+            ).toCompletableFuture().join();
+
+            boolean isDone = (boolean)tasks.getItems().get(0).getValue().get("done");
+
+            dittoService.getDitto().getStore().execute(
+                    "UPDATE %s SET done = :done WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
+                    Map.of("done", !isDone, "taskId",  taskId)
+            ).toCompletableFuture().join();
+        } catch (DittoError e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void deleteTask(@Nonnull String taskId) {
+        try {
+            dittoService.getDitto().getStore().execute(
+                    "UPDATE %s SET deleted = :deleted WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
+                    Map.of("deleted", true, "taskId", taskId)
+            ).toCompletableFuture().join();
+        } catch (DittoError e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void updateTask(@Nonnull String taskId, @Nonnull String newTitle) {
+        try {
+            dittoService.getDitto().getStore().execute(
+                    "UPDATE %s SET title = :title WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
+                    Map.of("title", newTitle, "taskId", taskId)
+            ).toCompletableFuture().join();
+        }  catch (DittoError e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Nonnull
+    public Flux<List<Task>> observeAll() {
+        final String selectQuery = "SELECT * FROM %s WHERE NOT deleted ORDER BY _id".formatted(TASKS_COLLECTION_NAME);
+
+        return Flux.create(emitter -> {
+            Ditto ditto = dittoService.getDitto();
+            try {
+                DittoSyncSubscription subscription = ditto.getSync().registerSubscription(selectQuery);
+                DittoStoreObserver observer = ditto.getStore().registerObserver(selectQuery, results -> {
+                    emitter.next(results.getItems().stream().map(this::itemToTask).toList());
+                });
+
+                emitter.onDispose(() -> {
+                    // TODO: Can't just catch, this potentially leaks the `observer` resource.
+                    try {
+                        subscription.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    try {
+                        observer.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } catch (DittoError e) {
+                emitter.error(e);
+            }
+        }, FluxSink.OverflowStrategy.LATEST);
+    }
+
+    private Task itemToTask(@Nonnull DittoQueryResultItem item) {
+        Map<String, ?> value = item.getValue();
+        return new Task(
+                value.get("_id").toString(),
+                value.get("title").toString(),
+                (boolean)value.get("done"),
+                (boolean)value.get("deleted")
+        );
+    }
+}
