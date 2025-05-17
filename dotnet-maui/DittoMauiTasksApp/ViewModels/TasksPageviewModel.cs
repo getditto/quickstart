@@ -34,7 +34,7 @@ namespace DittoMauiTasksApp.ViewModels
             this.popupService = popupService;
             this.logger = logger;
 
-            PermissionHelper.CheckPermissions().ContinueWith(async t =>
+            DittoSyncPermissions.RequestPermissionsAsync().ContinueWith(async t =>
             {
                 try
                 {
