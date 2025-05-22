@@ -45,7 +45,6 @@ class TasksListScreenViewModel : ViewModel() {
     private val _syncEnabled = MutableLiveData(true)
     val syncEnabled: LiveData<Boolean> = _syncEnabled
 
-
     fun setSyncEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesDataStore.edit { settings ->
