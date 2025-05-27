@@ -105,13 +105,14 @@ public class MainActivity extends ComponentActivity {
                             DITTO_AUTH_URL);
             ditto = new Ditto(androidDependencies, identity);
 
-            // Set the Ditto Websocket URL
-            DittoTransportConfig config = new DittoTransportConfig();
-            config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
+            ditto.updateTransportConfig(config -> {
+                config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
 
-            // Enable all P2P transports
-            config.enableAllPeerToPeer();
-            ditto.setTransportConfig(config);
+                // Enable all P2P transports
+                config.enableAllPeerToPeer();
+
+                return null;
+            });
 
             // disable sync with v3 peers, required for DQL
             ditto.disableSyncWithV3();

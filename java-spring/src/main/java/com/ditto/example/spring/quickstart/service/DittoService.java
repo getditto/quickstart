@@ -68,18 +68,16 @@ public class DittoService implements DisposableBean {
             // disable sync with v3 peers, required for DQL
             this.ditto.disableSyncWithV3();
 
-            DittoTransportConfig transportConfig = new DittoTransportConfig.Builder()
-                    .connect(connect -> {
-                        // Set the Ditto Websocket URL
-                        connect.addWebsocketUrls(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
-                    })
-                    .build();
+            this.ditto.updateTransportConfig(config -> {
+                config.connect(connect -> {
+                    connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
+                });
 
-            logger.info("Transport config: {}", transportConfig);
+                // Enable all P2P transports
+                config.peerToPeer();
 
-            this.ditto.setTransportConfig(
-                    transportConfig
-            );
+                logger.info("Transport config: {}", config);
+            });
 
             presenceObserver = observePeersPresence();
 
