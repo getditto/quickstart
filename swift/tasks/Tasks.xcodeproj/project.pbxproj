@@ -15,9 +15,22 @@
 		41F8698A2CECF42500DC7268 /* Ditto Tasks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Ditto Tasks.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B320771C2DE5AAA80014E4AA /* Exceptions for "Tasks" folder in "Ditto Tasks" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 41F869892CECF42500DC7268 /* Ditto Tasks */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		41F8698C2CECF42500DC7268 /* Tasks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B320771C2DE5AAA80014E4AA /* Exceptions for "Tasks" folder in "Ditto Tasks" target */,
+			);
 			path = Tasks;
 			sourceTree = "<group>";
 		};
