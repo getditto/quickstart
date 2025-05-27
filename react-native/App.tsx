@@ -132,6 +132,11 @@ const App = () => {
       // Initialize transport config
       ditto.current.updateTransportConfig(config => {
         config.connect.websocketURLs.push(DITTO_WEBSOCKET_URL);
+
+        if (Platform.OS === 'android') {
+          config.peerToPeer.awdl.isEnabled = false;
+        }
+
         return config;
       });
 
