@@ -109,7 +109,8 @@ public class MainActivity extends ComponentActivity {
                 // Set the Ditto Websocket URL
                 config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
 
-                return null;
+                // lambda must return Kotlin Unit which corresponds to 'void' in Java
+                return kotlin.Unit.INSTANCE;
             });
 
             // disable sync with v3 peers, required for DQL
