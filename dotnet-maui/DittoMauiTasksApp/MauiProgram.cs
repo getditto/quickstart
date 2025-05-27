@@ -50,11 +50,14 @@ public static class MauiProgram
             PlaygroundToken, 
             false,  // This is required to be set to false to use the correct URLs
             authUrl), Path.Combine(FileSystem.Current.AppDataDirectory, "ditto"));
-        
-        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
-        // Optionally enable all P2P transports if using P2P Sync
-        // Do not call this if only using Ditto Cloud Sync
-        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
+
+        ditto.UpdateTransportConfig(config =>
+        {
+            config.Connect.WebsocketUrls.Add(websocketUrl);
+            // Optionally enable all P2P transports if using P2P Sync
+            // Do not call this if only using Ditto Cloud Sync
+            config.Connect.WebsocketUrls.Add(websocketUrl);
+        });
         
         // disable sync with v3 peers, required for DQL
         ditto.DisableSyncWithV3();
