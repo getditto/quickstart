@@ -131,7 +131,7 @@ const App = () => {
 
       // Initialize transport config
       ditto.current.updateTransportConfig(config => {
-        config.connect.websocketURLs.push(DITTO_WEBSOCKET_URL);
+        config.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
 
         if (Platform.OS === 'android') {
           config.peerToPeer.awdl.isEnabled = false;
@@ -141,7 +141,7 @@ const App = () => {
       });
 
       ditto.current.startSync();
-      
+
       // Register a subscription, which determines what data syncs to this peer
       // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
       taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
