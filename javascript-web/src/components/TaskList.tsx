@@ -271,7 +271,6 @@ const TaskList: React.FC<ListProps> = ({
         />
         <button
           disabled={!isInitialized}
-          // className="px-4 py-3 bg-blue-500 text-white font-medium transition-all duration-300 hover:from-blue-500 hover:via-blue-300 hover:to-blue-400 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)] rounded-br-lg hover:bg-blue-600 hover:drop-shadow-md"
           className={`px-4 py-3 bg-blue-500 text-white font-medium transition-all duration-300 rounded-br-lg ${
             isInitialized
               ? 'hover:bg-blue-600 hover:drop-shadow-md'
