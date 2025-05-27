@@ -15,23 +15,10 @@
 		41F8698A2CECF42500DC7268 /* Ditto Tasks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Ditto Tasks.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4170A8592CED356700043F5A /* Exceptions for "Tasks" folder in "Ditto Tasks" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 41F869892CECF42500DC7268 /* Ditto Tasks */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		41F8698C2CECF42500DC7268 /* Tasks */ = {
+		41F8698C2CECF42500DC7268 /* tasks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				4170A8592CED356700043F5A /* Exceptions for "Tasks" folder in "Ditto Tasks" target */,
-			);
-			path = Tasks;
+			path = tasks;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -52,7 +39,7 @@
 		41F869812CECF42500DC7268 = {
 			isa = PBXGroup;
 			children = (
-				41F8698C2CECF42500DC7268 /* Tasks */,
+				41F8698C2CECF42500DC7268 /* tasks */,
 				41F8698B2CECF42500DC7268 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -82,7 +69,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				41F8698C2CECF42500DC7268 /* Tasks */,
+				41F8698C2CECF42500DC7268 /* tasks */,
 			);
 			name = "Ditto Tasks";
 			packageProductDependencies = (
