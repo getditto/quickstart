@@ -73,13 +73,15 @@ public class TasksPeer : IDisposable
             authUrl);
 
         ditto = new Ditto(identity, tempDir);
-        
-        // Optionally enable all P2P transports if using P2P Sync
-        // Do not call this if only using Ditto Cloud Sync
-        ditto.TransportConfig.EnableAllPeerToPeer();
-        
-        // Add the websocket URL to the transport configuration.
-        ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
+
+        ditto.UpdateTransportConfig(config => {
+            // Optionally enable all P2P transports if using P2P Sync
+            // Do not call this if only using Ditto Cloud Sync
+            config.EnableAllPeerToPeer();
+
+            // Add the websocket URL to the transport configuration.
+            config.Connect.WebsocketUrls.Add(websocketUrl);
+        });
 
         // disable sync with v3 peers, required for DQL
         ditto.DisableSyncWithV3();
