@@ -106,10 +106,8 @@ public class MainActivity extends ComponentActivity {
             ditto = new Ditto(androidDependencies, identity);
 
             ditto.updateTransportConfig(config -> {
+                // Set the Ditto Websocket URL
                 config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
-
-                // Enable all P2P transports
-                config.enableAllPeerToPeer();
 
                 return null;
             });

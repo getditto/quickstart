@@ -70,11 +70,9 @@ public class DittoService implements DisposableBean {
 
             this.ditto.updateTransportConfig(config -> {
                 config.connect(connect -> {
+                    // Set the Ditto Websocket URL
                     connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
                 });
-
-                // Enable all P2P transports
-                config.peerToPeer();
 
                 logger.info("Transport config: {}", config);
             });

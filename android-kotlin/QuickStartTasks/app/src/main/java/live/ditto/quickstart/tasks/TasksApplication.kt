@@ -56,9 +56,6 @@ class TasksApplication : Application() {
         ditto.updateTransportConfig { config ->
             // Set the Ditto Websocket URL
             config.connect.websocketUrls.add(webSocketURL)
-
-            // Enable all P2P transports
-            config.enableAllPeerToPeer()
         }
 
         // disable sync with v3 peers, required for DQL
