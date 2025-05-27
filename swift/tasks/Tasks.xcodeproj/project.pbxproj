@@ -19,6 +19,7 @@
 		B320771C2DE5AAA80014E4AA /* Exceptions for "Tasks" folder in "Ditto Tasks" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				.gitignore,
 				Info.plist,
 			);
 			target = 41F869892CECF42500DC7268 /* Ditto Tasks */;
