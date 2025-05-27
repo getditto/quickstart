@@ -130,21 +130,10 @@ const App = () => {
       ditto.current = new Ditto(identity);
 
       // Initialize transport config
-      {
-        const transportsConfig = new TransportConfig();
-        transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
-        transportsConfig.peerToPeer.lan.isEnabled = true;
-
-        if (Platform.OS === 'ios') {
-          transportsConfig.peerToPeer.awdl.isEnabled = true;
-        }
-
-        if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
-          transportsConfig.connect.websocketURLs.push(DITTO_WEBSOCKET_URL);
-        }
-
-        ditto.current.setTransportConfig(transportsConfig);
-      }
+      ditto.current.updateTransportConfig(config => {
+        config.connect.websocketURLs.push(DITTO_WEBSOCKET_URL);
+        return config;
+      });
 
       ditto.current.startSync();
       

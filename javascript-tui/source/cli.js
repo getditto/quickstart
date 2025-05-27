@@ -79,10 +79,10 @@ const ditto = new Ditto(
 	tempdir,
 );
 
-const transportConfig = new TransportConfig();
-transportConfig.connect.websocketURLs.push(websocketURL);
-transportConfig.setAllPeerToPeerEnabled(true);
-ditto.setTransportConfig(transportConfig);
+// Initialize transport config
+ditto.updateTransportConfig(config => {
+	config.connect.websocketURLs.push(websocketURL);
+});
 
 // disable sync with v3 peers, required for DQL
 await ditto.disableSyncWithV3();

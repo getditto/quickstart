@@ -61,9 +61,11 @@ const App = () => {
         // https://docs.ditto.live/sdk/latest/install-guides/js#integrating-ditto-and-starting-sync
         ditto.current = new Ditto(identity);
 
-        const config = new TransportConfig();
-        config.connect.websocketURLs.push(import.meta.env.DITTO_WEBSOCKET_URL);
-        ditto.current?.setTransportConfig(config);
+        // Initialize transport config
+        ditto.current.updateTransportConfig((config) => {
+          config.connect.websocketURLs = [import.meta.env.DITTO_WEBSOCKET_URL];
+          return config;
+        });
 
         // disable sync with v3 peers, required for DQL
         await ditto.current.disableSyncWithV3();
