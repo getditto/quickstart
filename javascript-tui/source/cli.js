@@ -81,7 +81,7 @@ const ditto = new Ditto(
 
 // Initialize transport config
 ditto.updateTransportConfig(config => {
-	config.connect.websocketURLs = [websocketURL]
+	config.connect.websocketURLs = [websocketURL];
 });
 
 // disable sync with v3 peers, required for DQL
