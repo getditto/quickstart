@@ -16,9 +16,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		41F8698C2CECF42500DC7268 /* tasks */ = {
+		41F8698C2CECF42500DC7268 /* Tasks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = tasks;
+			path = Tasks;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,7 +39,7 @@
 		41F869812CECF42500DC7268 = {
 			isa = PBXGroup;
 			children = (
-				41F8698C2CECF42500DC7268 /* tasks */,
+				41F8698C2CECF42500DC7268 /* Tasks */,
 				41F8698B2CECF42500DC7268 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -69,7 +69,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				41F8698C2CECF42500DC7268 /* tasks */,
+				41F8698C2CECF42500DC7268 /* Tasks */,
 			);
 			name = "Ditto Tasks";
 			packageProductDependencies = (
@@ -95,7 +95,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 41F869852CECF42500DC7268 /* Build configuration list for PBXProject "tasks" */;
+			buildConfigurationList = 41F869852CECF42500DC7268 /* Build configuration list for PBXProject "Tasks" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -352,7 +352,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		41F869852CECF42500DC7268 /* Build configuration list for PBXProject "tasks" */ = {
+		41F869852CECF42500DC7268 /* Build configuration list for PBXProject "Tasks" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				41F869962CECF42600DC7268 /* Debug */,
