@@ -1,6 +1,5 @@
 import {
   Ditto,
-  TransportConfig,
   IdentityOnlinePlayground,
   StoreObserver,
   SyncSubscription,
