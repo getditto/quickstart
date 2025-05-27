@@ -114,14 +114,25 @@ const TaskItem: React.FC<ItemProps> = React.memo(
 );
 
 type ListProps = {
-  tasks: Task[];
+  tasks: Task[] | null;
   onCreate: (title: string) => void;
   onEdit: (id: string, title: string) => void;
   onToggle: (task: Task) => void;
   onDelete: (task: Task) => void;
+  isInitialized: boolean;
 };
 
 type Filter = 'all' | 'active';
+
+const Spinner: React.FC = () => (
+  <div
+    className="animate-spin rounded-full h-8 w-8 border-4 border-b-gray-300 border-l-gray-300 border-r-gray-300 border-t-transparent"
+    role="status"
+    aria-live="polite"
+  >
+    <span className="sr-only">Initializing...</span>
+  </div>
+);
 
 const TaskList: React.FC<ListProps> = ({
   tasks,
@@ -129,21 +140,24 @@ const TaskList: React.FC<ListProps> = ({
   onCreate,
   onToggle,
   onDelete,
+  isInitialized,
 }) => {
   const [filter, setFilter] = useState<Filter>('all');
   const [newTaskTitle, setNewTaskTitle] = useState<string>('');
 
-  const taskList = tasks
-    .filter((task) => (filter === 'all' ? true : !task.done))
-    .map((task) => (
-      <TaskItem
-        key={task._id}
-        task={task}
-        onEdit={onEdit}
-        onToggle={onToggle}
-        onDelete={onDelete}
-      />
-    ));
+  const taskList = !tasks
+    ? null
+    : tasks
+        .filter((task) => (filter === 'all' ? true : !task.done))
+        .map((task) => (
+          <TaskItem
+            key={task._id}
+            task={task}
+            onEdit={onEdit}
+            onToggle={onToggle}
+            onDelete={onDelete}
+          />
+        ));
 
   const handleCreate = () => {
     if (newTaskTitle === '') return;
@@ -152,12 +166,12 @@ const TaskList: React.FC<ListProps> = ({
   };
 
   const deleteCompleted = () => {
-    tasks.filter((task) => task.done).forEach((task) => onDelete(task));
+    tasks?.filter((task) => task.done).forEach((task) => onDelete(task));
   };
 
   // Pretty view to show when the list is empty
   const listFiller = () => {
-    if (tasks.length !== 0) {
+    if (tasks?.length !== 0) {
       return null;
     }
 
@@ -192,9 +206,15 @@ const TaskList: React.FC<ListProps> = ({
       {/* Header/Control Panel */}
       <div className="bg-white shadow-lg rounded-t-lg">
         <div className="flex justify-between items-center px-4 py-3 text-sm text-gray-500 border-b border-gray-200">
-          <span>{tasks.filter((t) => !t.done).length} items left</span>
+          {!isInitialized ? (
+            <Spinner />
+          ) : (
+            <span>{tasks?.filter((t) => !t.done).length} items left</span>
+          )}
+
           <div className="space-x-2">
             <button
+              disabled={!isInitialized}
               onClick={() => setFilter('all')}
               className={`px-2 py-1 rounded border ${
                 filter === 'all'
@@ -205,6 +225,7 @@ const TaskList: React.FC<ListProps> = ({
               All
             </button>
             <button
+              disabled={!isInitialized}
               onClick={() => setFilter('active')}
               className={`px-2 py-1 rounded border ${
                 filter === 'active'
@@ -216,7 +237,12 @@ const TaskList: React.FC<ListProps> = ({
             </button>
           </div>
           <button
-            className="hover:underline hover:text-red-600"
+            disabled={!isInitialized}
+            className={
+              isInitialized
+                ? 'hover:underline hover:text-red-600'
+                : 'text-gray-400 cursor-not-allowed'
+            }
             onClick={deleteCompleted}
           >
             Delete completed
@@ -234,6 +260,7 @@ const TaskList: React.FC<ListProps> = ({
         <input
           type="text"
           placeholder="What needs to be done?"
+          disabled={!isInitialized}
           className="flex-grow px-4 py-3 rounded-bl-lg border-r border-gray-200 focus:outline-none"
           value={newTaskTitle}
           onChange={(e) => setNewTaskTitle(e.target.value)}
@@ -243,7 +270,13 @@ const TaskList: React.FC<ListProps> = ({
           }}
         />
         <button
-          className="px-4 py-3 bg-blue-500 text-white font-medium transition-all duration-300 hover:from-blue-500 hover:via-blue-300 hover:to-blue-400 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)] rounded-br-lg hover:bg-blue-600 hover:drop-shadow-md"
+          disabled={!isInitialized}
+          // className="px-4 py-3 bg-blue-500 text-white font-medium transition-all duration-300 hover:from-blue-500 hover:via-blue-300 hover:to-blue-400 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)] rounded-br-lg hover:bg-blue-600 hover:drop-shadow-md"
+          className={`px-4 py-3 bg-blue-500 text-white font-medium transition-all duration-300 rounded-br-lg ${
+            isInitialized
+              ? 'hover:bg-blue-600 hover:drop-shadow-md'
+              : 'bg-gray-400 cursor-not-allowed'
+          }`}
           onClick={handleCreate}
         >
           Add Task

@@ -32,12 +32,11 @@ const App = () => {
   const tasksObserver = useRef<StoreObserver | null>(null);
 
   const [syncActive, setSyncActive] = useState<boolean>(true);
-  const [isInitialized, setIsInitialized] = useState<Promise<void> | null>(
-    null,
-  );
+  const [promisedInitialization, setPromisedInitialization] =
+    useState<Promise<void> | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-
+  const [tasks, setTasks] = useState<Task[] | null>(null);
   useEffect(() => {
     const initializeDitto = async () => {
       try {
@@ -47,14 +46,14 @@ const App = () => {
       }
     };
 
-    if (!isInitialized) setIsInitialized(initializeDitto());
-  }, [isInitialized]);
+    if (!promisedInitialization) setPromisedInitialization(initializeDitto());
+  }, [promisedInitialization]);
 
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!promisedInitialization) return;
 
     (async () => {
-      await isInitialized;
+      await promisedInitialization;
       try {
         // Create a new Ditto instance with the identity
         // https://docs.ditto.live/sdk/latest/install-guides/js#integrating-ditto-and-starting-sync
@@ -86,8 +85,10 @@ const App = () => {
             setTasks(tasks);
           },
         );
+        setIsInitialized(true);
       } catch (e) {
         setError(e as Error);
+        setIsInitialized(false);
       }
 
       return () => {
@@ -95,7 +96,7 @@ const App = () => {
         ditto.current = null;
       };
     })();
-  }, [isInitialized]);
+  }, [promisedInitialization]);
 
   const toggleSync = () => {
     if (syncActive) {
@@ -197,6 +198,7 @@ const App = () => {
           token={identity.token}
           syncEnabled={syncActive}
           onToggleSync={toggleSync}
+          isInitialized={isInitialized}
         />
         <TaskList
           tasks={tasks}
@@ -204,6 +206,7 @@ const App = () => {
           onEdit={editTask}
           onToggle={toggleTask}
           onDelete={deleteTask}
+          isInitialized={isInitialized}
         />
       </div>
     </div>

@@ -5,6 +5,7 @@ type Props = {
   token: string;
   syncEnabled: boolean;
   onToggleSync: () => void;
+  isInitialized: boolean;
 };
 
 const DittoInfo: React.FC<Props> = ({
@@ -12,6 +13,7 @@ const DittoInfo: React.FC<Props> = ({
   token,
   syncEnabled,
   onToggleSync,
+  isInitialized,
 }) => {
   return (
     <div className="pt-8">
@@ -22,13 +24,16 @@ const DittoInfo: React.FC<Props> = ({
         <p>App ID: {appId}</p>
         <p>Token: {token}</p>
         <div className="flex items-center justify-center gap-2 mt-4">
-          <span className={`${syncEnabled ? 'text-blue-600 font-medium' : ''}`}>
+          <span
+            className={`${syncEnabled && isInitialized ? 'text-blue-600 font-medium' : ''}`}
+          >
             {syncEnabled ? 'Sync Enabled' : 'Sync Disabled'}
           </span>
           <button
+            disabled={!isInitialized}
             onClick={onToggleSync}
             className={`relative inline-flex h-6 w-11 items-center rounded-full ${
-              syncEnabled ? 'bg-blue-600' : 'bg-gray-200'
+              syncEnabled && isInitialized ? 'bg-blue-600' : 'bg-gray-200'
             }`}
           >
             <span
