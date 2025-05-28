@@ -71,11 +71,8 @@ public class TasksPeer : IDisposable
 
         ditto = new Ditto(identity, dir);
 
-        ditto.UpdateTransportConfig(config => {
-            // Optionally enable all P2P transports if using P2P Sync
-            // Do not call this if only using Ditto Cloud Sync
-            ditto.TransportConfig.EnableAllPeerToPeer();
-
+        ditto.UpdateTransportConfig(config =>
+        {
             // Add the websocket URL to the transport configuration.
             ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
         });
