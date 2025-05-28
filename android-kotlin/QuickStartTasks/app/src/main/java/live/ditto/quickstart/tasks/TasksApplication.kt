@@ -53,14 +53,10 @@ class TasksApplication : Application() {
         )
 
         ditto = Ditto(androidDependencies, identity)
-
-        // Set the Ditto Websocket URL
-        val transportConfig = DittoTransportConfig()
-        transportConfig.connect.websocketUrls.add(webSocketURL)
-
-        // Enable all P2P transports
-        transportConfig.enableAllPeerToPeer()
-        ditto.transportConfig = transportConfig
+        ditto.updateTransportConfig { config ->
+            // Set the Ditto Websocket URL
+            config.connect.websocketUrls.add(webSocketURL)
+        }
 
         // disable sync with v3 peers, required for DQL
         ditto.disableSyncWithV3()
