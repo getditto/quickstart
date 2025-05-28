@@ -53,9 +53,7 @@ public static class MauiProgram
 
         ditto.UpdateTransportConfig(config =>
         {
-            config.Connect.WebsocketUrls.Add(websocketUrl);
-            // Optionally enable all P2P transports if using P2P Sync
-            // Do not call this if only using Ditto Cloud Sync
+            // Add the websocket URL to the transport configuration.
             config.Connect.WebsocketUrls.Add(websocketUrl);
         });
         
