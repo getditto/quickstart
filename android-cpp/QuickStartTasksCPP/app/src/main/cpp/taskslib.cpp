@@ -172,7 +172,6 @@ Java_live_ditto_quickstart_tasks_TasksLib_stopSync(JNIEnv *env, jobject thiz) {
       throw_java_illegal_state_exception(env, "TasksLib has not been initialized");
       return;
     }
-    remove_observer(env);
     peer->stop_sync();
   } catch (const std::exception &err) {
     __android_log_print(ANDROID_LOG_ERROR, TAG, "stopSync failed: %s", err.what());
