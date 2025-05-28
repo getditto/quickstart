@@ -18,13 +18,11 @@ class DittoManager: ObservableObject {
                 customAuthURL: URL(string: Env.DITTO_AUTH_URL)
             )
         )
-        // Set the Ditto Websocket URL
-        var config = DittoTransportConfig()
-        config.connect.webSocketURLs.insert(Env.DITTO_WEBSOCKET_URL)
 
-        // Enable all P2P transports
-        config.enableAllPeerToPeer()
-        ditto.transportConfig = config
+        // Set the Ditto Websocket URL
+        ditto.updateTransportConfig { transportConfig in
+            transportConfig.connect.webSocketURLs.insert(Env.DITTO_WEBSOCKET_URL)
+        }
 
         // disable sync with v3 peers, required for DQL
         do {
