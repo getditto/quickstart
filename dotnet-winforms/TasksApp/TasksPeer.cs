@@ -33,6 +33,9 @@ public class TasksPeer : IDisposable
     {
         var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
 
+        //disable strict mode for DQL queries and redundant connections
+        await peer.DisableStrictMode();
+
         await peer.InsertInitialTasks();
 
         peer.StartSync();
@@ -86,6 +89,17 @@ public class TasksPeer : IDisposable
     {
         ditto?.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    public async Task DisableStrictMode()
+    {
+        // https://docs.ditto.live/sdk/latest/sync/managing-redundant-bluetooth-le-connections#disabling-redundant-connections
+
+        var bluetoothQuery = "ALTER SYSTEM SET mesh_chooser_avoid_redundant_bluetooth = false";
+        await ditto.Store.ExecuteAsync(bluetoothQuery);
+
+        var alterQuery = "ALTER SYSTEM SET DQL_STRICT_MODE = false";
+        await ditto.Store.ExecuteAsync(alterQuery);
     }
 
     /// <summary>
