@@ -34,7 +34,7 @@ vector<string> tasks_json_from(const ditto::QueryResult &result) {
 
 /// Initialize a Ditto instance.
 unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
-                                    jobject context,
+                                    jobject android_context,
                                     string app_id,
                                     string online_playground_token,
                                     bool enable_cloud_sync,
@@ -55,7 +55,7 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
         );
 
     auto ditto =
-        make_unique<ditto::Ditto>(identity, std::move(persistence_dir));
+        make_unique<ditto::Ditto>(android_context, identity, std::move(persistence_dir));
 
     if (is_running_on_emulator) {
       // Some transports don't work correctly on emulator, so disable them.
@@ -70,8 +70,6 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
           config.connect.websocket_urls.insert(websocket_url);
       });
     }
-
-    ditto->set_android_context(env, context);
 
     // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
