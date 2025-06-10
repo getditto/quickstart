@@ -9,36 +9,36 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ditto" Version="4.11.0-preview.4" />
+    <PackageReference Include="Ditto" Version="4.11.0" />
     <PackageReference Include="System.Text.Json" Version="9.0.4" />
-  </ItemGroup> 
+  </ItemGroup>
 
-	
+
 <ItemGroup>
   <!-- See the README for instructions on creating this file, if it doesn't exist -->
   <EmbeddedResource Include="../../.env">
     <CopyToOutputDirectory>Always</CopyToOutputDirectory>
   </EmbeddedResource>
-</ItemGroup> 
+</ItemGroup>
 
-	
+
 <ItemGroup>
   <Compile Update="Properties\Resources.Designer.cs">
     <DesignTime>True</DesignTime>
     <AutoGen>True</AutoGen>
     <DependentUpon>Resources.resx</DependentUpon>
   </Compile>
-</ItemGroup> 
+</ItemGroup>
 
-	
+
 <ItemGroup>
   <EmbeddedResource Update="Properties\Resources.resx">
     <Generator>ResXFileCodeGenerator</Generator>
     <LastGenOutput>Resources.Designer.cs</LastGenOutput>
   </EmbeddedResource>
-</ItemGroup> 
+</ItemGroup>
 
-	
+
 <ItemGroup>
   <None Update="assets\sync-off.bmp">
     <CopyToOutputDirectory>Always</CopyToOutputDirectory>
