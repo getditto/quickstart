@@ -49,10 +49,17 @@ jobs:
           components: rustfmt, clippy
 
       - name: Clippy
-        run: "(cd rust-tui; cargo clippy)"
+        run: |
+          cd rust-tui
+          cargo clippy
 
       - name: Build
-        run: "(cd rust-tui; cargo build)"
+        run: |
+          cd rust-tui
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            export RUSTFLAGS="-C prefer-dynamic"
+          fi
+          cargo build
 
   js-web:
     name: javascript-web lint
