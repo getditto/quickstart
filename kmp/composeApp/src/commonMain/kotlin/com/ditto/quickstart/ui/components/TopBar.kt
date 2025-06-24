@@ -17,10 +17,6 @@ import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.primarySurface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +32,6 @@ internal fun TopBar(
     onSyncChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-//    var syncChecked by remember { mutableStateOf(isSyncEnabled) }
     Surface(
         modifier = modifier,
         color = MaterialTheme.colors.primarySurface
@@ -51,7 +46,6 @@ internal fun TopBar(
                     SyncButton(
                         checked = isSyncEnabled,
                         onCheckedChange = { checked ->
-//                            syncChecked = checked
                             onSyncChange(checked)
                         }
                     )

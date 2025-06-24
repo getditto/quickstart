@@ -1,6 +1,5 @@
 package com.ditto.quickstart.di
 
-
 import com.ditto.quickstart.ui.AppViewModel
 import com.ditto.quickstart.ui.MainScreenViewModel
 import com.ditto.quickstart.ui.TaskAddEditScreenViewModel

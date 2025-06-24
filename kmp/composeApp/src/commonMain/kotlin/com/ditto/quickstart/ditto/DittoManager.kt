@@ -1,26 +1,23 @@
 package com.ditto.quickstart.ditto
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import com.ditto.example.kotlin.quickstart.configuration.DittoSecretsConfiguration
 import com.ditto.kotlin.Ditto
 import com.ditto.kotlin.DittoConfig
 import com.ditto.kotlin.DittoIdentity
 import com.ditto.kotlin.DittoLog
-import com.ditto.example.kotlin.quickstart.configuration.DittoSecretsConfiguration
 import com.ditto.kotlin.DittoLogLevel
 import com.ditto.kotlin.DittoLogger
 import com.ditto.kotlin.DittoQueryResult
 import com.ditto.kotlin.DittoSyncSubscription
 import com.ditto.kotlin.error.DittoError
 import com.ditto.kotlin.serialization.DittoCborSerializable
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 
 private const val TAG = "DittoManager"
 
@@ -127,8 +124,7 @@ class DittoManager {
 }
 
 /**
- * Defines how to create a Ditto Config in Multiplatform,
- * and on each platform pass the required dependencies, for
+ * Defines how to create a Ditto Config in Multiplatform, and on each platform pass the required dependencies - for
  * example, on Android we require Context.
  */
 internal expect fun createDittoConfig(
