@@ -1,6 +1,3 @@
-import org.gradle.kotlin.dsl.withType
-import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -12,10 +9,6 @@ plugins {
 
 group = "com.ditto.example.kmp"
 version = "0.0.1-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
 
 tasks.withType<Test> {
     useJUnitPlatform()

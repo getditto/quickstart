@@ -126,12 +126,6 @@ android {
     }
 }
 
-repositories {
-    mavenLocal()
-    google()
-    mavenCentral()
-}
-
 dependencies {
     implementation(libs.androidx.material3.android)
     debugImplementation(compose.uiTooling)
@@ -148,4 +142,3 @@ compose.desktop {
         }
     }
 }
-
