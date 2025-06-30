@@ -3,7 +3,7 @@ package com.ditto.example.spring.quickstart.service;
 import com.ditto.example.spring.quickstart.configuration.DittoConfigurationKeys;
 import com.ditto.example.spring.quickstart.configuration.DittoSecretsConfiguration;
 import com.ditto.java.*;
-import com.ditto.java.transports.DittoTransportConfig;
+import com.ditto.java.serialization.DittoCborSerializable;
 import jakarta.annotation.Nonnull;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -11,14 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 @Component
@@ -30,7 +28,7 @@ public class DittoService implements DisposableBean {
     private final Ditto ditto;
 
     @Nonnull
-    private final DittoPresenceObserver presenceObserver;
+    private final DittoAsyncCancellable presenceObserver;
 
     @Nonnull
     private final DittoStoreObserver syncStateObserver;
@@ -41,55 +39,48 @@ public class DittoService implements DisposableBean {
     private final Logger logger = LoggerFactory.getLogger(DittoService.class);
 
     DittoService(@Nonnull final Environment environment) {
-        try {
-            File dittoDir = new File(environment.getRequiredProperty(DittoConfigurationKeys.DITTO_DIR));
-            dittoDir.mkdirs();
+        File dittoDir = new File(environment.getRequiredProperty(DittoConfigurationKeys.DITTO_DIR));
+        dittoDir.mkdirs();
 
-            DittoDependencies dependencies = new DefaultDittoDependencies(dittoDir);
+        /*
+         *  Setup Ditto Identity
+         *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
+         */
+        DittoIdentity identity = new DittoIdentity.OnlinePlayground(
+                DittoSecretsConfiguration.DITTO_APP_ID,
+                DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
+                // This is required to be set to false to use the correct URLs
+                false,
+                DittoSecretsConfiguration.DITTO_AUTH_URL
+        );
 
-            /*
-             *  Setup Ditto Identity
-             *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
-             */
-            DittoIdentity identity = new DittoIdentity.OnlinePlayground(
-                    DittoSecretsConfiguration.DITTO_APP_ID,
-                    DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-                    // This is required to be set to false to use the correct URLs
-                    false,
-                    DittoSecretsConfiguration.DITTO_AUTH_URL
-            );
+        DittoConfig dittoConfig = new DittoConfig.Builder(dittoDir)
+                .identity(identity)
+                .build();
 
-            this.ditto = new Ditto.Builder(dependencies)
-                    .setIdentity(identity)
-                    .build();
+        this.ditto = new Ditto(dittoConfig);
 
-            this.ditto.setDeviceName("Spring Java");
+        this.ditto.setDeviceName("Spring Java");
 
-            // disable sync with v3 peers, required for DQL
-            this.ditto.disableSyncWithV3();
-
-            this.ditto.updateTransportConfig(config -> {
-                config.connect(connect -> {
-                    // Set the Ditto Websocket URL
-                    connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
-                });
-
-                logger.info("Transport config: {}", config);
+        this.ditto.updateTransportConfig(transportConfig -> {
+            transportConfig.connect(connect -> {
+                // Set the Ditto Websocket URL
+                connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
             });
 
-            presenceObserver = observePeersPresence();
+            logger.info("Transport config: {}", transportConfig);
+        });
 
-            syncStateObserver = setupAndObserveSyncState();
-        } catch (DittoError e) {
-            throw new RuntimeException(e);
-        }
+        presenceObserver = observePeersPresence();
+
+        syncStateObserver = setupAndObserveSyncState();
     }
 
     @Override
     public void destroy() throws Exception {
         logger.info("Ditto is being closed");
 
-        presenceObserver.close();
+        presenceObserver.cancel();
         syncStateObserver.close();
         ditto.close();
     }
@@ -112,7 +103,7 @@ public class DittoService implements DisposableBean {
         }
     }
 
-    private DittoPresenceObserver observePeersPresence() {
+    private DittoAsyncCancellable observePeersPresence() {
         return ditto.getPresence().observe((graph) -> {
             logger.info("Peers connected: {}", graph.getRemotePeers().size());
             for (DittoPeer peer : graph.getRemotePeers()) {
@@ -132,20 +123,28 @@ public class DittoService implements DisposableBean {
             if (hasNoSyncState) {
                 ditto.getStore().execute(
                         "INSERT INTO %s DOCUMENTS(:sync)".formatted(DITTO_SYNC_STATE_COLLECTION),
-                        Map.of("sync", Map.of("_id", DITTO_SYNC_STATE_ID, DITTO_SYNC_STATE_ID, false))
+                        DittoCborSerializable.buildDictionary()
+                                .put("sync", DittoCborSerializable.buildDictionary()
+                                        .put("_id", DITTO_SYNC_STATE_ID)
+                                        .put(DITTO_SYNC_STATE_ID, false)
+                                        .build()
+                                )
+                                .build()
                 ).toCompletableFuture().join();
             }
 
             return ditto.getStore().registerObserver(
                     "SELECT * FROM %s WHERE _id = :id".formatted(DITTO_SYNC_STATE_COLLECTION),
-                    Map.of("id",  DITTO_SYNC_STATE_ID),
+                    DittoCborSerializable.buildDictionary()
+                            .put("id",  DITTO_SYNC_STATE_ID)
+                            .build(),
                     (result) -> {
                         List<? extends DittoQueryResultItem> items = result.getItems();
                         boolean newSyncState = false;
                         if (!items.isEmpty()) {
-                            Map<String, ?> value = items.get(0).getValue();
-                            String stringValue = value.get(DITTO_SYNC_STATE_ID).toString();
-                            newSyncState = Boolean.parseBoolean(stringValue);
+                            newSyncState = items.get(0).getValue()
+                                    .get(DITTO_SYNC_STATE_ID)
+                                    .getBoolean();
                         }
 
                         if (newSyncState) {
@@ -168,7 +167,9 @@ public class DittoService implements DisposableBean {
     private void setSyncStateIntoDittoStore(boolean newState) throws DittoError {
         CompletionStage<DittoQueryResult> future = ditto.getStore().execute(
                 "UPDATE %s SET %s = :syncState".formatted(DITTO_SYNC_STATE_COLLECTION, DITTO_SYNC_STATE_ID),
-                Map.of("syncState", newState)
+                DittoCborSerializable.buildDictionary()
+                        .put("syncState", newState)
+                        .build()
         );
 
         try {
