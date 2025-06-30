@@ -53,7 +53,6 @@ class DittoManager {
                 DittoLogger.minimumLogLevel = DittoLogLevel.Debug
                 Ditto(config = config).apply {
                     updateTransportConfig { config ->
-                        config.peerToPeer.bluetoothLe.enabled = false
                         config.connect.websocketUrls.add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL)
                     }
                 }
