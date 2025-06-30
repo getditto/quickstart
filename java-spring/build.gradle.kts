@@ -8,31 +8,31 @@ plugins {
 
 dependencies {
     // ditto-java artifact includes the Java API for Ditto
-    implementation("live.ditto:ditto-java:4.11.0-preview.1")
+    implementation("com.ditto:ditto-java:5.0.0-preview.1")
 
     // This will include binaries for all the supported platforms and architectures
-    implementation("live.ditto:ditto-binaries:4.11.0-preview.1")
+    implementation("com.ditto:ditto-binaries:5.0.0-preview.1")
 
     // To reduce your module artifact's size, consider including just the necessary platforms and architectures
     /*
     // macOS Apple Silicon
-    implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
+    implementation("com.ditto:ditto-binaries:5.0.0-preview.1") {
         capabilities {
-            requireCapability("live.ditto:ditto-binaries-macos-arm64")
+            requireCapability("com.ditto:ditto-binaries-macos-arm64")
         }
     }
 
     // Windows x86_64
-    implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
+    implementation("com.ditto:ditto-binaries:5.0.0-preview.1") {
         capabilities {
-            requireCapability("live.ditto:ditto-binaries-windows-x64")
+            requireCapability("com.ditto:ditto-binaries-windows-x64")
         }
     }
 
     // Linux x86_64
-    implementation("live.ditto:ditto-binaries:4.11.0-preview.1") {
+    implementation("com.ditto:ditto-binaries:5.0.0-preview.1") {
         capabilities {
-            requireCapability("live.ditto:ditto-binaries-linux-x64")
+            requireCapability("com.ditto:ditto-binaries-linux-x64")
         }
     }
     */
