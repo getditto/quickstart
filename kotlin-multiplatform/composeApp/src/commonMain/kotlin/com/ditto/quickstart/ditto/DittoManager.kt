@@ -39,7 +39,8 @@ class DittoManager {
     suspend fun createDitto() {
         if (getDitto() != null) return
 
-        createJob = scope.launch(Dispatchers.IO) {
+        // SDKS-1294: Don't create Ditto in a scope using Dispatchers.IO
+        createJob = scope.launch(Dispatchers.Default) {
             ditto = try {
                 val identity = DittoIdentity.OnlinePlayground(
                     appId = DittoSecretsConfiguration.DITTO_APP_ID,
