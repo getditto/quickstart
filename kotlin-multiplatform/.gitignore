@@ -5,8 +5,8 @@
 .gradle
 .idea
 .kotlin
+/composeApp/ditto/
+/composeApp/tasks.preferences_pb
 build/
 captures
-ditto/
 local.properties
-tasks.preferences_pb
