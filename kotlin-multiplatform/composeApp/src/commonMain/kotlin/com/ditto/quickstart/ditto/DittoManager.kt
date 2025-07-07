@@ -45,7 +45,7 @@ class DittoManager {
                 val identity = DittoIdentity.OnlinePlayground(
                     appId = DittoSecretsConfiguration.DITTO_APP_ID,
                     token = DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-                    enableDittoCloudSync = true,
+                    enableDittoCloudSync = false,
                     customAuthUrl = DittoSecretsConfiguration.DITTO_AUTH_URL,
                 )
 
