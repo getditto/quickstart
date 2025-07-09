@@ -56,6 +56,9 @@ class TasksApplication : Application() {
         ditto.updateTransportConfig { config ->
             // Set the Ditto Websocket URL
             config.connect.websocketUrls.add(webSocketURL)
+
+            // Temporary workaround to prevent crash
+            config.peerToPeer.wifiAware.enabled = false
         }
 
         // disable sync with v3 peers, required for DQL
