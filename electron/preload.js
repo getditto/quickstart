@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Get current state
   getDittoState: () => ipcRenderer.invoke('get-ditto-state'),
+  getTasks: () => ipcRenderer.invoke('get-tasks'),
   
   // Event listeners
   onTasksUpdated: (callback) => ipcRenderer.on('tasks-updated', callback),

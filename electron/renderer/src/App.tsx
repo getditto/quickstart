@@ -21,6 +21,14 @@ const App = () => {
           setIsInitialized(true);
           setSyncActive(state.syncActive || true);
           setError(null);
+          
+          // Fetch initial tasks
+          const tasksResult = await window.electronAPI.getTasks();
+          if (tasksResult.success) {
+            setTasks(tasksResult.tasks);
+          } else if (tasksResult.error) {
+            console.error('Failed to fetch initial tasks:', tasksResult.error);
+          }
         }
       } catch (err) {
         console.error('Failed to get initial state:', err);
