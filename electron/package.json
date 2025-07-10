@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dev": "concurrently \"npm run build:watch\" \"wait-on dist/index.html && electron .\"",
+    "dev": "concurrently \"cd renderer && npm run dev\" \"wait-on http://localhost:5173 && NODE_ENV=development electron .\"",
     "build": "npm run build:renderer",
     "build:renderer": "cd renderer && npm run build",
     "build:watch": "cd renderer && npm run build:watch",
