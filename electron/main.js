@@ -41,12 +41,21 @@ function createWindow() {
   }
 
   // Send initialization data when the window is ready
-  mainWindow.webContents.once('did-finish-load', () => {
+  mainWindow.webContents.once('did-finish-load', async () => {
     if (ditto) {
       mainWindow.webContents.send('ditto-initialized', {
         appId: identity.appID,
         token: identity.token
       });
+      
+      // Send initial tasks
+      try {
+        const result = await ditto.store.execute('SELECT * FROM tasks WHERE deleted=false ORDER BY done');
+        const tasks = result.items.map(item => item.value);
+        mainWindow.webContents.send('tasks-updated', tasks);
+      } catch (error) {
+        console.error('Failed to fetch initial tasks for window:', error);
+      }
     }
   });
 
@@ -99,6 +108,20 @@ async function initializeDitto() {
     }
   }
 }
+
+// IPC handler to get current tasks
+ipcMain.handle('get-tasks', async () => {
+  if (ditto) {
+    try {
+      const result = await ditto.store.execute('SELECT * FROM tasks WHERE deleted=false ORDER BY done');
+      return { success: true, tasks: result.items.map(item => item.value) };
+    } catch (error) {
+      console.error('Failed to fetch tasks:', error);
+      return { success: false, error: error.message, tasks: [] };
+    }
+  }
+  return { success: false, error: 'Ditto not initialized', tasks: [] };
+});
 
 // IPC handler to get current Ditto state
 ipcMain.handle('get-ditto-state', async () => {
