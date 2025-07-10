@@ -42,6 +42,7 @@ build and run them.
 - [C# .NET MAUI](dotnet-maui/README.md)
 - [C# .NET TUI](dotnet-tui/README.md)
 - [C# .NET Win Forms](dotnet-winforms/README.md)
+- [Electron](electron/README.md)
 - [Flutter](flutter_quickstart/README.md)
 - [Javascript TUI](javascript-tui/README.md)
 - [Javascript Web](javascript-web/README.md)

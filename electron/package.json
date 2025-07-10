@@ -1,0 +1,53 @@
+{
+  "name": "ditto-electron-quickstart",
+  "version": "1.0.0",
+  "description": "Ditto Electron quickstart application demonstrating real-time sync in a desktop app",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm run build:watch\" \"wait-on dist/index.html && electron .\"",
+    "build": "npm run build:renderer",
+    "build:renderer": "cd renderer && npm run build",
+    "build:watch": "cd renderer && npm run build:watch",
+    "install:renderer": "cd renderer && npm install",
+    "postinstall": "npm run install:renderer",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux"
+  },
+  "dependencies": {
+    "@dittolive/ditto": "^4.10.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.ditto.electron-quickstart",
+    "productName": "Ditto Electron Quickstart",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "dist/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "author": "Ditto",
+  "license": "MIT"
+}
