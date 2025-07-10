@@ -1,6 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const fs = require('fs');
 const { Ditto, IdentityOnlinePlayground, init } = require('@dittolive/ditto');
 
 // Load environment variables
@@ -41,6 +40,16 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
   }
 
+  // Send initialization data when the window is ready
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (ditto) {
+      mainWindow.webContents.send('ditto-initialized', {
+        appId: identity.appID,
+        token: identity.token
+      });
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -51,7 +60,7 @@ async function initializeDitto() {
   try {
     await init();
     ditto = new Ditto(identity);
-    
+
     // Configure transport
     ditto.updateTransportConfig((config) => {
       config.connect.websocketURLs = [process.env.DITTO_WEBSOCKET_URL];
@@ -78,7 +87,7 @@ async function initializeDitto() {
 
     console.log('Ditto initialized successfully');
     if (mainWindow) {
-      mainWindow.webContents.send('ditto-initialized', { 
+      mainWindow.webContents.send('ditto-initialized', {
         appId: identity.appID,
         token: identity.token
       });
@@ -90,6 +99,19 @@ async function initializeDitto() {
     }
   }
 }
+
+// IPC handler to get current Ditto state
+ipcMain.handle('get-ditto-state', async () => {
+  if (ditto) {
+    return {
+      isInitialized: true,
+      appId: identity.appID,
+      token: identity.token,
+      syncActive: ditto.isSyncActive
+    };
+  }
+  return { isInitialized: false };
+});
 
 // IPC handlers for task operations
 ipcMain.handle('create-task', async (event, title) => {

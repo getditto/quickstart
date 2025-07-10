@@ -4,6 +4,7 @@ export interface ElectronAPI {
   toggleTask: (id: string, done: boolean) => Promise<{ success: boolean; error?: string }>;
   deleteTask: (id: string) => Promise<{ success: boolean; error?: string }>;
   toggleSync: () => Promise<{ success: boolean; syncActive?: boolean; error?: string }>;
+  getDittoState: () => Promise<{ isInitialized: boolean; appId?: string; token?: string; syncActive?: boolean }>;
   onTasksUpdated: (callback: (event: any, tasks: Task[]) => void) => void;
   onDittoInitialized: (callback: (event: any, data: { appId: string; token: string }) => void) => void;
   onDittoError: (callback: (event: any, error: string) => void) => void;

@@ -12,6 +12,23 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Get initial state
+    const getInitialState = async () => {
+      try {
+        const state = await window.electronAPI.getDittoState();
+        if (state.isInitialized && state.appId && state.token) {
+          setDittoInfo({ appId: state.appId, token: state.token });
+          setIsInitialized(true);
+          setSyncActive(state.syncActive || true);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Failed to get initial state:', err);
+      }
+    };
+
+    getInitialState();
+
     // Set up event listeners
     window.electronAPI.onTasksUpdated((_event, tasks) => {
       setTasks(tasks);
