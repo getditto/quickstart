@@ -13,17 +13,17 @@ const App = () => {
 
   useEffect(() => {
     // Set up event listeners
-    window.electronAPI.onTasksUpdated((event, tasks) => {
+    window.electronAPI.onTasksUpdated((_event, tasks) => {
       setTasks(tasks);
     });
 
-    window.electronAPI.onDittoInitialized((event, data) => {
+    window.electronAPI.onDittoInitialized((_event, data) => {
       setDittoInfo(data);
       setIsInitialized(true);
       setError(null);
     });
 
-    window.electronAPI.onDittoError((event, errorMessage) => {
+    window.electronAPI.onDittoError((_event, errorMessage) => {
       setError(errorMessage);
       setIsInitialized(false);
     });
