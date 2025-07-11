@@ -87,6 +87,7 @@ ditto.updateTransportConfig(config => {
 // disable sync with v3 peers, required for DQL
 await ditto.disableSyncWithV3();
 
+await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
 ditto.startSync();
 
 process.on('uncaughtException', err => {

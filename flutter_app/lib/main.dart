@@ -69,6 +69,7 @@ class _DittoExampleState extends State<DittoExample> {
       config.connect.webSocketUrls.add(websocketUrl);
     });
 
+    await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
     ditto.startSync();
 
     setState(() => _ditto = ditto);
@@ -148,7 +149,9 @@ class _DittoExampleState extends State<DittoExample> {
         value: _ditto!.isSyncActive,
         onChanged: (value) {
           if (value) {
-            setState(() => _ditto!.startSync());
+            _ditto!.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false").then((_) {
+              setState(() => _ditto!.startSync());
+            });
           } else {
             setState(() => _ditto!.stopSync());
           }
