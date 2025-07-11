@@ -50,6 +50,7 @@ class TasksListScreenViewModel : ViewModel() {
                 try {
                     // starting sync
                     // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
+                    ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false")
                     ditto.startSync()
 
                     // Register a subscription, which determines what data syncs to this peer

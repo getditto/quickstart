@@ -123,6 +123,7 @@ public:
       return;
     }
 
+    ditto->get_store().execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
     ditto->start_sync();
     tasks_subscription =
         ditto->sync().register_subscription("SELECT * FROM tasks");

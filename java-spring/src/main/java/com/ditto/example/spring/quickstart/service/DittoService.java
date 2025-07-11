@@ -150,6 +150,7 @@ public class DittoService implements DisposableBean {
 
                         if (newSyncState) {
                             try {
+                                ditto.getStore().execute("ALTER SYSTEM SET DQL_STRICT_MODE = false").toCompletableFuture().join();
                                 ditto.startSync();
                             } catch (DittoError e) {
                                 throw new RuntimeException(e);

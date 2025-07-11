@@ -246,6 +246,7 @@ public class TasksPeer : IDisposable
     /// </summary>
     public void StartSync()
     {
+        ditto.Store.Execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
         ditto.StartSync();
 
         // Register a subscription, which determines what data syncs to this peer
