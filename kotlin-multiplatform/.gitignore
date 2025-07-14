@@ -1,0 +1,12 @@
+*.iml
+.DS_Store
+.cxx
+.externalNativeBuild
+.gradle
+.idea
+.kotlin
+/composeApp/ditto/
+/composeApp/tasks.preferences_pb
+build/
+captures
+local.properties
