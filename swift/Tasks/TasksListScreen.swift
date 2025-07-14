@@ -55,7 +55,9 @@ class TasksListScreenViewModel: ObservableObject {
 
     private func startSync() throws {
         do {
-            try dittoStore.execute(query: "ALTER SYSTEM SET DQL_STRICT_MODE = false")
+            Task {
+                try await dittoStore.execute(query: "ALTER SYSTEM SET DQL_STRICT_MODE = false")
+            }
             try ditto.startSync()
 
             // Register a subscription, which determines what data syncs to this peer

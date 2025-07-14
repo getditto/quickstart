@@ -59,7 +59,9 @@ const App = () => {
         // https://docs.ditto.live/sdk/latest/install-guides/js#integrating-ditto-and-starting-sync
         ditto.current = new Ditto(identity);
 
-        await ditto.current?.store.execute("ALTER SYSTEM SET dql_enable_preview_mode = true");
+        await ditto.current?.store.execute(
+          'ALTER SYSTEM SET dql_enable_preview_mode = true',
+        );
 
         // Initialize transport config
         ditto.current.updateTransportConfig((config) => {
@@ -69,7 +71,9 @@ const App = () => {
 
         // disable sync with v3 peers, required for DQL
         await ditto.current.disableSyncWithV3();
-        await ditto.current.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+        await ditto.current.store.execute(
+          'ALTER SYSTEM SET DQL_STRICT_MODE = false',
+        );
         ditto.current.startSync();
 
         // Register a subscription, which determines what data syncs to this peer
@@ -101,7 +105,7 @@ const App = () => {
     })();
   }, [promisedInitialization]);
 
-  const toggleSync = () => {
+  const toggleSync = async () => {
     if (syncActive) {
       ditto.current?.stopSync();
     } else {
