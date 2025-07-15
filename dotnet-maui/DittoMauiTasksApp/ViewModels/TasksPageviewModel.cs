@@ -33,22 +33,38 @@ namespace DittoMauiTasksApp.ViewModels
             this.ditto = ditto;
             this.popupService = popupService;
             this.logger = logger;
-
-            DittoSyncPermissions.RequestPermissionsAsync().ContinueWith(async t =>
-            {
+#if WINDOWS
                 try
                 {
-                    await InsertInitialTasks();
-                    ObserveDittoTasksCollection();
-                    StartSync();
+                    Task.Run(async () =>
+                    {
+                        await InsertInitialTasks();
+                        ObserveDittoTasksCollection();
+                        StartSync();
+
+                    });
                 }
                 catch (Exception e)
                 {
                     logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
                 }
-            });
-        }
+#else
 
+                DittoSyncPermissions.RequestPermissionsAsync().ContinueWith(async t =>
+                {
+                    try
+                    {
+                        await InsertInitialTasks();
+                        ObserveDittoTasksCollection();
+                        StartSync();
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
+                    }
+                });
+#endif
+            }
         private async Task InsertInitialTasks()
         {
             try
