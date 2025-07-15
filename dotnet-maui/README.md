@@ -14,14 +14,18 @@
 
 - [Ditto C# .NET SDK Install Guide](https://docs.ditto.live/install-guides/c-sharp)
 - [Ditto C# .NET SDK API Reference](https://software.ditto.live/dotnet/Ditto/4.9.1/api-reference/)
+### Restore Packages
 
+```sh
+cd DittoMauiTasksApp
+dotnet restore
+```
 
 ### Building and Running the App on iOS
 
 These commands will build and run the app on the default iOS target:
 
-```
-cd DittoMauiTasksApp
+```sh
 dotnet build -t:Run -f net9.0-ios
 ```
 
@@ -29,13 +33,25 @@ dotnet build -t:Run -f net9.0-ios
 
 These commands will build and run the app on the default Android target:
 
-```
-cd DittoMauiTasksApp
+```sh
 dotnet build -t:Run -f net9.0-android
+```
+
+### Building and Running the App on MacOS 
+
+```sh
+dotnet build -t:Run -f net9.0-maccatalyst 
+```
+
+### Building and Running the App on Windows 
+
+```sh
+dotnet build -t:Run -f net9.0-windows10.0.19041.0 
 ```
 
 ### Other MAUI Platforms
 
-Building the MAUI app for platforms other than iOS and Android is not supported
-by Ditto at this time.
+Other platforms not supported at this time. 
+
+
 
