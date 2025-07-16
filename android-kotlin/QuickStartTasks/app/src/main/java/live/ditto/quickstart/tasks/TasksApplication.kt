@@ -56,6 +56,11 @@ class TasksApplication : Application() {
         ditto.updateTransportConfig { config ->
             // Set the Ditto Websocket URL
             config.connect.websocketUrls.add(webSocketURL)
+
+            if (Build.VERSION.SDK_INT <= 27) {
+                // Temporary workaround to prevent crash on Android 8.1 and below
+                config.peerToPeer.wifiAware.enabled = false
+            }
         }
 
         // disable sync with v3 peers, required for DQL
