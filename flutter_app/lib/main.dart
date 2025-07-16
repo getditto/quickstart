@@ -43,14 +43,14 @@ class _DittoExampleState extends State<DittoExample> {
   /// 5. Configures WebSocket connection to Ditto cloud
   /// 6. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
-    if (!kIsWeb) {
-      await [
-        Permission.bluetoothConnect,
-        Permission.bluetoothAdvertise,
-        Permission.nearbyWifiDevices,
-        Permission.bluetoothScan
-      ].request();
-    }
+    // if (!kIsWeb) {
+    //   await [
+    //     Permission.bluetoothConnect,
+    //     Permission.bluetoothAdvertise,
+    //     Permission.nearbyWifiDevices,
+    //     Permission.bluetoothScan
+    //   ].request();
+    // }
 
     await Ditto.init();
 
