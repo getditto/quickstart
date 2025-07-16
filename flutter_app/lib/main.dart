@@ -149,9 +149,7 @@ class _DittoExampleState extends State<DittoExample> {
         value: _ditto!.isSyncActive,
         onChanged: (value) {
           if (value) {
-            _ditto!.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false").then((_) {
-              setState(() => _ditto!.startSync());
-            });
+            setState(() => _ditto!.startSync());
           } else {
             setState(() => _ditto!.stopSync());
           }

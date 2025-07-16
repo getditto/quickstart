@@ -59,10 +59,6 @@ const App = () => {
         // https://docs.ditto.live/sdk/latest/install-guides/js#integrating-ditto-and-starting-sync
         ditto.current = new Ditto(identity);
 
-        await ditto.current?.store.execute(
-          'ALTER SYSTEM SET dql_enable_preview_mode = true',
-        );
-
         // Initialize transport config
         ditto.current.updateTransportConfig((config) => {
           config.connect.websocketURLs = [import.meta.env.DITTO_WEBSOCKET_URL];
@@ -105,7 +101,7 @@ const App = () => {
     })();
   }, [promisedInitialization]);
 
-  const toggleSync = async () => {
+  const toggleSync = () => {
     if (syncActive) {
       ditto.current?.stopSync();
     } else {
