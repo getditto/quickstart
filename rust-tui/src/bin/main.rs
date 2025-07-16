@@ -121,6 +121,7 @@ fn try_init_ditto(
     _ = ditto.disable_sync_with_v3();
 
     // Start sync
+    _ = ditto.store().execute("ALTER SYSTEM SET DQL_STRICT_MODE = false", None);
     _ = ditto.start_sync();
 
     tracing::info!(%app_id, "Started Ditto!");

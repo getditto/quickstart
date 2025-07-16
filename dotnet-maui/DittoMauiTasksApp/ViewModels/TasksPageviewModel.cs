@@ -329,6 +329,7 @@ namespace DittoMauiTasksApp.ViewModels
         {
             try
             {
+                ditto.Store.Execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
                 ditto.StartSync();
 
                 // Register a subscription, which determines what data syncs to this peer

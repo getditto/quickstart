@@ -136,6 +136,7 @@ const App = () => {
         return config;
       });
 
+      await ditto.current.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
       ditto.current.startSync();
 
       // Register a subscription, which determines what data syncs to this peer

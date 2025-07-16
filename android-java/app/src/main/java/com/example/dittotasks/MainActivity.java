@@ -130,6 +130,7 @@ public class MainActivity extends ComponentActivity {
                 return Unit.INSTANCE;
             });
 
+            ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
             ditto.startSync();
         } catch (DittoError e) {
             e.printStackTrace();
@@ -219,6 +220,7 @@ public class MainActivity extends ComponentActivity {
             if (isSyncActive) {
                 ditto.stopSync();
             } else {
+                ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
                 ditto.startSync();
             }
             syncSwitch.setChecked(!isSyncActive);
