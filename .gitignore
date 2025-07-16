@@ -21,7 +21,6 @@ Carthage/
 Pods/
 build/
 cmake-build-debug/
-gradlew.bat
 heapdump.*.phd
 javacore.*.txt
 local.properties

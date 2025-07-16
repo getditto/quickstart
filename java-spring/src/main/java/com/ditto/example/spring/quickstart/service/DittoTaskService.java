@@ -1,6 +1,8 @@
 package com.ditto.example.spring.quickstart.service;
 
 import com.ditto.java.*;
+import com.ditto.java.serialization.DittoCborSerializable;
+
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -8,7 +10,6 @@ import reactor.core.publisher.FluxSink;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -25,17 +26,19 @@ public class DittoTaskService {
         try {
             dittoService.getDitto().getStore().execute(
                     "INSERT INTO %s DOCUMENTS (:newTask)".formatted(TASKS_COLLECTION_NAME),
-                    Map.of(
-                            "newTask",
-                            Map.of(
-                                    "_id", UUID.randomUUID().toString(),
-                                    "title", title,
-                                    "done", false,
-                                    "deleted", false
+                    DittoCborSerializable.Dictionary.buildDictionary()
+                            .put(
+                                    "newTask",
+                                    DittoCborSerializable.Dictionary.buildDictionary()
+                                            .put("_id", UUID.randomUUID().toString())
+                                            .put("title", title)
+                                            .put("done", false)
+                                            .put("deleted", false)
+                                            .build()
                             )
-                    )
+                            .build()
             ).toCompletableFuture().join();
-        } catch (DittoError e) {
+        } catch (Error e) {
             throw new RuntimeException(e);
         }
     }
@@ -44,16 +47,21 @@ public class DittoTaskService {
         try {
             DittoQueryResult tasks = dittoService.getDitto().getStore().execute(
                     "SELECT * FROM %s WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
-                    Map.of("taskId", taskId)
+                    DittoCborSerializable.Dictionary.buildDictionary()
+                            .put("taskId", taskId)
+                            .build()
             ).toCompletableFuture().join();
 
-            boolean isDone = (boolean)tasks.getItems().get(0).getValue().get("done");
+            boolean isDone = tasks.getItems().get(0).getValue().get("done").getBoolean();
 
             dittoService.getDitto().getStore().execute(
                     "UPDATE %s SET done = :done WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
-                    Map.of("done", !isDone, "taskId",  taskId)
+                    DittoCborSerializable.Dictionary.buildDictionary()
+                            .put("done", !isDone)
+                            .put("taskId",  taskId)
+                            .build()
             ).toCompletableFuture().join();
-        } catch (DittoError e) {
+        } catch (Error e) {
             throw new RuntimeException(e);
         }
     }
@@ -62,9 +70,12 @@ public class DittoTaskService {
         try {
             dittoService.getDitto().getStore().execute(
                     "UPDATE %s SET deleted = :deleted WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
-                    Map.of("deleted", true, "taskId", taskId)
+                    DittoCborSerializable.Dictionary.buildDictionary()
+                            .put("deleted", true)
+                            .put("taskId", taskId)
+                            .build()
             ).toCompletableFuture().join();
-        } catch (DittoError e) {
+        } catch (Error e) {
             throw new RuntimeException(e);
         }
     }
@@ -73,9 +84,12 @@ public class DittoTaskService {
         try {
             dittoService.getDitto().getStore().execute(
                     "UPDATE %s SET title = :title WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
-                    Map.of("title", newTitle, "taskId", taskId)
+                    DittoCborSerializable.Dictionary.buildDictionary()
+                            .put("title", newTitle)
+                            .put("taskId", taskId)
+                            .build()
             ).toCompletableFuture().join();
-        }  catch (DittoError e) {
+        }  catch (Error e) {
             throw new RuntimeException(e);
         }
     }
@@ -112,12 +126,12 @@ public class DittoTaskService {
     }
 
     private Task itemToTask(@Nonnull DittoQueryResultItem item) {
-        Map<String, ?> value = item.getValue();
+        DittoCborSerializable.Dictionary value = item.getValue();
         return new Task(
-                value.get("_id").toString(),
-                value.get("title").toString(),
-                (boolean)value.get("done"),
-                (boolean)value.get("deleted")
+                value.get("_id").getString(),
+                value.get("title").getString(),
+                value.get("done").getBoolean(),
+                value.get("deleted").getBoolean()
         );
     }
 }
