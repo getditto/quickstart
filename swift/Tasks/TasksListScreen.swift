@@ -45,6 +45,14 @@ class TasksListScreenViewModel: ObservableObject {
         }
     }
 
+    func disableStrictMode() async {
+        do {
+            try await dittoStore.execute(query: "ALTER SYSTEM SET DQL_STRICT_MODE = false")
+        } catch {
+            fatalError("Internal inconsistency, couldn't disable strict mode due to error: \(error)")
+        }
+    }
+
     func setSyncEnabled(_ newValue: Bool) throws {
         if !ditto.isSyncActive && newValue {
             try startSync()
@@ -55,9 +63,6 @@ class TasksListScreenViewModel: ObservableObject {
 
     private func startSync() throws {
         do {
-            Task {
-                try await dittoStore.execute(query: "ALTER SYSTEM SET DQL_STRICT_MODE = false")
-            }
             try ditto.startSync()
 
             // Register a subscription, which determines what data syncs to this peer
@@ -283,12 +288,14 @@ struct TasksListScreen: View {
                         .environmentObject(viewModel)
                 })
         }
-        .onAppear {
+        .task {
+            await viewModel.disableStrictMode()
+
             // Prevent Xcode previews from syncing: non-preview simulators and real devices can sync
             let isPreview: Bool =
-                ProcessInfo.processInfo.environment[
-                    "XCODE_RUNNING_FOR_PREVIEWS"]
-                == "1"
+            ProcessInfo.processInfo.environment[
+                "XCODE_RUNNING_FOR_PREVIEWS"]
+            == "1"
             if !isPreview {
                 do {
                     try viewModel.setSyncEnabled(syncEnabled)
