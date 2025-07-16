@@ -6,10 +6,8 @@ import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-const appID = "<put your Ditto Portal AppId here>";
-const token = "<put your Ditto Portal Playground Token here>";
-const websocketUrl = "<put your Ditto Portal Websocket URL here>";
-const authUrl = "<put your Ditto Portal Auth URL here>";
+const appID = "6c9fdcf0-587c-4636-b2cd-469ebdbda604";
+const token = "cd315dc8-81b9-42bf-a6f0-59ada7ffe9db";
 
 Future<void> main() async {
   runApp(const MaterialApp(home: DittoExample()));
@@ -57,16 +55,13 @@ class _DittoExampleState extends State<DittoExample> {
     final identity = OnlinePlaygroundIdentity(
         appID: appID,
         token: token,
-        enableDittoCloudSync:
-            false, // This is required to be set to false to use the correct URLs
-        customAuthUrl: authUrl);
+    );
 
     final ditto = await Ditto.open(identity: identity);
 
     ditto.updateTransportConfig((config) {
       // Note: this will not enable peer-to-peer sync on the web platform
       config.setAllPeerToPeerEnabled(true);
-      config.connect.webSocketUrls.add(websocketUrl);
     });
 
     ditto.startSync();

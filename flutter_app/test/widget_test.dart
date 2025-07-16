@@ -14,20 +14,22 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('simple ditto linux test', (tester) async {
-    await Ditto.init();
+    await tester.runAsync(() async {
+      await Ditto.init();
 
-    final ditto = await Ditto.open(
-      identity: OnlinePlaygroundIdentity(appID: appID, token: token),
-    );
+      final ditto = await Ditto.open(
+        identity: OnlinePlaygroundIdentity(appID: appID, token: token),
+      );
 
-    await ditto.store.execute(
-      "INSERT INTO foo DOCUMENTS (:doc)",
-      arguments: {
-        "doc": {"foo": "bar"},
-      },
-    );
+      await ditto.store.execute(
+        "INSERT INTO foo DOCUMENTS (:doc)",
+        arguments: {
+          "doc": {"foo": "bar"},
+        },
+      );
 
-    final result = await ditto.store.execute("SELECT * FROM foo");
-    expect(result.items, hasLength(1));
+      final result = await ditto.store.execute("SELECT * FROM foo");
+      expect(result.items, hasLength(1));
+    });
   });
 }
