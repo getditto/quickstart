@@ -2,55 +2,30 @@ import Combine
 import DittoSwift
 import SwiftUI
 
-/// View model for EditScreen
-class EditScreenViewModel: ObservableObject {
-    @Published var taskTitleText: String
-    @Published var isExistingTask: Bool = false
-    @Published var deleteRequested = false
-    @Published var task: TaskModel
 
-    init(task: TaskModel?) {
-        self.task = task ?? TaskModel()
-        self.taskTitleText = task?.title ?? ""
-        isExistingTask = task != nil
-    }
-
-    func save(listVM: TasksListScreenViewModel) {
-        if isExistingTask {
-            task.title = taskTitleText
-            task.deleted = deleteRequested
-            listVM.saveEditedTask(task)
-        } else {
-            task.title = taskTitleText
-            listVM.saveNewTask(task)
-        }
-    }
-}
 
 /// View for creating or editing a task
 struct EditScreen: View {
-    @EnvironmentObject var listVM: TasksListScreenViewModel
+    @EnvironmentObject private var dittoManager: DittoManager
     @Environment(\.dismiss) private var dismiss
-    @StateObject var viewModel: EditScreenViewModel
     @FocusState var titleHasFocus: Bool
-
+    @StateObject private var viewModel: ViewModel
+    
     init(task: TaskModel?) {
-        self._viewModel = StateObject(
-            wrappedValue: EditScreenViewModel(task: task)
-        )
+        _viewModel = StateObject(wrappedValue: ViewModel(task: task))
     }
-
+    
     var body: some View {
         NavigationView {
             Form {
                 Section {
-                    TextField("Title", text: $viewModel.taskTitleText)
+                    TextField("Title", text: $viewModel.task.title)
                         .focused($titleHasFocus)
                         .onSubmit(onSubmit)
-
+                    
                     Toggle("Is Completed", isOn: $viewModel.task.done)
                 }
-
+                
                 if viewModel.isExistingTask {
                     Section {
                         HStack {
@@ -63,11 +38,11 @@ struct EditScreen: View {
                                         .fontWeight(.bold)
                                         .foregroundColor(
                                             viewModel.deleteRequested
-                                                ? .white : .red)
+                                            ? .white : .red)
                                 })
-
+                            
                             Spacer()
-
+                            
                             if viewModel.deleteRequested {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(.white)
@@ -92,15 +67,18 @@ struct EditScreen: View {
             )
         }
         .onAppear {
+            viewModel.setDittoManager(dittoManager)
             if !viewModel.isExistingTask {
                 titleHasFocus = true
             }
         }
     }
-
+    
     func onSubmit() {
-        viewModel.save(listVM: listVM)
-        dismiss()
+        Task { @MainActor in
+            await viewModel.save()
+            dismiss()
+        }
     }
 }
 
@@ -109,5 +87,35 @@ struct EditScreen_Previews: PreviewProvider {
         EditScreen(
             task: TaskModel(title: "Get Milk", done: true)
         )
+    }
+}
+
+extension EditScreen {
+    
+    /// View model for EditScreen
+    class ViewModel: ObservableObject {
+        private var dittoManager: DittoManager?
+        
+        @Published var isExistingTask: Bool = false
+        @Published var deleteRequested = false
+        @Published var task: TaskModel
+        
+        init(task: TaskModel? = nil) {
+            isExistingTask = task != nil
+            self.task = task ?? TaskModel()
+        }
+        
+        func setDittoManager(_ manager: DittoManager) {
+            self.dittoManager = manager
+        }
+        
+        func save() async {
+            if isExistingTask {
+                task.deleted = deleteRequested
+                await dittoManager?.updateTaskModel(task)
+            } else {
+                await dittoManager?.insertTaskModel(task)
+            }
+        }
     }
 }
