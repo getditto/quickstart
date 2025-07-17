@@ -25,8 +25,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,20 +39,17 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import live.ditto.quickstart.tasks.BuildConfig
 import live.ditto.quickstart.tasks.R
-import live.ditto.quickstart.tasks.data.Task
+import live.ditto.quickstart.tasks.data.TaskModel
+import org.koin.androidx.compose.koinViewModel
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TasksListScreen(navController: NavController) {
-    val tasksListViewModel: TasksListScreenViewModel = viewModel()
-    val tasks: List<Task> by tasksListViewModel.tasks.observeAsState(emptyList())
-    val syncEnabled: Boolean by tasksListViewModel.syncEnabled.observeAsState(true)
-
+fun TasksListScreen(navController: NavController,
+                    viewModel: TasksListScreenViewModel = koinViewModel()) {
+    val tasks by viewModel.taskModels.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteDialogTaskId by remember { mutableStateOf("") }
 
@@ -71,11 +68,11 @@ fun TasksListScreen(navController: NavController) {
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "App ID: ${BuildConfig.DITTO_APP_ID}",
+                                text = "App ID: ${viewModel.dataManager.dittoConfig.appId}",
                                 style = TextStyle(fontSize = 10.sp)
                             )
                             Text(
-                                text = "Token: ${BuildConfig.DITTO_PLAYGROUND_TOKEN}",
+                                text = "Token: ${viewModel.dataManager.dittoConfig.authToken}",
                                 style = TextStyle(fontSize = 10.sp)
                             )
                         }
@@ -94,9 +91,9 @@ fun TasksListScreen(navController: NavController) {
                             color = Color.White
                         )
                         Switch(
-                            checked = syncEnabled,
+                            checked = viewModel.syncEnabled.value,
                             onCheckedChange = { isChecked ->
-                                tasksListViewModel.setSyncEnabled(isChecked)
+                                viewModel.setSyncEnabled(isChecked)
                             }
                         )
                     }
@@ -121,7 +118,7 @@ fun TasksListScreen(navController: NavController) {
             ) {
                 TasksList(
                     tasks = tasks,
-                    onToggle = { tasksListViewModel.toggle(it) },
+                    onToggle = { viewModel.toggle(it) },
                     onClickEdit = {
                         navController.navigate("tasks/edit/${it}")
                     },
@@ -158,7 +155,7 @@ fun TasksListScreen(navController: NavController) {
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        tasksListViewModel.delete(deleteDialogTaskId)
+                        viewModel.delete(deleteDialogTaskId)
                     }
                 ) {
                     Text("Delete")
@@ -175,7 +172,7 @@ fun TasksListScreen(navController: NavController) {
 
 @Composable
 fun TasksList(
-    tasks: List<Task>,
+    tasks: List<TaskModel>,
     onToggle: ((taskId: String) -> Unit)? = null,
     onClickEdit: ((taskId: String) -> Unit)? = null,
     onClickDelete: ((taskId: String) -> Unit)? = null,
@@ -185,7 +182,7 @@ fun TasksList(
             TaskRow(
                 task = task,
                 onToggle = { onToggle?.invoke(it._id) },
-                onClickEdit = { onClickEdit?.invoke(it._id) },
+                onClickEdit = { onClickEdit?.invoke(it.toString()) },
                 onClickDelete = { onClickDelete?.invoke(it._id) }
             )
         }
@@ -201,9 +198,9 @@ fun TasksList(
 fun TasksListPreview() {
     TasksList(
         tasks = listOf(
-            Task(UUID.randomUUID().toString(), "Get Milk", true, false),
-            Task(UUID.randomUUID().toString(), "Get Oats", false, false),
-            Task(UUID.randomUUID().toString(), "Get Berries", true, false),
+            TaskModel(UUID.randomUUID().toString(), "Get Milk", true, false),
+            TaskModel(UUID.randomUUID().toString(), "Get Oats", false, false),
+            TaskModel(UUID.randomUUID().toString(), "Get Berries", true, false),
         )
     )
 }

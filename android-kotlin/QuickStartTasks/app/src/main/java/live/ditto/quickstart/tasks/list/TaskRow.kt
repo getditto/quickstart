@@ -21,7 +21,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import live.ditto.quickstart.tasks.R
-import live.ditto.quickstart.tasks.data.Task
+import live.ditto.quickstart.tasks.data.TaskModel
 import java.util.UUID
 
 /**
@@ -29,10 +29,10 @@ import java.util.UUID
  */
 @Composable
 fun TaskRow(
-    task: Task,
-    onToggle: ((task: Task) -> Unit)? = null,
-    onClickEdit: ((task: Task) -> Unit)? = null,
-    onClickDelete: ((task: Task) -> Unit)? = null
+    task: TaskModel,
+    onToggle: ((task: TaskModel) -> Unit)? = null,
+    onClickEdit: ((task: TaskModel) -> Unit)? = null,
+    onClickDelete: ((task: TaskModel) -> Unit)? = null
 ) {
 
     val iconId =
@@ -81,8 +81,8 @@ fun TaskRow(
 @Composable
 fun TaskRowPreview() {
     Column {
-        TaskRow(task = Task(UUID.randomUUID().toString(), "Get Milk", true, false))
-        TaskRow(task = Task(UUID.randomUUID().toString(), "Do Homework", false, false))
-        TaskRow(task = Task(UUID.randomUUID().toString(), "Take out trash", true, false))
+        TaskRow(task = TaskModel(UUID.randomUUID().toString(), "Get Milk", true, false))
+        TaskRow(task = TaskModel(UUID.randomUUID().toString(), "Do Homework", false, false))
+        TaskRow(task = TaskModel(UUID.randomUUID().toString(), "Take out trash", true, false))
     }
 }

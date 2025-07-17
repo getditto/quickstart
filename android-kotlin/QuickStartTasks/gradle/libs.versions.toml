@@ -1,17 +1,21 @@
 [versions]
-agp = "8.5.2"
-kotlin = "1.9.24"
-coreKtx = "1.15.0"
+agp = "8.6.0"
+kotlin = "2.1.0"
+coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.9.3"
-composeBom = "2024.10.01"
-navigationCompose = "2.8.3"
-runtimeLivedata = "1.7.5"
-appcompat = "1.7.0"
-datastorePreferences = "1.1.1"
+lifecycleRuntimeKtx = "2.9.2"
+activityCompose = "1.10.1"
+composeBom = "2025.07.00"
+navigationCompose = "2.9.2"
+runtimeLivedata = "1.8.3"
+appcompat = "1.7.1"
+datastorePreferences = "1.1.7"
+koin-bom = "4.1.0"
+coroutes-tests = "1.10.2"
+ditto = "4.11.1"
+monitor = "1.7.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,8 +36,17 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", name = "datastore-preferences", version.ref = "datastorePreferences" }
+koin-bom = { group = "io.insert-koin", name = "koin-bom", version.ref = "koin-bom" }
+koin-core = { group = "io.insert-koin", name = "koin-core" }
+koin-android = { group = "io.insert-koin", name = "koin-android" }
+koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose" }
+koin-androidx-compose-navigation = { group = "io.insert-koin", name = "koin-androidx-compose-navigation" }
+live-ditto = { group = "live.ditto", name = "ditto", version.ref = "ditto" }
+kotlinx-coroutines = {group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutes-tests" }
+androidx-monitor = { group = "androidx.test", name = "monitor", version.ref = "monitor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
