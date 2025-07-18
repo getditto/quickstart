@@ -15,7 +15,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private List<Task> tasks = new ArrayList<>();
     private OnTaskToggleListener toggleListener;
     private OnTaskDeleteListener deleteListener;
-    private OnTaskLongPressListener longPressListener;
+    private OnTaskPressListener longPressListener;
 
     public interface OnTaskToggleListener {
         void onTaskToggle(Task task, boolean isChecked);
@@ -25,8 +25,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         void onTaskDelete(Task task);
     }
 
-    public interface OnTaskLongPressListener {
-        void onTaskLongPress(Task task);
+    public interface OnTaskPressListener {
+        void onTaskPress(Task task);
     }
 
     public void setOnTaskToggleListener(OnTaskToggleListener listener) {
@@ -37,7 +37,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         this.deleteListener = listener;
     }
 
-    public void setOnTaskLongPressListener(OnTaskLongPressListener listener) {
+    public void setOnTaskLongPressListener(OnTaskPressListener listener) {
         this.longPressListener = listener;
     }
 
@@ -93,12 +93,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 }
             });
 
-            itemView.setOnLongClickListener(v -> {
+            itemView.setOnClickListener(v -> {
                 if (longPressListener != null) {
-                    longPressListener.onTaskLongPress(task);
-                    return true;
+                    longPressListener.onTaskPress(task);
                 }
-                return false;
             });
         }
     }

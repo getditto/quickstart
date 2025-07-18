@@ -105,8 +105,8 @@ public class MainActivity extends ComponentActivity {
                             DITTO_AUTH_URL);
             ditto = new Ditto(androidDependencies, identity);
 
+            //https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations
             ditto.updateTransportConfig(config -> {
-                // Set the Ditto Websocket URL
                 config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
 
                 // lambda must return Kotlin Unit which corresponds to 'void' in Java
@@ -115,6 +115,11 @@ public class MainActivity extends ComponentActivity {
 
             // disable sync with v3 peers, required for DQL
             ditto.disableSyncWithV3();
+
+            // Disable DQL strict mode
+            // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
+            // https://docs.ditto.live/dql/strict-mode
+            ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
 
             // register subscription
             // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
@@ -129,6 +134,8 @@ public class MainActivity extends ComponentActivity {
                 });
                 return Unit.INSTANCE;
             });
+
+
 
             ditto.startSync();
         } catch (DittoError e) {

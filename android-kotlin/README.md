@@ -13,7 +13,7 @@ After you have completed the [common prerequisites] you will need the following:
 ## Documentation
 
 - [Kotlin Install Guide](https://docs.ditto.live/install-guides/kotlin)
-- [Kotlin API Reference](https://software.ditto.live/android/Ditto/4.8.2/api-reference/)
+- [Kotlin API Reference](https://software.ditto.live/android/Ditto/4.11.1/api-reference/)
 - [Kotlin SDK Release Notes](https://docs.ditto.live/release-notes/kotlin)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -40,49 +40,63 @@ Compatible with Android Automotive OS (AAOS)
 
 The Android app is a simple to-do list app that demonstrates how to use the
 Ditto Android SDK to sync data with other devices.
-It is implemented using [Kotlin](https://kotlinlang.org/) and
-[Jetpack Compose](https://developer.android.com/compose), which is a modern
-toolkit for building native Android UI.
+It is implemented using [Kotlin](https://kotlinlang.org/) and [Jetpack Compose](https://developer.android.com/compose), which is a modern toolkit for building native Android UI.
 
-It is assumed that the reader is familiar with Android development and with
-Compose, but needs some guidance on how to use Ditto.  The following is a
-summary of the key parts of integration with Ditto.
+It is assumed that the reader is familiar with Android development and with Compose, but needs some guidance on how to use Ditto.  The following is a summary of the key parts of integration with Ditto.
 
 ### Adding the Ditto SDK
 
-At the bottom of `app/build.gradle.kts`, you will see this line that causes
-Android Studio to automatically download the Ditto SDK from Maven Central and
-add it to the project:
+At the bottom of `app/build.gradle.kts`, you will see this line that causes Android Studio to automatically download the Ditto SDK from Maven Central and add it to the project:
 
 ```kotlin
-    implementation("live.ditto:ditto:4.8.2")
+    implementation("live.ditto:ditto:4.11.1")
 ```
 
 To use a newer version of the SDK, change the version number in this line.
 
 ### Initializing Ditto
 
-In `app/src/main/java/live/ditto/quickstart/tasks/TasksApplication.kt`, you will
-see the `TasksApplication` class.  This class is a subclass of `Application`.
-Its `onCreate()` method, which is called by the system when the app is launched,
-calls `setupDitto()`, which gets application ID and online playground token from
-the build configuration and uses it to create an instance of the `Ditto` class
-which is stored in a singleton object of the `DittoHandler` class.
+The Ditto initialization process uses dependency injection with Koin and follows a clean architecture pattern:
 
-Other classes import `live.ditto.quickstart.tasks.DittoHandler.Companion.ditto`
-to access the singleton `Ditto` instance.
+#### Application Setup
+In `app/src/main/java/live/ditto/quickstart/tasks/TasksApplication.kt`, the `TasksApplication` class extends `Application` and serves as the entry point for the app. In its `onCreate()` method, it:
+
+1. **Starts Koin Dependency Injection**: Initializes the Koin framework for dependency injection
+2. **Registers Dependencies**: Sets up all the app's dependencies including Ditto configuration
+
+#### Configuration Management
+The app reads Ditto configuration from BuildConfig fields that are populated from the `.env` file during build time:
+- `BuildConfig.DITTO_APP_ID` - Your Ditto application ID
+- `BuildConfig.DITTO_PLAYGROUND_TOKEN` - Your online playground authentication token  
+- `BuildConfig.DITTO_AUTH_URL` - The Ditto Auth URL
+- `BuildConfig.DITTO_WEBSOCKET_URL` - The Ditto Websocket URL
+
+These values are wrapped in a `DittoConfig` object and injected throughout the app.
+
+#### DittoManager Implementation
+In `app/src/main/java/live/ditto/quickstart/tasks/data/DittoManager.kt`, the `DittoManager` class handles all Ditto operations:
+
+1. **Initialization**: Creates a Ditto instance using `DittoIdentity.OnlinePlayground` with the provided configuration
+2. **Transport Configuration**: Sets up websocket URLs and disables v3 peer sync for DQL compatibility
+3. **Database Setup**: Disables DQL strict mode to allow flexible queries
+4. **Data Operations**: Provides methods for CRUD operations on tasks using DQL queries
+
+#### Dependency Injection
+The app uses Koin for dependency injection, where:
+- `DittoConfig` is provided as a singleton with the configuration values
+- `DittoManager` is provided as the `DataManager` implementation
+- ViewModels receive the `DittoManager` instance through constructor injection
+- `ErrorService` handles error display throughout the app
+
+This architecture ensures that Ditto is properly initialized once when the app starts and is available throughout the app lifecycle via dependency injection.
 
 ### The Task Data Model
 
 The task data model is implemented as a Kotlin data class in
-`app/src/main/java/live/ditto/quickstart/tasks/data/Task.kt`.  This class has
-properties `_id`, `title`, `done`, and `deleted`.  The `_id` property is a
-unique identifier for the task, and the `deleted` property is used to mark tasks
-that have been deleted but are still present in the store.
+`app/src/main/java/live/ditto/quickstart/tasks/data/TaskModel.kt`.  This class has
+properties `_id`, `title`, `done`, and `deleted`.  The `_id` property is a unique identifier for the task, and the `deleted` property is used to mark tasks that have been deleted but are still present in the store.
 
-This class has a `fromJson()` method that can be used to convert the JSON data
-returned by the Ditto store into a `Task` object, which can then be used by
-Kotlin code.
+This class has a `fromJson()` method that can be used to convert the JSON data returned by the Ditto store into a `TaskModel` object, which can then be used by Kotlin code.
 
 ### The Tasks List
 

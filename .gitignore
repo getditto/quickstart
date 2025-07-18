@@ -33,3 +33,4 @@ bazel-*
 build-cmake
 node_modules/
 .dart_tool/
+kotlin-multiplatform/build-logic

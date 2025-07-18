@@ -6,6 +6,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.compose.compiler)
 }
 
 // Load properties from the .env file at the repository root
@@ -33,7 +34,7 @@ androidComponents {
             "DITTO_APP_ID",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_APP_ID"]}",
+                "\"${prop["DITTO_APP_ID"]}\"",
                 "Ditto application ID"
             )
         )
@@ -41,7 +42,7 @@ androidComponents {
             "DITTO_PLAYGROUND_TOKEN",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_PLAYGROUND_TOKEN"]}",
+                "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
                 "Ditto online playground authentication token"
             )
         )
@@ -50,7 +51,7 @@ androidComponents {
             "DITTO_AUTH_URL",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_AUTH_URL"]}",
+                "\"${prop["DITTO_AUTH_URL"]}\"",
                 "Ditto Auth URL"
             )
         )
@@ -59,7 +60,7 @@ androidComponents {
             "DITTO_WEBSOCKET_URL",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_WEBSOCKET_URL"]}",
+                "\"${prop["DITTO_WEBSOCKET_URL"]}\"",
                 "Ditto Websocket URL"
             )
         )
@@ -128,7 +129,18 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.datastore.preferences)
 
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.koin.androidx.compose.navigation)
+
+    // Ditto SDK
+    implementation(libs.live.ditto)
+
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -137,6 +149,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Ditto SDK
-    implementation("live.ditto:ditto:4.10.0")
 }

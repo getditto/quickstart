@@ -2,13 +2,19 @@ package live.ditto.quickstart.tasks
 
 import android.app.Application
 import android.content.Context
-import live.ditto.Ditto
-import live.ditto.DittoIdentity
-import live.ditto.DittoLogLevel
-import live.ditto.DittoLogger
 import live.ditto.android.DefaultAndroidDittoDependencies
-import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
-import live.ditto.transports.DittoTransportConfig
+import live.ditto.quickstart.tasks.data.DataManager
+import live.ditto.quickstart.tasks.data.DittoManager
+import live.ditto.quickstart.tasks.edit.EditScreenViewModel
+import live.ditto.quickstart.tasks.list.TasksListScreenViewModel
+import live.ditto.quickstart.tasks.models.DittoConfig
+import live.ditto.quickstart.tasks.services.ErrorService
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.GlobalContext
+import org.koin.core.module.Module
+import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.module
 
 class TasksApplication : Application() {
 
@@ -23,42 +29,52 @@ class TasksApplication : Application() {
     init {
         instance = this
     }
-    
+
     override fun onCreate() {
         super.onCreate()
-        setupDitto()
+        // Start Koin dependency injection
+        // https://insert-koin.io/docs/reference/koin-android/start
+        GlobalContext.startKoin {
+            androidLogger()
+            androidContext(this@TasksApplication)
+            modules(registerDependencies())
+        }
     }
 
-    private fun setupDitto() {
-        val androidDependencies = DefaultAndroidDittoDependencies(applicationContext)
+    private fun registerDependencies() : Module {
+        return module {
+            val appId = BuildConfig.DITTO_APP_ID
+            val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
+            val authUrl = BuildConfig.DITTO_AUTH_URL
+            val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
 
-        //read values from build.gradle.kts (Module:app) which reads from environment file
-        val appId = BuildConfig.DITTO_APP_ID
-        val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
-        val authUrl = BuildConfig.DITTO_AUTH_URL
-        val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
+            // Create DittoConfig as a single instance
+            single {
+                DittoConfig(
+                    authUrl,
+                    webSocketURL,
+                    appId,
+                    token
+                )
+            }
 
-        val enableDittoCloudSync = false
+            // Create DittoManager with injected dependencies
+             single<DataManager> {
+                DittoManager(
+                    dittoConfig = get(),     // Koin will provide the DittoConfig instance
+                    androidDittoDependencies = DefaultAndroidDittoDependencies(this@TasksApplication),
+                    errorService = get()
+                )
+            }
 
-        /*
-         *  Setup Ditto Identity
-         *  https://docs.ditto.live/sdk/latest/install-guides/kotlin#integrating-and-initializing
-         */
-        val identity = DittoIdentity.OnlinePlayground(
-            dependencies = androidDependencies,
-            appId = appId,
-            token = token,
-            customAuthUrl = authUrl,
-            enableDittoCloudSync = enableDittoCloudSync // This is required to be set to false to use the correct URLs
-        )
+            // Create TasksListScreenViewModel with injected DittoManager
+            viewModel { TasksListScreenViewModel(get(), this@TasksApplication) }
 
-        ditto = Ditto(androidDependencies, identity)
-        ditto.updateTransportConfig { config ->
-            // Set the Ditto Websocket URL
-            config.connect.websocketUrls.add(webSocketURL)
+            // Create EditScreenViewModel with injected DittoManager
+            viewModel { EditScreenViewModel(get()) }
+
+            // add in the ErrorService which is used to display errors in the app
+            single { ErrorService() }
         }
-
-        // disable sync with v3 peers, required for DQL
-        ditto.disableSyncWithV3()
     }
 }

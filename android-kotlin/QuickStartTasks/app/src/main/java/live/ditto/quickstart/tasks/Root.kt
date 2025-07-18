@@ -20,11 +20,11 @@ fun Root() {
             NavHost(navController = navController, startDestination = "tasks") {
                 composable("tasks") { TasksListScreen(navController = navController) }
                 composable("tasks/edit") {
-                    EditScreen(navController = navController, taskId = null)
+                    EditScreen(navController = navController, taskJson = null)
                 }
-                composable("tasks/edit/{taskId}") { backStackEntry ->
-                    val taskId: String? = backStackEntry.arguments?.getString("taskId")
-                    EditScreen(navController = navController, taskId = taskId)
+                composable("tasks/edit/{taskJson}") { backStackEntry ->
+                    val taskJson: String? = backStackEntry.arguments?.getString("taskJson")
+                    EditScreen(navController = navController, taskJson = taskJson)
                 }
             }
         }
