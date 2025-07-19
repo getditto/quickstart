@@ -50,7 +50,9 @@ dotnet build -t:Run -f net9.0-maccatalyst
 ### Building and Running the App on Windows 
 
 ```sh
-dotnet build -t:Run -f net9.0-windows10.0.19041.0 
+dotnet build -f net9.0-windows10.0.19041.0 -c Debug -p:PublishReadyToRun=true -p:WindowsPackageType=None
+dotnet run -f net9.0-windows10.0.19041.0 -c Debug -p:PublishReadyToRun=true -p:WindowsPackageType=None
+
 ```
 
 ### Other MAUI Platforms
