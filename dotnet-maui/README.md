@@ -13,8 +13,12 @@
 ## Documentation
 
 - [Ditto C# .NET SDK Install Guide](https://docs.ditto.live/install-guides/c-sharp)
-- [Ditto C# .NET SDK API Reference](https://software.ditto.live/dotnet/Ditto/4.9.1/api-reference/)
+- [Ditto C# .NET SDK API Reference](https://software.ditto.live/dotnet/Ditto/4.11.1/api-reference/)
+
+
 ### Restore Packages
+
+If you are using the terminal, you can restore the packages by running the following command:
 
 ```sh
 cd DittoMauiTasksApp

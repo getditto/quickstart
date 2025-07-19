@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFramework Condition="$([MSBuild]::IsOSPlatform('Linux'))">net9.0-android</TargetFramework>
         <OutputType>Exe</OutputType>
         <RootNamespace>DittoMauiTasksApp</RootNamespace>
         <UseMaui>true</UseMaui>
@@ -28,7 +30,7 @@
         <!-- App Icon -->
         <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
         <!-- Splash Screen -->
-        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#000000" />
         <!-- Images -->
         <MauiImage Include="Resources\Images\*" />
         <!-- Custom Fonts -->
@@ -38,7 +40,7 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.1" />
-        <PackageReference Include="Ditto" Version="4.11.0" />
+        <PackageReference Include="Ditto" Version="4.11.1" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />

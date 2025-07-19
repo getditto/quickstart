@@ -1,10 +1,11 @@
 ﻿using DittoMauiTasksApp.ViewModels;
+using DittoMauiTasksApp.Model;
 
 namespace DittoMauiTasksApp;
 
 public partial class TasksPage : ContentPage
 {
-    public TasksPage(TasksPageviewModel viewModel)
+    public TasksPage(TasksPageViewModel viewModel)
     {
         InitializeComponent();
 
@@ -21,7 +22,7 @@ public partial class TasksPage : ContentPage
                 return;
             }
 
-            var viewModel = BindingContext as TasksPageviewModel;
+            var viewModel = BindingContext as TasksPageViewModel;
             if (viewModel?.UpdateTaskDoneCommand.CanExecute(task) == true)
             {
                 viewModel.UpdateTaskDoneCommand.Execute(task);

@@ -36,5 +36,7 @@
 	<array>
 		<string>_http-alt._tcp.</string>
 	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>MauiSplash</string>
 </dict>
 </plist>

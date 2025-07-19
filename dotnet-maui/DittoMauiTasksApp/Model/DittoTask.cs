@@ -2,7 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using DittoSDK;
 
-namespace DittoMauiTasksApp
+namespace DittoMauiTasksApp.Model
 {
     public partial class DittoTask : ObservableObject
     {

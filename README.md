@@ -1,18 +1,14 @@
 # Ditto Quickstart Apps 🚀
 
-This repo contains apps that demonstrate how to use the Ditto SDK for supported
-programming languages and platforms.
+This repo contains apps that demonstrate how to use the Ditto SDK for supported programming languages and platforms.
 
-See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts/quickstarts-landing)
-documentation for more information.
+See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts/quickstarts-landing) documentation for more information.
 
 For support, please contact Ditto Support (<support@ditto.live>).
 
 ## Obtaining your Ditto Identity
 
-The Ditto SDK requires you to provide an identity for your application, which may be
-generated using the [Ditto Portal](https://portal.ditto.live/). For the purposes of these
-quickstart applications, we'll be using the "Online Playground" identity type.
+The Ditto SDK requires you to provide an identity for your application, which may be generated using the [Ditto Portal](https://portal.ditto.live/). For the purposes of these quickstart applications, we'll be using the "Online Playground" identity type.
 
 ![Ditto Portal](.github/assets/ditto-portal.png)
 
