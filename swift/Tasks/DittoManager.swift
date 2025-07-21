@@ -132,9 +132,9 @@ import Foundation
         ]
 
         for task in initialTasks {
-            if let dittoInstance = ditto {
+            if let ditto {
                 // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
-                try await dittoInstance.store.execute(
+                try await ditto.store.execute(
                     query: "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
                     arguments: [
                         "task":
@@ -161,10 +161,10 @@ import Foundation
     ///
     /// - Throws: A DittoError if the observer cannot be registered
     func registerObservers() throws {
-        if let dittoInstance = ditto {
+        if let ditto {
 
             let observerQuery = "SELECT * FROM tasks WHERE NOT deleted"
-            storeObserver = try dittoInstance.store.registerObserver(
+            storeObserver = try ditto.store.registerObserver(
                 query: observerQuery
             ) {
                 [weak self] results in
@@ -191,10 +191,10 @@ import Foundation
     ///
     /// - Throws: A DittoError if the subscription registration fails
     func registerSubscription() throws {
-        if let dittoInstance = ditto {
+        if let ditto {
             // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
             let subscriptionQuery = "SELECT * from tasks"
-            subscription = try dittoInstance.sync.registerSubscription(
+            subscription = try ditto.sync.registerSubscription(
                 query: subscriptionQuery
             )
         }
@@ -210,10 +210,10 @@ import Foundation
     /// - Parameter newValue: A Boolean indicating whether sync should be enabled (`true`) or disabled (`false`).
     /// - Throws: A DittoError if the operation fails
     func setSyncEnabled(_ newValue: Bool) throws {
-        if let dittoInstance = ditto {
-            if !dittoInstance.isSyncActive && newValue {
+        if let ditto {
+            if !ditto.isSyncActive && newValue {
                 try startSync()
-            } else if dittoInstance.isSyncActive && !newValue {
+            } else if ditto.isSyncActive && !newValue {
                 stopSync()
             }
         }
@@ -227,9 +227,9 @@ import Foundation
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
     /// - Throws: A DittoError if the operation fails
     private func startSync() throws {
-        if let dittoInstance = ditto {
+        if let ditto {
             // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
-            try dittoInstance.startSync()
+            try ditto.startSync()
         }
     }
 
@@ -266,10 +266,10 @@ import Foundation
         // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
         let query = "INSERT INTO tasks DOCUMENTS (:newTask)"
 
-        if let dittoInstance = ditto {
+        if let ditto {
 
             // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
-            try await dittoInstance.store.execute(
+            try await ditto.store.execute(
                 query: query,
                 arguments: ["newTask": newTask]
             )
@@ -295,10 +295,10 @@ import Foundation
             WHERE _id == :_id
             """
 
-        if let dittoInstance = ditto {
+        if let ditto {
 
             // https://docs.ditto.live/sdk/latest/crud/update#updating
-            try await dittoInstance.store.execute(
+            try await ditto.store.execute(
                 query: query,
                 arguments: [
                     "title": task.title,
@@ -332,10 +332,10 @@ import Foundation
             WHERE _id == :_id
             """
 
-        if let dittoInstance = ditto {
+        if let ditto {
 
             // https://docs.ditto.live/sdk/latest/crud/update#updating
-            try await dittoInstance.store.execute(
+            try await ditto.store.execute(
                 query: query,
                 arguments: ["done": done, "_id": task._id]
             )
@@ -357,10 +357,10 @@ import Foundation
 
         // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
         let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
-        if let dittoInstance = ditto {
+        if let ditto {
 
             // https://docs.ditto.live/sdk/latest/crud/update#updating
-            try await dittoInstance.store.execute(
+            try await ditto.store.execute(
                 query: query,
                 arguments: ["_id": task._id]
             )
