@@ -47,11 +47,11 @@ public static class MauiProgram
     /// <summary>
     /// Load environment variables from the embedded .env resource file.
     /// </summary>
-    static Dictionary<string, string> LoadEnvVariables()
+    public static Dictionary<string, string> LoadEnvVariables()
     {
+        const string resourceName = "DittoMauiTasksApp..env";
         var envVars = new Dictionary<string, string>();
         var assembly = Assembly.GetExecutingAssembly();
-        const string resourceName = "DittoMauiTasksApp..env";
 
         using var stream = assembly.GetManifestResourceStream(resourceName);
         if (stream == null)

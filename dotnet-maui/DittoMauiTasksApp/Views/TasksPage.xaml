@@ -6,7 +6,8 @@
 
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add"
-                     Command="{Binding AddTaskCommand}"/>
+                     Command="{Binding AddTaskCommand}"
+                     AutomationId="AddTaskButton"/>
     </ContentPage.ToolbarItems>
 
     <Grid
@@ -32,6 +33,7 @@
         </VerticalStackLayout>
 
         <CollectionView
+            AutomationId="TasksCollectionView"
             x:Name="collectionView"
             Grid.Row="1"
             ItemsSource="{Binding Tasks}"
@@ -58,6 +60,7 @@
                             Margin="16,5"
                             ColumnDefinitions="*, Auto">
                             <Label
+                                AutomationId="TaskTitleLabel"
                                 VerticalOptions="Center"
                                 Text="{Binding Title}">
                                 <Label.Style>

@@ -17,16 +17,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DittoMauiTasksApp\DittoMauiTasksApp.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
         <!-- See the README for instructions on creating this file, if it doesn't exist -->
-        <EmbeddedResource Include="../../.env" />
+        <EmbeddedResource Include="../../../.env" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\DittoMauiTasksApp\DittoMauiTasksApp.csproj" />
   </ItemGroup>
 
 </Project>
