@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Reflection;
 using DittoMauiTasksApp.Data;
 using DittoMauiTasksApp.Model;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,60 @@ namespace DittoMauiTasksApp.Tests
     {
         private static DittoConfig GetTestConfig()
         {
-            return MauiProgram.GetDittoConfig();
+            var envVars = LoadEnvVariables();
+            return new DittoConfig
+            {
+                AppId = envVars["DITTO_APP_ID"],
+                PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"],
+                AuthUrl = envVars["DITTO_AUTH_URL"],
+                WebsocketUrl = envVars["DITTO_WEBSOCKET_URL"]
+            };
+        }
+
+        /// <summary>
+        /// Load environment variables from the embedded .env resource file.
+        /// </summary>
+        static Dictionary<string, string> LoadEnvVariables()
+        {
+            var envVars = new Dictionary<string, string>();
+            var assembly = Assembly.GetExecutingAssembly();
+            const string resourceName = @"DittoMauiTasksApp.Tests.env";
+
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+            {
+                var availableResources = string.Join(Environment.NewLine, assembly.GetManifestResourceNames());
+                throw new InvalidOperationException($"Resource '{resourceName}' not found. Available resources: {availableResources}");
+            }
+
+            using var reader = new StreamReader(stream);
+            while (reader.ReadLine() is { } line)
+            {
+                line = line.Trim();
+
+                if (string.IsNullOrEmpty(line) || line.StartsWith("#"))
+                {
+                    continue;
+                }
+
+                var separatorIndex = line.IndexOf('=');
+                if (separatorIndex < 0)
+                {
+                    continue;
+                }
+
+                var key = line.Substring(0, separatorIndex).Trim();
+                var value = line.Substring(separatorIndex + 1).Trim();
+
+                if (value.StartsWith(@"\") && value.EndsWith(@"\") && value.Length >= 2)
+                {
+                    value = value.Substring(1, value.Length - 2);
+                }
+
+                envVars[key] = value;
+            }
+
+            return envVars;
         }
 
         private static DittoManager CreateManager()

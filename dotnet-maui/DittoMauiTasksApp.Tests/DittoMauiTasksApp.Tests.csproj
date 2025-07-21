@@ -1,10 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+  <!-- https://learn.microsoft.com/en-us/dotnet/maui/deployment/unit-testing?view=net-maui-9.0 -->
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
     <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +18,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DittoMauiTasksApp\DittoMauiTasksApp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+        <!-- See the README for instructions on creating this file, if it doesn't exist -->
+        <EmbeddedResource Include="../../.env" />
   </ItemGroup>
 
   <ItemGroup>

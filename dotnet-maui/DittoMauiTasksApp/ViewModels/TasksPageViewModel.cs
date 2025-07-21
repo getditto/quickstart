@@ -24,13 +24,30 @@ namespace DittoMauiTasksApp.ViewModels
 
         public TasksPageViewModel(
             IDataManager dataManager,
-            IPopupService popupService, 
+            IPopupService popupService,
             ILogger<TasksPageViewModel> logger)
         {
-            this._dataManager = dataManager; 
+            this._dataManager = dataManager;
             this._popupService = popupService;
             this._logger = logger;
-#if WINDOWS
+#if IOS || ANDROID || MACCATALYST
+            DittoSyncPermissions.RequestPermissionsAsync().ContinueWith(t =>
+            {
+                try
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        _dataManager.RegisterObservers(this.Tasks);
+                        _dataManager.StartSync();
+                    });
+                }
+                catch (Exception e)
+                {
+                    logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
+                }
+            });
+
+#else
                 try
                 {
                     MainThread.BeginInvokeOnMainThread(() => {
@@ -42,24 +59,9 @@ namespace DittoMauiTasksApp.ViewModels
                 {
                     logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
                 }
-#else
 
-                DittoSyncPermissions.RequestPermissionsAsync().ContinueWith( t =>
-                {
-                    try
-                    {
-                        MainThread.BeginInvokeOnMainThread(() => {
-                            _dataManager.RegisterObservers(this.Tasks);
-                            _dataManager.StartSync();
-                        });
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
-                    }
-                });
 #endif
-            }
+        }
 
         [RelayCommand]
         private async Task AddTaskAsync()
@@ -80,7 +82,7 @@ namespace DittoMauiTasksApp.ViewModels
                     {"done", false},
                     {"deleted", false }
                 };
-                
+
                 await _dataManager.AddTask(doc);
             }
             catch (Exception e)
