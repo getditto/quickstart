@@ -10,7 +10,7 @@ struct TasksApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if isInitialized {
+                if dittoManager.isInitialized {
                     TasksListScreen()
                         .environmentObject(dittoManager)
                 } else {
@@ -47,16 +47,13 @@ struct TasksApp: App {
                 break
             case .active:
                 // App became active again - check if Ditto is initialized
-                if !isInitialized {
                     Task {
                         do {
-                            try await dittoManager.initialize()
-                            isInitialized = true
+                            try await dittoManager.initializeIfNeeded()
                         } catch {
                             self.error = error
                         }
                     }
-                }
                 break
             default:
                 break
@@ -66,6 +63,5 @@ struct TasksApp: App {
     
     func deinitializeDitto() {
         dittoManager.deinitialize()
-        isInitialized = false
     }
 }
