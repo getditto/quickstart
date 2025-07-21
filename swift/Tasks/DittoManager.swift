@@ -5,16 +5,15 @@ import Foundation
 @MainActor class DittoManager: ObservableObject {
     @Published var tasks = [TaskModel]()
     @Published var selectedTaskModel: TaskModel?
-    
+
     var subscription: DittoSyncSubscription?
     var storeObserver: DittoStoreObserver?
-    
+
     var ditto: Ditto?
     static var shared = DittoManager()
-    
-    init() { }
-    
-    
+
+    init() {}
+
     /// Performs cleanup of Ditto resources
     ///
     /// This method handles the graceful shutdown of Ditto components by:
@@ -24,10 +23,10 @@ import Foundation
     func deinitialize() {
         subscription?.cancel()
         subscription = nil
-        
+
         storeObserver?.cancel()
         storeObserver = nil
-        
+
         if let dittoInstance = ditto {
             if dittoInstance.isSyncActive {
                 dittoInstance.stopSync()
@@ -44,12 +43,12 @@ import Foundation
     func initialize() async throws {
         //setup logging level
         let isPreview: Bool =
-        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
-        == "1"
+            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
+            == "1"
         if !isPreview {
             DittoLogger.minimumLogLevel = .debug
         }
-        
+
         // Setup Ditto Identity
         // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
         let ditto = Ditto(
@@ -62,38 +61,32 @@ import Foundation
                 customAuthURL: URL(string: Env.DITTO_AUTH_URL)
             )
         )
-        
+
         self.ditto = ditto
-        
+
         // Set the Ditto Websocket URL
         ditto.updateTransportConfig { transportConfig in
-            transportConfig.connect.webSocketURLs.insert(Env.DITTO_WEBSOCKET_URL)
-        }
-        
-        do {
-            // disable sync with v3 peers, required for DQL
-            try ditto.disableSyncWithV3()
-            
-            // Disable DQL strict mode
-            // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
-            // https://docs.ditto.live/dql/strict-mode
-            try await ditto.store.execute(query: "ALTER SYSTEM SET DQL_STRICT_MODE = false")
-            
-            //setup the collection with initial data and then setup observer
-            await self.populateTaskCollection()
-            try self.registerObservers()
-            
-        } catch let error {
-            print(
-                "DittoManger - ERROR: disableSyncWithV3() failed with error \"\(error)\""
+            transportConfig.connect.webSocketURLs.insert(
+                Env.DITTO_WEBSOCKET_URL
             )
         }
-    }
-}
 
-// MARK:  Populate Initial Tasks for Task Collection
-extension DittoManager {
-    
+        // disable sync with v3 peers, required for DQL
+        try ditto.disableSyncWithV3()
+
+        // Disable DQL strict mode
+        // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
+        // https://docs.ditto.live/dql/strict-mode
+        try await ditto.store.execute(
+            query: "ALTER SYSTEM SET DQL_STRICT_MODE = false"
+        )
+
+        //setup the collection with initial data and then setup observer
+        try await self.populateTaskCollection()
+        try self.registerObservers()
+
+    }
+
     /// Populates the Ditto tasks collection with initial seed data if it's empty
     ///
     /// This method creates a set of predefined tasks in the Ditto store by:
@@ -110,8 +103,8 @@ extension DittoManager {
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/crud/read#using-args-to-query-dynamic-values///
     ///
     /// - Throws: A DittoError if the insert operations fail
-    func populateTaskCollection() async {
-        
+    func populateTaskCollection() async throws {
+
         let initialTasks: [TaskModel] = [
             TaskModel(
                 _id: "50191411-4C46-4940-8B72-5F8017A04FA811",
@@ -130,36 +123,26 @@ extension DittoManager {
                 title: "Pay bills"
             ),
         ]
-        
+
         for task in initialTasks {
-            do {
-                if let dittoInstance = ditto {
-                    
-                    // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
-                    try await dittoInstance.store.execute(
-                        query: "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
-                        arguments: [
-                            "task":
-                                [
-                                    "_id": task._id,
-                                    "title": task.title,
-                                    "done": task.done,
-                                    "deleted": task.deleted,
-                                ]
-                        ]
-                    )
-                }
-            } catch {
-                print(
-                    "DittoManager.\(#function) - ERROR adding initial tasks: \(error.localizedDescription)"
+            if let dittoInstance = ditto {
+                // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
+                try await dittoInstance.store.execute(
+                    query: "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
+                    arguments: [
+                        "task":
+                            [
+                                "_id": task._id,
+                                "title": task.title,
+                                "done": task.done,
+                                "deleted": task.deleted,
+                            ]
+                    ]
                 )
             }
         }
     }
-}
 
-// MARK: Register Observer - Live Query
-extension DittoManager {
     /// Registers observers for the planets collection to handle real-time updates.
     ///
     /// This method sets up a live query observer that:
@@ -172,7 +155,7 @@ extension DittoManager {
     /// - Throws: A DittoError if the observer cannot be registered
     func registerObservers() throws {
         if let dittoInstance = ditto {
-            
+
             let observerQuery = "SELECT * FROM tasks WHERE NOT deleted"
             storeObserver = try dittoInstance.store.registerObserver(
                 query: observerQuery
@@ -187,61 +170,66 @@ extension DittoManager {
             }
         }
     }
-}
 
-// MARK: Subscriptions and Sync
-
-/// Sets up the initial subscription to the tasks collection in Ditto.
-///
-/// This subscription ensures that changes to the tasks collection are synced
-/// between the local Ditto store the BigPeer or other SmallPeers
-///
-/// - SeeAlso: https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-///
-extension DittoManager {
-    
-    func setSyncEnabled(_ newValue: Bool) {
+    /// Enables or disables Ditto sync based on the provided value.
+    ///
+    /// This method checks the current sync state and starts or stops
+    /// Ditto sync accordingly:
+    /// - If `newValue` is `true` and sync is not active, it starts sync.
+    /// - If `newValue` is `false` and sync is active, it stops sync.
+    ///
+    /// - Parameter newValue: A Boolean indicating whether sync should be enabled (`true`) or disabled (`false`).
+    /// - Throws: A DittoError if the operation fails
+    func setSyncEnabled(_ newValue: Bool) throws {
         if let dittoInstance = ditto {
             if !dittoInstance.isSyncActive && newValue {
-                startSync()
+                try startSync()
             } else if dittoInstance.isSyncActive && !newValue {
                 stopSync()
             }
         }
     }
-    
-    private func startSync() {
-        do {
-            if let dittoInstance = ditto {
-                
-                // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
-                try dittoInstance.startSync()
-                
-                // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-                let subscriptionQuery = "SELECT * from tasks"
-                subscription = try dittoInstance.sync.registerSubscription(
-                    query: subscriptionQuery
-                )
-            }
-        } catch {
-            print(
-                "DittoManager.\(#function) - ERROR starting sync operations: \(error.localizedDescription)"
+
+    /// Starts Ditto sync and registers a subscription for the tasks collection.
+    ///
+    /// This method:
+    /// - Initiates the Ditto sync process if the Ditto instance is available.
+    /// - Registers a subscription to keep the local tasks collection in sync with remote changes.
+    ///
+    /// - SeeAlso: https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
+    /// - SeeAlso: https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+    /// - Throws: A DittoError if the operation fails
+    private func startSync() throws {
+        if let dittoInstance = ditto {
+
+            // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
+            try dittoInstance.startSync()
+
+            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+            let subscriptionQuery = "SELECT * from tasks"
+            subscription = try dittoInstance.sync.registerSubscription(
+                query: subscriptionQuery
             )
         }
     }
-    
+
+    /// Stops Ditto sync and cancels the active subscription for the tasks collection.
+    ///
+    /// This method:
+    /// - Cancels the current sync subscription to stop receiving updates from remote peers.
+    /// - Sets the subscription property to `nil`.
+    /// - Stops the Ditto sync process if it is active.
+    ///
+    /// - SeeAlso: https://docs.ditto.live/sdk/latest/sync/syncing-data#canceling-subscriptions
+    /// - Throws: A DittoError if the operation fails
     private func stopSync() {
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#canceling-subscriptions
         subscription?.cancel()
         subscription = nil
-        
+
         ditto?.stopSync()
     }
-}
 
-// MARK: Adding/Editing Tasks
-extension DittoManager {
-    
     /// Creates a new TaskModel document in the Ditto store.
     ///
     /// This method:
@@ -251,29 +239,23 @@ extension DittoManager {
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/crud/create#creating-documents
     ///
     /// - Throws: A DittoError if the insert operation fails
-    func insertTaskModel(_ task: TaskModel) async {
+    func insertTaskModel(_ task: TaskModel) async throws {
         let newTask = task.value
-        
+
         // https://docs.ditto.live/dql/insert
         // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
         let query = "INSERT INTO tasks DOCUMENTS (:newTask)"
-        
-        do {
-            if let dittoInstance = ditto {
-                
-                // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
-                try await dittoInstance.store.execute(
-                    query: query,
-                    arguments: ["newTask": newTask]
-                )
-            }
-        } catch {
-            print(
-                "DittoManager.\(#function) - ERROR inserting task: \(error.localizedDescription)"
+
+        if let dittoInstance = ditto {
+
+            // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
+            try await dittoInstance.store.execute(
+                query: query,
+                arguments: ["newTask": newTask]
             )
         }
     }
-    
+
     /// Updates an existing TaskModel's properties in the Ditto store.
     ///
     /// This method uses DQL to update all mutable fields of the TaskModel
@@ -282,7 +264,7 @@ extension DittoManager {
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/crud/update#updating
     ///
     /// - Throws: A DittoError if the update operation fails
-    func updateTaskModel(_ task: TaskModel) async {
+    func updateTaskModel(_ task: TaskModel) async throws {
         // https://docs.ditto.live/dql/update#basic-update
         // https://docs.ditto.live/sdk/latest/crud/update#updating
         let query = """
@@ -292,32 +274,22 @@ extension DittoManager {
             deleted = :deleted
             WHERE _id == :_id
             """
-        
-        do {
-            if let dittoInstance = ditto {
-                
-                // https://docs.ditto.live/sdk/latest/crud/update#updating
-                try await dittoInstance.store.execute(
-                    query: query,
-                    arguments: [
-                        "title": task.title,
-                        "done": task.done,
-                        "deleted": task.deleted,
-                        "_id": task._id,
-                    ]
-                )
-            }
-        } catch {
-            print(
-                "DittoManager.\(#function) - ERROR updating task: \(error.localizedDescription)"
+
+        if let dittoInstance = ditto {
+
+            // https://docs.ditto.live/sdk/latest/crud/update#updating
+            try await dittoInstance.store.execute(
+                query: query,
+                arguments: [
+                    "title": task.title,
+                    "done": task.done,
+                    "deleted": task.deleted,
+                    "_id": task._id,
+                ]
             )
         }
     }
-}
 
-// MARK: Updating TaskModel Complete
-extension DittoManager {
-    
     /// Toggles the completion status of a task in the Ditto store
     ///
     /// This method:
@@ -329,9 +301,9 @@ extension DittoManager {
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/crud/update#updating
     ///
     /// - Throws: A DittoError if the update operation fails
-    func toggleComplete(task: TaskModel) async {
+    func toggleComplete(task: TaskModel) async throws {
         let done = !task.done
-        
+
         // https://docs.ditto.live/dql/update#basic-update
         // https://docs.ditto.live/sdk/latest/crud/update#updating
         let query = """
@@ -339,27 +311,17 @@ extension DittoManager {
             SET done = :done 
             WHERE _id == :_id
             """
-        
-        do {
-            if let dittoInstance = ditto {
-                
-                // https://docs.ditto.live/sdk/latest/crud/update#updating
-                try await dittoInstance.store.execute(
-                    query: query,
-                    arguments: ["done": done, "_id": task._id]
-                )
-            }
-        } catch {
-            print(
-                "DittoManager.\(#function) - ERROR toggling task complete: \(error.localizedDescription)"
+
+        if let dittoInstance = ditto {
+
+            // https://docs.ditto.live/sdk/latest/crud/update#updating
+            try await dittoInstance.store.execute(
+                query: query,
+                arguments: ["done": done, "_id": task._id]
             )
         }
     }
-}
 
-// MARK: Deleting TaskModel
-extension DittoManager {
-    
     /// Delete a TaskModel by setting its deleted flag to true.
     ///
     /// This method implements the 'Soft-Delete' pattern, which:
@@ -371,24 +333,17 @@ extension DittoManager {
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
     ///
     /// - Throws: A DittoError if the archive operation fails
-    func deleteTaskModel(_ task: TaskModel) async {
-        
+    func deleteTaskModel(_ task: TaskModel) async throws {
+
         // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
         let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
-        do {
-            if let dittoInstance = ditto {
-                
-                // https://docs.ditto.live/sdk/latest/crud/update#updating
-                try await dittoInstance.store.execute(
-                    query: query,
-                    arguments: ["_id": task._id]
-                )
-            }
-        } catch {
-            print(
-                "DittoManager.\(#function) - ERROR deleting task complete: \(error.localizedDescription)"
+        if let dittoInstance = ditto {
+
+            // https://docs.ditto.live/sdk/latest/crud/update#updating
+            try await dittoInstance.store.execute(
+                query: query,
+                arguments: ["_id": task._id]
             )
         }
     }
 }
-
