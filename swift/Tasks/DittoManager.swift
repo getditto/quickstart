@@ -14,13 +14,14 @@ import Foundation
     
     init() { }
     
+    
     /// Performs cleanup of Ditto resources
     ///
     /// This method handles the graceful shutdown of Ditto components by:
     /// - Cancelling any active subscriptions
     /// - Cancelling store observers
     /// - Stopping the Ditto sync process
-    deinit {
+    func deinitialize() {
         subscription?.cancel()
         subscription = nil
         
@@ -31,6 +32,7 @@ import Foundation
             if dittoInstance.isSyncActive {
                 dittoInstance.stopSync()
             }
+            ditto = nil
         }
     }
 
