@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.19041.0</TargetFrameworks>
-        <TargetFramework Condition="$([MSBuild]::IsOSPlatform('Linux'))">net9.0-android</TargetFramework>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">net9.0;net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net9.0;net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFramework Condition="$([MSBuild]::IsOSPlatform('Linux'))">net9.0;net9.0-android</TargetFramework>
         <OutputType>Exe</OutputType>
         <RootNamespace>DittoMauiTasksApp</RootNamespace>
         <UseMaui>true</UseMaui>
