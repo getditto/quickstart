@@ -16,6 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\UITests.Shared\*.cs" LinkBase="Shared" Visible="false" />
+    <Compile Include="..\DittoMauiTasksApp.UITests.Shared\*.cs" LinkBase="Shared" Visible="false" />
   </ItemGroup>
 </Project>

@@ -8,9 +8,12 @@ namespace UITests;
 [SetUpFixture]
 public class AppiumSetup
 {
-	private static AppiumDriver? driver;
+	private static WindowsDriver? driver;
 
 	public static AppiumDriver App => driver ?? throw new NullReferenceException("AppiumDriver is null");
+
+	//private const string AppId = "live.ditto.quickstart.mauitasksapp";
+	private const string AppId = "c8b2d96a-f86c-493c-9466-4a893592fbf9_1.0.0.0_x64__0qjjp1evp8024";
 
 	[OneTimeSetUp]
 	public void RunBeforeAnyTests()
@@ -26,12 +29,11 @@ public class AppiumSetup
 			// Always Windows for Windows
 			PlatformName = "Windows",
 			// The identifier of the deployed application to test
-			App = "live.ditto.quickstart.mauitasksapp!App",
+			App = $"{AppId}",
 		};
 
-		// Note there are many more options that you can use to influence the app under test according to your needs
 
-		driver = new WindowsDriver(windowsOptions);
+        driver = new WindowsDriver(windowsOptions);
 	}
 
 	[OneTimeTearDown]
