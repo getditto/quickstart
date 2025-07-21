@@ -85,9 +85,9 @@ import Foundation
                 query: "ALTER SYSTEM SET DQL_STRICT_MODE = false"
             )
 
-            //setup the collection with initial data and then setup observer
             try await self.populateTaskCollection()
             try self.registerObservers()
+            try self.registerSubscription()
 
             isInitialized = true
         }
@@ -178,6 +178,28 @@ import Foundation
         }
     }
 
+    /// Registers a subscription to sync all tasks across peers.
+    ///
+    /// This method sets up a sync subscription that:
+    /// - Creates a subscription for the entire tasks collection
+    /// - Enables data to be synced between devices when sync is active
+    /// - Stores the subscription reference for later cancellation
+    ///
+    /// The subscription remains active until explicitly cancelled or when sync is stopped.
+    ///
+    /// - SeeAlso: https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+    ///
+    /// - Throws: A DittoError if the subscription registration fails
+    func registerSubscription() throws {
+        if let dittoInstance = ditto {
+            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+            let subscriptionQuery = "SELECT * from tasks"
+            subscription = try dittoInstance.sync.registerSubscription(
+                query: subscriptionQuery
+            )
+        }
+    }
+
     /// Enables or disables Ditto sync based on the provided value.
     ///
     /// This method checks the current sync state and starts or stops
@@ -201,22 +223,13 @@ import Foundation
     ///
     /// This method:
     /// - Initiates the Ditto sync process if the Ditto instance is available.
-    /// - Registers a subscription to keep the local tasks collection in sync with remote changes.
     ///
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
-    /// - SeeAlso: https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
     /// - Throws: A DittoError if the operation fails
     private func startSync() throws {
         if let dittoInstance = ditto {
-
             // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
             try dittoInstance.startSync()
-
-            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-            let subscriptionQuery = "SELECT * from tasks"
-            subscription = try dittoInstance.sync.registerSubscription(
-                query: subscriptionQuery
-            )
         }
     }
 
