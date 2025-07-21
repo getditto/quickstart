@@ -110,11 +110,15 @@ extension EditScreen {
         }
         
         func save() async {
-            if isExistingTask {
-                task.deleted = deleteRequested
-                await dittoManager?.updateTaskModel(task)
-            } else {
-                await dittoManager?.insertTaskModel(task)
+            do {
+                if isExistingTask {
+                    task.deleted = deleteRequested
+                    try await dittoManager?.updateTaskModel(task)
+                } else {
+                    try await dittoManager?.insertTaskModel(task)
+                }
+            } catch {
+                print("Error saving task: \(error.localizedDescription)")
             }
         }
     }
