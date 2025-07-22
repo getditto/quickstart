@@ -69,8 +69,8 @@ static shared_ptr<ditto::Ditto> init_ditto(string app_id,
     // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
 
-    const auto disableStrictModeCommand = "ALTER SYSTEM SET DQL_STRICT_MODE = false";
-    const auto result = ditto->get_store().execute(disableStrictModeCommand);
+    // const auto disableStrictModeCommand = "ALTER SYSTEM SET DQL_STRICT_MODE = false";
+    // const auto result = ditto->get_store().execute(disableStrictModeCommand);
     return ditto;
   } catch (const exception &err) {
     throw runtime_error("unable to initialize Ditto: " + string(err.what()));
