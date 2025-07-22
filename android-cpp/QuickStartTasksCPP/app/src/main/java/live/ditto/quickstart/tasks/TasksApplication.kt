@@ -52,6 +52,7 @@ val isProbablyRunningOnEmulator: Boolean by lazy {
 }
 
 class TasksApplication : Application() {
+    private var dittoInitialized = false
 
     companion object {
         private const val TAG = "TasksApplication"
@@ -65,6 +66,10 @@ class TasksApplication : Application() {
 
     init {
         instance = this
+    }
+    
+    fun isInitialized(): Boolean {
+        return dittoInitialized
     }
 
     override fun onCreate() {
@@ -94,6 +99,7 @@ class TasksApplication : Application() {
                 webSocketURL
             )
             TasksLib.startSync()
+            dittoInitialized = true
         } catch (e: Exception) {
             Log.e(TAG, "unable to initialize Ditto", e)
         }

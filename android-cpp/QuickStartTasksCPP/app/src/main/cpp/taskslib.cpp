@@ -376,3 +376,23 @@ Java_live_ditto_quickstart_tasks_TasksLib_removeTasksObserver(JNIEnv *env, jobje
     throw_java_exception(env, err.what());
   }
 }
+
+extern "C"
+JNIEXPORT jobjectArray JNICALL
+Java_live_ditto_quickstart_tasks_TasksLib_getMissingPermissions(JNIEnv *env, jobject thiz) {
+  __android_log_print(ANDROID_LOG_DEBUG, TAG,
+                      "Java_live_ditto_quickstart_tasks_TasksLib_getMissingPermissions");
+  try {
+    std::lock_guard<std::recursive_mutex> lock(mtx);
+    if (!peer) {
+      // Return empty array if not initialized yet
+      jclass stringClass = env->FindClass("java/lang/String");
+      return env->NewObjectArray(0, stringClass, nullptr);
+    }
+    return peer->missing_permissions_jni_array();
+  } catch (const std::exception &err) {
+    __android_log_print(ANDROID_LOG_ERROR, TAG, "getMissingPermissions failed: %s", err.what());
+    throw_java_exception(env, err.what());
+    return nullptr;
+  }
+}

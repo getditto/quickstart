@@ -58,5 +58,8 @@ object TasksLib {
 
     // Remove the tasks observer.
     external fun removeTasksObserver()
+    
+    // Get array of missing permissions
+    external fun getMissingPermissions(): Array<String>
 }
 
