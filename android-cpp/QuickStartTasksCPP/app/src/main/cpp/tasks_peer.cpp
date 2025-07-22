@@ -34,7 +34,7 @@ vector<string> tasks_json_from(const ditto::QueryResult &result) {
 
 /// Initialize a Ditto instance.
 shared_ptr<ditto::Ditto>
-init_ditto(JNIEnv * /* env.*/, jobject android_context, string app_id,
+init_ditto(JNIEnv * /* env */, jobject android_context, string app_id,
            string online_playground_token, bool enable_cloud_sync,
            string persistence_dir, bool is_running_on_emulator,
            string custom_url, const string &websocket_url) {
