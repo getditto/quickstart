@@ -148,7 +148,7 @@ actor DittoService {
                     ]
                 )
             } else {
-                throw ManagerError.dittoNotInitialized(
+                throw DittoServiceError.dittoNotInitialized(
                     "Can't INSERT INTIIAL DOCUMENTS - Ditto is not initialized"
                 )
             }
@@ -181,7 +181,7 @@ actor DittoService {
                 }
             }
         } else {
-            throw ManagerError.dittoNotInitialized(
+            throw DittoServiceError.dittoNotInitialized(
                 "Can't register observer - Ditto is not initialized"
             )
         }
@@ -207,7 +207,7 @@ actor DittoService {
                 query: subscriptionQuery
             )
         } else {
-            throw ManagerError.dittoNotInitialized(
+            throw DittoServiceError.dittoNotInitialized(
                 "Can't register subscription - Ditto is not initialized"
             )
         }
@@ -279,7 +279,7 @@ actor DittoService {
                 arguments: ["newTask": newTask]
             )
         } else {
-            throw ManagerError.dittoNotInitialized(
+            throw DittoServiceError.dittoNotInitialized(
                 "Can't INSERT DOCUMENT - Ditto is not initialized"
             )
         }
@@ -315,7 +315,7 @@ actor DittoService {
                 ]
             )
         } else {
-            throw ManagerError.dittoNotInitialized(
+            throw DittoServiceError.dittoNotInitialized(
                 "Can't UPDATE DOCUMENT - Ditto is not initialized"
             )
         }
@@ -348,7 +348,7 @@ actor DittoService {
                 arguments: ["done": done, "_id": task._id]
             )
         } else {
-            throw ManagerError.dittoNotInitialized(
+            throw DittoServiceError.dittoNotInitialized(
                 "Can't UPDATE DOCUMENT - Ditto is not initialized"
             )
         }
@@ -376,13 +376,13 @@ actor DittoService {
                 arguments: ["_id": task._id]
             )
         } else {
-            throw ManagerError.dittoNotInitialized(
+            throw DittoServiceError.dittoNotInitialized(
                 "Can't SOFT DELETE DOCUMENT - Ditto is not initialized"
             )
         }
     }
 }
 
-enum ManagerError: Error {
+enum DittoServiceError: Error {
     case dittoNotInitialized(String)
 }
