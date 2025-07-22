@@ -30,6 +30,8 @@ class TasksApplication : Application() {
     }
 
     private fun setupDitto() {
+        DittoLogger.minimumLogLevel = DittoLogLevel.DEBUG
+
         val androidDependencies = DefaultAndroidDittoDependencies(applicationContext)
 
         //read values from build.gradle.kts (Module:app) which reads from environment file
