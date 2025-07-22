@@ -203,7 +203,7 @@ struct DittoManagerTests {
         )
     }
     
-    private func getTasksCollection(_ dittoManager: Tasks.DittoManager) async throws -> [Tasks.TaskModel] {
+    private func getTasksCollection(_ dittoManager: Tasks.DittoStateManager) async throws -> [Tasks.TaskModel] {
         if let dittoInstance = dittoManager.ditto {
             let results = try await dittoInstance.store.execute(query: "SELECT * FROM tasks WHERE NOT deleted")
             let tasks = results.items.compactMap{
@@ -214,8 +214,8 @@ struct DittoManagerTests {
         return []
     }
     
-    private func createDittoManagerForTests() async throws -> Tasks.DittoManager  {
-        let dittoManager = Tasks.DittoManager()
+    private func createDittoManagerForTests() async throws -> Tasks.DittoStateManager  {
+        let dittoManager = Tasks.DittoStateManager()
         // setup logging
         DittoLogger.enabled = true
         DittoLogger.minimumLogLevel = .debug
@@ -253,7 +253,7 @@ struct DittoManagerTests {
         return dittoManager
     }
     
-    private func cleanUpCollection(_ dittoManager: Tasks.DittoManager) async throws {
+    private func cleanUpCollection(_ dittoManager: Tasks.DittoStateManager) async throws {
         if let dittoInstance = dittoManager.ditto {
             dittoManager.subscription?.cancel()
             try await dittoInstance.store.execute(query: "EVICT FROM tasks")

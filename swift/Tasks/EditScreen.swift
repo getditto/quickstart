@@ -4,7 +4,6 @@ import SwiftUI
 
 /// View for creating or editing a task
 struct EditScreen: View {
-    @EnvironmentObject private var dittoManager: DittoManager
     @Environment(\.dismiss) private var dismiss
     @FocusState var titleHasFocus: Bool
     @StateObject private var viewModel: ViewModel
@@ -61,7 +60,6 @@ struct EditScreen: View {
             )
         }
         .onAppear {
-            viewModel.setDittoManager(dittoManager)
             if !viewModel.isExistingTask {
                 titleHasFocus = true
             }
@@ -88,7 +86,7 @@ extension EditScreen {
     
     /// View model for EditScreen
     class ViewModel: ObservableObject {
-        private var dittoManager: DittoManager?
+        private var dittoManager: DittoStateManager?
         
         @Published var isExistingTask: Bool = false
         @Published var deleteRequested = false
@@ -99,17 +97,13 @@ extension EditScreen {
             self.task = task ?? TaskModel()
         }
         
-        func setDittoManager(_ manager: DittoManager) {
-            self.dittoManager = manager
-        }
-        
         func save() async {
             do {
                 if isExistingTask {
                     task.deleted = deleteRequested
-                    try await dittoManager?.updateTaskModel(task)
+                    try await DittoService.shared.updateTaskModel(task)
                 } else {
-                    try await dittoManager?.insertTaskModel(task)
+                    try await DittoService.shared.insertTaskModel(task)
                 }
             } catch {
                 print("Error saving task: \(error.localizedDescription)")

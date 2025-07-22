@@ -3,18 +3,16 @@ import SwiftUI
 @main
 struct TasksApp: App {
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var dittoManager = DittoManager()
     @State private var error: Error?
-    @State private var isInitialized = false
+    @StateObject private var dittoStateManager = DittoStateManager()
 
     var body: some Scene {
         WindowGroup {
             Group {
-                if dittoManager.isInitialized {
+                if (dittoStateManager.isInitialized) {
                     TasksListScreen()
-                        .environmentObject(dittoManager)
-                } else {
-                    ProgressView("Loading...")
+                } else{
+                    ProgressView("Initializing...")
                 }
             }
             .alert(
@@ -30,38 +28,42 @@ struct TasksApp: App {
             } message: {
                 Text(error?.localizedDescription ?? "Unknown Error")
             }
-        }
-        .onChange(of: scenePhase) { newPhase in
-            switch newPhase {
-            case .background:
-                // An example on how you might handle the app going to background
-                // by closing connections and sync so that the OS doesn't terminate the app
-                // for using too much resources
-                deinitializeDitto()
-                break
-            case .inactive:
-                // An example on how you might handle the app going inactive
-                // by closing connections and sync so that the OS doesn't terminate the app
-                // for using too much resources
-                deinitializeDitto()
-                break
-            case .active:
-                // App became active again - check if Ditto is initialized
+            .onChange(of: scenePhase) { newPhase in
+                switch newPhase {
+                case .background:
+                    // An example on how you might handle the app going to background
+                    // by closing connections and sync so that the OS doesn't terminate the app
+                    // for using too much resources
+                    Task {
+                        await deinitializeDitto()
+                    }
+                    break
+                case .inactive:
+                    // An example on how you might handle the app going inactive
+                    // by closing connections and sync so that the OS doesn't terminate the app
+                    // for using too much resources
+                    Task {
+                        await deinitializeDitto()
+                    }
+                    break
+                case .active:
+                    // App became active again - check if Ditto is initialized
                     Task {
                         do {
-                            try await dittoManager.initializeIfNeeded()
+                            try await DittoService.shared.initializeIfNeeded(dittoStateManager: dittoStateManager)
                         } catch {
                             self.error = error
                         }
                     }
-                break
-            default:
-                break
+                    break
+                default:
+                    break
+                }
             }
         }
     }
-    
-    func deinitializeDitto() {
-        dittoManager.deinitialize()
+
+    func deinitializeDitto() async {
+        await DittoService.shared.deinitialize(dittoStateManager: dittoStateManager)
     }
 }

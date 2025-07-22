@@ -1,82 +1,27 @@
 import DittoSwift
 import Foundation
-import os
 
-/// An actor that ensures a block of initialization code is executed only once, even if called concurrently.
-///
-/// This actor is used to protect the initialization logic of DittoManager from race conditions and redundant work.
-///
-/// - Why use an actor?
-///   Actors in Swift provide data isolation and guarantee that only one task at a time can access their mutable state or methods.
-///   This means that even if multiple tasks call `initializeIfNeeded(_:)` at the same time, the actor will serialize those accesses:
-///   - The first call will run the initialization logic and set `isInitialized` to true.
-///   - Any concurrent or subsequent calls will wait their turn, see that initialization is complete, and return immediately.
-///
-/// - How does it work?
-///   - The `isInitialized` flag tracks whether initialization has already occurred.
-///   - The `initializeIfNeeded(_:)` method checks this flag:
-///     - If `false`, it runs the provided initialization closure and sets the flag to `true`.
-///     - If `true`, it returns immediately, skipping redundant initialization.
-///
-/// This pattern is the Swift-concurrency-native way to ensure single, thread-safe initialization, replacing the need for manual locks or mutexes.
-/// # See Also
-/// - [SDK Documentation](https://developer.apple.com/documentation/swift/actor)
-actor InitializationActor {
-    /// Tracks whether initialization has already occurred.
-    private var isInitialized = false
-    
-    /// Ensures the provided initialization closure is executed only once, even if called concurrently.
-    ///
-    /// - Parameter actualInit: An async closure containing the initialization logic to run.
-    /// - Throws: Any error thrown by the initialization closure.
-    func initializeIfNeeded(_ actualInit: () async throws -> Void) async throws {
-        if isInitialized { return }
-        try await actualInit()
-        isInitialized = true
+@MainActor class DittoStateManager: ObservableObject {
+    @Published var isInitialized: Bool = false
+
+    nonisolated init() { }
+
+    func setIsInitialized() {
+        self.isInitialized = true
     }
-    
-    /// Returns whether initialization has already occurred.
-    func getIsInitialized() -> Bool {
-        return isInitialized
+
+    func setIsNotInitialized() {
+        self.isInitialized = false
     }
 }
 
-/// `DittoManager` is the main owner and orchestrator of the Ditto SDK instance for the app.
-///
-/// This class is responsible for:
-/// - Managing the lifecycle of the Ditto object, including initialization and cleanup
-/// - Providing published properties for the app's tasks and selected task
-/// - Handling Ditto sync, observers, and subscriptions
-/// - Exposing async CRUD operations for tasks using Ditto's DQL (Ditto Query Language)
-/// - Ensuring thread-safe, single-call initialization using an internal `InitializationActor`
-///
-/// # Initialization
-/// Initialization is performed via the async `initializeIfNeeded()` method, which is safe to call from multiple places concurrently. The method delegates to an internal actor to guarantee that the Ditto instance is only initialized once, preventing race conditions and redundant work.
-///
-/// # Usage
-/// - Call `await initializeIfNeeded()` before performing any Ditto operations.
-/// - Use the published `tasks` property to observe the current list of tasks.
-/// - Use the provided CRUD methods to interact with the tasks collection.
-///
-/// # Thread Safety
-/// All public methods are `@MainActor`-isolated, and initialization is protected by an actor for concurrency safety.
-///
-/// # See Also
-/// - [Ditto Swift SDK Documentation](https://docs.ditto.live/sdk/latest/install-guides/swift)
-/// - [Ditto DQL Documentation](https://docs.ditto.live/dql/)
-@MainActor class DittoManager: ObservableObject {
-    @Published var tasks = [TaskModel]()
-    @Published var selectedTaskModel: TaskModel?
-    @Published var isInitialized = false
 
-    var subscription: DittoSyncSubscription?
-    var storeObserver: DittoStoreObserver?
-    var ditto: Ditto?
-    static var shared = DittoManager()
-    
-    // Lock for preventing concurrent initialization
-    private static let initializationLock = OSAllocatedUnfairLock()
-    private static let initializationActor = InitializationActor()
+actor DittoService {
+    var subscription: DittoSyncSubscription? = nil
+    var storeObserver: DittoStoreObserver? = nil
+    var ditto: Ditto? = nil
+
+    static var shared = DittoService()
 
     init() {}
 
@@ -86,7 +31,7 @@ actor InitializationActor {
     /// - Cancelling any active subscriptions
     /// - Cancelling store observers
     /// - Stopping the Ditto sync process
-    func deinitialize() {
+    func deinitialize(dittoStateManager: DittoStateManager) {
         subscription?.cancel()
         subscription = nil
         storeObserver?.cancel()
@@ -97,7 +42,9 @@ actor InitializationActor {
             }
             ditto = nil
         }
-        isInitialized = false
+        DispatchQueue.main.async {
+            dittoStateManager.setIsNotInitialized()
+        }
     }
 
     /// Initializes the Ditto instance and configures its environment.
@@ -105,44 +52,47 @@ actor InitializationActor {
     /// - Throws: An error if Ditto configuration or DQL commands fail
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
     /// - SeeAlso: https://docs.ditto.live/dql/strict-mode
-    func initializeIfNeeded() async throws {
-        if await Self.initializationActor.getIsInitialized() { return }
-        try await Self.initializationActor.initializeIfNeeded {
-            //setup logging level
-            let isPreview: Bool =
-                ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
-                == "1"
-            if !isPreview {
-                DittoLogger.minimumLogLevel = .debug
-            }
+    func initializeIfNeeded(dittoStateManager: DittoStateManager) async throws {
+        if await dittoStateManager.isInitialized {
+            return
+        }
 
-            // Setup Ditto Identity
-            let ditto = Ditto(
-                identity: .onlinePlayground(
-                    appID: Env.DITTO_APP_ID,
-                    token: Env.DITTO_PLAYGROUND_TOKEN,
-                    enableDittoCloudSync: false,
-                    customAuthURL: URL(string: Env.DITTO_AUTH_URL)
-                )
+        //setup logging level
+        let isPreview: Bool =
+            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
+            == "1"
+        if !isPreview {
+            DittoLogger.minimumLogLevel = .debug
+        }
+
+        // Setup Ditto Identity
+        let ditto = Ditto(
+            identity: .onlinePlayground(
+                appID: Env.DITTO_APP_ID,
+                token: Env.DITTO_PLAYGROUND_TOKEN,
+                enableDittoCloudSync: false,
+                customAuthURL: URL(string: Env.DITTO_AUTH_URL)
             )
-            self.ditto = ditto
+        )
+        self.ditto = ditto
 
-            // Set the Ditto Websocket URL
-            ditto.updateTransportConfig { transportConfig in
-                transportConfig.connect.webSocketURLs.insert(
-                    Env.DITTO_WEBSOCKET_URL
-                )
-            }
-            // disable sync with v3 peers, required for DQL
-            try ditto.disableSyncWithV3()
-
-            // Disable DQL strict mode
-            try await ditto.store.execute(
-                query: "ALTER SYSTEM SET DQL_STRICT_MODE = false"
+        // Set the Ditto Websocket URL
+        ditto.updateTransportConfig { transportConfig in
+            transportConfig.connect.webSocketURLs.insert(
+                Env.DITTO_WEBSOCKET_URL
             )
-            try await self.populateTaskCollection()
-            try self.registerObservers()
-            try self.registerSubscription()
+        }
+        // disable sync with v3 peers, required for DQL
+        try ditto.disableSyncWithV3()
+
+        // Disable DQL strict mode
+        try await ditto.store.execute(
+            query: "ALTER SYSTEM SET DQL_STRICT_MODE = false"
+        )
+        try await self.populateTaskCollection()
+        try self.registerSubscription()
+        DispatchQueue.main.async {
+            dittoStateManager.setIsInitialized()
         }
     }
 
@@ -215,18 +165,19 @@ actor InitializationActor {
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/crud/read
     ///
     /// - Throws: A DittoError if the observer cannot be registered
-    func registerObservers() throws {
+    func registerObservers(updateTaskModels: @escaping ([TaskModel]?) async -> Void) throws {
         if let ditto {
             let observerQuery = "SELECT * FROM tasks WHERE NOT deleted"
             storeObserver = try ditto.store.registerObserver(
                 query: observerQuery
-            ) {
-                [weak self] results in
+            ) { results in
                 Task { @MainActor in
                     // Create new TaskModel instances and update the published property
-                    self?.tasks = results.items.compactMap {
+                    let tasks = results.items.compactMap {
                         TaskModel($0.jsonString())
                     }
+                    // Call the callback on the main actor
+                    await updateTaskModels(tasks)
                 }
             }
         } else {
