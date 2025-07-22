@@ -2,8 +2,6 @@ import Combine
 import DittoSwift
 import SwiftUI
 
-
-
 /// View for creating or editing a task
 struct EditScreen: View {
     @EnvironmentObject private var dittoManager: DittoManager
@@ -22,10 +20,8 @@ struct EditScreen: View {
                     TextField("Title", text: $viewModel.task.title)
                         .focused($titleHasFocus)
                         .onSubmit(onSubmit)
-                    
                     Toggle("Is Completed", isOn: $viewModel.task.done)
                 }
-                
                 if viewModel.isExistingTask {
                     Section {
                         HStack {
@@ -40,9 +36,7 @@ struct EditScreen: View {
                                             viewModel.deleteRequested
                                             ? .white : .red)
                                 })
-                            
                             Spacer()
-                            
                             if viewModel.deleteRequested {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(.white)

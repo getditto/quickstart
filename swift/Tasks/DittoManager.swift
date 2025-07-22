@@ -1,7 +1,69 @@
 import DittoSwift
 import Foundation
+import os
 
-/// Owner of the Ditto object
+/// An actor that ensures a block of initialization code is executed only once, even if called concurrently.
+///
+/// This actor is used to protect the initialization logic of DittoManager from race conditions and redundant work.
+///
+/// - Why use an actor?
+///   Actors in Swift provide data isolation and guarantee that only one task at a time can access their mutable state or methods.
+///   This means that even if multiple tasks call `initializeIfNeeded(_:)` at the same time, the actor will serialize those accesses:
+///   - The first call will run the initialization logic and set `isInitialized` to true.
+///   - Any concurrent or subsequent calls will wait their turn, see that initialization is complete, and return immediately.
+///
+/// - How does it work?
+///   - The `isInitialized` flag tracks whether initialization has already occurred.
+///   - The `initializeIfNeeded(_:)` method checks this flag:
+///     - If `false`, it runs the provided initialization closure and sets the flag to `true`.
+///     - If `true`, it returns immediately, skipping redundant initialization.
+///
+/// This pattern is the Swift-concurrency-native way to ensure single, thread-safe initialization, replacing the need for manual locks or mutexes.
+/// # See Also
+/// - [SDK Documentation](https://developer.apple.com/documentation/swift/actor)
+actor InitializationActor {
+    /// Tracks whether initialization has already occurred.
+    private var isInitialized = false
+    
+    /// Ensures the provided initialization closure is executed only once, even if called concurrently.
+    ///
+    /// - Parameter actualInit: An async closure containing the initialization logic to run.
+    /// - Throws: Any error thrown by the initialization closure.
+    func initializeIfNeeded(_ actualInit: () async throws -> Void) async throws {
+        if isInitialized { return }
+        try await actualInit()
+        isInitialized = true
+    }
+    
+    /// Returns whether initialization has already occurred.
+    func getIsInitialized() -> Bool {
+        return isInitialized
+    }
+}
+
+/// `DittoManager` is the main owner and orchestrator of the Ditto SDK instance for the app.
+///
+/// This class is responsible for:
+/// - Managing the lifecycle of the Ditto object, including initialization and cleanup
+/// - Providing published properties for the app's tasks and selected task
+/// - Handling Ditto sync, observers, and subscriptions
+/// - Exposing async CRUD operations for tasks using Ditto's DQL (Ditto Query Language)
+/// - Ensuring thread-safe, single-call initialization using an internal `InitializationActor`
+///
+/// # Initialization
+/// Initialization is performed via the async `initializeIfNeeded()` method, which is safe to call from multiple places concurrently. The method delegates to an internal actor to guarantee that the Ditto instance is only initialized once, preventing race conditions and redundant work.
+///
+/// # Usage
+/// - Call `await initializeIfNeeded()` before performing any Ditto operations.
+/// - Use the published `tasks` property to observe the current list of tasks.
+/// - Use the provided CRUD methods to interact with the tasks collection.
+///
+/// # Thread Safety
+/// All public methods are `@MainActor`-isolated, and initialization is protected by an actor for concurrency safety.
+///
+/// # See Also
+/// - [Ditto Swift SDK Documentation](https://docs.ditto.live/sdk/latest/install-guides/swift)
+/// - [Ditto DQL Documentation](https://docs.ditto.live/dql/)
 @MainActor class DittoManager: ObservableObject {
     @Published var tasks = [TaskModel]()
     @Published var selectedTaskModel: TaskModel?
@@ -9,9 +71,12 @@ import Foundation
 
     var subscription: DittoSyncSubscription?
     var storeObserver: DittoStoreObserver?
-
     var ditto: Ditto?
     static var shared = DittoManager()
+    
+    // Lock for preventing concurrent initialization
+    private static let initializationLock = OSAllocatedUnfairLock()
+    private static let initializationActor = InitializationActor()
 
     init() {}
 
@@ -24,10 +89,8 @@ import Foundation
     func deinitialize() {
         subscription?.cancel()
         subscription = nil
-
         storeObserver?.cancel()
         storeObserver = nil
-
         if let dittoInstance = ditto {
             if dittoInstance.isSyncActive {
                 dittoInstance.stopSync()
@@ -43,29 +106,25 @@ import Foundation
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
     /// - SeeAlso: https://docs.ditto.live/dql/strict-mode
     func initializeIfNeeded() async throws {
-        if !isInitialized {
-
+        if await Self.initializationActor.getIsInitialized() { return }
+        try await Self.initializationActor.initializeIfNeeded {
             //setup logging level
             let isPreview: Bool =
-            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
-            == "1"
+                ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
+                == "1"
             if !isPreview {
                 DittoLogger.minimumLogLevel = .debug
             }
 
             // Setup Ditto Identity
-            // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
             let ditto = Ditto(
                 identity: .onlinePlayground(
                     appID: Env.DITTO_APP_ID,
                     token: Env.DITTO_PLAYGROUND_TOKEN,
-                    // This is required to be set to false to use the correct URLs
-                    // This only disables cloud sync when the webSocketURL is not set explicitly
                     enableDittoCloudSync: false,
                     customAuthURL: URL(string: Env.DITTO_AUTH_URL)
                 )
             )
-
             self.ditto = ditto
 
             // Set the Ditto Websocket URL
@@ -74,24 +133,17 @@ import Foundation
                     Env.DITTO_WEBSOCKET_URL
                 )
             }
-
             // disable sync with v3 peers, required for DQL
             try ditto.disableSyncWithV3()
 
             // Disable DQL strict mode
-            // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
-            // https://docs.ditto.live/dql/strict-mode
             try await ditto.store.execute(
                 query: "ALTER SYSTEM SET DQL_STRICT_MODE = false"
             )
-
             try await self.populateTaskCollection()
             try self.registerObservers()
             try self.registerSubscription()
-
-            isInitialized = true
         }
-
     }
 
     /// Populates the Ditto tasks collection with initial seed data if it's empty
@@ -130,7 +182,6 @@ import Foundation
                 title: "Pay bills"
             ),
         ]
-
         for task in initialTasks {
             if let ditto {
                 // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
@@ -145,6 +196,10 @@ import Foundation
                                 "deleted": task.deleted,
                             ]
                     ]
+                )
+            } else {
+                throw ManagerError.dittoNotInitialized(
+                    "Can't INSERT INTIIAL DOCUMENTS - Ditto is not initialized"
                 )
             }
         }
@@ -162,7 +217,6 @@ import Foundation
     /// - Throws: A DittoError if the observer cannot be registered
     func registerObservers() throws {
         if let ditto {
-
             let observerQuery = "SELECT * FROM tasks WHERE NOT deleted"
             storeObserver = try ditto.store.registerObserver(
                 query: observerQuery
@@ -175,6 +229,10 @@ import Foundation
                     }
                 }
             }
+        } else {
+            throw ManagerError.dittoNotInitialized(
+                "Can't register observer - Ditto is not initialized"
+            )
         }
     }
 
@@ -196,6 +254,10 @@ import Foundation
             let subscriptionQuery = "SELECT * from tasks"
             subscription = try ditto.sync.registerSubscription(
                 query: subscriptionQuery
+            )
+        } else {
+            throw ManagerError.dittoNotInitialized(
+                "Can't register subscription - Ditto is not initialized"
             )
         }
     }
@@ -227,10 +289,8 @@ import Foundation
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
     /// - Throws: A DittoError if the operation fails
     private func startSync() throws {
-        if let ditto {
-            // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
-            try ditto.startSync()
-        }
+        // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
+        try ditto?.startSync()
     }
 
     /// Stops Ditto sync and cancels the active subscription for the tasks collection.
@@ -244,9 +304,6 @@ import Foundation
     /// - Throws: A DittoError if the operation fails
     private func stopSync() {
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#canceling-subscriptions
-        subscription?.cancel()
-        subscription = nil
-
         ditto?.stopSync()
     }
 
@@ -261,17 +318,18 @@ import Foundation
     /// - Throws: A DittoError if the insert operation fails
     func insertTaskModel(_ task: TaskModel) async throws {
         let newTask = task.value
-
         // https://docs.ditto.live/dql/insert
         // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
         let query = "INSERT INTO tasks DOCUMENTS (:newTask)"
-
         if let ditto {
-
             // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
             try await ditto.store.execute(
                 query: query,
                 arguments: ["newTask": newTask]
+            )
+        } else {
+            throw ManagerError.dittoNotInitialized(
+                "Can't INSERT DOCUMENT - Ditto is not initialized"
             )
         }
     }
@@ -294,9 +352,7 @@ import Foundation
             deleted = :deleted
             WHERE _id == :_id
             """
-
         if let ditto {
-
             // https://docs.ditto.live/sdk/latest/crud/update#updating
             try await ditto.store.execute(
                 query: query,
@@ -306,6 +362,10 @@ import Foundation
                     "deleted": task.deleted,
                     "_id": task._id,
                 ]
+            )
+        } else {
+            throw ManagerError.dittoNotInitialized(
+                "Can't UPDATE DOCUMENT - Ditto is not initialized"
             )
         }
     }
@@ -323,7 +383,6 @@ import Foundation
     /// - Throws: A DittoError if the update operation fails
     func toggleComplete(task: TaskModel) async throws {
         let done = !task.done
-
         // https://docs.ditto.live/dql/update#basic-update
         // https://docs.ditto.live/sdk/latest/crud/update#updating
         let query = """
@@ -331,13 +390,15 @@ import Foundation
             SET done = :done 
             WHERE _id == :_id
             """
-
         if let ditto {
-
             // https://docs.ditto.live/sdk/latest/crud/update#updating
             try await ditto.store.execute(
                 query: query,
                 arguments: ["done": done, "_id": task._id]
+            )
+        } else {
+            throw ManagerError.dittoNotInitialized(
+                "Can't UPDATE DOCUMENT - Ditto is not initialized"
             )
         }
     }
@@ -354,7 +415,6 @@ import Foundation
     ///
     /// - Throws: A DittoError if the archive operation fails
     func deleteTaskModel(_ task: TaskModel) async throws {
-
         // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
         let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
         if let ditto {
@@ -364,6 +424,14 @@ import Foundation
                 query: query,
                 arguments: ["_id": task._id]
             )
+        } else {
+            throw ManagerError.dittoNotInitialized(
+                "Can't SOFT DELETE DOCUMENT - Ditto is not initialized"
+            )
         }
     }
+}
+
+enum ManagerError: Error {
+    case dittoNotInitialized(String)
 }

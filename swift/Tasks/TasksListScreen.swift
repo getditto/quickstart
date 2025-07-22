@@ -153,7 +153,6 @@ extension TasksListScreen {
         
         func initialize(dittoManager: DittoManager) async {
             self.dittoManager = dittoManager
-            
             dittoManager.$tasks
                 .receive(on: RunLoop.main)
                 .sink { [weak self] updatedTasks in
