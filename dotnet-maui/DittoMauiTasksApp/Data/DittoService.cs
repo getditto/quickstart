@@ -12,11 +12,23 @@ namespace DittoMauiTasksApp.Data;
 /// data access layer for task management functionality.
 /// </summary>
 
-public class DittoManager(ILogger<DittoManager> logger)
-    : IDataManager
+public class DittoService(ILogger<DittoService> logger)
+    : IDataService
 {
-    private readonly ILogger<DittoManager> _logger = logger;
+    private readonly ILogger<DittoService> _logger = logger;
     private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted";
+    
+    /// <summary>
+    /// Lock object used to ensure thread-safe initialization.
+    /// Only one thread can execute the initialization logic at a time.
+    /// </summary>
+    private static readonly SemaphoreSlim InitializationLock = new SemaphoreSlim(1, 1);
+    
+    /// <summary>
+    /// Flag indicating whether initialization has already been completed.
+    /// This prevents redundant initialization attempts.
+    /// </summary>
+    private static volatile bool _isInitialized = false;
 
 #nullable enable
     private Ditto? _ditto = null;
@@ -37,8 +49,9 @@ public class DittoManager(ILogger<DittoManager> logger)
 
     /// <summary>
     /// Initializes the Ditto instance with the specified configuration and data path.
-    /// Sets up the Ditto identity, transport configuration, and initializes the database
-    /// with default tasks if it's empty.
+    /// This method is thread-safe and ensures initialization only occurs once, even if
+    /// called concurrently from multiple threads. Subsequent calls will return immediately
+    /// if initialization has already been completed.
     /// </summary>
     /// <param name="dittoConfig">The Ditto configuration containing app ID, tokens, and URLs.</param>
     /// <param name="dataPath">The file system path where Ditto should store its data.</param>
@@ -46,8 +59,22 @@ public class DittoManager(ILogger<DittoManager> logger)
     /// <exception cref="Exception">Thrown when Ditto initialization fails.</exception>
     public async Task Initialize(DittoConfig dittoConfig, string dataPath)
     {
+        // Quick check to avoid unnecessary lock acquisition if already initialized
+        if (_isInitialized)
+        {
+            _logger.LogDebug("DittoService already initialized, skipping initialization");
+            return;
+        }
+        // Acquire the lock to ensure only one thread can initialize at a time
+        await InitializationLock.WaitAsync();
         try
         {
+            // Double-check pattern: verify initialization hasn't been completed by another thread
+            if (_isInitialized)
+            {
+                _logger.LogDebug("DittoService already initialized by another thread, skipping initialization");
+                return;
+            }
             _ditto = new Ditto(DittoIdentity
                 .OnlinePlayground(
                     dittoConfig.AppId,
@@ -64,14 +91,30 @@ public class DittoManager(ILogger<DittoManager> logger)
             // disable sync with v3 peers, required for DQL
             _ditto.DisableSyncWithV3();
 
+            // Disable DQL strict mode
+            // https://docs.ditto.live/dql/strict-mode
             await _ditto.Store.ExecuteAsync("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+            
             await InsertInitialTasks();
+            
+            // Register a subscription, which determines what data syncs to this peer
+            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+            _syncSubscription = _ditto?.Sync.RegisterSubscription(SelectQuery);
+            
+            // Mark initialization as complete
+            _isInitialized = true;
+            _logger.LogInformation("DittoService initialization completed successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, ex.Message);
-        }    
-           
+            _logger.LogError(ex, "DittoService initialization failed: {Message}", ex.Message);
+            throw; // Re-throw to allow callers to handle the error
+        }
+        finally
+        {
+            // Always release the lock, even if an exception occurs
+            InitializationLock.Release();
+        }
     }
 
     /// <summary>
@@ -97,7 +140,7 @@ public class DittoManager(ILogger<DittoManager> logger)
     /// <see href="https://docs.ditto.live/sdk/latest/crud/read#diffing-results"/>
     public void RegisterObservers(ObservableCollection<DittoTask> tasks)
     {
-        // Register observer, which runs against the local database on this peer
+        // Register an observer, which runs against the local database on this peer
         // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
         _dittoStoreObserver = _ditto?.Store.RegisterObserver(SelectQuery, (queryResult) =>
         {
@@ -113,15 +156,10 @@ public class DittoManager(ILogger<DittoManager> logger)
                 try
                 {
                     //handle deletions
-                    foreach (var index in diff.Deletions)
+                    foreach (var taskItem in diff.Deletions.Select(index => JsonSerializer
+                                 .Deserialize<DittoTask>(_previousItems[index].JsonString())).OfType<DittoTask>())
                     {
-                        var item = _previousItems[index];
-                        var taskItem = JsonSerializer
-                            .Deserialize<DittoTask>(_previousItems[index].JsonString());
-                        if (taskItem != null)
-                        {
-                            tasks.Remove(tasks.First(x => x.Id == taskItem.Id));
-                        }
+                        tasks.Remove(tasks.First(x => x.Id == taskItem.Id));
                     }
 
                     //handle insertions
@@ -145,18 +183,16 @@ public class DittoManager(ILogger<DittoManager> logger)
                         if (taskItem != null)
                         {
                             var existingTask = tasks.FirstOrDefault(x => x.Id == taskItem.Id);
-                            if (existingTask != null)
+                            if (existingTask == null) continue;
+                            //implement soft delete for the deleted field
+                            if (taskItem.Deleted)
                             {
-                                //implement soft delete for the deleted field
-                                if (taskItem.Deleted)
-                                {
-                                    tasks.Remove(existingTask);
-                                }
-                                else
-                                {
-                                    existingTask.Title = taskItem.Title;
-                                    existingTask.Done = taskItem.Done;
-                                }
+                                tasks.Remove(existingTask);
+                            }
+                            else
+                            {
+                                existingTask.Title = taskItem.Title;
+                                existingTask.Done = taskItem.Done;
                             }
                         }
                     }
@@ -183,10 +219,6 @@ public class DittoManager(ILogger<DittoManager> logger)
     public void StartSync()
     {
         _ditto?.StartSync();
-
-        // Register a subscription, which determines what data syncs to this peer
-        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-        _syncSubscription = _ditto?.Sync.RegisterSubscription(SelectQuery);
     }
 
     /// <summary>

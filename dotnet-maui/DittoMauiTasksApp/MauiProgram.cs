@@ -24,7 +24,7 @@ public static class MauiProgram
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
         builder.Logging.AddDebug();
 #endif
-        builder.Services.AddSingleton<IDataManager, DittoManager>();
+        builder.Services.AddSingleton<IDataService, DittoService>();
         builder.Services.AddSingleton<IPopupService, PopupService>();
         builder.Services.AddTransient<TasksPageViewModel>();
         builder.Services.AddTransient<TasksPage>();

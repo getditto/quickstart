@@ -86,10 +86,14 @@ actor DittoService {
         try ditto.disableSyncWithV3()
 
         // Disable DQL strict mode
+        // https://docs.ditto.live/dql/strict-mode
         try await ditto.store.execute(
             query: "ALTER SYSTEM SET DQL_STRICT_MODE = false"
         )
         try await self.populateTaskCollection()
+
+        // Register a subscription, which determines what data syncs to this peer
+        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
         try self.registerSubscription()
         DispatchQueue.main.async {
             dittoStateManager.setIsInitialized()
