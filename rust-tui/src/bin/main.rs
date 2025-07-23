@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
         cli.app_id, 
         cli.token, 
         cli.custom_auth_url, 
-        cli.websocket_url)?;
+        cli.websocket_url).await?;
     let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, ditto)
         .context("failed to start tui task")?;
     tracing::info!(success = true, "Initialized!");
@@ -88,11 +88,12 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn try_init_ditto(
+async fn try_init_ditto(
     app_id: AppId, 
     token: String, 
     custom_auth_url: String, 
     websocket_url: String) -> Result<Ditto> {
+    println!("Building Ditto instance...");
     // We use a temporary directory to store Ditto's local database.  
     // This means that data will not be persistent between runs of the
     // application, but it allows us to run multiple instances of the
@@ -119,6 +120,10 @@ fn try_init_ditto(
 
     // disable sync with v3 peers, required for DQL
     _ = ditto.disable_sync_with_v3();
+
+    // disable DQL strict mode
+    // https://docs.ditto.live/dql/strict-mode
+    _ = ditto.store().execute_v2("ALTER SYSTEM SET DQL_STRICT_MODE = false").await?;
 
     // Start sync
     _ = ditto.start_sync();
