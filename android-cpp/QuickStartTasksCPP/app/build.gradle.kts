@@ -33,7 +33,7 @@ androidComponents {
             "DITTO_APP_ID",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_APP_ID"]}",
+                "\"${prop["DITTO_APP_ID"]}\"",
                 "Ditto application ID"
             )
         )
@@ -41,7 +41,7 @@ androidComponents {
             "DITTO_PLAYGROUND_TOKEN",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_PLAYGROUND_TOKEN"]}",
+                "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
                 "Ditto online playground authentication token"
             )
         )
@@ -49,7 +49,7 @@ androidComponents {
             "DITTO_AUTH_URL",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_AUTH_URL"]}",
+                "\"${prop["DITTO_AUTH_URL"]}\"",
                 "Ditto Auth URL"
             )
         )
@@ -58,7 +58,7 @@ androidComponents {
             "DITTO_WEBSOCKET_URL",
             BuildConfigField(
                 "String",
-                "${prop["DITTO_WEBSOCKET_URL"]}",
+                "\"${prop["DITTO_WEBSOCKET_URL"]}\"",
                 "Ditto Websocket URL"
             )
         )
@@ -100,11 +100,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
     buildFeatures {
         buildConfig = true
@@ -135,7 +135,7 @@ android {
 
 dependencies {
     // Ditto C++ SDK for Android
-    implementation("live.ditto:ditto-cpp:4.11.0")
+    implementation("live.ditto:ditto-cpp:4.11.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
