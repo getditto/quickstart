@@ -67,6 +67,12 @@ const App = () => {
 
         // disable sync with v3 peers, required for DQL
         await ditto.current.disableSyncWithV3();
+
+        // Disable DQL strict mode
+        // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
+        // https://docs.ditto.live/dql/strict-mode
+        await ditto.current.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
+
         ditto.current.startSync();
 
         // Register a subscription, which determines what data syncs to this peer
