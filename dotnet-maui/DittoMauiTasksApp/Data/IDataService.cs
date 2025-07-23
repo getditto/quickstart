@@ -3,7 +3,7 @@ using DittoMauiTasksApp.Model;
 
 namespace DittoMauiTasksApp.Data;
 
-public interface IDataManager
+public interface IDataService
 {
     Task Initialize(DittoConfig dittoConfig);
     void RegisterObservers(ObservableCollection<DittoTask> tasks);

@@ -9,7 +9,6 @@ struct TaskModel {
 }
 
 extension TaskModel {
-
     /// Convenience initializer returns instance from `QueryResultItem.value`
     init(_ value: [String: Any?]) {
         self._id = value["_id"] as! String
@@ -20,7 +19,6 @@ extension TaskModel {
 }
 
 extension TaskModel {
-
     /// Returns properties as key/value pairs for DQL INSERT query
     var value: [String: Any?] {
         [
@@ -35,7 +33,6 @@ extension TaskModel {
 // MARK: - Identifiable
 
 extension TaskModel: Identifiable {
-
     /// Required for SwiftUI List view
     var id: String {
         return _id
@@ -55,7 +52,6 @@ extension TaskModel: Equatable {
 // MARK: - Codable
 
 extension TaskModel: Codable {
-
     /// Returns optional instance decoded from `QueryResultItem.jsonString()`
     init?(_ json: String) {
         do {
@@ -68,9 +64,7 @@ extension TaskModel: Codable {
 }
 
 // MARK: - Preview support
-
 extension TaskModel {
-
     /// Convenience initializer with defaults for previews and instances generated for new tasks
     init(
         title: String = "", done: Bool = false, deleted: Bool = false

@@ -5,13 +5,12 @@ import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-const appID = "<put your Ditto Portal AppId here>";
-const token = "<put your Ditto Portal Playground Token here>";
-const websocketUrl = "<put your Ditto Portal Websocket URL here>";
-const authUrl = "<put your Ditto Portal Auth URL here>";
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  //load in the .env file
+  await dotenv.load(fileName: ".env");
   runApp(const MaterialApp(home: DittoExample()));
 }
 
@@ -24,10 +23,21 @@ class DittoExample extends StatefulWidget {
 
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
+  late final String appID;
+  late final String token;
+  late final String authUrl;
+  late final String websocketUrl;
+
+
 
   @override
   void initState() {
     super.initState();
+
+    appID = dotenv.env['DITTO_APP_ID'] ?? "<env_not_found>";
+    token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ?? "<env_not_found>";
+    authUrl = dotenv.env['DITTO_AUTH_URL'] ?? "<env_not_found>";
+    websocketUrl = dotenv.env['DITTO_WEBSOCKET_URL'] ?? "<env_not_found>";
 
     _initDitto();
   }
@@ -41,7 +51,8 @@ class _DittoExampleState extends State<DittoExample> {
   /// 3. Sets up online playground identity with the provided app ID and token
   /// 4. Enables peer-to-peer communication on non-web platforms
   /// 5. Configures WebSocket connection to Ditto cloud
-  /// 6. Starts sync and updates the app state with the configured Ditto instance
+  /// 6. Disables DQL strict mode
+  /// 7. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
     if (!kIsWeb) {
       await [
@@ -68,6 +79,10 @@ class _DittoExampleState extends State<DittoExample> {
       config.setAllPeerToPeerEnabled(true);
       config.connect.webSocketUrls.add(websocketUrl);
     });
+
+    // Disable DQL strict mode
+    // https://docs.ditto.live/dql/strict-mode
+    await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
 
     ditto.startSync();
 
@@ -138,7 +153,7 @@ class _DittoExampleState extends State<DittoExample> {
         child: const Icon(Icons.add_task),
       );
 
-  Widget get _portalInfo => const Column(children: [
+  Widget get _portalInfo =>  Column(children: [
         Text("AppID: $appID"),
         Text("Token: $token"),
       ]);

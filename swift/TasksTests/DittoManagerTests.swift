@@ -1,8 +1,3 @@
-//
-//  DittoManagerTests.swift
-//  Created on 7/17/25.
-//
-
 import Testing
 import Foundation
 import DittoSwift
@@ -18,7 +13,7 @@ struct DittoManagerTests {
         let dittoManager = try await createDittoManagerForTests()
         
         // Assert
-        await dittoManager.populateTaskCollection()
+        try await dittoManager.populateTaskCollection()
         let tasks = try await getTasksCollection(dittoManager)
         #expect(tasks.count == 4, "Should have 4 initial tasks")
         
@@ -57,11 +52,10 @@ struct DittoManagerTests {
         let initialCount = tasks.count
         
         // Act
-        await dittoManager.insertTaskModel(newTask)
-        
+        try await dittoManager.insertTaskModel(newTask)
+
         // get updated tasks
         tasks = try await getTasksCollection(dittoManager)
-        
         #expect(tasks.count == initialCount + 1, "Should have one more task after insertion")
         
         // Verify the new task was added correctly
@@ -85,20 +79,19 @@ struct DittoManagerTests {
         let initialTask = createInitialTask()
         
         // Add initial task
-        await dittoManager.insertTaskModel(initialTask)
-        
+        try await dittoManager.insertTaskModel(initialTask)
+
         // Create updated version of task
         var updatedTask = initialTask
         updatedTask.title = "Updated Title"
         updatedTask.done = true
         
         // Act
-        await dittoManager.updateTaskModel(updatedTask)
-        
+        try await dittoManager.updateTaskModel(updatedTask)
+
         // Assert
         tasks = try await getTasksCollection(dittoManager)
         #expect(tasks.count == 1, "Should still have one task after update")
-        
         if let resultTask = tasks.first(where: { $0._id == updatedTask._id }) {
             #expect(resultTask._id == initialTask._id, "Task ID should remain unchanged")
             #expect(resultTask.title == "Updated Title", "Task title should be updated")
@@ -118,14 +111,14 @@ struct DittoManagerTests {
         var initialTask = createInitialTask()
         
         // Add initial task
-        await dittoManager.insertTaskModel(initialTask)
+        try await dittoManager.insertTaskModel(initialTask)
         var tasks = try await getTasksCollection(dittoManager)
         #expect(tasks.count == 1, "Should have 1 task after insert")
         
         // Act
         initialTask.deleted = true
-        await dittoManager.updateTaskModel(initialTask)
-        
+        try await dittoManager.updateTaskModel(initialTask)
+
         // Assert
         tasks = try await getTasksCollection(dittoManager)
         #expect(tasks.count == 0, "Should have 0 task after update")
@@ -141,17 +134,16 @@ struct DittoManagerTests {
         let initialTask = createInitialTask()
         
         // Add initial task
-        await dittoManager.insertTaskModel(initialTask)
+        try await dittoManager.insertTaskModel(initialTask)
         var tasks = try await getTasksCollection(dittoManager)
         #expect(tasks.count == 1, "Should have 1 task after insert")
         
         // Act - Toggle complete (false -> true)
-        await dittoManager.toggleComplete(task: initialTask)
-        
+        try await dittoManager.toggleComplete(task: initialTask)
+
         // Assert
         tasks = try await getTasksCollection(dittoManager)
         #expect(tasks.count == 1, "Should still have 1 task after update")
-        
         if let resultTask = tasks.first(where: { $0._id == initialTask._id }) {
             #expect(resultTask._id == initialTask._id, "Task ID should remain unchanged")
             #expect(resultTask.title == initialTask.title, "Task title remain unchanged")
@@ -159,8 +151,7 @@ struct DittoManagerTests {
             
             // Assert a second toggle
             // Act - Toggle complete again (true -> false)
-            await dittoManager.toggleComplete(task: resultTask)
-            
+            try await dittoManager.toggleComplete(task: resultTask)
             tasks = try await getTasksCollection(dittoManager)
             if let finalTask = tasks.first(where: { $0._id == initialTask._id }) {
                 #expect(finalTask.done == false, "Task should be marked as not done after second toggle")
@@ -182,7 +173,7 @@ struct DittoManagerTests {
         let initialTask = createInitialTask()
         
         // Add initial task
-        await dittoManager.insertTaskModel(initialTask)
+        try await dittoManager.insertTaskModel(initialTask)
         var tasks = try await getTasksCollection(dittoManager)
         #expect(tasks.count == 1, "Should have 1 task after insert")
         if let resultTask = tasks.first(where: { $0._id == initialTask._id }) {
@@ -193,7 +184,7 @@ struct DittoManagerTests {
         }
         
         // Act
-        await dittoManager.deleteTaskModel(initialTask)
+        try await dittoManager.deleteTaskModel(initialTask)
         
         // Assert
         tasks = try await getTasksCollection(dittoManager)
@@ -212,7 +203,7 @@ struct DittoManagerTests {
         )
     }
     
-    private func getTasksCollection(_ dittoManager: Tasks.DittoManager) async throws -> [Tasks.TaskModel] {
+    private func getTasksCollection(_ dittoManager: Tasks.DittoStateManager) async throws -> [Tasks.TaskModel] {
         if let dittoInstance = dittoManager.ditto {
             let results = try await dittoInstance.store.execute(query: "SELECT * FROM tasks WHERE NOT deleted")
             let tasks = results.items.compactMap{
@@ -223,8 +214,8 @@ struct DittoManagerTests {
         return []
     }
     
-    private func createDittoManagerForTests() async throws -> Tasks.DittoManager  {
-        let dittoManager = Tasks.DittoManager()
+    private func createDittoManagerForTests() async throws -> Tasks.DittoStateManager  {
+        let dittoManager = Tasks.DittoStateManager()
         // setup logging
         DittoLogger.enabled = true
         DittoLogger.minimumLogLevel = .debug
@@ -238,7 +229,6 @@ struct DittoManagerTests {
             at: testDirectoryPath,
             withIntermediateDirectories: true
         )
-        
         do {
             // Initialize Ditto with test-specific directory
             dittoManager.ditto = Ditto(
@@ -263,7 +253,7 @@ struct DittoManagerTests {
         return dittoManager
     }
     
-    private func cleanUpCollection(_ dittoManager: Tasks.DittoManager) async throws {
+    private func cleanUpCollection(_ dittoManager: Tasks.DittoStateManager) async throws {
         if let dittoInstance = dittoManager.ditto {
             dittoManager.subscription?.cancel()
             try await dittoInstance.store.execute(query: "EVICT FROM tasks")
@@ -274,5 +264,4 @@ struct DittoManagerTests {
             try? FileManager.default.removeItem(at: directory)
         }
     }
-
 }

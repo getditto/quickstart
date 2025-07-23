@@ -11,7 +11,7 @@ namespace DittoMauiTasksApp.Tests
     /// These tests verify that the DittoManager correctly handles task operations including
     /// insertion, updates, deletion, and state changes.
     /// </summary>
-    public class DittoManagerTest
+    public class DittoServiceTest
     {
  
         /// <summary>
@@ -41,7 +41,7 @@ namespace DittoMauiTasksApp.Tests
         }
 
         /// <summary>
-        /// Tests that adding a new task via AddTask method increases the total count
+        /// Tests that adding a new task via the AddTask method increases the total count
         /// of tasks in the collection and that the new task is properly added with
         /// the correct properties.
         /// </summary>
@@ -210,10 +210,10 @@ namespace DittoMauiTasksApp.Tests
         /// Creates a new instance of DittoManager with a default logger for testing purposes.
         /// </summary>
         /// <returns>A new DittoManager instance configured with a test logger.</returns>
-        private static DittoManager CreateManager()
+        private static DittoService CreateManager()
         {
-            var logger = new LoggerFactory().CreateLogger<DittoManager>();
-            return new DittoManager(logger);
+            var logger = new LoggerFactory().CreateLogger<DittoService>();
+            return new DittoService(logger);
         }
 
         /// <summary>
@@ -238,7 +238,7 @@ namespace DittoMauiTasksApp.Tests
         /// </summary>
         /// <returns>A fully initialized DittoManager instance ready for testing.</returns>
         /// <exception cref="Exception">Thrown when Ditto initialization fails.</exception>
-        private static async Task<DittoManager> InitializeDittoInstance()
+        private static async Task<DittoService> InitializeDittoInstance()
         {
             var manager = CreateManager();
             var dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

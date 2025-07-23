@@ -1,17 +1,27 @@
 import DittoSwift
 import Foundation
 
-/// Owner of the Ditto object
-@MainActor class DittoManager: ObservableObject {
-    @Published var tasks = [TaskModel]()
-    @Published var selectedTaskModel: TaskModel?
-    @Published var isInitialized = false
+@MainActor class DittoStateManager: ObservableObject {
+    @Published var isInitialized: Bool = false
 
-    var subscription: DittoSyncSubscription?
-    var storeObserver: DittoStoreObserver?
+    nonisolated init() { }
 
-    var ditto: Ditto?
-    static var shared = DittoManager()
+    func setIsInitialized() {
+        self.isInitialized = true
+    }
+
+    func setIsNotInitialized() {
+        self.isInitialized = false
+    }
+}
+
+
+actor DittoService {
+    var subscription: DittoSyncSubscription? = nil
+    var storeObserver: DittoStoreObserver? = nil
+    var ditto: Ditto? = nil
+
+    static var shared = DittoService()
 
     init() {}
 
@@ -21,20 +31,20 @@ import Foundation
     /// - Cancelling any active subscriptions
     /// - Cancelling store observers
     /// - Stopping the Ditto sync process
-    func deinitialize() {
+    func deinitialize(dittoStateManager: DittoStateManager) {
         subscription?.cancel()
         subscription = nil
-
         storeObserver?.cancel()
         storeObserver = nil
-
         if let dittoInstance = ditto {
             if dittoInstance.isSyncActive {
                 dittoInstance.stopSync()
             }
             ditto = nil
         }
-        isInitialized = false
+        DispatchQueue.main.async {
+            dittoStateManager.setIsNotInitialized()
+        }
     }
 
     /// Initializes the Ditto instance and configures its environment.
@@ -42,56 +52,52 @@ import Foundation
     /// - Throws: An error if Ditto configuration or DQL commands fail
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
     /// - SeeAlso: https://docs.ditto.live/dql/strict-mode
-    func initializeIfNeeded() async throws {
-        if !isInitialized {
-
-            //setup logging level
-            let isPreview: Bool =
-            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
-            == "1"
-            if !isPreview {
-                DittoLogger.minimumLogLevel = .debug
-            }
-
-            // Setup Ditto Identity
-            // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
-            let ditto = Ditto(
-                identity: .onlinePlayground(
-                    appID: Env.DITTO_APP_ID,
-                    token: Env.DITTO_PLAYGROUND_TOKEN,
-                    // This is required to be set to false to use the correct URLs
-                    // This only disables cloud sync when the webSocketURL is not set explicitly
-                    enableDittoCloudSync: false,
-                    customAuthURL: URL(string: Env.DITTO_AUTH_URL)
-                )
-            )
-
-            self.ditto = ditto
-
-            // Set the Ditto Websocket URL
-            ditto.updateTransportConfig { transportConfig in
-                transportConfig.connect.webSocketURLs.insert(
-                    Env.DITTO_WEBSOCKET_URL
-                )
-            }
-
-            // disable sync with v3 peers, required for DQL
-            try ditto.disableSyncWithV3()
-
-            // Disable DQL strict mode
-            // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
-            // https://docs.ditto.live/dql/strict-mode
-            try await ditto.store.execute(
-                query: "ALTER SYSTEM SET DQL_STRICT_MODE = false"
-            )
-
-            try await self.populateTaskCollection()
-            try self.registerObservers()
-            try self.registerSubscription()
-
-            isInitialized = true
+    func initializeIfNeeded(dittoStateManager: DittoStateManager) async throws {
+        if await dittoStateManager.isInitialized {
+            return
         }
 
+        //setup logging level
+        let isPreview: Bool =
+            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
+            == "1"
+        if !isPreview {
+            DittoLogger.minimumLogLevel = .debug
+        }
+
+        // Setup Ditto Identity
+        let ditto = Ditto(
+            identity: .onlinePlayground(
+                appID: Env.DITTO_APP_ID,
+                token: Env.DITTO_PLAYGROUND_TOKEN,
+                enableDittoCloudSync: false,
+                customAuthURL: URL(string: Env.DITTO_AUTH_URL)
+            )
+        )
+        self.ditto = ditto
+
+        // Set the Ditto Websocket URL
+        ditto.updateTransportConfig { transportConfig in
+            transportConfig.connect.webSocketURLs.insert(
+                Env.DITTO_WEBSOCKET_URL
+            )
+        }
+        // disable sync with v3 peers, required for DQL
+        try ditto.disableSyncWithV3()
+
+        // Disable DQL strict mode
+        // https://docs.ditto.live/dql/strict-mode
+        try await ditto.store.execute(
+            query: "ALTER SYSTEM SET DQL_STRICT_MODE = false"
+        )
+        try await self.populateTaskCollection()
+
+        // Register a subscription, which determines what data syncs to this peer
+        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+        try self.registerSubscription()
+        DispatchQueue.main.async {
+            dittoStateManager.setIsInitialized()
+        }
     }
 
     /// Populates the Ditto tasks collection with initial seed data if it's empty
@@ -130,7 +136,6 @@ import Foundation
                 title: "Pay bills"
             ),
         ]
-
         for task in initialTasks {
             if let ditto {
                 // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
@@ -146,6 +151,10 @@ import Foundation
                             ]
                     ]
                 )
+            } else {
+                throw DittoServiceError.dittoNotInitialized(
+                    "Can't INSERT INTIIAL DOCUMENTS - Ditto is not initialized"
+                )
             }
         }
     }
@@ -160,21 +169,25 @@ import Foundation
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/crud/read
     ///
     /// - Throws: A DittoError if the observer cannot be registered
-    func registerObservers() throws {
+    func registerObservers(updateTaskModels: @escaping ([TaskModel]?) async -> Void) throws {
         if let ditto {
-
             let observerQuery = "SELECT * FROM tasks WHERE NOT deleted"
             storeObserver = try ditto.store.registerObserver(
                 query: observerQuery
-            ) {
-                [weak self] results in
+            ) { results in
                 Task { @MainActor in
                     // Create new TaskModel instances and update the published property
-                    self?.tasks = results.items.compactMap {
+                    let tasks = results.items.compactMap {
                         TaskModel($0.jsonString())
                     }
+                    // Call the callback on the main actor
+                    await updateTaskModels(tasks)
                 }
             }
+        } else {
+            throw DittoServiceError.dittoNotInitialized(
+                "Can't register observer - Ditto is not initialized"
+            )
         }
     }
 
@@ -196,6 +209,10 @@ import Foundation
             let subscriptionQuery = "SELECT * from tasks"
             subscription = try ditto.sync.registerSubscription(
                 query: subscriptionQuery
+            )
+        } else {
+            throw DittoServiceError.dittoNotInitialized(
+                "Can't register subscription - Ditto is not initialized"
             )
         }
     }
@@ -227,10 +244,8 @@ import Foundation
     /// - SeeAlso: https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
     /// - Throws: A DittoError if the operation fails
     private func startSync() throws {
-        if let ditto {
-            // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
-            try ditto.startSync()
-        }
+        // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
+        try ditto?.startSync()
     }
 
     /// Stops Ditto sync and cancels the active subscription for the tasks collection.
@@ -244,9 +259,6 @@ import Foundation
     /// - Throws: A DittoError if the operation fails
     private func stopSync() {
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#canceling-subscriptions
-        subscription?.cancel()
-        subscription = nil
-
         ditto?.stopSync()
     }
 
@@ -261,17 +273,18 @@ import Foundation
     /// - Throws: A DittoError if the insert operation fails
     func insertTaskModel(_ task: TaskModel) async throws {
         let newTask = task.value
-
         // https://docs.ditto.live/dql/insert
         // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
         let query = "INSERT INTO tasks DOCUMENTS (:newTask)"
-
         if let ditto {
-
             // https://docs.ditto.live/sdk/latest/crud/create#creating-documents
             try await ditto.store.execute(
                 query: query,
                 arguments: ["newTask": newTask]
+            )
+        } else {
+            throw DittoServiceError.dittoNotInitialized(
+                "Can't INSERT DOCUMENT - Ditto is not initialized"
             )
         }
     }
@@ -294,9 +307,7 @@ import Foundation
             deleted = :deleted
             WHERE _id == :_id
             """
-
         if let ditto {
-
             // https://docs.ditto.live/sdk/latest/crud/update#updating
             try await ditto.store.execute(
                 query: query,
@@ -306,6 +317,10 @@ import Foundation
                     "deleted": task.deleted,
                     "_id": task._id,
                 ]
+            )
+        } else {
+            throw DittoServiceError.dittoNotInitialized(
+                "Can't UPDATE DOCUMENT - Ditto is not initialized"
             )
         }
     }
@@ -323,7 +338,6 @@ import Foundation
     /// - Throws: A DittoError if the update operation fails
     func toggleComplete(task: TaskModel) async throws {
         let done = !task.done
-
         // https://docs.ditto.live/dql/update#basic-update
         // https://docs.ditto.live/sdk/latest/crud/update#updating
         let query = """
@@ -331,13 +345,15 @@ import Foundation
             SET done = :done 
             WHERE _id == :_id
             """
-
         if let ditto {
-
             // https://docs.ditto.live/sdk/latest/crud/update#updating
             try await ditto.store.execute(
                 query: query,
                 arguments: ["done": done, "_id": task._id]
+            )
+        } else {
+            throw DittoServiceError.dittoNotInitialized(
+                "Can't UPDATE DOCUMENT - Ditto is not initialized"
             )
         }
     }
@@ -354,7 +370,6 @@ import Foundation
     ///
     /// - Throws: A DittoError if the archive operation fails
     func deleteTaskModel(_ task: TaskModel) async throws {
-
         // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
         let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
         if let ditto {
@@ -364,6 +379,14 @@ import Foundation
                 query: query,
                 arguments: ["_id": task._id]
             )
+        } else {
+            throw DittoServiceError.dittoNotInitialized(
+                "Can't SOFT DELETE DOCUMENT - Ditto is not initialized"
+            )
         }
     }
+}
+
+enum DittoServiceError: Error {
+    case dittoNotInitialized(String)
 }

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct TaskRow: View {
     let task: TaskModel
-
     var onToggle: ((_ task: TaskModel) -> Void)?
     var onClickEdit: ((_ task: TaskModel) -> Void)?
 

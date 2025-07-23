@@ -20,7 +20,7 @@ public partial class App : Application
     {
         try
         {
-            if (Handler?.MauiContext?.Services.GetService<IDataManager>() is DittoManager dittoManager)
+            if (Handler?.MauiContext?.Services.GetService<IDataService>() is DittoService dittoManager)
             {
                 await dittoManager.Initialize(MauiProgram.GetDittoConfig());
             }

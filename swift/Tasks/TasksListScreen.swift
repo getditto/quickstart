@@ -5,10 +5,10 @@ import SwiftUI
 /// Main view of the app, which displays a list of tasks
 struct TasksListScreen: View {
     private static let SYNC_ENABLED_KEY = "syncEnabled"
-    
-    @EnvironmentObject private var dittoManager:  DittoManager
-    @StateObject private var viewModel: ViewModel = ViewModel()
+
+    @StateObject private var viewModel = ViewModel()
     @State private var syncEnabled: Bool = Self.loadSyncEnabledState()
+    
     var body: some View {
         NavigationView {
             if viewModel.errorMessage == nil {  // Reversed the condition
@@ -26,7 +26,9 @@ struct TasksListScreen: View {
                             TaskRow(
                                 task: task,
                                 onToggle: { task in
-                                    viewModel.toggleComplete(task: task)
+                                    Task {
+                                        await viewModel.toggleComplete(task: task)
+                                    }
                                 },
                                 onClickEdit: { task in
                                     viewModel.onEdit(task: task)
@@ -45,10 +47,12 @@ struct TasksListScreen: View {
                                 .toggleStyle(SwitchToggleStyle())
                                 .onChange(of: syncEnabled) { newSyncEnabled in
                                     Self.saveSyncEnabledState(newSyncEnabled)
-                                    do {
-                                        try viewModel.setSyncEnabled(newSyncEnabled)
-                                    } catch {
-                                        syncEnabled = false
+                                    Task {
+                                        do {
+                                            try await viewModel.setSyncEnabled(newSyncEnabled)
+                                        } catch {
+                                            syncEnabled = false
+                                        }
                                     }
                                 }
                         }
@@ -97,12 +101,11 @@ struct TasksListScreen: View {
             isPresented: $viewModel.isPresentingEditScreen,
             content: {
                 EditScreen(task: viewModel.taskToEdit)
-                    .environmentObject(dittoManager)
             })
-        .task(id: ObjectIdentifier(dittoManager)) {
+        .task {
             do {
-                await viewModel.initialize(dittoManager: dittoManager)
-                try viewModel.setSyncEnabled(syncEnabled)
+                await viewModel.initialize()
+                try await viewModel.setSyncEnabled(syncEnabled)
             } catch {
                 syncEnabled = false
             }
@@ -144,51 +147,55 @@ extension TasksListScreen {
     @MainActor
     class ViewModel: ObservableObject {
         private var cancellables = Set<AnyCancellable>()
-        private var dittoManager:  DittoManager?
-        
+
         @Published var tasks: [TaskModel] = []
         @Published var isPresentingEditScreen = false
         @Published private(set) var taskToEdit: TaskModel?
         @Published var errorMessage: String? = nil
         
-        func initialize(dittoManager: DittoManager) async {
-            self.dittoManager = dittoManager
-            
-            dittoManager.$tasks
-                .receive(on: RunLoop.main)
-                .sink { [weak self] updatedTasks in
-                    self?.tasks = updatedTasks
-                }
-                .store(in: &cancellables)
+        func initialize() async {
+            do {
+                try await DittoService.shared.registerObservers(updateTaskModels: { [weak self] newTaskModels in
+                    await self?.updateTasks(newTaskModels: newTaskModels)
+                })
+            } catch {
+                //real apps would log this and do something else, we will just prpint the error to the screen
+                errorMessage = "Failed to initialize and setup observer for Ditto: \(error.localizedDescription)"
+            }
         }
         
         deinit {
             cancellables.removeAll()
         }
-        
-        func setSyncEnabled(_ newValue: Bool) throws {
+
+        func updateTasks(newTaskModels: [TaskModel]?) async {
+            self.tasks.removeAll()
+            if let newTaskModels {
+                self.tasks.append(contentsOf: newTaskModels)
+            }
+        }
+
+        func setSyncEnabled(_ newValue: Bool) async throws {
             do {
-                try dittoManager?.setSyncEnabled(newValue)
+                try await DittoService.shared.setSyncEnabled(newValue)
             } catch {
                 //real apps would log this and do something else, we will just prpint the error to the screen
                 errorMessage = "Failed to set sync enabled state: \(error.localizedDescription)"
             }
         }
         
-        func toggleComplete(task: TaskModel) {
-            Task { @MainActor in
+        func toggleComplete(task: TaskModel) async {
                 do {
-                    try await dittoManager?.toggleComplete(task: task)
+                    try await DittoService.shared.toggleComplete(task: task)
                 } catch {
                     //real apps would log this and do something else, we will just prpint the error to the screen
                     errorMessage = "Failed to toggle task completion: \(error.localizedDescription)"
                 }
-            }
         }
         
         nonisolated func saveEditedTask(_ task: TaskModel) async {
             do {
-                try await dittoManager?.updateTaskModel(task)
+                try await DittoService.shared.updateTaskModel(task)
             } catch {
                 Task { @MainActor in
                     //real apps would log this and do something else, we will just prpint the error to the screen
@@ -199,7 +206,7 @@ extension TasksListScreen {
         
         nonisolated func saveNewTask(_ task: TaskModel) async {
             do {
-                try await dittoManager?.insertTaskModel(task)
+                try await DittoService.shared.insertTaskModel(task)
             } catch {
                 Task { @MainActor in
                     //real apps would log this and do something else, we will just prpint the error to the screen
@@ -210,7 +217,7 @@ extension TasksListScreen {
         
         nonisolated func deleteTask(_ task: TaskModel) async {
             do {
-                try await dittoManager?.deleteTaskModel(task)
+                try await DittoService.shared.deleteTaskModel(task)
             } catch {
                 Task { @MainActor in
                     //real apps would log this and do something else, we will just prpint the error to the screen

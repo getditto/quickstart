@@ -12,7 +12,7 @@ namespace DittoMauiTasksApp.ViewModels
 {
     public partial class TasksPageViewModel : ObservableObject
     {
-        private readonly IDataManager _dataManager;
+        private readonly IDataService _dataService;
         private readonly IPopupService _popupService;
         private readonly ILogger<TasksPageViewModel> _logger;
 
@@ -23,11 +23,11 @@ namespace DittoMauiTasksApp.ViewModels
         private bool isSyncEnabled = true;
 
         public TasksPageViewModel(
-            IDataManager dataManager,
+            IDataService dataService,
             IPopupService popupService,
             ILogger<TasksPageViewModel> logger)
         {
-            this._dataManager = dataManager;
+            this._dataService = dataService;
             this._popupService = popupService;
             this._logger = logger;
 #if IOS || ANDROID || MACCATALYST
@@ -37,8 +37,8 @@ namespace DittoMauiTasksApp.ViewModels
                 {
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        _dataManager.RegisterObservers(this.Tasks);
-                        _dataManager.StartSync();
+                        _dataService.RegisterObservers(this.Tasks);
+                        _dataService.StartSync();
                     });
                 }
                 catch (Exception e)
@@ -51,8 +51,8 @@ namespace DittoMauiTasksApp.ViewModels
                 try
                 {
                     MainThread.BeginInvokeOnMainThread(() => {
-                        _dataManager.RegisterObservers(this.Tasks);
-                        _dataManager.StartSync();
+                        _dataService.RegisterObservers(this.Tasks);
+                        _dataService.StartSync();
                     });
                 }
                 catch (Exception e)
@@ -83,7 +83,7 @@ namespace DittoMauiTasksApp.ViewModels
                     {"deleted", false }
                 };
 
-                await _dataManager.AddTask(doc);
+                await _dataService.AddTask(doc);
             }
             catch (Exception e)
             {
@@ -104,7 +104,7 @@ namespace DittoMauiTasksApp.ViewModels
                 {
                     task.Title = newTitle.Trim();
                 }
-                await _dataManager.EditTask(task);
+                await _dataService.EditTask(task);
             }
             catch (Exception e)
             {
@@ -117,7 +117,7 @@ namespace DittoMauiTasksApp.ViewModels
         {
             try
             {
-                await _dataManager.DeleteTask(task);
+                await _dataService.DeleteTask(task);
             }
             catch (Exception e)
             {
@@ -135,7 +135,7 @@ namespace DittoMauiTasksApp.ViewModels
                     _logger.LogWarning("TasksPageviewModel: UpdateTaskDoneAsync called with null task");
                     return;
                 }
-                await _dataManager.UpdateTaskDoneAsync(task);
+                await _dataService.UpdateTaskDoneAsync(task);
             }
             catch (Exception e)
             {
@@ -147,11 +147,11 @@ namespace DittoMauiTasksApp.ViewModels
         {
             if (value)
             {
-                _dataManager.StartSync();
+                _dataService.StartSync();
             }
             else
             {
-                _dataManager.StopSync();
+                _dataService.StopSync();
             }
         }
     }
