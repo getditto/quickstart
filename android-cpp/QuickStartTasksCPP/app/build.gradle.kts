@@ -134,8 +134,8 @@ android {
 }
 
 dependencies {
-    // Ditto C++ SDK for Android - using local AAR
-    implementation(files("/Users/kristopherjohnson/work/cpp-revamp-identity/android/dittocpp/build/outputs/aar/dittocpp-release.aar"))
+    // Ditto C++ SDK for Android
+    implementation("live.ditto:ditto-cpp:4.11.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
