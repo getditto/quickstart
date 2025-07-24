@@ -16,13 +16,9 @@ public:
   static std::string get_ditto_sdk_version();
 
   /// Construct a new TasksPeer object.
-  TasksPeer(
-    std::string ditto_app_id, 
-    std::string ditto_online_playground_token, 
-    std::string ditto_websocket_url,
-    std::string ditto_auth_url,
-    bool enable_cloud_sync, 
-    std::string ditto_persistence_dir);
+  TasksPeer(std::string ditto_app_id, std::string ditto_online_playground_token,
+            std::string ditto_websocket_url, std::string ditto_auth_url,
+            bool enable_cloud_sync, std::string ditto_persistence_dir);
 
   virtual ~TasksPeer() noexcept;
 
