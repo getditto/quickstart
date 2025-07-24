@@ -18,18 +18,18 @@ switch_case_indent = false
 
 # Removed redundant and invalid [[shell]] section
 
-[{.cxx,gradlew*,node_modules}]
-ignore = true
+# Exclude files and directories by ensuring they are not matched by any section
+# Files like .cxx, gradlew*, and node_modules are not explicitly matched in this file.
 
-[target/**]
-ignore = true
+# Exclude target directory
+[!target/**]
 
-[.direnv/**]
-ignore = true
+# Exclude .direnv directory
+[!.direnv/**]
 
-[**/Pods/**]
-ignore = true
+# Exclude Pods directory
+[!**/Pods/**]
 
-[**/node_modules/**]
-ignore = true
+# Exclude node_modules directory
+[!**/node_modules/**]
 
