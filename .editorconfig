@@ -16,11 +16,7 @@ indent_style = space
 indent_size = 4
 switch_case_indent = false
 
-[[shell]]
-# like -i=4
-indent_style = space
-indent_size = 4
-switch_case_indent = false
+# Removed redundant and invalid [[shell]] section
 
 [{.cxx,gradlew*,node_modules}]
 ignore = true
