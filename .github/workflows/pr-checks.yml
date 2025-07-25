@@ -103,7 +103,11 @@ jobs:
     name: cpp-quickstart
     strategy:
       matrix:
-        os: ["ubuntu-latest"]
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-latest-arm64
+            arch: aarch64
 
     runs-on: ${{ matrix.os }}
 
@@ -112,12 +116,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            sudo apt-get update
-            sudo apt-get install -y cmake build-essential
-          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            brew install cmake
-          fi
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
 
       - name: Create .env file
         run: |
@@ -129,14 +129,11 @@ jobs:
       - name: Download and setup Ditto SDK
         working-directory: cpp-tui/taskscpp/sdk
         run: |
-          # Determine architecture and download appropriate Ditto SDK
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            ARCH=$(uname -m)
-            if [ "$ARCH" = "x86_64" ]; then
-              curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/4.10.0/dist/Ditto.tar.gz
-            elif [ "$ARCH" = "aarch64" ]; then
-              curl -O https://software.ditto.live/cpp-linux-aarch64/Ditto/4.10.0/dist/Ditto.tar.gz
-            fi
+          # Download appropriate Ditto SDK based on matrix architecture
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+            curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/4.10.0/dist/Ditto.tar.gz
+          elif [ "${{ matrix.arch }}" = "aarch64" ]; then
+            curl -O https://software.ditto.live/cpp-linux-aarch64/Ditto/4.10.0/dist/Ditto.tar.gz
           fi
           # Extract the SDK
           tar xvfz Ditto.tar.gz
