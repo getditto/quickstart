@@ -24,8 +24,7 @@ class TasksListScreenViewModel: ObservableObject {
 
         // Register observer, which runs against the local database on this peer
         // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-        storeObserver = try? dittoStore.registerObserver(query: observerQuery) {
-            [weak self] result in
+        storeObserver = try? dittoStore.registerObserver(query: observerQuery) { [weak self] result in
             guard let self = self else { return }
             self.tasks = result.items.compactMap {
                 TaskModel($0.jsonString())
@@ -262,12 +261,12 @@ struct TasksListScreen: View {
                         Spacer()
                         Button(action: {
                             viewModel.onNewTask()
-                        }) {
+                        }, label: {
                             HStack {
                                 Image(systemName: "plus")
                                 Text("New Task")
                             }
-                        }
+                        })
                         .buttonStyle(.borderedProminent)
                         .padding(.bottom)
                     }
