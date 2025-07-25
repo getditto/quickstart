@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct TasksApp: App {
-    @State var private isLoading = true
+    @State private var isLoading = true
     let private ditto = DittoManager.shared.ditto
 
     var body: some Scene {
