@@ -3,8 +3,8 @@ import Foundation
 
 /// Owner of the Ditto object
 class DittoManager: ObservableObject {
-    var ditto: Ditto
-    static var shared = DittoManager()
+    let ditto: Ditto
+    static let shared = DittoManager()
 
     init() {
         // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
