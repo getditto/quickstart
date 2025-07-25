@@ -6,7 +6,7 @@ class DittoManager: ObservableObject {
     let ditto: Ditto
     static let shared = DittoManager()
 
-    init() {
+    private init() {
         // https://docs.ditto.live/sdk/latest/install-guides/swift#integrating-and-initializing-sync
         ditto = Ditto(
             identity: .onlinePlayground(
