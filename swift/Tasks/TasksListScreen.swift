@@ -10,8 +10,6 @@ class TasksListScreenViewModel: ObservableObject {
     private(set) var taskToEdit: TaskModel?
 
     private let ditto = DittoManager.shared.ditto
-    private let dittoSync = DittoManager.shared.ditto.sync
-    private let dittoStore = DittoManager.shared.ditto.store
     private var subscription: DittoSyncSubscription?
     private var storeObserver: DittoStoreObserver?
 
@@ -24,7 +22,7 @@ class TasksListScreenViewModel: ObservableObject {
 
         // Register observer, which runs against the local database on this peer
         // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-        storeObserver = try? dittoStore.registerObserver(query: observerQuery) {
+        storeObserver = try? ditto.store.registerObserver(query: observerQuery) {
             [weak self] result in
             guard let self = self else { return }
             self.tasks = result.items.compactMap {
@@ -59,7 +57,7 @@ class TasksListScreenViewModel: ObservableObject {
 
             // Register a subscription, which determines what data syncs to this peer
             // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-            subscription = try dittoSync.registerSubscription(query: subscriptionQuery)
+            subscription = try ditto.sync.registerSubscription(query: subscriptionQuery)
         } catch {
             print(
                 "TaskListScreenVM.\(#function) - ERROR starting sync operations: \(error.localizedDescription)"
@@ -85,7 +83,7 @@ class TasksListScreenViewModel: ObservableObject {
                 """
 
             do {
-                try await dittoStore.execute(
+                try await ditto.store.execute(
                     query: query,
                     arguments: ["done": done, "_id": task._id]
                 )
@@ -108,7 +106,7 @@ class TasksListScreenViewModel: ObservableObject {
                 """
 
             do {
-                try await dittoStore.execute(
+                try await ditto.store.execute(
                     query: query,
                     arguments: [
                         "title": task.title,
@@ -131,7 +129,7 @@ class TasksListScreenViewModel: ObservableObject {
             let query = "INSERT INTO tasks DOCUMENTS (:newTask)"
 
             do {
-                try await dittoStore.execute(
+                try await ditto.store.execute(
                     query: query, arguments: ["newTask": newTask])
             } catch {
                 print(
@@ -145,7 +143,7 @@ class TasksListScreenViewModel: ObservableObject {
         Task {
             let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
             do {
-                try await dittoStore.execute(
+                try await ditto.store.execute(
                     query: query, arguments: ["_id": task._id])
             } catch {
                 print(
@@ -174,7 +172,7 @@ class TasksListScreenViewModel: ObservableObject {
 
             for task in initialTasks {
                 do {
-                    try await dittoStore.execute(
+                    try await ditto.store.execute(
                         query: "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
                         arguments: [
                             "task":
