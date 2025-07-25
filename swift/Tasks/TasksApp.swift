@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct TasksApp: App {
     @State private var isLoading = true
-    let private ditto = DittoManager.shared.ditto
+    private let ditto = DittoManager.shared.ditto
 
     var body: some Scene {
         WindowGroup {
