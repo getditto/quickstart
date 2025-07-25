@@ -148,3 +148,14 @@ jobs:
       - name: Build
         working-directory: cpp-tui/taskscpp
         run: cmake --build build
+
+      - name: Test app startup
+        working-directory: cpp-tui/taskscpp
+        run: |
+          # Test that the app can start and show help
+          ./build/taskscpp --help
+          echo "✅ Help command works"
+          
+          # Test that the app can show SDK version
+          ./build/taskscpp --ditto-sdk-version
+          echo "✅ SDK version command works"
