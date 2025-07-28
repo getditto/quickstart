@@ -5,14 +5,16 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
+    "macos": "react-native run-macos",
     "build:android": "react-native build-android --extra-params \"--no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a\"",
     "build:ios": "react-native build-ios --mode Debug",
+    "build:macos": "react-native build-macos --mode Debug",
     "lint": "eslint .",
     "start": "react-native start",
     "clean": "rm -rf node_modules && yarn install && cd ios && rm -rf Podfile.lock && rm -rf Pods && pod install && cd .."
   },
   "dependencies": {
-    "@dittolive/ditto": "4.11.1",
+    "@dittolive/ditto": "4.12.0-preview.1",
     "react": "19.0.0",
     "react-native": "0.79.1",
     "react-native-bouncy-checkbox": "^4.1.2"
@@ -27,6 +29,7 @@
     "@react-native-community/cli": "18.0.0",
     "@react-native-community/cli-platform-android": "18.0.0",
     "@react-native-community/cli-platform-ios": "18.0.0",
+    "react-native-macos": "^0.78.4",
     "@react-native/babel-preset": "0.79.1",
     "@react-native/eslint-config": "0.79.1",
     "@react-native/metro-config": "0.79.1",
