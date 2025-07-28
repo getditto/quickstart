@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Tools
+      - name: Install tools
         run: |
           sudo apt update && sudo apt install just
           just --version
@@ -48,12 +48,12 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Clippy
+      - name: Run clippy
         run: |
           cd rust-tui
           cargo clippy
 
-      - name: Build
+      - name: Build project
         run: |
           cd rust-tui
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
@@ -67,16 +67,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         working-directory: javascript-web
         run: npm ci
 
-      - name: Run linter
+      - name: Run linting
         working-directory: javascript-web
         run: npm run lint
 
@@ -86,15 +86,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         working-directory: javascript-tui
         run: npm ci
 
-      - name: Run linter and tests
+      - name: Run linting and tests
         working-directory: javascript-tui
         run: npm run test
