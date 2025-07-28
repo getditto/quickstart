@@ -1,0 +1,219 @@
+#
+# .github/workflows/android-cpp-browserstack.yml
+# Workflow for building and testing android-cpp on BrowserStack physical devices
+#
+---
+name: android-cpp-browserstack
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'android-cpp/**'
+      - '.github/workflows/android-cpp-browserstack.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'android-cpp/**'
+      - '.github/workflows/android-cpp-browserstack.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and Test on BrowserStack
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build APK
+        working-directory: android-cpp/QuickStartTasksCPP
+        run: |
+          ./gradlew assembleDebug assembleDebugAndroidTest
+          echo "APK built successfully"
+
+      - name: Run Unit Tests
+        working-directory: android-cpp/QuickStartTasksCPP
+        run: ./gradlew test
+
+      - name: Upload APKs to BrowserStack
+        id: upload
+        run: |
+          # Upload app APK
+          APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/debug/app-debug.apk" \
+            -F "custom_id=ditto-android-cpp-app")
+          
+          APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
+          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+          
+          # Upload test APK
+          TEST_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/espresso/test-suite" \
+            -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
+            -F "custom_id=ditto-android-cpp-test")
+          
+          TEST_URL=$(echo $TEST_UPLOAD_RESPONSE | jq -r .test_suite_url)
+          echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
+
+      - name: Execute tests on BrowserStack
+        id: test
+        run: |
+          # Create test execution request
+          BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "app": "${{ steps.upload.outputs.app_url }}",
+              "testSuite": "${{ steps.upload.outputs.test_url }}",
+              "devices": [
+                "Google Pixel 8-14.0",
+                "Samsung Galaxy S23-13.0",
+                "Google Pixel 6-12.0",
+                "OnePlus 9-11.0"
+              ],
+              "projectName": "Ditto Android CPP",
+              "buildName": "Build #${{ github.run_number }}",
+              "buildTag": "${{ github.ref_name }}",
+              "deviceLogs": true,
+              "video": true,
+              "networkLogs": true,
+              "annotation": {
+                "notes": "PR: ${{ github.event.pull_request.number || 'main branch' }}"
+              }
+            }')
+          
+          BUILD_ID=$(echo $BUILD_RESPONSE | jq -r .build_id)
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Build started with ID: $BUILD_ID"
+
+      - name: Wait for BrowserStack tests to complete
+        run: |
+          BUILD_ID="${{ steps.test.outputs.build_id }}"
+          MAX_WAIT_TIME=1800  # 30 minutes
+          CHECK_INTERVAL=30   # Check every 30 seconds
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+            BUILD_STATUS=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID" \
+              | jq -r .status)
+            
+            echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
+            
+            if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ]; then
+              break
+            fi
+            
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+          done
+          
+          # Get final results
+          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+          
+          echo "Final build result:"
+          echo "$FINAL_RESULT" | jq .
+          
+          # Check if all tests passed
+          FAILED_TESTS=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.status != "passed") | .device')
+          
+          if [ -n "$FAILED_TESTS" ]; then
+            echo "Tests failed on devices: $FAILED_TESTS"
+            exit 1
+          fi
+
+      - name: Generate test report
+        if: always()
+        run: |
+          BUILD_ID="${{ steps.test.outputs.build_id }}"
+          
+          # Create test report
+          echo "# BrowserStack Test Report" > test-report.md
+          echo "" >> test-report.md
+          echo "Build ID: $BUILD_ID" >> test-report.md
+          echo "View full report: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID" >> test-report.md
+          echo "" >> test-report.md
+          
+          # Get detailed results
+          RESULTS=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+          
+          echo "## Device Results" >> test-report.md
+          echo "$RESULTS" | jq -r '.devices[] | "- \(.device): \(.status)"' >> test-report.md
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            android-cpp/QuickStartTasksCPP/app/build/outputs/apk/
+            android-cpp/QuickStartTasksCPP/app/build/reports/
+            test-report.md
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildId = '${{ steps.test.outputs.build_id }}';
+            const status = '${{ job.status }}';
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+            const bsUrl = `https://app-automate.browserstack.com/dashboard/v2/builds/${buildId}`;
+            
+            const body = `## 📱 BrowserStack Test Results
+            
+            **Status:** ${status === 'success' ? '✅ Passed' : '❌ Failed'}
+            **Build:** [#${{ github.run_number }}](${runUrl})
+            **BrowserStack:** [View detailed results](${bsUrl})
+            
+            ### Tested Devices:
+            - Google Pixel 8 (Android 14)
+            - Samsung Galaxy S23 (Android 13)
+            - Google Pixel 6 (Android 12)
+            - OnePlus 9 (Android 11)
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
