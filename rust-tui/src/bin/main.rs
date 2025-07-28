@@ -93,7 +93,6 @@ async fn try_init_ditto(
     token: String, 
     custom_auth_url: String, 
     websocket_url: String) -> Result<Ditto> {
-    println!("Building Ditto instance...");
     // We use a temporary directory to store Ditto's local database.  
     // This means that data will not be persistent between runs of the
     // application, but it allows us to run multiple instances of the
