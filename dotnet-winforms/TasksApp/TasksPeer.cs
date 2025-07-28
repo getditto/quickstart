@@ -1,26 +1,25 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 using DittoSDK;
-namespace DittoTasksApp;
 
 /// <summary>
 /// Encapsulates use of the Ditto SDK and the 'tasks' collection.
 /// </summary>
 public class TasksPeer : IDisposable
 {
-    private const string query = "SELECT * FROM tasks WHERE NOT deleted";
+    private const string Query = "SELECT * FROM tasks WHERE NOT deleted";
 
     public string AppId { get; private set; }
     public string PlaygroundToken { get; private set; }
-    public string AuthUrl { get; private set; }
-    public string WebsocketUrl { get; private set; }
+    
+    public bool IsSyncActive => _ditto.IsSyncActive;
 
-    public bool IsSyncActive
-    {
-        get => ditto.IsSyncActive;
-    }
-
-    private Ditto ditto;
+    private Ditto _ditto;
 
     /// <summary>
     /// Creates a new synchronizing TasksPeer instance.
@@ -32,15 +31,34 @@ public class TasksPeer : IDisposable
         string websocketUrl)
     {
         var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
-
-        //disable strict mode for DQL queries and redundant connections
         await peer.DisableStrictMode();
-
+        peer.RegisterSubscription();
         await peer.InsertInitialTasks();
-
         peer.StartSync();
-
+        
         return peer;
+    }
+
+    /// <summary>
+    /// Registers a subscription for the tasks collection to enable data synchronization
+    /// with other peers and the Ditto cloud. This subscription determines what data
+    /// will be synced to this peer during the synchronization process.
+    /// </summary>
+    /// <remarks>
+    /// The subscription is created using the same query that filters out deleted tasks
+    /// (<c>SELECT * FROM tasks WHERE NOT deleted</c>), ensuring that only active,
+    /// non-deleted tasks are synchronized across the network.
+    /// 
+    /// This method should be called during peer initialization to establish the
+    /// subscription before starting the sync process. The subscription remains active
+    /// until explicitly cancelled or when the peer is disposed.
+    /// </remarks>
+    /// <seealso href="https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions"/>
+    private void RegisterSubscription()
+    {
+        // Register a subscription, which determines what data syncs to this peer
+        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+        _ditto.Sync.RegisterSubscription(Query);
     }
 
     /// <summary>
@@ -50,21 +68,22 @@ public class TasksPeer : IDisposable
     /// <param name="playgroundToken">Ditto online playground token</param>
     /// <param name="authUrl">Ditto Auth URL</param>
     /// <param name="websocketUrl">Ditto Websocket URL</param>
-    public TasksPeer(string appId, string playgroundToken, string authUrl, string websocketUrl)
+    private TasksPeer(string appId, string playgroundToken, string authUrl, string websocketUrl)
     {
         AppId = appId;
         PlaygroundToken = playgroundToken;
-        AuthUrl = authUrl;
-        WebsocketUrl = websocketUrl;
 
-        // We use a directory to store Ditto's local database.  
-        var dir = Path.Combine(
+        // We use a temporary directory to store Ditto's local database.  This
+        // means that data will not be persistent between runs of the
+        // application, but it allows us to run multiple instances of the
+        // application concurrently on the same machine.  For a production
+        // application, we would want to store the database in a more permanent
+        // location, and if multiple instances are needed, ensure that each
+        // instance has its own persistence directory.
+        var tempDir = Path.Combine(
             Path.GetTempPath(),
-            "DittoDotNetTasksWinForm"); 
-        if (!Directory.Exists(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
+            "DittoDotNetTasksConsole-" + Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tempDir);
 
         var identity = DittoIdentity.OnlinePlayground(
             appId, 
@@ -72,39 +91,41 @@ public class TasksPeer : IDisposable
             false, // This is required to be set to false to use the correct URLs
             authUrl);
 
-        ditto = new Ditto(identity, dir);
+        _ditto = new Ditto(identity, tempDir);
 
-        ditto.UpdateTransportConfig(config =>
+        _ditto.UpdateTransportConfig(config =>
         {
             // Add the websocket URL to the transport configuration.
-            ditto.TransportConfig.Connect.WebsocketUrls.Add(websocketUrl);
+            config.Connect.WebsocketUrls.Add(websocketUrl);
         });
 
         // disable sync with v3 peers, required for DQL
-        ditto.DisableSyncWithV3();
+        _ditto.DisableSyncWithV3();
     }
 
     public void Dispose()
     {
-        ditto?.Dispose();
+        _ditto.Dispose();
+        _ditto = null;
         GC.SuppressFinalize(this);
     }
 
-    public async Task DisableStrictMode()
+    /// <summary>
+    /// Disables DQL strict mode to allow flexible query operations without requiring
+    /// predefined collection schemas. This enables the application to work with
+    /// dynamic document structures and perform queries that return all fields by default.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <seealso href="https://docs.ditto.live/dql/strict-mode"/>
+    private async Task DisableStrictMode()
     {
-        // https://docs.ditto.live/sdk/latest/sync/managing-redundant-bluetooth-le-connections#disabling-redundant-connections
-
-        var bluetoothQuery = "ALTER SYSTEM SET mesh_chooser_avoid_redundant_bluetooth = false";
-        await ditto.Store.ExecuteAsync(bluetoothQuery);
-
-        var alterQuery = "ALTER SYSTEM SET DQL_STRICT_MODE = false";
-        await ditto.Store.ExecuteAsync(alterQuery);
+        await _ditto.Store.ExecuteAsync("ALTER SYSTEM SET DQL_STRICT_MODE = false");
     }
 
     /// <summary>
     /// Inserts the initial tasks into the 'tasks' collection.
     /// </summary>
-    public async Task InsertInitialTasks()
+    private async Task InsertInitialTasks()
     {
         var initialTasks = new List<Dictionary<string, object>>
             {
@@ -138,10 +159,10 @@ public class TasksPeer : IDisposable
                 }
             };
 
-        var insertCommand = "INSERT INTO tasks INITIAL DOCUMENTS (:task)";
+        const string insertCommand = "INSERT INTO tasks INITIAL DOCUMENTS (:task)";
         foreach (var task in initialTasks)
         {
-            await ditto.Store.ExecuteAsync(insertCommand, new Dictionary<string, object>()
+            await _ditto.Store.ExecuteAsync(insertCommand, new Dictionary<string, object>()
             {
                 { "task", task }
             });
@@ -164,8 +185,8 @@ public class TasksPeer : IDisposable
             {"done", false},
             {"deleted", false }
         };
-        var insertCommand = "INSERT INTO tasks DOCUMENTS (:doc)";
-        await ditto.Store.ExecuteAsync(insertCommand, new Dictionary<string, object>()
+        const string insertCommand = "INSERT INTO tasks DOCUMENTS (:doc)";
+        await _ditto.Store.ExecuteAsync(insertCommand, new Dictionary<string, object>()
         {
             { "doc", doc }
         });
@@ -186,10 +207,8 @@ public class TasksPeer : IDisposable
             throw new ArgumentException("title cannot be empty");
         }
 
-        var updateQuery = "UPDATE tasks " +
-            "SET title = :title " +
-            "WHERE _id = :id";
-        await ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>()
+        const string updateQuery = "UPDATE tasks SET title = :title WHERE _id = :id";
+        await _ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>()
         {
             {"title", newTitle},
             {"id", taskId}
@@ -206,10 +225,8 @@ public class TasksPeer : IDisposable
             throw new ArgumentException("taskId cannot be empty");
         }
 
-        var updateQuery = "UPDATE tasks " +
-            "SET deleted = true " +
-            "WHERE _id = :id";
-        await ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>()
+        const string updateQuery = "UPDATE tasks SET deleted = true WHERE _id = :id";
+        await _ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>()
         {
             { "id", taskId }
         });
@@ -220,10 +237,8 @@ public class TasksPeer : IDisposable
     /// </summary>
     public async Task UpdateTaskDone(string taskId, bool newDoneState)
     {
-        var updateQuery = "UPDATE tasks " +
-            "SET done = :newDoneState " +
-            "WHERE _id = :id AND done != :newDoneState";
-        await ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>
+        const string updateQuery = "UPDATE tasks SET done = :newDoneState WHERE _id = :id AND done != :newDoneState";
+        await _ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>
         {
             { "newDoneState", newDoneState },
             { "id", taskId }
@@ -231,20 +246,20 @@ public class TasksPeer : IDisposable
     }
 
     /// <summary>
-    /// Specify a handler to be called asynchronously when the tasks collection changes.
+    /// Specify a handler to be called asynchronously when the task collection changes.
     /// </summary>
-    public DittoStoreObserver ObserveTasksCollection(Func<IList<ToDoTask?>, Task> handler)
+    public DittoStoreObserver ObserveTasksCollection(Func<IList<ToDoTask>, Task> handler)
     {
-        // Register observer, which runs against the local database on this peer
+        // Register an observer, which runs against the local database on this peer
         // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-        return ditto.Store.RegisterObserver(query, async (queryResult) =>
+        return _ditto.Store.RegisterObserver(Query, async (queryResult) =>
         {
             try
             {
                 // Deserialize the JSON documents into ToDoTask objects
                 var tasks = queryResult.Items.Select(d =>
                     JsonSerializer.Deserialize<ToDoTask>(d.JsonString())
-                ).OrderBy(t => t?.Id).ToList();
+                ).OrderBy(t => t.Id).ToList();
 
                 await handler(tasks);
             }
@@ -260,11 +275,7 @@ public class TasksPeer : IDisposable
     /// </summary>
     public void StartSync()
     {
-        ditto.StartSync();
-
-        // Register a subscription, which determines what data syncs to this peer
-        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-        ditto.Sync.RegisterSubscription(query);
+        _ditto.StartSync();
     }
 
     /// <summary>
@@ -272,10 +283,10 @@ public class TasksPeer : IDisposable
     /// </summary>
     public void StopSync()
     {
-        foreach (var subscription in ditto.Sync.Subscriptions)
+        foreach (var subscription in _ditto.Sync.Subscriptions)
         {
             subscription.Cancel();
         }
-        ditto.StopSync();
+        _ditto.StopSync();
     }
 }
