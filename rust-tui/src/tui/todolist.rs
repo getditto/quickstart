@@ -347,9 +347,9 @@ impl Todolist {
             .store()
             .execute_v2((
                 "UPDATE tasks SET deleted=true WHERE _id=:id",
-                Some(serde_json::json!({
+                serde_json::json!({
                     "id": id
-                }))),
+                })),
             )
             .await?;
 
@@ -363,9 +363,9 @@ impl Todolist {
             .store()
             .execute_v2((
                 "INSERT INTO tasks DOCUMENTS (:task)",
-                Some(serde_json::json!({
+                serde_json::json!({
                     "task": task
-                }))),
+                })),
             )
             .await?;
         Ok(())
@@ -377,10 +377,10 @@ impl Todolist {
             .store()
             .execute_v2((
                 "UPDATE tasks SET title=:title WHERE _id=:id",
-                Some(serde_json::json!({ 
+                serde_json::json!({ 
                     "title": title, 
                     "id": id 
-                }))),
+                })),
             )
             .await?;
 
