@@ -73,25 +73,13 @@ public class TasksPeer : IDisposable
         AppId = appId;
         PlaygroundToken = playgroundToken;
 
-        // We use a temporary directory to store Ditto's local database.  This
-        // means that data will not be persistent between runs of the
-        // application, but it allows us to run multiple instances of the
-        // application concurrently on the same machine.  For a production
-        // application, we would want to store the database in a more permanent
-        // location, and if multiple instances are needed, ensure that each
-        // instance has its own persistence directory.
-        var tempDir = Path.Combine(
-            Path.GetTempPath(),
-            "DittoDotNetTasksConsole-" + Guid.NewGuid().ToString());
-        Directory.CreateDirectory(tempDir);
-
         var identity = DittoIdentity.OnlinePlayground(
             appId, 
             playgroundToken, 
             false, // This is required to be set to false to use the correct URLs
             authUrl);
 
-        _ditto = new Ditto(identity, tempDir);
+        _ditto = new Ditto(identity);
 
         _ditto.UpdateTransportConfig(config =>
         {
