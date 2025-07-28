@@ -75,7 +75,7 @@ Please choose one (or "q" to quit):
 #### Run the Application on iOS
 
 > [!NOTE]
-> If you are going to use a physical iPhone, you will need to update the Team under Signing & Capabilities in XCode.  You can open the ios/Runner.xcodeproj file in XCode and then set your team from the Runner Target -> Singing & Capabilities tab.
+> If you are going to use a physical iPhone, you will need to update the Team under Signing & Capabilities in XCode.  You can open the ios/Runner.xcodeproj file in XCode and then set your team from the Runner Target -> Signing & Capabilities tab.
 >
 
 - Ensure that cocoapods is up to date

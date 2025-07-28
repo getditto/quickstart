@@ -23,21 +23,17 @@ class DittoExample extends StatefulWidget {
 
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
-  late final String appID;
-  late final String token;
-  late final String authUrl;
-  late final String websocketUrl;
-
-
+  final appID =
+      dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
+  final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
+      (throw Exception("env not found"));
+  final authUrl = dotenv.env['DITTO_AUTH_URL'];
+  final websocketUrl =
+      dotenv.env['DITTO_WEBSOCKET_URL'] ?? (throw Exception("env not found"));
 
   @override
   void initState() {
     super.initState();
-
-    appID = dotenv.env['DITTO_APP_ID'] ?? "<env_not_found>";
-    token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ?? "<env_not_found>";
-    authUrl = dotenv.env['DITTO_AUTH_URL'] ?? "<env_not_found>";
-    websocketUrl = dotenv.env['DITTO_WEBSOCKET_URL'] ?? "<env_not_found>";
 
     _initDitto();
   }
@@ -153,7 +149,7 @@ class _DittoExampleState extends State<DittoExample> {
         child: const Icon(Icons.add_task),
       );
 
-  Widget get _portalInfo =>  Column(children: [
+  Widget get _portalInfo => Column(children: [
         Text("AppID: $appID"),
         Text("Token: $token"),
       ]);
