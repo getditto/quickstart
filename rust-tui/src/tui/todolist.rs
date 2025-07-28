@@ -320,10 +320,10 @@ impl Todolist {
             .store()
             .execute_v2((
                 "UPDATE tasks SET done=:done WHERE _id=:id",
-                Some(serde_json::json!({
+                serde_json::json!({
                     "id": id,
                     "done": !done,
-                })),
+                }),
             ))
             .await?;
 
