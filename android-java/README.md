@@ -37,7 +37,7 @@ Compatible with Android Automotive OS (AAOS)
 ## A Guided Tour of the Android App Source Code
 
 The Android app is a simple to-do list app that demonstrates how to use the Ditto Android SDK to sync data with other devices.
-It is implemented using Java and Android Views using an Activity and XML files. 
+It is implemented using Java and Android Views using an Activity and a programmatically implemented RecyclerView.
 
 It is assumed that the reader is familiar with Android development and with Java/Activity/RecyclerView, but needs some guidance on how to use Ditto.  The following is a summary of the key parts of integration with Ditto.
 
