@@ -106,7 +106,6 @@ public class TasksPeer : IDisposable
     public void Dispose()
     {
         _ditto.Dispose();
-        _ditto = null;
         GC.SuppressFinalize(this);
     }
 
