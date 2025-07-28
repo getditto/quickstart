@@ -27,12 +27,14 @@ DITTO_WEBSOCKET_URL=""
 Next, make sure you have `npm` installed, then run the following:
 
 **MacOS/Linux**
+
 ```bash
 npm install
 npm start 2>/dev/null
 ```
 
 **Windows**
+
 ```bash
 npm install
 npm start 2>NUL
