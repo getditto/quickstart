@@ -8,7 +8,10 @@ const App = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [syncActive, setSyncActive] = useState(true);
-  const [dittoInfo, setDittoInfo] = useState<{ appId: string; token: string } | null>(null);
+  const [dittoInfo, setDittoInfo] = useState<{
+    appId: string;
+    token: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,7 +24,7 @@ const App = () => {
           setIsInitialized(true);
           setSyncActive(state.syncActive || true);
           setError(null);
-          
+
           // Fetch initial tasks
           const tasksResult = await window.electronAPI.getTasks();
           if (tasksResult.success) {

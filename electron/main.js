@@ -1,9 +1,9 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-const { Ditto, IdentityOnlinePlayground, init } = require('@dittolive/ditto');
+const { app, BrowserWindow, ipcMain } = require("electron");
+const path = require("path");
+const { Ditto, IdentityOnlinePlayground, init } = require("@dittolive/ditto");
 
 // Load environment variables
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 let mainWindow;
 let ditto = null;
@@ -12,7 +12,7 @@ let tasksObserver = null;
 
 // Ditto configuration
 const identity = {
-  type: 'onlinePlayground',
+  type: "onlinePlayground",
   appID: process.env.DITTO_APP_ID,
   token: process.env.DITTO_PLAYGROUND_TOKEN,
   customAuthURL: process.env.DITTO_AUTH_URL,
@@ -26,40 +26,42 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
     },
-    icon: path.join(__dirname, 'assets', 'icon.png'), // Optional: add app icon
+    icon: path.join(__dirname, "assets", "icon.png"), // Optional: add app icon
   });
 
   // Load the renderer app
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NODE_ENV === "development";
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    mainWindow.loadFile(path.join(__dirname, "dist", "index.html"));
   }
 
   // Send initialization data when the window is ready
-  mainWindow.webContents.once('did-finish-load', async () => {
+  mainWindow.webContents.once("did-finish-load", async () => {
     if (ditto) {
-      mainWindow.webContents.send('ditto-initialized', {
+      mainWindow.webContents.send("ditto-initialized", {
         appId: identity.appID,
-        token: identity.token
+        token: identity.token,
       });
-      
+
       // Send initial tasks
       try {
-        const result = await ditto.store.execute('SELECT * FROM tasks WHERE deleted=false ORDER BY done');
-        const tasks = result.items.map(item => item.value);
-        mainWindow.webContents.send('tasks-updated', tasks);
+        const result = await ditto.store.execute(
+          "SELECT * FROM tasks WHERE deleted=false ORDER BY done",
+        );
+        const tasks = result.items.map((item) => item.value);
+        mainWindow.webContents.send("tasks-updated", tasks);
       } catch (error) {
-        console.error('Failed to fetch initial tasks for window:', error);
+        console.error("Failed to fetch initial tasks for window:", error);
       }
     }
   });
 
-  mainWindow.on('closed', () => {
+  mainWindow.on("closed", () => {
     mainWindow = null;
   });
 }
@@ -71,6 +73,7 @@ async function initializeDitto() {
     ditto = new Ditto(identity);
 
     // Configure transport
+    // https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations#enabling-and-disabling-transports
     ditto.updateTransportConfig((config) => {
       config.connect.websocketURLs = [process.env.DITTO_WEBSOCKET_URL];
       return config;
@@ -78,68 +81,78 @@ async function initializeDitto() {
 
     // Disable sync with v3 peers, required for DQL
     await ditto.disableSyncWithV3();
+
+    // Disable DQL strict mode
+    // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
+    // https://docs.ditto.live/dql/strict-mode
+    await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+
     ditto.startSync();
 
     // Register subscription for tasks
-    tasksSubscription = ditto.sync.registerSubscription('SELECT * FROM tasks');
+    // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+    tasksSubscription = ditto.sync.registerSubscription("SELECT * FROM tasks");
 
     // Register observer for tasks
+    // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
     tasksObserver = ditto.store.registerObserver(
-      'SELECT * FROM tasks WHERE deleted=false ORDER BY done',
+      "SELECT * FROM tasks WHERE deleted=false ORDER BY done",
       (results) => {
         const tasks = results.items.map((item) => item.value);
         if (mainWindow) {
-          mainWindow.webContents.send('tasks-updated', tasks);
+          mainWindow.webContents.send("tasks-updated", tasks);
         }
-      }
+      },
     );
 
-    console.log('Ditto initialized successfully');
+    console.log("Ditto initialized successfully");
     if (mainWindow) {
-      mainWindow.webContents.send('ditto-initialized', {
+      mainWindow.webContents.send("ditto-initialized", {
         appId: identity.appID,
-        token: identity.token
+        token: identity.token,
       });
     }
   } catch (error) {
-    console.error('Failed to initialize Ditto:', error);
+    console.error("Failed to initialize Ditto:", error);
     if (mainWindow) {
-      mainWindow.webContents.send('ditto-error', error.message);
+      mainWindow.webContents.send("ditto-error", error.message);
     }
   }
 }
 
 // IPC handler to get current tasks
-ipcMain.handle('get-tasks', async () => {
+ipcMain.handle("get-tasks", async () => {
   if (ditto) {
     try {
-      const result = await ditto.store.execute('SELECT * FROM tasks WHERE deleted=false ORDER BY done');
-      return { success: true, tasks: result.items.map(item => item.value) };
+      const result = await ditto.store.execute(
+        "SELECT * FROM tasks WHERE deleted=false ORDER BY done",
+      );
+      return { success: true, tasks: result.items.map((item) => item.value) };
     } catch (error) {
-      console.error('Failed to fetch tasks:', error);
+      console.error("Failed to fetch tasks:", error);
       return { success: false, error: error.message, tasks: [] };
     }
   }
-  return { success: false, error: 'Ditto not initialized', tasks: [] };
+  return { success: false, error: "Ditto not initialized", tasks: [] };
 });
 
 // IPC handler to get current Ditto state
-ipcMain.handle('get-ditto-state', async () => {
+ipcMain.handle("get-ditto-state", async () => {
   if (ditto) {
     return {
       isInitialized: true,
       appId: identity.appID,
       token: identity.token,
-      syncActive: ditto.isSyncActive
+      syncActive: ditto.isSyncActive,
     };
   }
   return { isInitialized: false };
 });
 
 // IPC handlers for task operations
-ipcMain.handle('create-task', async (event, title) => {
+ipcMain.handle("create-task", async (event, title) => {
   try {
-    await ditto.store.execute('INSERT INTO tasks DOCUMENTS (:task)', {
+    await ditto.store.execute("INSERT INTO tasks DOCUMENTS (:task)", {
       task: {
         title,
         done: false,
@@ -148,50 +161,50 @@ ipcMain.handle('create-task', async (event, title) => {
     });
     return { success: true };
   } catch (error) {
-    console.error('Failed to create task:', error);
+    console.error("Failed to create task:", error);
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('edit-task', async (event, id, title) => {
+ipcMain.handle("edit-task", async (event, id, title) => {
   try {
-    await ditto.store.execute('UPDATE tasks SET title=:title WHERE _id=:id', {
+    await ditto.store.execute("UPDATE tasks SET title=:title WHERE _id=:id", {
       id,
       title,
     });
     return { success: true };
   } catch (error) {
-    console.error('Failed to edit task:', error);
+    console.error("Failed to edit task:", error);
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('toggle-task', async (event, id, done) => {
+ipcMain.handle("toggle-task", async (event, id, done) => {
   try {
-    await ditto.store.execute('UPDATE tasks SET done=:done WHERE _id=:id', {
+    await ditto.store.execute("UPDATE tasks SET done=:done WHERE _id=:id", {
       id,
       done: !done,
     });
     return { success: true };
   } catch (error) {
-    console.error('Failed to toggle task:', error);
+    console.error("Failed to toggle task:", error);
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('delete-task', async (event, id) => {
+ipcMain.handle("delete-task", async (event, id) => {
   try {
-    await ditto.store.execute('UPDATE tasks SET deleted=true WHERE _id=:id', {
+    await ditto.store.execute("UPDATE tasks SET deleted=true WHERE _id=:id", {
       id,
     });
     return { success: true };
   } catch (error) {
-    console.error('Failed to delete task:', error);
+    console.error("Failed to delete task:", error);
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('toggle-sync', async (event) => {
+ipcMain.handle("toggle-sync", async (event) => {
   try {
     if (ditto) {
       const isRunning = ditto.isSyncActive;
@@ -202,9 +215,9 @@ ipcMain.handle('toggle-sync', async (event) => {
       }
       return { success: true, syncActive: !isRunning };
     }
-    return { success: false, error: 'Ditto not initialized' };
+    return { success: false, error: "Ditto not initialized" };
   } catch (error) {
-    console.error('Failed to toggle sync:', error);
+    console.error("Failed to toggle sync:", error);
     return { success: false, error: error.message };
   }
 });
@@ -214,15 +227,15 @@ app.whenReady().then(() => {
   createWindow();
   initializeDitto();
 
-  app.on('activate', () => {
+  app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     // Clean up Ditto resources
     if (tasksObserver) {
       tasksObserver.cancel();
@@ -237,7 +250,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('before-quit', () => {
+app.on("before-quit", () => {
   // Clean up Ditto resources
   if (tasksObserver) {
     tasksObserver.cancel();

@@ -41,11 +41,13 @@ DITTO_WEBSOCKET_URL=""
 ### Installation
 
 1. Navigate to the electron directory:
+
 ```bash
 cd electron
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -63,6 +65,7 @@ npm run dev
 ```
 
 This will:
+
 - Start the Vite development server for the renderer process
 - Launch the Electron app once the renderer is ready
 - Enable hot reloading for both main and renderer processes
@@ -144,6 +147,9 @@ electron/
 ## Documentation
 
 - [Ditto SDK Documentation](https://docs.ditto.live)
+- [Ditt Javascript Install Guide](https://docs.ditto.live/sdk/latest/install-guides/js)
+- [Ditto Javascript API Reference](https://software.ditto.live/js/Ditto/4.11.1/api-reference/)
+- [Ditto Javascript Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 - [Electron Documentation](https://www.electronjs.org/docs)
 - [React Documentation](https://reactjs.org/docs)
 
