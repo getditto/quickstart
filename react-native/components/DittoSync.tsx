@@ -1,11 +1,11 @@
 import React from 'react';
-import { StyleSheet, Switch, SwitchProps, Text, View } from 'react-native';
+import {StyleSheet, Switch, SwitchProps, Text, View} from 'react-native';
 
-const DittoSync: React.FC<SwitchProps> = (props) => {
+const DittoSync: React.FC<SwitchProps> = props => {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Sync Enabled</Text>
-      <Switch thumbColor="#fff" trackColor={{ true: '#6D28D9' }} {...props} />
+      <Switch thumbColor="#fff" trackColor={{true: '#6D28D9'}} {...props} />
     </View>
   );
 };

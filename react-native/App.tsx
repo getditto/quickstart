@@ -17,7 +17,12 @@ import {
   SyncSubscription,
   TransportConfig,
 } from '@dittolive/ditto';
-import {DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, DITTO_AUTH_URL, DITTO_WEBSOCKET_URL} from '@env';
+import {
+  DITTO_APP_ID,
+  DITTO_PLAYGROUND_TOKEN,
+  DITTO_AUTH_URL,
+  DITTO_WEBSOCKET_URL,
+} from '@env';
 
 import Fab from './components/Fab';
 import NewTaskModal from './components/NewTaskModal';
@@ -29,8 +34,8 @@ import EditTaskModal from './components/EditTaskModal';
 type Task = {
   id: string;
   title: string;
-  done: boolean,
-  deleted: boolean,
+  done: boolean;
+  deleted: boolean;
 };
 
 // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
@@ -91,7 +96,9 @@ const App = () => {
 
   // https://docs.ditto.live/sdk/latest/crud/create
   const createTask = async (title: string) => {
-    if (title === '') {return;}
+    if (title === '') {
+      return;
+    }
     await ditto.current?.store.execute('INSERT INTO tasks DOCUMENTS (:task)', {
       task: {
         title,
@@ -103,29 +110,37 @@ const App = () => {
 
   // https://docs.ditto.live/sdk/latest/crud/update
   const toggleTask = async (task: Task) => {
-    await ditto.current?.store.execute('UPDATE tasks SET done=:done WHERE _id=:id', {
+    await ditto.current?.store.execute(
+      'UPDATE tasks SET done=:done WHERE _id=:id',
+      {
         id: task.id,
         done: !task.done,
-    });
+      },
+    );
   };
 
   // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
   const deleteTask = async (task: Task) => {
-    await ditto.current?.store.execute('UPDATE tasks SET deleted=true WHERE _id=:id', {
+    await ditto.current?.store.execute(
+      'UPDATE tasks SET deleted=true WHERE _id=:id',
+      {
         id: task.id,
-    });
+      },
+    );
   };
 
   const updateTaskTitle = async (taskId: string, newTitle: string) => {
-    await ditto.current?.store.execute('UPDATE tasks SET title=:title WHERE _id=:id', {
+    await ditto.current?.store.execute(
+      'UPDATE tasks SET title=:title WHERE _id=:id',
+      {
         id: taskId,
         title: newTitle,
-    });
+      },
+    );
   };
 
   const initDitto = async () => {
     try {
-
       // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
       ditto.current = new Ditto(identity);
 
@@ -136,15 +151,25 @@ const App = () => {
         return config;
       });
 
+      // Disable DQL strict mode
+      // https://docs.ditto.live/dql/strict-mode
+      await ditto.current.store.execute(
+        'ALTER SYSTEM SET DQL_STRICT_MODE = false',
+      );
+
       ditto.current.startSync();
 
       // Register a subscription, which determines what data syncs to this peer
       // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-      taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
+      taskSubscription.current = ditto.current.sync.registerSubscription(
+        'SELECT * FROM tasks',
+      );
 
       // Register observer, which runs against the local database on this peer
       // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted', response => {
+      taskObserver.current = ditto.current.store.registerObserver(
+        'SELECT * FROM tasks WHERE NOT deleted',
+        response => {
           const fetchedTasks: Task[] = response.items.map(doc => ({
             id: doc.value._id,
             title: doc.value.title as string,
@@ -153,7 +178,8 @@ const App = () => {
           }));
 
           setTasks(fetchedTasks);
-      });
+        },
+      );
     } catch (error) {
       console.error('Error syncing tasks:', error);
     }
@@ -177,14 +203,15 @@ const App = () => {
   const renderItem = ({item}: {item: Task}) => (
     <View key={item.id} style={styles.taskContainer}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
-      <Text
-        style={styles.taskTitle}
-        onLongPress={() => setEditingTask(item)}
-      >
+      <Text style={styles.taskTitle} onLongPress={() => setEditingTask(item)}>
         {item.title}
       </Text>
       <View style={styles.taskButton}>
-        <Button title="Delete" color="#DC2626" onPress={() => deleteTask(item)} />
+        <Button
+          title="Delete"
+          color="#DC2626"
+          onPress={() => deleteTask(item)}
+        />
       </View>
     </View>
   );
@@ -197,7 +224,7 @@ const App = () => {
       <NewTaskModal
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
-        onSubmit={(task) => {
+        onSubmit={task => {
           createTask(task);
           setModalVisible(false);
         }}
@@ -217,7 +244,7 @@ const App = () => {
         contentContainerStyle={styles.listContainer}
         data={tasks}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
       />
     </SafeAreaView>
   );

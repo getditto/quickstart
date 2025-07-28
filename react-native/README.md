@@ -7,6 +7,12 @@
 
 A sample React Native application that lets you create tasks and sync them with the Ditto Cloud via OnlinePlayground authentication. This example is built according to the [official Ditto installation guide for React Native](https://docs.ditto.live/install-guides/react-native).
 
+## Documentation
+
+- [React Native Install Guide](https://docs.ditto.live/sdk/latest/install-guides/react-native)
+- [Javascript/React Native API Reference](https://software.ditto.live/js/Ditto/4.11.1/api-reference/)
+- [Javascript/React Native Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
+
 ## Prerequisites
 
 - **Ditto Portal Account**: Ensure you have a Ditto account. Sign up [here](https://portal.ditto.live/signup).
@@ -52,10 +58,11 @@ yarn react-native run-android
 
 - Limitation: React Native's Fast Refresh must be disabled and it's something we're working on fixing.
 
-
 ## iOS Installation
- If you encounter an issue with iOS installing pod files, check your terminal to make sure your environment is set up correctly.
+
+If you encounter an issue with iOS installing pod files, check your terminal to make sure your environment is set up correctly.
 For example:
+
 ```bash
 ❯ pod install
 
@@ -71,10 +78,9 @@ Waiting for the debugger to disconnect....
  >  require Pod::Executable.execute_command('node', ['-p',
  #    'require.resolve(
  #  -------------------------------------------
-``` 
+```
 
-This error is usually an issue with the terminal setup.  If you are using the terminal in your IDE, we suggest you use the terminal app that comes with iOS to see if this is an issue with your terminal setup.
-
+This error is usually an issue with the terminal setup. If you are using the terminal in your IDE, we suggest you use the terminal app that comes with iOS to see if this is an issue with your terminal setup.
 
 ### Troubleshooting
 
