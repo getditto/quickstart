@@ -31,7 +31,7 @@ jobs:
           just tools
 
   rust:
-    name: rust-quickstart
+    name: Rust Quickstart
     strategy:
       matrix:
         os: ["macos-latest", "ubuntu-latest"]
@@ -62,7 +62,7 @@ jobs:
           cargo build
 
   js-web:
-    name: javascript-web lint
+    name: JavaScript Web Lint
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
         run: npm run lint
 
   js-node:
-    name: javascript-tui lint
+    name: JavaScript TUI Lint
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
