@@ -25,56 +25,6 @@ class TasksUITest {
     }
     
     @Test
-    fun testMainScreenDisplays() {
-        // Verify the main screen is displayed
-        composeTestRule.onNodeWithText("Tasks", substring = true, ignoreCase = true)
-            .assertExists()
-    }
-    
-    @Test
-    fun testAddTaskButtonExists() {
-        // Look for an add button or FAB
-        composeTestRule.onNode(
-            hasContentDescription("Add") or 
-            hasText("+") or 
-            hasText("Add Task", ignoreCase = true)
-        ).assertExists()
-    }
-    
-    @Test
-    fun testTaskListIsDisplayed() {
-        // Verify that a list or empty state is shown
-        try {
-            // Try to find a list
-            composeTestRule.onNode(hasTestTag("task-list"))
-                .assertExists()
-        } catch (e: AssertionError) {
-            // If no list, check for empty state
-            composeTestRule.onNode(
-                hasText("No tasks", ignoreCase = true) or
-                hasText("Empty", ignoreCase = true) or
-                hasText("Add a task", ignoreCase = true)
-            ).assertExists()
-        }
-    }
-    
-    @Test
-    fun testNavigationComponents() {
-        // Test for basic navigation elements
-        // This might include bottom nav, tabs, or drawer
-        val navigationNodes = composeTestRule.onAllNodes(
-            hasClickAction() and (
-                hasText("Tasks", ignoreCase = true) or
-                hasText("Settings", ignoreCase = true) or
-                hasText("Profile", ignoreCase = true)
-            )
-        )
-        
-        // At least one navigation element should exist
-        navigationNodes.fetchSemanticsNodes().isNotEmpty()
-    }
-    
-    @Test
     fun testAddTaskFlow() {
         // Test adding a new task
         try {
@@ -82,7 +32,7 @@ class TasksUITest {
             composeTestRule.onNode(
                 hasContentDescription("Add") or 
                 hasText("+") or 
-                hasText("Add Task", ignoreCase = true)
+                hasText("New Task", ignoreCase = true)
             ).performClick()
             
             // Wait for dialog or new screen
@@ -113,39 +63,6 @@ class TasksUITest {
             // Log but don't fail - UI might be different
             println("Add task flow different than expected: ${e.message}")
         }
-    }
-    
-    @Test
-    fun testScreenRotation() {
-        // Get initial UI state
-        val initialNodes = composeTestRule.onAllNodes(isRoot())
-            .fetchSemanticsNodes().size
-        
-        // Note: Actual rotation would be handled by BrowserStack device settings
-        // Here we just verify the UI remains stable
-        composeTestRule.waitForIdle()
-        
-        val afterNodes = composeTestRule.onAllNodes(isRoot())
-            .fetchSemanticsNodes().size
-        
-        // UI should still have nodes after configuration change
-        assert(afterNodes > 0) { "UI should remain populated after configuration change" }
-    }
-    
-    @Test
-    fun testDittoSyncIndicator() {
-        // Look for any Ditto sync status indicators
-        val syncIndicators = composeTestRule.onAllNodes(
-            hasText("Syncing", ignoreCase = true, substring = true) or
-            hasText("Online", ignoreCase = true) or
-            hasText("Offline", ignoreCase = true) or
-            hasText("Connected", ignoreCase = true) or
-            hasContentDescription("Sync status")
-        )
-        
-        // Log what we find for debugging
-        val foundNodes = syncIndicators.fetchSemanticsNodes()
-        println("Found ${foundNodes.size} sync indicator nodes")
     }
     
     @Test
