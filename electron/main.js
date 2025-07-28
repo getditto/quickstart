@@ -85,7 +85,15 @@ async function initializeDitto() {
     // Disable DQL strict mode
     // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
     // https://docs.ditto.live/dql/strict-mode
-    await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+    try {
+      await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+    } catch (error) {
+      console.error("Failed to disable DQL strict mode:", error);
+      if (mainWindow) {
+        mainWindow.webContents.send("ditto-error", "Failed to disable DQL strict mode: " + error.message);
+      }
+      throw error; // Re-throw the error to ensure it is handled by the outer try-catch block
+    }
 
     ditto.startSync();
 
