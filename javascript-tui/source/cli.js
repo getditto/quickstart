@@ -90,7 +90,12 @@ await ditto.disableSyncWithV3();
 // Disable DQL strict mode
 // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
 // https://docs.ditto.live/dql/strict-mode
- await ditto.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false')
+try {
+    await ditto.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
+} catch (error) {
+    console.error('Failed to disable DQL strict mode:', error);
+    process.exit(1); // Exit the application with a non-zero status code
+}
 
 ditto.startSync();
 
