@@ -246,7 +246,7 @@ public class TasksPeer : IDisposable
     }
 
     /// <summary>
-    /// Specify a handler to be called asynchronously when the task collection changes.
+    /// Specify a handler to be called asynchronously when the tasks collection changes.
     /// </summary>
     public DittoStoreObserver ObserveTasksCollection(Func<IList<ToDoTask>, Task> handler)
     {
