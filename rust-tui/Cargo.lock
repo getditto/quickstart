@@ -448,9 +448,9 @@ dependencies = [
 
 [[package]]
 name = "dittolive-ditto"
-version = "4.10.0"
+version = "4.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e6133ccc415b94298d9d7d889a0f7ee91b70e249dfff24df2a99e704ca3c9c2"
+checksum = "42f866664709eb6f886b1ad16304dbc9ca1c88e1879d06ba973fedc1465055e7"
 dependencies = [
  "base64",
  "bytemuck",
@@ -482,9 +482,9 @@ dependencies = [
 
 [[package]]
 name = "dittolive-ditto-sys"
-version = "4.10.0"
+version = "4.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "842bca58e74c22f03b326f129c27d99e29b7e48b8b6152da45b328ce22cda549"
+checksum = "963d1b0872da4863700bd6cbdda44c30963765600960b2000331e833a905f3d1"
 dependencies = [
  "macro_rules_attribute",
  "paste",
