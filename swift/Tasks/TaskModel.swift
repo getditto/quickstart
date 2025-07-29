@@ -56,10 +56,10 @@ extension TaskModel: Equatable {
 
 extension TaskModel: Codable {
 
-    /// Returns optional instance decoded from `QueryResultItem.jsonString()`
-    init?(_ json: String) {
+    /// Returns optional instance decoded from `QueryResultItem.jsonData()`
+    init?(_ jsonData: Data) {
         do {
-            self = try JSONDecoder().decode(Self.self, from: Data(json.utf8))
+            self = try JSONDecoder().decode(Self.self, from: jsonData)
         } catch {
             print("ERROR:", error.localizedDescription)
             return nil

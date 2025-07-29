@@ -28,7 +28,7 @@ class TasksListScreenViewModel: ObservableObject {
             [weak self] result in
             guard let self = self else { return }
             self.tasks = result.items.compactMap {
-                TaskModel($0.jsonString())
+                TaskModel($0.jsonData())
             }
         }
     }
