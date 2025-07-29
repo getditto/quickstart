@@ -90,7 +90,7 @@ async function initializeDitto() {
     } catch (error) {
       console.error("Failed to disable DQL strict mode:", error);
       if (mainWindow) {
-        mainWindow.webContents.send("ditto-error", "Failed to disable DQL strict mode: " + error.message);
+        mainWindow.webContents.send("ditto-error", `Failed to disable DQL strict mode: ${error.message || "Unknown error"}`);
       }
       throw error; // Re-throw the error to ensure it is handled by the outer try-catch block
     }
