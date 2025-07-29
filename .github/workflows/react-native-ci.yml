@@ -121,3 +121,35 @@ jobs:
     - name: Build iOS
       working-directory: react-native
       run: yarn build:ios
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    needs: lint
+    timeout-minutes: 30
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+        cache-dependency-path: react-native/yarn.lock
+    
+    - name: Install dependencies
+      working-directory: react-native
+      run: yarn install --frozen-lockfile
+    
+    - name: Install Ruby gems
+      working-directory: react-native
+      run: bundle install
+    
+    - name: Install CocoaPods for macOS
+      working-directory: react-native
+      run: pod install --project-directory=macos --repo-update
+    
+    - name: Build macOS
+      working-directory: react-native
+      run: yarn build:macos
