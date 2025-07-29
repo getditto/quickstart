@@ -81,9 +81,9 @@ const App = () => {
   // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
   const toggleSync = () => {
     if (syncEnabled) {
-      ditto.current?.stopSync();
+      ditto.current?.sync.stop();
     } else {
-      ditto.current?.startSync();
+      ditto.current?.sync.start();
     }
     setSyncEnabled(!syncEnabled);
   };
@@ -128,14 +128,14 @@ const App = () => {
       // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
       ditto.current = new Ditto(identity);
 
-      // Initialize transport config
-      ditto.current.updateTransportConfig(config => {
-        config.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+      if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
+        ditto.current.updateTransportConfig(config => {
+          config.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+          return config;
+        });
+      }
 
-        return config;
-      });
-
-      ditto.current.startSync();
+      ditto.current.sync.start();
 
       // Register a subscription, which determines what data syncs to this peer
       // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
