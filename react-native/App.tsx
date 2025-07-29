@@ -195,7 +195,6 @@ const App = () => {
       <Fab onPress={() => setModalVisible(true)} />
       <NewTaskModal
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
         onSubmit={(task) => {
           createTask(task);
           setModalVisible(false);
@@ -205,7 +204,6 @@ const App = () => {
       <EditTaskModal
         visible={editingTask !== null}
         task={editingTask}
-        onRequestClose={() => setEditingTask(null)}
         onSubmit={(taskId, newTitle) => {
           updateTaskTitle(taskId, newTitle);
           setEditingTask(null);
