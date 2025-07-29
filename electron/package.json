@@ -18,7 +18,7 @@
     "dist:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
-    "@dittolive/ditto": "^4.10.0",
+    "@dittolive/ditto": "^4.11.1",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {

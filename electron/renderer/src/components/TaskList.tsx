@@ -83,14 +83,18 @@ const TaskList: React.FC<TaskListProps> = ({
       <div className="space-y-3">
         {tasks.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
-            {isInitialized ? 'No tasks yet. Create your first task above!' : 'Connecting to Ditto...'}
+            {isInitialized
+              ? 'No tasks yet. Create your first task above!'
+              : 'Connecting to Ditto...'}
           </div>
         ) : (
           tasks.map((task) => (
             <div
               key={task._id}
               className={`flex items-center gap-3 p-3 border rounded-md ${
-                task.done ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-300'
+                task.done
+                  ? 'bg-gray-50 border-gray-200'
+                  : 'bg-white border-gray-300'
               }`}
             >
               {/* Toggle Button */}
@@ -104,7 +108,11 @@ const TaskList: React.FC<TaskListProps> = ({
                 } disabled:opacity-50`}
               >
                 {task.done && (
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -159,7 +167,12 @@ const TaskList: React.FC<TaskListProps> = ({
                     className="text-blue-500 hover:text-blue-700 disabled:opacity-50"
                     title="Edit task"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -174,7 +187,12 @@ const TaskList: React.FC<TaskListProps> = ({
                     className="text-red-500 hover:text-red-700 disabled:opacity-50"
                     title="Delete task"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"

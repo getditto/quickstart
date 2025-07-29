@@ -49,7 +49,7 @@ const DittoInfo: React.FC<DittoInfoProps> = ({
           </button>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div>
           <label className="block text-gray-600 font-medium mb-1">App ID</label>
@@ -64,12 +64,13 @@ const DittoInfo: React.FC<DittoInfoProps> = ({
           </div>
         </div>
       </div>
-      
+
       <div className="mt-4 p-4 bg-blue-50 rounded-lg">
         <h3 className="font-medium text-blue-800 mb-2">About This App</h3>
         <p className="text-sm text-blue-700">
-          This Electron app demonstrates Ditto's real-time sync capabilities in a cross-platform desktop environment. 
-          Tasks created here will sync across all connected devices using Ditto's mesh networking technology.
+          This Electron app demonstrates Ditto's real-time sync capabilities in
+          a cross-platform desktop environment. Tasks created here will sync
+          across all connected devices using Ditto's mesh networking technology.
         </p>
       </div>
     </div>
