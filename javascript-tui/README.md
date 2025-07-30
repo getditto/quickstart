@@ -26,9 +26,18 @@ DITTO_WEBSOCKET_URL=""
 
 Next, make sure you have `npm` installed, then run the following:
 
-```
+**MacOS/Linux**
+
+```bash
 npm install
 npm start 2>/dev/null
+```
+
+**Windows**
+
+```bash
+npm install
+npm start 2>NUL
 ```
 
 > NOTE: the `2>/dev/null` silences log output on stderr, because the logs

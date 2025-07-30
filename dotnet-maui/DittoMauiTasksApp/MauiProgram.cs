@@ -51,14 +51,20 @@ public static class MauiProgram
             false,  // This is required to be set to false to use the correct URLs
             authUrl), Path.Combine(FileSystem.Current.AppDataDirectory, "ditto"));
 
+        // Set the transport configuration
+        // https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations#enabling-and-disabling-transports
         ditto.UpdateTransportConfig(config =>
         {
             // Add the websocket URL to the transport configuration.
             config.Connect.WebsocketUrls.Add(websocketUrl);
         });
-        
+
         // disable sync with v3 peers, required for DQL
         ditto.DisableSyncWithV3();
+
+        // Disable DQL strict mode
+        // https://docs.ditto.live/dql/strict-mode
+        ditto.Store.ExecuteAsync("ALTER SYSTEM SET DQL_STRICT_MODE = false").Wait();
 
         return ditto;
     }

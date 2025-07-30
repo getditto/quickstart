@@ -14,7 +14,7 @@ class DittoManager: ObservableObject {
                 token: Env.DITTO_PLAYGROUND_TOKEN,
                 // This is required to be set to false to use the correct URLs
                 // This only disables cloud sync when the webSocketURL is not set explicitly
-                enableDittoCloudSync: false, 
+                enableDittoCloudSync: false,
                 customAuthURL: URL(string: Env.DITTO_AUTH_URL)
             )
         )

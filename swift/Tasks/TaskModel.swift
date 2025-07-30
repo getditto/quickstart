@@ -2,6 +2,7 @@ import DittoSwift
 
 /// A document in the `tasks` collection
 struct TaskModel {
+    // swiftlint:disable:next identifier_name
     let _id: String
     var title: String
     var done: Bool = false
@@ -12,6 +13,7 @@ extension TaskModel {
 
     /// Convenience initializer returns instance from `QueryResultItem.value`
     init(_ value: [String: Any?]) {
+        // swiftlint:disable:next force_cast
         self._id = value["_id"] as! String
         self.title = value["title"] as? String ?? ""
         self.done = value["done"] as? Bool ?? false
@@ -27,7 +29,7 @@ extension TaskModel {
             "_id": _id,
             "title": title,
             "done": done,
-            "deleted": deleted,
+            "deleted": deleted
         ]
     }
 }
@@ -56,10 +58,10 @@ extension TaskModel: Equatable {
 
 extension TaskModel: Codable {
 
-    /// Returns optional instance decoded from `QueryResultItem.jsonString()`
-    init?(_ json: String) {
+    /// Returns optional instance decoded from `QueryResultItem.jsonData()`
+    init?(_ jsonData: Data) {
         do {
-            self = try JSONDecoder().decode(Self.self, from: Data(json.utf8))
+            self = try JSONDecoder().decode(Self.self, from: jsonData)
         } catch {
             print("ERROR:", error.localizedDescription)
             return nil

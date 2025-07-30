@@ -2,7 +2,7 @@
 # .github/workflows/pr-checks.yml
 #
 ---
-name: pr-checks
+name: PR Checks
 
 on:
   pull_request:
@@ -24,14 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Tools
+      - name: Install tools
         run: |
           sudo apt update && sudo apt install just
           just --version
           just tools
 
   rust:
-    name: rust-quickstart
+    name: Rust Quickstart
     strategy:
       matrix:
         os: ["macos-latest", "ubuntu-latest"]
@@ -48,12 +48,12 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Clippy
+      - name: Run clippy
         run: |
           cd rust-tui
           cargo clippy
 
-      - name: Build
+      - name: Build project
         run: |
           cd rust-tui
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
@@ -62,39 +62,100 @@ jobs:
           cargo build
 
   js-web:
-    name: javascript-web lint
+    name: JavaScript Web Lint
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         working-directory: javascript-web
         run: npm ci
 
-      - name: Run linter
+      - name: Run linting
         working-directory: javascript-web
         run: npm run lint
 
   js-node:
-    name: javascript-tui lint
+    name: JavaScript TUI Lint
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         working-directory: javascript-tui
         run: npm ci
 
-      - name: Run linter and tests
+      - name: Run linting and tests
         working-directory: javascript-tui
         run: npm run test
+
+  cpp:
+    name: cpp-quickstart
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            sudo apt-get update
+            sudo apt-get install -y cmake build-essential
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            brew install cmake
+          fi
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=test_app_id" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=test_playground_token" >> .env
+          echo "DITTO_AUTH_URL=https://auth.example.com" >> .env
+          echo "DITTO_WEBSOCKET_URL=wss://websocket.example.com" >> .env
+
+      - name: Download and setup Ditto SDK
+        working-directory: cpp-tui/taskscpp/sdk
+        run: |
+          # Determine architecture and download appropriate Ditto SDK
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            ARCH=$(uname -m)
+            if [ "$ARCH" = "x86_64" ]; then
+              curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/4.10.0/dist/Ditto.tar.gz
+            elif [ "$ARCH" = "aarch64" ]; then
+              curl -O https://software.ditto.live/cpp-linux-aarch64/Ditto/4.10.0/dist/Ditto.tar.gz
+            fi
+          fi
+          # Extract the SDK
+          tar xvfz Ditto.tar.gz
+
+      - name: Configure CMake
+        working-directory: cpp-tui/taskscpp
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        working-directory: cpp-tui/taskscpp
+        run: cmake --build build
+
+      - name: Test app startup
+        working-directory: cpp-tui/taskscpp
+        run: |
+          # Test that the app can start and show help
+          ./build/taskscpp --help
+          echo "✅ Help command works"
+          
+          # Test that the app can show SDK version
+          ./build/taskscpp --ditto-sdk-version
+          echo "✅ SDK version command works"

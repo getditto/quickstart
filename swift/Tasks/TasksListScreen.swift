@@ -26,7 +26,7 @@ class TasksListScreenViewModel: ObservableObject {
             [weak self] result in
             guard let self = self else { return }
             self.tasks = result.items.compactMap {
-                TaskModel($0.jsonString())
+                TaskModel($0.jsonData())
             }
         }
     }
@@ -78,7 +78,7 @@ class TasksListScreenViewModel: ObservableObject {
             let done = !task.done
             let query = """
                 UPDATE tasks
-                SET done = :done 
+                SET done = :done
                 WHERE _id == :_id
                 """
 
@@ -112,7 +112,7 @@ class TasksListScreenViewModel: ObservableObject {
                         "title": task.title,
                         "done": task.done,
                         "deleted": task.deleted,
-                        "_id": task._id,
+                        "_id": task._id
                     ]
                 )
             } catch {
@@ -167,7 +167,7 @@ class TasksListScreenViewModel: ObservableObject {
                     title: "Schedule dentist appointment"),
                 TaskModel(
                     _id: "38411F1B-6B49-4346-90C3-0B16CE97E174",
-                    title: "Pay bills"),
+                    title: "Pay bills")
             ]
 
             for task in initialTasks {
@@ -180,7 +180,7 @@ class TasksListScreenViewModel: ObservableObject {
                                     "_id": task._id,
                                     "title": task.title,
                                     "done": task.done,
-                                    "deleted": task.deleted,
+                                    "deleted": task.deleted
                                 ]
                         ]
                     )
@@ -206,7 +206,7 @@ class TasksListScreenViewModel: ObservableObject {
 
 /// Main view of the app, which displays a list of tasks
 struct TasksListScreen: View {
-    private static let SYNC_ENABLED_KEY = "syncEnabled"
+    private static let isSyncEnabledKey = "syncEnabled"
 
     @StateObject var viewModel = TasksListScreenViewModel()
 
@@ -260,12 +260,12 @@ struct TasksListScreen: View {
                         Spacer()
                         Button(action: {
                             viewModel.onNewTask()
-                        }) {
+                        }, label: {
                             HStack {
                                 Image(systemName: "plus")
                                 Text("New Task")
                             }
-                        }
+                        })
                         .buttonStyle(.borderedProminent)
                         .padding(.bottom)
                     }
@@ -302,15 +302,15 @@ struct TasksListScreen: View {
     }
 
     private static func loadSyncEnabledState() -> Bool {
-        if UserDefaults.standard.object(forKey: SYNC_ENABLED_KEY) == nil {
+        if UserDefaults.standard.object(forKey: isSyncEnabledKey) == nil {
             return true
         } else {
-            return UserDefaults.standard.bool(forKey: SYNC_ENABLED_KEY)
+            return UserDefaults.standard.bool(forKey: isSyncEnabledKey)
         }
     }
 
     private static func saveSyncEnabledState(_ state: Bool) {
-        UserDefaults.standard.set(state, forKey: SYNC_ENABLED_KEY)
+        UserDefaults.standard.set(state, forKey: isSyncEnabledKey)
         UserDefaults.standard.synchronize()
     }
 }

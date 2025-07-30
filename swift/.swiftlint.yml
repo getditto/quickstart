@@ -1,0 +1,15 @@
+# SwiftLint configuration for Ditto Tasks app
+
+# Paths to include
+included:
+  - Tasks
+  - TasksTests
+
+# Paths to exclude
+excluded:
+  - Carthage
+  - Pods
+  - .build
+  - Package.swift
+  - Tasks/Preview Content
+  - Tasks/Env.swift
