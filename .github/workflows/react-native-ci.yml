@@ -116,8 +116,8 @@ jobs:
     
     - name: Install CocoaPods
       working-directory: react-native/ios
-      run: bundle exec pod install --repo-update
-    
+      run: bundle exec pod install
+
     - name: Build iOS
       working-directory: react-native
       run: yarn build:ios
@@ -147,9 +147,9 @@ jobs:
       run: bundle install
     
     - name: Install CocoaPods for macOS
-      working-directory: react-native
-      run: pod install --project-directory=macos --repo-update
-    
+      working-directory: react-native/macos
+      run: bundle exec pod install
+
     - name: Build macOS
       working-directory: react-native
       run: yarn build:macos
