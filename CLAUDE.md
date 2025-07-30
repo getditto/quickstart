@@ -229,6 +229,10 @@ All apps load configuration from the `.env` file at the repository root. The loa
 ## Important Notes
 
 1. **Production Warning**: These apps use "Online Playground" identity which is NOT suitable for production
+   - For production environments, configure use the "Online with Authentication" identity to authenticate with
+   your identity system and retrieve a secret token prior to syncing with Ditto. 
+   - Refer to the [Authentication and Authorization](https://docs.ditto.live/key-concepts/authentication-and-authorization#online-with-authentication)
+   for detailed instructions on configuring identity for production use.
 2. **Cross-Platform Consistency**: All apps implement the same data model for interoperability (though field names may vary slightly)
 3. **Platform Best Practices**: Each app follows its platform's conventions and patterns
 4. **Real Device Testing**: For full P2P functionality, test on real devices rather than simulators
