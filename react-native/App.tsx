@@ -15,7 +15,6 @@ import {
   IdentityOnlinePlayground,
   StoreObserver,
   SyncSubscription,
-  TransportConfig,
 } from '@dittolive/ditto';
 import {
   DITTO_APP_ID,
