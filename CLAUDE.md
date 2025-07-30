@@ -26,11 +26,17 @@ Before working with any app:
 # Run tests
 ./gradlew test
 
+# Run specific test
+./gradlew test --tests "*ClassName.testMethodName"
+
 # Install on device/emulator
 ./gradlew installDebug
 
 # Clean build
 ./gradlew clean
+
+# List all tasks
+./gradlew tasks
 ```
 
 ### JavaScript/TypeScript Projects
@@ -52,6 +58,9 @@ npm run format
 
 # Run tests (where available)
 npm test
+
+# Run specific test
+npm test -- --testNamePattern="test name"
 ```
 
 ### Rust Projects
@@ -64,6 +73,9 @@ cargo run
 
 # Run tests
 cargo test
+
+# Run specific test
+cargo test test_name
 
 # Format code
 cargo fmt
@@ -83,6 +95,9 @@ flutter run
 # Run tests
 flutter test
 
+# Run specific test
+flutter test test/widget_test.dart
+
 # Build for specific platform
 flutter build apk/ios/web
 ```
@@ -97,6 +112,9 @@ dotnet run
 
 # Run tests
 dotnet test
+
+# Run specific test
+dotnet test --filter "FullyQualifiedName~TestMethodName"
 ```
 
 ### C++ Projects
@@ -111,11 +129,20 @@ make
 make clean
 ```
 
+### Tools Setup
+```bash
+# Install Android command line tools (if ANDROID_HOME is set)
+just cmdline_tools
+
+# Install required Android SDK components
+just tools
+```
+
 ## Architecture Overview
 
 ### Common Structure
 All applications implement the same "Tasks" functionality:
-- **Task Model**: Simple todo items with ID, text, and completion status
+- **Task Model**: Simple todo items with ID, text/title, and completion status
 - **Real-time Sync**: Automatic synchronization between devices using Ditto
 - **CRUD Operations**: Create, read, update, and delete tasks
 - **Platform UI**: Native UI patterns for each platform
@@ -124,12 +151,13 @@ All applications implement the same "Tasks" functionality:
 1. **Initialization**: Apps read credentials from environment variables
 2. **Identity**: Uses "Online Playground" identity (development only)
 3. **Collection**: All apps use a "tasks" collection
-4. **Document Structure**: Consistent across platforms:
+4. **Document Structure**: Mostly consistent across platforms (slight variations in field names):
    ```json
    {
      "_id": "unique-id",
-     "text": "Task description",
-     "isCompleted": false
+     "text": "Task description",    // or "title" in some implementations
+     "isCompleted": false,          // or "done" in some implementations
+     "deleted": false               // soft delete in some implementations
    }
    ```
 
@@ -138,39 +166,59 @@ All applications implement the same "Tasks" functionality:
 #### Android/Kotlin
 - MVVM architecture with ViewModels
 - Jetpack Compose for UI
-- Gradle build with version catalogs
-- Environment variables loaded via `loadEnvProperties()`
+- Gradle build with version catalogs (`gradle/libs.versions.toml`)
+- Environment variables loaded via custom `loadEnvProperties()` function
+- Task model uses `title`, `done`, and `deleted` fields
 
 #### JavaScript Web
 - React with TypeScript
 - Vite build system
 - Tailwind CSS for styling
 - ESLint + Prettier for code quality
+- Task model uses `text` and `isCompleted` fields
 
 #### iOS/Swift
 - SwiftUI for interface
 - Xcode project structure
-- CocoaPods for dependency management
+- Swift Package Manager for dependencies
+- Environment variables loaded via `buildEnv.sh` script
+- Task model uses `text` and `isCompleted` fields
 
 #### Rust TUI
 - Tokio async runtime
 - Ratatui for terminal UI
 - Event-driven architecture
+- Task model uses `text` and `isCompleted` fields
+
+#### React Native
+- React Native with TypeScript
+- Metro bundler
+- Custom components for modals and UI elements
+- Task model uses `text` and `isCompleted` fields
+
+#### Kotlin Multiplatform
+- Compose Multiplatform UI
+- Targets iOS, Android, and Desktop
+- Shared business logic across platforms
+- Task model uses `text` and `isCompleted` fields
 
 ## Key Development Considerations
 
 ### Environment Variables
 All apps load configuration from the `.env` file at the repository root. The loading mechanism varies by platform:
-- **Android**: Custom Gradle function in `build.gradle.kts`
-- **JavaScript**: Vite environment variables
+- **Android**: Custom Gradle function in `build.gradle.kts` that reads `.env` and sets build config fields
+- **JavaScript**: Vite environment variables (auto-loaded from `.env`)
 - **Rust**: `dotenvy` crate
 - **Flutter**: `flutter_dotenv` package
+- **Swift**: `buildEnv.sh` script generates `Env.swift` file
+- **.NET**: Custom environment loading in code
 
 ### Testing
 - Android: JUnit tests in `src/test` and instrumented tests in `src/androidTest`
 - JavaScript: Jest for React Native, Vitest for web apps
 - Rust: Built-in `cargo test`
 - Flutter: `flutter test` with widget and unit tests
+- Swift: XCTest framework
 
 ### Code Quality Tools
 - **JavaScript/TypeScript**: ESLint + Prettier
@@ -181,6 +229,9 @@ All apps load configuration from the `.env` file at the repository root. The loa
 ## Important Notes
 
 1. **Production Warning**: These apps use "Online Playground" identity which is NOT suitable for production
-2. **Cross-Platform Consistency**: All apps implement the same data model for interoperability
+2. **Cross-Platform Consistency**: All apps implement the same data model for interoperability (though field names may vary slightly)
 3. **Platform Best Practices**: Each app follows its platform's conventions and patterns
 4. **Real Device Testing**: For full P2P functionality, test on real devices rather than simulators
+5. **Data Model Variations**: While conceptually the same, implementations vary in field naming:
+   - Some use `text`/`isCompleted`, others use `title`/`done`
+   - Some include soft delete functionality with a `deleted` field
