@@ -13,7 +13,7 @@ After you have completed the [common prerequisites] you will need the following:
 ## Documentation
 
 - [C++ Install Guide](https://docs.ditto.live/install-guides/cpp)
-- [C++ API Reference](https://software.ditto.live/cpp/Ditto/4.9.0/api-reference/)
+- [C++ API Reference](https://software.ditto.live/cpp/Ditto/4.11.0/api-reference/)
 - [C++ Release Notes](https://docs.ditto.live/release-notes/cpp)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites

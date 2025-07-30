@@ -74,6 +74,11 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
     // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
 
+    // Disable DQL strict mode
+    // https://docs.ditto.live/dql/strict-mode
+    const auto disableStrictModeCommand = "ALTER SYSTEM SET DQL_STRICT_MODE = false";
+    const auto result = ditto->get_store().execute(disableStrictModeCommand);
+
     return ditto;
   } catch (const exception &err) {
     throw runtime_error(string("unable to initialize Ditto: ") + err.what());
