@@ -73,7 +73,7 @@ class TasksApplication : Application() {
             config.connect.websocketUrls.add(webSocketURL)
         }
 
-        ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+        ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false")
 
         // disable sync with v3 peers, required for DQL
         ditto.disableSyncWithV3()
