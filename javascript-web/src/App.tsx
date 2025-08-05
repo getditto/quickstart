@@ -1,8 +1,9 @@
 import {
   Ditto,
-  IdentityOnlinePlayground,
+  DittoConfig,
   StoreObserver,
   SyncSubscription,
+  Authenticator,
   init,
 } from '@dittolive/ditto';
 import './App.css';
@@ -10,13 +11,9 @@ import DittoInfo from './components/DittoInfo';
 import { useEffect, useRef, useState } from 'react';
 import TaskList from './components/TaskList';
 
-const identity: IdentityOnlinePlayground = {
-  type: 'onlinePlayground',
-  appID: import.meta.env.DITTO_APP_ID,
-  token: import.meta.env.DITTO_PLAYGROUND_TOKEN,
-  customAuthURL: import.meta.env.DITTO_AUTH_URL,
-  enableDittoCloudSync: false,
-};
+const databaseId = import.meta.env.DITTO_DATABASE_ID;
+const devToken = import.meta.env.DITTO_DEV_TOKEN;
+const authUrl = import.meta.env.DITTO_AUTH_URL;
 
 export type Task = {
   _id: string;
@@ -57,12 +54,26 @@ const App = () => {
       try {
         // Create a new Ditto instance with the identity
         // https://docs.ditto.live/sdk/latest/install-guides/js#integrating-ditto-and-starting-sync
-        ditto.current = new Ditto(identity);
-
-        // Initialize transport config
-        ditto.current.updateTransportConfig((config) => {
-          config.connect.websocketURLs = [import.meta.env.DITTO_WEBSOCKET_URL];
-          return config;
+        ditto.current = await Ditto.open(new DittoConfig(
+          databaseId,
+          {
+            type: 'server',
+            url: authUrl,
+          }
+        ));
+        ditto.current.auth.setExpirationHandler(async (ditto, expirationSeconds) => {
+            // Authenticate when token is expiring
+            try {
+                await ditto.auth.login(
+                    // Your development token, replace with your actual token
+                    devToken,
+                    // Use Authenticator.DEVELOPMENT_PROVIDER for playground, or your actual provider name
+                    Authenticator.DEVELOPMENT_PROVIDER
+                );
+                console.log("Authentication successful");
+            } catch (error) {
+                console.error("Authentication failed:", error);
+            }
         });
 
         // disable sync with v3 peers, required for DQL
@@ -202,8 +213,8 @@ const App = () => {
       <div className="h-full w-full flex flex-col container mx-auto items-center">
         {error && <ErrorMessage error={error} />}
         <DittoInfo
-          appId={identity.appID}
-          token={identity.token}
+          appId={databaseId}
+          token={devToken}
           syncEnabled={syncActive}
           onToggleSync={toggleSync}
           isInitialized={isInitialized}
