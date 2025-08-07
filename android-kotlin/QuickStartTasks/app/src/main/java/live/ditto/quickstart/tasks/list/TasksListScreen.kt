@@ -11,12 +11,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -52,9 +55,12 @@ fun TasksListScreen(navController: NavController) {
     val tasksListViewModel: TasksListScreenViewModel = viewModel()
     val tasks: List<Task> by tasksListViewModel.tasks.observeAsState(emptyList())
     val syncEnabled: Boolean by tasksListViewModel.syncEnabled.observeAsState(true)
+    val memoryUsage: Long by tasksListViewModel.memoryUsage.observeAsState(0)
+    val dataGenerationStatus: String by tasksListViewModel.dataGenerationStatus.observeAsState("")
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteDialogTaskId by remember { mutableStateOf("") }
+    var showMemoryTestDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -78,6 +84,11 @@ fun TasksListScreen(navController: NavController) {
                                 text = "Token: ${BuildConfig.DITTO_PLAYGROUND_TOKEN}",
                                 style = TextStyle(fontSize = 10.sp)
                             )
+                            Text(
+                                text = "Memory: ${memoryUsage / (1024 * 1024)}MB",
+                                style = TextStyle(fontSize = 12.sp),
+                                color = Color.Yellow
+                            )
                         }
                     }
                 },
@@ -87,6 +98,13 @@ fun TasksListScreen(navController: NavController) {
                 ),
                 actions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { showMemoryTestDialog = true }) {
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = "Memory Test",
+                                tint = Color.White
+                            )
+                        }
                         Text(
                             text = "Sync",
                             style = MaterialTheme.typography.bodySmall,
@@ -119,6 +137,21 @@ fun TasksListScreen(navController: NavController) {
                     .fillMaxSize()
                     .padding(padding)
             ) {
+                // Show data generation status if available
+                if (dataGenerationStatus.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = dataGenerationStatus,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                
                 TasksList(
                     tasks = tasks,
                     onToggle = { tasksListViewModel.toggle(it) },
@@ -167,6 +200,79 @@ fun TasksListScreen(navController: NavController) {
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    // Memory test dialog
+    if (showMemoryTestDialog) {
+        AlertDialog(
+            onDismissRequest = { showMemoryTestDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Memory Test",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = {
+                Text(
+                    text = "Memory Leak Test",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Test memory leak issue SDKS-1463",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Text(
+                        text = "Current Memory: ${memoryUsage / (1024 * 1024)}MB",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Button(
+                        onClick = { tasksListViewModel.generateLargeDataset() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Text("1. Generate Large Dataset (~10MB)")
+                    }
+                    Button(
+                        onClick = { tasksListViewModel.closeQueryResultOnly() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Text("2. Close Query Result Only (Leaks)")
+                    }
+                    Button(
+                        onClick = { tasksListViewModel.closeQueryResultAndItems() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Text("3. Close Result + Items (Frees Memory)")
+                    }
+                    Button(
+                        onClick = { tasksListViewModel.clearTestData() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Text("4. Clear Test Data")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showMemoryTestDialog = false }
+                ) {
+                    Text("Close")
                 }
             }
         )

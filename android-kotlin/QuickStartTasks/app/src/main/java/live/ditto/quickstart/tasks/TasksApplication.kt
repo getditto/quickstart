@@ -77,5 +77,8 @@ class TasksApplication : Application() {
 
         // disable sync with v3 peers, required for DQL
         ditto.disableSyncWithV3()
+        
+        // Mark Ditto as initialized
+        DittoHandler.markAsInitialized()
     }
 }
