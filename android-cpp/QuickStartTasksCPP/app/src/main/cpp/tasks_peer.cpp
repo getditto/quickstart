@@ -76,8 +76,7 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
 
     // Disable DQL strict mode
     // https://docs.ditto.live/dql/strict-mode
-    const auto disableStrictModeCommand = "ALTER SYSTEM SET DQL_STRICT_MODE = false";
-    const auto result = ditto->get_store().execute(disableStrictModeCommand);
+    const auto result = ditto->get_store().execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
 
     return ditto;
   } catch (const exception &err) {
