@@ -301,8 +301,7 @@ impl Todolist {
         };
         if self.ditto.is_sync_active() {
             self.ditto.stop_sync();
-        }
-        else {
+        } else {
             self.ditto.start_sync()?;
         }
         Ok(())
@@ -355,8 +354,8 @@ impl Todolist {
                 "UPDATE tasks SET deleted=true WHERE _id=:id",
                 serde_json::json!({
                     "id": id
-                })),
-            )
+                }),
+            ))
             .await?;
 
         Ok(())
@@ -371,8 +370,8 @@ impl Todolist {
                 "INSERT INTO tasks DOCUMENTS (:task)",
                 serde_json::json!({
                     "task": task
-                })),
-            )
+                }),
+            ))
             .await?;
         Ok(())
     }
@@ -383,11 +382,11 @@ impl Todolist {
             .store()
             .execute_v2((
                 "UPDATE tasks SET title=:title WHERE _id=:id",
-                serde_json::json!({ 
-                    "title": title, 
-                    "id": id 
-                })),
-            )
+                serde_json::json!({
+                    "title": title,
+                    "id": id
+                }),
+            ))
             .await?;
 
         Ok(())
