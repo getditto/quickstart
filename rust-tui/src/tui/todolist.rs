@@ -299,6 +299,12 @@ impl Todolist {
                 Some(sub)
             }
         };
+        if self.ditto.is_sync_active() {
+            self.ditto.stop_sync();
+        }
+        else {
+            self.ditto.start_sync()?;
+        }
         Ok(())
     }
 
