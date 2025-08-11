@@ -1,19 +1,22 @@
-use anyhow::Context;
-use anyhow::Result;
+use std::{collections::HashMap, iter::once, sync::Arc};
+
+use anyhow::{Context, Result};
 use crossterm::event::Event;
-use dittolive_ditto::store::StoreObserver;
-use dittolive_ditto::sync::SyncSubscription;
-use dittolive_ditto::Ditto;
-use ratatui::prelude::*;
-use ratatui::widgets::Block;
-use ratatui::widgets::BorderType;
-use ratatui::widgets::Clear;
-use ratatui::widgets::Padding;
-use ratatui::widgets::{Cell, Row, StatefulWidget, Table, TableState};
-use serde::Deserialize;
-use serde::Serialize;
-use std::sync::Arc;
+use dittolive_ditto::{
+    presence::{ConnectionType, Peer},
+    store::StoreObserver,
+    sync::SyncSubscription,
+    Ditto,
+};
+use ratatui::{
+    prelude::*,
+    widgets::{
+        Block, BorderType, Cell, Clear, Padding, Paragraph, Row, StatefulWidget, Table, TableState,
+    },
+};
+use serde::{Deserialize, Serialize};
 use tokio::sync::watch;
+use tui_nodes::{Connection, NodeGraph, NodeLayout};
 use uuid::Uuid;
 
 use crate::key;
@@ -59,6 +62,7 @@ pub enum TodoMode {
     Normal,
     CreateTask { buffer: String },
     EditTask { id: String, buffer: String },
+    PresenceViewer,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -120,6 +124,7 @@ impl Todolist {
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         self.render_todo_table(area, buf);
         self.render_new_todo_prompt(area, buf);
+        self.render_presence_viewer(area, buf);
     }
 
     /// Render a table displaying each todo and its current status
@@ -191,6 +196,101 @@ impl Todolist {
         Line::raw(title).render(space, buf);
     }
 
+    /// Render the presence viewer, if the mode is set to `PresenceViewer`
+    fn render_presence_viewer(&self, area: Rect, buf: &mut Buffer) {
+        match self.mode {
+            TodoMode::PresenceViewer => {}
+            _ => {
+                return;
+            }
+        }
+
+        let space = area.inner(Margin::new(2, 2));
+        Clear.render(space, buf);
+        let bottom = Line::from(vec![
+            Span::raw("(bluetooth) ").style(Style::new().blue()),
+            Span::raw("(LAN) ").style(Style::new().green()),
+            Span::raw("(P2P Wi-Fi) ").style(Style::new().magenta()),
+            Span::raw("(WebSocket) ").style(Style::new().yellow()),
+        ]);
+        Block::bordered()
+            .border_type(BorderType::Rounded)
+            .title(" Presence Viewer ")
+            .title_bottom(" (Esc: back) ")
+            .title_bottom(bottom.right_aligned())
+            .padding(Padding::uniform(1))
+            .render(space, buf);
+
+        let space = space.inner(Margin::new(2, 2));
+
+        let presence_graph = self.ditto.presence().graph();
+        let all_peers = once(&presence_graph.local_peer)
+            .chain(presence_graph.remote_peers.iter())
+            .collect::<Vec<_>>();
+        let peer_key_map = all_peers
+            .iter()
+            .enumerate()
+            .map(|(idx, peer)| (peer.peer_key_string.clone(), idx))
+            .collect::<HashMap<_, usize>>();
+        let peer_keys = all_peers
+            .iter()
+            .map(|peer| &peer.peer_key_string)
+            // Truncate the peer key to a more readable format
+            .map(|peer_key| format!("{}.+{}", &peer_key[..2], &peer_key[peer_key.len() - 7..]))
+            .collect::<Vec<_>>();
+        let mut peer_nodes = peer_keys
+            .iter()
+            .map(|peer| NodeLayout::new((12, 3)).with_title(peer))
+            .collect::<Vec<_>>();
+        let mut connections: Vec<Connection> =
+            self.collect_peer_connections(&peer_key_map, &presence_graph.local_peer);
+        for peer in &presence_graph.remote_peers {
+            connections.extend(self.collect_peer_connections(&peer_key_map, peer));
+        }
+        let mut graph = NodeGraph::new(
+            peer_nodes,
+            connections,
+            space.width as usize,
+            space.height as usize,
+        );
+        graph.calculate();
+
+        let zones = graph.split(space);
+        for (idx, ea_zone) in zones.into_iter().enumerate() {
+            Paragraph::new(format!("{idx}"))
+                .alignment(Alignment::Center)
+                .render(ea_zone, buf);
+        }
+        graph.render(space, buf, &mut ());
+    }
+
+    fn collect_peer_connections(
+        &self,
+        peer_map: &HashMap<String, usize>,
+        peer: &Peer,
+    ) -> Vec<Connection> {
+        peer.connections
+            .iter()
+            .flat_map(|conn| {
+                let style = match conn.connection_type {
+                    ConnectionType::Bluetooth => Style::new().blue(),
+                    ConnectionType::AccessPoint => Style::new().yellow(),
+                    ConnectionType::P2PWiFi => Style::new().cyan(),
+                    ConnectionType::WebSocket => Style::new().magenta(),
+                    _ => Style::new(),
+                };
+                // Ignore missing peers
+                let from_node = *peer_map.get(&conn.peer_key_string1)?;
+                let to_node = *peer_map.get(&conn.peer_key_string2)?;
+                Some(
+                    Connection::new(from_node, 0, to_node, 0)
+                        .with_line_type(tui_nodes::LineType::Double)
+                        .with_line_style(style),
+                )
+            })
+            .collect()
+    }
+
     /// Apply a terminal event to update the todolist state
     pub async fn try_handle_event(&mut self, event: &Event) -> Result<EventResult> {
         match (&mut self.mode, event) {
@@ -224,8 +324,19 @@ impl Todolist {
             (TodoMode::Normal, key!(Char('s'))) => {
                 self.toggle_sync()?;
             }
+            // Normal:p -> Goto presence viewer mode
+            (TodoMode::Normal, key!(Char('p'))) => {
+                self.mode = TodoMode::PresenceViewer;
+            }
+            // PresenceViewer:p -> Normal
+            (TodoMode::PresenceViewer, key!(Char('p'))) => {
+                self.mode = TodoMode::Normal;
+            }
             // Non-Normal:Esc -> Normal
-            (TodoMode::CreateTask { .. } | TodoMode::EditTask { .. }, key!(Esc)) => {
+            (
+                TodoMode::CreateTask { .. } | TodoMode::EditTask { .. } | TodoMode::PresenceViewer,
+                key!(Esc),
+            ) => {
                 self.mode = TodoMode::Normal;
             }
             // Scroll up
@@ -237,7 +348,7 @@ impl Todolist {
                 self.table_state.select_next();
             }
             // Toggle done
-            (TodoMode::Normal, key!(Enter)) => {
+            (TodoMode::Normal, key!(Enter) | key!(Char(' '))) => {
                 self.try_toggle_done().await?;
             }
             // Create task typing
