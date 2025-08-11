@@ -36,9 +36,7 @@ export DITTO_WEBSOCKET_URL=""
 
 Build the FFI library (required for Ditto SDK):
 ```bash
-cd ../../ditto/sdks/go
-make build-ffi
-cd -
+(cd ../../ditto/sdks/go && make build) && go build -o go-tui main.go && ./go-tui  2>/dev/null
 ```
 
 Build the application:
