@@ -238,7 +238,7 @@ impl Todolist {
             // Truncate the peer key to a more readable format
             .map(|peer_key| format!("{}.+{}", &peer_key[..2], &peer_key[peer_key.len() - 7..]))
             .collect::<Vec<_>>();
-        let mut peer_nodes = peer_keys
+        let peer_nodes = peer_keys
             .iter()
             .map(|peer| NodeLayout::new((12, 3)).with_title(peer))
             .collect::<Vec<_>>();
