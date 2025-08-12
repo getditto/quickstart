@@ -562,7 +562,10 @@ func parseTasks(result *ditto.QueryResult) []Task {
 		if queryItem == nil || queryItem.Value == nil {
 			continue
 		}
-		item := queryItem.Value
+		item, ok := queryItem.Value.(map[string]interface{})
+		if !ok {
+			continue
+		}
 
 		// Parse the task from the document
 		task := Task{
