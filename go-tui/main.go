@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getditto/ditto-go-sdk/ditto"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
-	"github.com/getditto/ditto-go-sdk/ditto"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
@@ -43,19 +43,19 @@ type App struct {
 	tasksChan    chan []Task
 	errorMsg     string
 	mu           sync.RWMutex
-	
+
 	// UI widgets
-	taskTable    *widgets.Table
-	inputBox     *widgets.Paragraph
-	statusBar    *widgets.Paragraph
-	errorBar     *widgets.Paragraph
+	taskTable *widgets.Table
+	inputBox  *widgets.Paragraph
+	statusBar *widgets.Paragraph
+	errorBar  *widgets.Paragraph
 }
 
 func main() {
 	// Suppress Ditto logs
 	os.Setenv("RUST_LOG", "warn")
 	os.Setenv("RUST_BACKTRACE", "0")
-	
+
 	// Load environment variables
 	if err := loadEnv(); err != nil {
 		log.Printf("Warning: Could not load .env file: %v", err)
@@ -125,7 +125,7 @@ func main() {
 
 	// Create app
 	app := NewApp(d)
-	
+
 	// Create subscription for syncing
 	subscription, err := d.Sync().RegisterSubscription("SELECT * FROM tasks")
 	if err != nil {
@@ -145,7 +145,7 @@ func main() {
 		log.Fatal("Failed to register observer:", err)
 	}
 	app.observer = observer
-	
+
 	// Force an initial query
 	go func() {
 		time.Sleep(200 * time.Millisecond)
@@ -176,15 +176,15 @@ func NewApp(d *ditto.Ditto) *App {
 	app.taskTable.RowSeparator = false
 	app.taskTable.FillRow = true
 	app.taskTable.RowStyles[0] = ui.NewStyle(ui.ColorWhite, ui.ColorClear, ui.ModifierBold)
-	
+
 	app.inputBox = widgets.NewParagraph()
 	app.inputBox.Title = " New Task "
 	app.inputBox.BorderStyle = ui.NewStyle(ui.ColorMagenta)
-	
+
 	app.statusBar = widgets.NewParagraph()
 	app.statusBar.Border = false
 	app.statusBar.Text = "[c](fg:yellow): create  [e](fg:yellow): edit  [d](fg:yellow): delete  [q](fg:yellow): quit  [s](fg:yellow): toggle sync"
-	
+
 	app.errorBar = widgets.NewParagraph()
 	app.errorBar.Border = false
 	app.errorBar.TextStyle = ui.NewStyle(ui.ColorRed)
@@ -198,7 +198,7 @@ func (a *App) Run() {
 
 	// Create event polling channel
 	uiEvents := ui.PollEvents()
-	
+
 	// Main event loop
 	for {
 		select {
@@ -218,7 +218,7 @@ func (a *App) Run() {
 			default:
 				a.handleEvent(e)
 			}
-			
+
 		case tasks := <-a.tasksChan:
 			a.mu.Lock()
 			a.tasks = tasks
@@ -251,7 +251,7 @@ func (a *App) handleNormalMode(e ui.Event) {
 		}
 		a.mu.Unlock()
 		a.render()
-		
+
 	case "k", "<Up>":
 		a.mu.Lock()
 		if a.selectedIdx > 0 {
@@ -259,7 +259,7 @@ func (a *App) handleNormalMode(e ui.Event) {
 		}
 		a.mu.Unlock()
 		a.render()
-		
+
 	case "<Enter>", " ":
 		a.mu.RLock()
 		if a.selectedIdx < len(a.tasks) {
@@ -269,12 +269,12 @@ func (a *App) handleNormalMode(e ui.Event) {
 		} else {
 			a.mu.RUnlock()
 		}
-		
+
 	case "c":
 		a.inputMode = CreateMode
 		a.inputBuffer = ""
 		a.render()
-		
+
 	case "e":
 		a.mu.RLock()
 		if a.selectedIdx < len(a.tasks) {
@@ -285,7 +285,7 @@ func (a *App) handleNormalMode(e ui.Event) {
 		}
 		a.mu.RUnlock()
 		a.render()
-		
+
 	case "d":
 		a.mu.RLock()
 		if a.selectedIdx < len(a.tasks) {
@@ -295,7 +295,7 @@ func (a *App) handleNormalMode(e ui.Event) {
 		} else {
 			a.mu.RUnlock()
 		}
-		
+
 	case "s":
 		// Toggle sync (placeholder for now - could implement sync toggle)
 		a.setError("Sync toggle not yet implemented")
@@ -317,17 +317,17 @@ func (a *App) handleInputMode(e ui.Event, isEdit bool) {
 			a.editingID = ""
 			a.render()
 		}
-		
+
 	case "<Backspace>":
 		if len(a.inputBuffer) > 0 {
 			a.inputBuffer = a.inputBuffer[:len(a.inputBuffer)-1]
 			a.render()
 		}
-		
+
 	case "<Space>":
 		a.inputBuffer += " "
 		a.render()
-		
+
 	default:
 		// Handle regular character input
 		if len(e.ID) == 1 {
@@ -339,26 +339,26 @@ func (a *App) handleInputMode(e ui.Event, isEdit bool) {
 
 func (a *App) render() {
 	termWidth, termHeight := ui.TerminalDimensions()
-	
+
 	// Clear screen
 	ui.Clear()
-	
+
 	// Update table data
 	a.updateTable()
-	
+
 	// Layout calculations
 	tableHeight := termHeight - 3 // Leave room for status bar
 	if a.inputMode != NormalMode {
 		tableHeight = termHeight - 8 // Make room for input box
 	}
-	
+
 	// Set widget positions
 	a.taskTable.SetRect(0, 0, termWidth, tableHeight)
 	a.statusBar.SetRect(0, termHeight-2, termWidth, termHeight)
-	
+
 	// Render main widgets
 	ui.Render(a.taskTable, a.statusBar)
-	
+
 	// Render input box if in input mode
 	if a.inputMode != NormalMode {
 		title := " New Task "
@@ -367,7 +367,7 @@ func (a *App) render() {
 		}
 		a.inputBox.Title = title
 		a.inputBox.Text = a.inputBuffer + "█" // Add cursor
-		
+
 		// Center the input box
 		boxWidth := termWidth - 10
 		if boxWidth > 60 {
@@ -376,17 +376,17 @@ func (a *App) render() {
 		boxHeight := 3
 		boxX := (termWidth - boxWidth) / 2
 		boxY := (termHeight - boxHeight) / 2
-		
+
 		a.inputBox.SetRect(boxX, boxY, boxX+boxWidth, boxY+boxHeight)
 		ui.Render(a.inputBox)
 	}
-	
+
 	// Render error if present
 	if a.errorMsg != "" {
 		a.errorBar.Text = fmt.Sprintf("Error: %s", a.errorMsg)
 		a.errorBar.SetRect(0, termHeight-3, termWidth, termHeight-2)
 		ui.Render(a.errorBar)
-		
+
 		// Clear error after 3 seconds
 		go func() {
 			time.Sleep(3 * time.Second)
@@ -401,10 +401,10 @@ func (a *App) render() {
 func (a *App) updateTable() {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	
+
 	// Headers
 	headers := []string{"", "Done", "Title"}
-	
+
 	// Rows
 	rows := [][]string{headers}
 	for i, task := range a.tasks {
@@ -412,21 +412,21 @@ func (a *App) updateTable() {
 		if i == a.selectedIdx {
 			selector = "❯❯"
 		}
-		
+
 		done := "☐"
 		if task.Done {
 			done = "✅"
 		}
-		
+
 		rows = append(rows, []string{selector, done, task.Title})
 	}
-	
+
 	if len(rows) == 1 {
 		rows = append(rows, []string{"", "", "No tasks yet. Press 'c' to create one!"})
 	}
-	
+
 	a.taskTable.Rows = rows
-	
+
 	// Highlight selected row
 	if a.selectedIdx >= 0 && a.selectedIdx < len(a.tasks) {
 		a.taskTable.RowStyles[a.selectedIdx+1] = ui.NewStyle(ui.ColorBlue, ui.ColorClear, ui.ModifierBold)
@@ -520,7 +520,7 @@ func parseTasks(result *ditto.QueryResult) []Task {
 		if err != nil {
 			continue
 		}
-		
+
 		// Get the value as a map
 		// Value is already typed as map[string]interface{} in the struct
 		if queryItem == nil || queryItem.Value == nil {
