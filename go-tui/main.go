@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -42,6 +43,9 @@ type App struct {
 	editingID    string
 	tasksChan    chan []Task
 	errorMsg     string
+	errorTimer   *time.Timer
+	ctx          context.Context
+	cancel       context.CancelFunc
 	mu           sync.RWMutex
 
 	// UI widgets
@@ -138,7 +142,10 @@ func main() {
 		"SELECT * FROM tasks WHERE deleted = false ORDER BY _id",
 		func(result *ditto.QueryResult) {
 			tasks := parseTasks(result)
-			app.tasksChan <- tasks
+			select {
+			case app.tasksChan <- tasks:
+			case <-app.ctx.Done():
+			}
 		},
 	)
 	if err != nil {
@@ -146,27 +153,32 @@ func main() {
 	}
 	app.observer = observer
 
-	// Force an initial query
-	go func() {
-		time.Sleep(200 * time.Millisecond)
-		result, err := d.Store().Execute("SELECT * FROM tasks WHERE deleted = false ORDER BY _id")
-		if err == nil && result != nil {
-			tasks := parseTasks(result)
-			app.tasksChan <- tasks
+	// Force an initial query synchronously
+	result, err := d.Store().Execute("SELECT * FROM tasks WHERE deleted = false ORDER BY _id")
+	if err != nil {
+		log.Printf("Failed to execute initial query: %v", err)
+	} else if result != nil {
+		tasks := parseTasks(result)
+		select {
+		case app.tasksChan <- tasks:
+		case <-app.ctx.Done():
 		}
-	}()
+	}
 
 	// Run the app
 	app.Run()
 }
 
 func NewApp(d *ditto.Ditto) *App {
+	ctx, cancel := context.WithCancel(context.Background())
 	app := &App{
 		ditto:       d,
 		tasks:       []Task{},
 		selectedIdx: 0,
 		inputMode:   NormalMode,
-		tasksChan:   make(chan []Task, 10),
+		tasksChan:   make(chan []Task, 1), // Buffer size 1 - latest update wins
+		ctx:         ctx,
+		cancel:      cancel,
 	}
 
 	// Create widgets
@@ -193,6 +205,8 @@ func NewApp(d *ditto.Ditto) *App {
 }
 
 func (a *App) Run() {
+	defer a.cancel() // Ensure context is canceled when Run exits
+
 	// Initial render
 	a.render()
 
@@ -202,6 +216,8 @@ func (a *App) Run() {
 	// Main event loop
 	for {
 		select {
+		case <-a.ctx.Done():
+			return
 		case e := <-uiEvents:
 			switch e.ID {
 			case "q", "<C-c>":
@@ -220,12 +236,7 @@ func (a *App) Run() {
 			}
 
 		case tasks := <-a.tasksChan:
-			a.mu.Lock()
-			a.tasks = tasks
-			if a.selectedIdx >= len(a.tasks) && len(a.tasks) > 0 {
-				a.selectedIdx = len(a.tasks) - 1
-			}
-			a.mu.Unlock()
+			a.updateTasks(tasks)
 			a.render()
 		}
 	}
@@ -261,13 +272,8 @@ func (a *App) handleNormalMode(e ui.Event) {
 		a.render()
 
 	case "<Enter>", " ":
-		a.mu.RLock()
-		if a.selectedIdx < len(a.tasks) {
-			task := a.tasks[a.selectedIdx]
-			a.mu.RUnlock()
+		if task, ok := a.getSelectedTask(); ok {
 			go a.toggleTask(task.ID, !task.Done)
-		} else {
-			a.mu.RUnlock()
 		}
 
 	case "c":
@@ -276,24 +282,16 @@ func (a *App) handleNormalMode(e ui.Event) {
 		a.render()
 
 	case "e":
-		a.mu.RLock()
-		if a.selectedIdx < len(a.tasks) {
-			task := a.tasks[a.selectedIdx]
+		if task, ok := a.getSelectedTask(); ok {
 			a.inputMode = EditMode
 			a.inputBuffer = task.Title
 			a.editingID = task.ID
+			a.render()
 		}
-		a.mu.RUnlock()
-		a.render()
 
 	case "d":
-		a.mu.RLock()
-		if a.selectedIdx < len(a.tasks) {
-			task := a.tasks[a.selectedIdx]
-			a.mu.RUnlock()
+		if task, ok := a.getSelectedTask(); ok {
 			go a.deleteTask(task.ID)
-		} else {
-			a.mu.RUnlock()
 		}
 
 	case "s":
@@ -387,14 +385,16 @@ func (a *App) render() {
 		a.errorBar.SetRect(0, termHeight-3, termWidth, termHeight-2)
 		ui.Render(a.errorBar)
 
-		// Clear error after 3 seconds
-		go func() {
-			time.Sleep(3 * time.Second)
+		// Clear error after 3 seconds using time.AfterFunc
+		if a.errorTimer != nil {
+			a.errorTimer.Stop()
+		}
+		a.errorTimer = time.AfterFunc(3*time.Second, func() {
 			a.mu.Lock()
 			a.errorMsg = ""
 			a.mu.Unlock()
 			a.render()
-		}()
+		})
 	}
 }
 
@@ -514,7 +514,8 @@ func parseTasks(result *ditto.QueryResult) []Task {
 		return []Task{}
 	}
 
-	tasks := make([]Task, 0, result.ItemCount())
+	// Don't pre-allocate when we're filtering
+	var tasks []Task
 	for i := 0; i < result.ItemCount(); i++ {
 		queryItem, err := result.GetItem(i)
 		if err != nil {
@@ -522,7 +523,6 @@ func parseTasks(result *ditto.QueryResult) []Task {
 		}
 
 		// Get the value as a map
-		// Value is already typed as map[string]interface{} in the struct
 		if queryItem == nil || queryItem.Value == nil {
 			continue
 		}
@@ -530,10 +530,10 @@ func parseTasks(result *ditto.QueryResult) []Task {
 
 		// Parse the task from the document
 		task := Task{
-			ID:      getString(item, "_id"),
-			Title:   getString(item, "title"),
-			Done:    getBool(item, "done"),
-			Deleted: getBool(item, "deleted"),
+			ID:      getStringValue(item, "_id"),
+			Title:   getStringValue(item, "title"),
+			Done:    getBoolValue(item, "done"),
+			Deleted: getBoolValue(item, "deleted"),
 		}
 		if !task.Deleted {
 			tasks = append(tasks, task)
@@ -542,15 +542,44 @@ func parseTasks(result *ditto.QueryResult) []Task {
 	return tasks
 }
 
-func getString(m map[string]interface{}, key string) string {
-	if v, ok := m[key].(string); ok {
+// getSelectedTask returns the currently selected task and whether the selection is valid
+func (a *App) getSelectedTask() (Task, bool) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	if a.selectedIdx < len(a.tasks) {
+		return a.tasks[a.selectedIdx], true
+	}
+	return Task{}, false
+}
+
+// updateTasks updates the task list and adjusts selection if needed
+func (a *App) updateTasks(tasks []Task) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.tasks = tasks
+	if a.selectedIdx >= len(a.tasks) && len(a.tasks) > 0 {
+		a.selectedIdx = len(a.tasks) - 1
+	}
+}
+
+// Generic helper for type assertions
+func getValueAs[T any](m map[string]interface{}, key string) (T, bool) {
+	if v, ok := m[key].(T); ok {
+		return v, true
+	}
+	var zero T
+	return zero, false
+}
+
+func getStringValue(m map[string]interface{}, key string) string {
+	if v, ok := getValueAs[string](m, key); ok {
 		return v
 	}
 	return ""
 }
 
-func getBool(m map[string]interface{}, key string) bool {
-	if v, ok := m[key].(bool); ok {
+func getBoolValue(m map[string]interface{}, key string) bool {
+	if v, ok := getValueAs[bool](m, key); ok {
 		return v
 	}
 	return false
