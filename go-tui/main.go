@@ -82,7 +82,7 @@ func main() {
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Initialize Ditto with config-based API
+	// Initialize Ditto with new Server connection API
 	config := &ditto.Config{
 		DatabaseID:           appID,
 		PersistenceDirectory: tempDir,
@@ -98,6 +98,42 @@ func main() {
 		log.Fatal("Failed to open Ditto:", err)
 	}
 	defer d.Close()
+
+	// Set up authentication handler for development mode
+	if auth := d.Authenticator(); auth != nil {
+		err = auth.SetExpirationHandler(func(dit *ditto.Ditto, timeUntilExpiration time.Duration) {
+			log.Printf("Expiration handler called with time: %v", timeUntilExpiration)
+			// For development mode, login with the playground token
+			provider := ditto.AuthenticationProviderDevelopment()
+			err := dit.Authenticator().Login(token, provider, func(clientInfo map[string]interface{}, err error) {
+				if err != nil {
+					log.Printf("Login failed: %v", err)
+				} else {
+					log.Printf("Login successful")
+				}
+			})
+			if err != nil {
+				log.Printf("Failed to initiate login: %v", err)
+			}
+		})
+		if err != nil {
+			log.Fatal("Failed to set expiration handler:", err)
+		}
+		
+		// Explicitly login after setting handler
+		log.Printf("Logging in with development token...")
+		provider := ditto.AuthenticationProviderDevelopment()
+		err = auth.Login(token, provider, func(clientInfo map[string]interface{}, err error) {
+			if err != nil {
+				log.Printf("Initial login failed: %v", err)
+			} else {
+				log.Printf("Initial login successful: %v", clientInfo)
+			}
+		})
+		if err != nil {
+			log.Printf("Failed to initiate initial login: %v", err)
+		}
+	}
 
 	// Configure transport
 	err = d.UpdateTransportConfig(func(tc *ditto.TransportConfig) {
@@ -116,7 +152,7 @@ func main() {
 		log.Printf("Warning: Failed to disable sync with v3: %v", err)
 	}
 
-	// Start sync
+	// Start sync (authentication handler will be called automatically if needed)
 	if err := d.StartSync(); err != nil {
 		log.Fatal("Failed to start sync:", err)
 	}
