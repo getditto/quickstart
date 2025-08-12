@@ -14,30 +14,30 @@ import org.junit.Before
  */
 @RunWith(AndroidJUnit4::class)
 class TasksUITest {
-    
+
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
-    
+
     @Before
     fun setUp() {
         // Wait for the UI to settle
         composeTestRule.waitForIdle()
     }
-    
+
     @Test
     fun testAddTaskFlow() {
         // Test adding a new task
         try {
             // Click add button - android-kotlin uses "New Task" text
             composeTestRule.onNode(
-                hasContentDescription("Add") or 
+                hasContentDescription("Add") or
                 hasText("New Task", ignoreCase = true) or
                 hasText("+")
             ).performClick()
-            
+
             // Wait for dialog or new screen
             composeTestRule.waitForIdle()
-            
+
             // Look for input field - android-kotlin uses "title" field
             val inputField = composeTestRule.onNode(
                 hasSetTextAction() and (
@@ -47,11 +47,11 @@ class TasksUITest {
                     hasText("Enter task title", ignoreCase = true, substring = true)
                 )
             )
-            
+
             if (inputField.isDisplayed()) {
                 // Type task text
                 inputField.performTextInput("Test Task from BrowserStack")
-                
+
                 // Look for save/confirm button
                 composeTestRule.onNode(
                     hasText("Save", ignoreCase = true) or
@@ -66,7 +66,7 @@ class TasksUITest {
             println("Add task flow different than expected: ${e.message}")
         }
     }
-    
+
     @Test
     fun testMemoryLeaks() {
         // Perform multiple UI operations to check for memory leaks
@@ -81,17 +81,17 @@ class TasksUITest {
                 // Ignore if no clickable elements
             }
         }
-        
+
         // Force garbage collection
         System.gc()
         Thread.sleep(100)
-        
+
         // Check memory usage
         val runtime = Runtime.getRuntime()
         val usedMemory = runtime.totalMemory() - runtime.freeMemory()
         val maxMemory = runtime.maxMemory()
         val memoryUsagePercent = (usedMemory.toFloat() / maxMemory.toFloat()) * 100
-        
+
         println("Memory usage: ${memoryUsagePercent.toInt()}%")
         assert(memoryUsagePercent < 80) { "Memory usage too high: ${memoryUsagePercent}%" }
     }
