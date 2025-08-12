@@ -83,7 +83,7 @@ func main() {
 	defer os.RemoveAll(tempDir)
 
 	// Initialize Ditto with new Server connection API
-	config := &ditto.Config{
+	config := &ditto.DittoConfig{
 		DatabaseID:           appID,
 		PersistenceDirectory: tempDir,
 		Connect: &ditto.OnlinePlaygroundConnect{
