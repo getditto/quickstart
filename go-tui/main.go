@@ -78,29 +78,33 @@ func main() {
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create OnlinePlayground identity
-	identity := ditto.NewOnlinePlaygroundIdentity(appID, token).
-		WithCustomAuthURL(authURL).
-		WithCustomWebsocketURL(websocketURL).
-		WithCloudSync(false)
+	// Initialize Ditto with config-based API
+	config := &ditto.Config{
+		DatabaseID:           appID,
+		PersistenceDirectory: tempDir,
+		Connect: &ditto.OnlinePlaygroundConnect{
+			AppID:         appID,
+			Token:         token,
+			CustomAuthURL: authURL,
+		},
+	}
 
-	// Initialize Ditto
-	d, err := ditto.OpenWithIdentity(tempDir, identity)
+	d, err := ditto.Open(config)
 	if err != nil {
 		log.Fatal("Failed to open Ditto:", err)
 	}
 	defer d.Close()
 
 	// Configure transport
-	transportCfg := ditto.NewTransportConfig()
-	transportCfg.PeerToPeer.BluetoothLE.Enabled = true
-	transportCfg.PeerToPeer.LAN.Enabled = true
-	transportCfg.PeerToPeer.LAN.MDNSEnabled = true
-	transportCfg.PeerToPeer.LAN.MulticastEnabled = true
-	transportCfg.Connect.WebsocketURLs = []string{websocketURL}
-	
-	if err := d.SetTransportConfig(transportCfg); err != nil {
-		log.Fatal("Failed to set transport config:", err)
+	err = d.UpdateTransportConfig(func(tc *ditto.TransportConfig) {
+		tc.PeerToPeer.BluetoothLE.Enabled = true
+		tc.PeerToPeer.LAN.Enabled = true
+		tc.PeerToPeer.LAN.MDNSEnabled = true
+		tc.PeerToPeer.LAN.MulticastEnabled = true
+		tc.SetWebsocketURLs([]string{websocketURL})
+	})
+	if err != nil {
+		log.Fatal("Failed to configure transport:", err)
 	}
 
 	// Disable sync with v3 peers (required for DQL)

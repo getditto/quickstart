@@ -11,7 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 )
 
-replace github.com/getditto/ditto-go-sdk => ../../ditto/sdks/go
+replace github.com/getditto/ditto-go-sdk => /Users/kristopherjohnson/work/go-sdk/sdks/go
 
 require (
 	github.com/fxamacker/cbor/v2 v2.5.0 // indirect
