@@ -56,9 +56,19 @@ type App struct {
 }
 
 func main() {
-	// Suppress Ditto logs
-	os.Setenv("RUST_LOG", "warn")
-	os.Setenv("RUST_BACKTRACE", "0")
+	// Platform-specific stderr redirection (Unix: /dev/null, Windows: no-op for now)
+	redirectStderr()
+
+	// Also redirect Go's log output to a file for debugging
+	logPath := filepath.Join(os.TempDir(), "ditto-tasks-termui.log")
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		log.SetOutput(logFile)
+		defer logFile.Close()
+	}
+
+	// Set Ditto log level to Error to suppress most logs
+	ditto.SetLogLevel(ditto.LogLevelError)
 
 	// Load environment variables
 	if err := loadEnv(); err != nil {
@@ -117,7 +127,7 @@ func main() {
 		if err != nil {
 			log.Fatal("Failed to set expiration handler:", err)
 		}
-		
+
 		// Explicitly login after setting handler
 		log.Printf("Logging in with development token...")
 		provider := ditto.AuthenticationProviderDevelopment()
