@@ -65,10 +65,12 @@ func main() {
 	if err == nil {
 		log.SetOutput(logFile)
 		defer logFile.Close()
+	} else {
+		log.Printf("Failed to open log file: %v", err)
 	}
 
 	// Set Ditto log level to Error to suppress most logs
-	ditto.SetLogLevel(ditto.LogLevelError)
+	// ditto.SetLogLevel(ditto.LogLevelError) // Commented out - causing segfault
 
 	// Load environment variables
 	if err := loadEnv(); err != nil {
@@ -129,7 +131,6 @@ func main() {
 		}
 
 		// Explicitly login after setting handler
-		log.Printf("Logging in with development token...")
 		provider := ditto.AuthenticationProviderDevelopment()
 		err = auth.Login(token, provider, func(clientInfo map[string]interface{}, err error) {
 			if err != nil {
@@ -197,17 +198,7 @@ func main() {
 	}
 	app.observer = observer
 
-	// Force an initial query synchronously
-	result, err := d.Store().Execute("SELECT * FROM tasks WHERE deleted = false ORDER BY _id")
-	if err != nil {
-		log.Printf("Failed to execute initial query: %v", err)
-	} else if result != nil {
-		tasks := parseTasks(result)
-		select {
-		case app.tasksChan <- tasks:
-		case <-app.ctx.Done():
-		}
-	}
+	// Skip initial query for now - let observer handle it
 
 	// Run the app
 	app.Run()
