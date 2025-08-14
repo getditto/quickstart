@@ -69,7 +69,7 @@ android {
     namespace = "live.ditto.quickstart.tasks"
     compileSdk = 35
     //ndkVersion = "23.1.7779620"  // for Ditto SDK 4.8.x versions
-    ndkVersion = "27.2.12479018" // for Ditto SDK 4.9.x versions
+    ndkVersion = "27.2.12479018" // for Ditto SDK 4.11.x versions
 
     defaultConfig {
         applicationId = "live.ditto.quickstart.taskscpp"
@@ -135,7 +135,7 @@ android {
 
 dependencies {
     // Ditto C++ SDK for Android
-    implementation("live.ditto:ditto-cpp:4.11.1")
+    implementation("live.ditto:ditto-cpp:4.11.3-rc.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
