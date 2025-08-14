@@ -1107,10 +1107,10 @@
     "@deno/shim-deno-test" "^0.4.0"
     which "^2.0.2"
 
-"@dittolive/ditto@4.11.1":
-  version "4.11.1"
-  resolved "https://registry.npmjs.org/@dittolive/ditto/-/ditto-4.11.1.tgz"
-  integrity sha512-Vp7ItuZE8BZGIwEPIdnv2WbILH1cb37Qjt5y9NLMhEDxdEgd56zXnQ3NSBuAk9YYXFegizhd51KJ8/LUchMxsQ==
+"@dittolive/ditto@4.11.3-rc.1":
+  version "4.11.3-rc.1"
+  resolved "https://registry.npmjs.org/@dittolive/ditto/-/ditto-4.11.3-rc.1.tgz"
+  integrity sha512-YKaYuxbGi7clcblOar79p0/8lwklUvnjb5Z4Yzp6NjPrCaZyf+37TkKHsgQLhmBsnNp4sfXu7IW5TmIA5SDKmQ==
   dependencies:
     "@expo/config-plugins" "^9.0.11"
     cbor-redux "^1.0.0"
@@ -5555,51 +5555,6 @@ lightningcss-darwin-arm64@1.27.0:
   version "1.27.0"
   resolved "https://registry.npmjs.org/lightningcss-darwin-arm64/-/lightningcss-darwin-arm64-1.27.0.tgz"
   integrity sha512-Gl/lqIXY+d+ySmMbgDf0pgaWSqrWYxVHoc88q+Vhf2YNzZ8DwoRzGt5NZDVqqIW5ScpSnmmjcgXP87Dn2ylSSQ==
-
-lightningcss-darwin-x64@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-darwin-x64/-/lightningcss-darwin-x64-1.27.0.tgz"
-  integrity sha512-0+mZa54IlcNAoQS9E0+niovhyjjQWEMrwW0p2sSdLRhLDc8LMQ/b67z7+B5q4VmjYCMSfnFi3djAAQFIDuj/Tg==
-
-lightningcss-freebsd-x64@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-freebsd-x64/-/lightningcss-freebsd-x64-1.27.0.tgz"
-  integrity sha512-n1sEf85fePoU2aDN2PzYjoI8gbBqnmLGEhKq7q0DKLj0UTVmOTwDC7PtLcy/zFxzASTSBlVQYJUhwIStQMIpRA==
-
-lightningcss-linux-arm-gnueabihf@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-linux-arm-gnueabihf/-/lightningcss-linux-arm-gnueabihf-1.27.0.tgz"
-  integrity sha512-MUMRmtdRkOkd5z3h986HOuNBD1c2lq2BSQA1Jg88d9I7bmPGx08bwGcnB75dvr17CwxjxD6XPi3Qh8ArmKFqCA==
-
-lightningcss-linux-arm64-gnu@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-linux-arm64-gnu/-/lightningcss-linux-arm64-gnu-1.27.0.tgz"
-  integrity sha512-cPsxo1QEWq2sfKkSq2Bq5feQDHdUEwgtA9KaB27J5AX22+l4l0ptgjMZZtYtUnteBofjee+0oW1wQ1guv04a7A==
-
-lightningcss-linux-arm64-musl@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-linux-arm64-musl/-/lightningcss-linux-arm64-musl-1.27.0.tgz"
-  integrity sha512-rCGBm2ax7kQ9pBSeITfCW9XSVF69VX+fm5DIpvDZQl4NnQoMQyRwhZQm9pd59m8leZ1IesRqWk2v/DntMo26lg==
-
-lightningcss-linux-x64-gnu@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-linux-x64-gnu/-/lightningcss-linux-x64-gnu-1.27.0.tgz"
-  integrity sha512-Dk/jovSI7qqhJDiUibvaikNKI2x6kWPN79AQiD/E/KeQWMjdGe9kw51RAgoWFDi0coP4jinaH14Nrt/J8z3U4A==
-
-lightningcss-linux-x64-musl@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-linux-x64-musl/-/lightningcss-linux-x64-musl-1.27.0.tgz"
-  integrity sha512-QKjTxXm8A9s6v9Tg3Fk0gscCQA1t/HMoF7Woy1u68wCk5kS4fR+q3vXa1p3++REW784cRAtkYKrPy6JKibrEZA==
-
-lightningcss-win32-arm64-msvc@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-win32-arm64-msvc/-/lightningcss-win32-arm64-msvc-1.27.0.tgz"
-  integrity sha512-/wXegPS1hnhkeG4OXQKEMQeJd48RDC3qdh+OA8pCuOPCyvnm/yEayrJdJVqzBsqpy1aJklRCVxscpFur80o6iQ==
-
-lightningcss-win32-x64-msvc@1.27.0:
-  version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.27.0.tgz"
-  integrity sha512-/OJLj94Zm/waZShL8nB5jsNj3CfNATLCTyFxZyouilfTmSoLDX7VlVAmhPHoZWVFp4vdmoiEbPEYC8HID3m6yw==
 
 lightningcss@~1.27.0:
   version "1.27.0"
