@@ -6,6 +6,12 @@ the Ditto SDK in a client-side app running in the browser.
 
 ![JS Web Ditto Screenshot](../.github/assets/js-web-ditto-screenshot.png)
 
+## Documentation
+
+- [Javascript Install Guide](https://docs.ditto.live/sdk/latest/install-guides/js)
+- [Javascript API Reference](https://software.ditto.live/js/Ditto/4.11.1/api-reference/)
+- [Javascript Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
+
 ## Getting Started
 
 To get started, you'll first need to create an app in the [Ditto Portal][0]

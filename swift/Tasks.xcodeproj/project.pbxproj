@@ -74,6 +74,7 @@
 			buildConfigurationList = 41F869982CECF42600DC7268 /* Build configuration list for PBXNativeTarget "Tasks" */;
 			buildPhases = (
 				4170A85A2CED3ADB00043F5A /* Generate Env.swift */,
+				B383DA782E32665A00814FC7 /* SwiftLint */,
 				41F869862CECF42500DC7268 /* Sources */,
 				41F869872CECF42500DC7268 /* Frameworks */,
 				41F869882CECF42500DC7268 /* Resources */,
@@ -163,6 +164,25 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/buildEnv.sh\" \"${SRCROOT}/../.env\" \"${SRCROOT}/${PROJECT}\"\n\n";
 		};
+		B383DA782E32665A00814FC7 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"~/.brew/bin:/opt/homebrew/bin:$PATH\"\n\nif command -v swiftlint >/dev/null 2>&1\nthen\n    swiftlint\nelse\n    echo \"warning: `swiftlint` command not found - See https://github.com/realm/SwiftLint#installation for installation instructions.\"\nfi\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -213,7 +233,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -276,7 +296,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -394,7 +414,7 @@
 			repositoryURL = "https://github.com/getditto/DittoSwiftPackage";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 4.10.0;
+				minimumVersion = 4.11.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

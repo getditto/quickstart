@@ -10,8 +10,6 @@ class TasksListScreenViewModel: ObservableObject {
     private(set) var taskToEdit: TaskModel?
 
     private let ditto = DittoManager.shared.ditto
-    private let dittoSync = DittoManager.shared.ditto.sync
-    private let dittoStore = DittoManager.shared.ditto.store
     private var subscription: DittoSyncSubscription?
     private var storeObserver: DittoStoreObserver?
 
@@ -24,11 +22,11 @@ class TasksListScreenViewModel: ObservableObject {
 
         // Register observer, which runs against the local database on this peer
         // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-        storeObserver = try? dittoStore.registerObserver(query: observerQuery) {
+        storeObserver = try? ditto.store.registerObserver(query: observerQuery) {
             [weak self] result in
             guard let self = self else { return }
             self.tasks = result.items.compactMap {
-                TaskModel($0.jsonString())
+                TaskModel($0.jsonData())
             }
         }
     }
@@ -59,7 +57,7 @@ class TasksListScreenViewModel: ObservableObject {
 
             // Register a subscription, which determines what data syncs to this peer
             // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-            subscription = try dittoSync.registerSubscription(query: subscriptionQuery)
+            subscription = try ditto.sync.registerSubscription(query: subscriptionQuery)
         } catch {
             print(
                 "TaskListScreenVM.\(#function) - ERROR starting sync operations: \(error.localizedDescription)"
@@ -80,12 +78,12 @@ class TasksListScreenViewModel: ObservableObject {
             let done = !task.done
             let query = """
                 UPDATE tasks
-                SET done = :done 
+                SET done = :done
                 WHERE _id == :_id
                 """
 
             do {
-                try await dittoStore.execute(
+                try await ditto.store.execute(
                     query: query,
                     arguments: ["done": done, "_id": task._id]
                 )
@@ -108,13 +106,13 @@ class TasksListScreenViewModel: ObservableObject {
                 """
 
             do {
-                try await dittoStore.execute(
+                try await ditto.store.execute(
                     query: query,
                     arguments: [
                         "title": task.title,
                         "done": task.done,
                         "deleted": task.deleted,
-                        "_id": task._id,
+                        "_id": task._id
                     ]
                 )
             } catch {
@@ -131,7 +129,7 @@ class TasksListScreenViewModel: ObservableObject {
             let query = "INSERT INTO tasks DOCUMENTS (:newTask)"
 
             do {
-                try await dittoStore.execute(
+                try await ditto.store.execute(
                     query: query, arguments: ["newTask": newTask])
             } catch {
                 print(
@@ -145,7 +143,7 @@ class TasksListScreenViewModel: ObservableObject {
         Task {
             let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
             do {
-                try await dittoStore.execute(
+                try await ditto.store.execute(
                     query: query, arguments: ["_id": task._id])
             } catch {
                 print(
@@ -169,12 +167,12 @@ class TasksListScreenViewModel: ObservableObject {
                     title: "Schedule dentist appointment"),
                 TaskModel(
                     _id: "38411F1B-6B49-4346-90C3-0B16CE97E174",
-                    title: "Pay bills"),
+                    title: "Pay bills")
             ]
 
             for task in initialTasks {
                 do {
-                    try await dittoStore.execute(
+                    try await ditto.store.execute(
                         query: "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
                         arguments: [
                             "task":
@@ -182,7 +180,7 @@ class TasksListScreenViewModel: ObservableObject {
                                     "_id": task._id,
                                     "title": task.title,
                                     "done": task.done,
-                                    "deleted": task.deleted,
+                                    "deleted": task.deleted
                                 ]
                         ]
                     )
@@ -208,7 +206,7 @@ class TasksListScreenViewModel: ObservableObject {
 
 /// Main view of the app, which displays a list of tasks
 struct TasksListScreen: View {
-    private static let SYNC_ENABLED_KEY = "syncEnabled"
+    private static let isSyncEnabledKey = "syncEnabled"
 
     @StateObject var viewModel = TasksListScreenViewModel()
 
@@ -262,12 +260,12 @@ struct TasksListScreen: View {
                         Spacer()
                         Button(action: {
                             viewModel.onNewTask()
-                        }) {
+                        }, label: {
                             HStack {
                                 Image(systemName: "plus")
                                 Text("New Task")
                             }
-                        }
+                        })
                         .buttonStyle(.borderedProminent)
                         .padding(.bottom)
                     }
@@ -304,15 +302,15 @@ struct TasksListScreen: View {
     }
 
     private static func loadSyncEnabledState() -> Bool {
-        if UserDefaults.standard.object(forKey: SYNC_ENABLED_KEY) == nil {
+        if UserDefaults.standard.object(forKey: isSyncEnabledKey) == nil {
             return true
         } else {
-            return UserDefaults.standard.bool(forKey: SYNC_ENABLED_KEY)
+            return UserDefaults.standard.bool(forKey: isSyncEnabledKey)
         }
     }
 
     private static func saveSyncEnabledState(_ state: Bool) {
-        UserDefaults.standard.set(state, forKey: SYNC_ENABLED_KEY)
+        UserDefaults.standard.set(state, forKey: isSyncEnabledKey)
         UserDefaults.standard.synchronize()
     }
 }

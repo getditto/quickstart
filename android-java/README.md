@@ -13,7 +13,7 @@ After you have completed the [common prerequisites] you will need the following:
 ## Documentation
 
 - [Install Guide](https://docs.ditto.live/sdk/latest/install-guides/java/android)
-- [API Reference](https://software.ditto.live/android/Ditto/4.8.2/api-reference/)
+- [API Reference](https://software.ditto.live/android/Ditto/4.11.1/api-reference/)
 - [SDK Release Notes](https://docs.ditto.live/sdk/latest/release-notes/java)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -28,25 +28,18 @@ build and run the app by following these steps:
 3. Launch Android Studio and open the `quickstart/android-java` directory.
 4. In Android Studio, select a connected Android device, or create and launch an Android emulator and select it as the destination, then choose the **Run > Run 'app'** menu item.
 
-The app will build and run on the selected device or emulator.  You can add,
-edit, and delete tasks in the app.
+The app will build and run on the selected device or emulator.  You can add, edit, and delete tasks in the app.
 
-If you run the app on additional devices or emulators, the data will be synced
-between them.
+If you run the app on additional devices or emulators, the data will be synced between them.
 
 Compatible with Android Automotive OS (AAOS)
 
 ## A Guided Tour of the Android App Source Code
 
-The Android app is a simple to-do list app that demonstrates how to use the
-Ditto Android SDK to sync data with other devices.
-It is implemented using Java  and
-[Jetpack Compose](https://developer.android.com/compose), which is a modern
-toolkit for building native Android UI.
+The Android app is a simple to-do list app that demonstrates how to use the Ditto Android SDK to sync data with other devices.
+It is implemented using Java and Android Views using an Activity and a programmatically implemented RecyclerView.
 
-It is assumed that the reader is familiar with Android development and with
-Compose, but needs some guidance on how to use Ditto.  The following is a
-summary of the key parts of integration with Ditto.
+It is assumed that the reader is familiar with Android development and with Java/Activity/RecyclerView, but needs some guidance on how to use Ditto.  The following is a summary of the key parts of integration with Ditto.
 
 ### Adding the Ditto SDK
 
@@ -61,7 +54,7 @@ This line in `gradle/libs.versions.toml` specifies which version of the Ditto
 SDK to use:
 
 ```kotlin
-ditto = "4.10.0"
+ditto = "4.11.1"
 ```
 
 To use a newer version of the SDK, change the version number on this line.

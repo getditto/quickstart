@@ -50,13 +50,7 @@ flutter pub get
 - Navigate to your application and obtain the App ID and Playground Token (see [Sync Credentials](https://docs.ditto.live/get-started/sync-credentials)
  for more details)
 
-Edit the files in `lib/main.dart` with the appID and playground token:
-
-```dart
-const appID = "<replace with your app ID>";
-const token = "<replace with your playground token>";
-```
-
+Copy the `.env.sample` file at the top level of the quickstart repo to `.env` and put it into the flutter_app directory (same directory as pubspec.yaml) and add your app ID, online playground token, authUrl and websocket URL.  The app will crash if you don't provide an .env file.
 
 ### 4. Run the Application
 
@@ -81,7 +75,7 @@ Please choose one (or "q" to quit):
 #### Run the Application on iOS
 
 > [!NOTE]
-> If you are going to use a physical iPhone, you will need to update the Team under Signing & Capabilities in XCode.  You can open the ios/Runnder.xcodeproj file in XCode and then set your team from the Runner Target -> Singing & Capabilities tab.
+> If you are going to use a physical iPhone, you will need to update the Team under Signing & Capabilities in XCode.  You can open the ios/Runner.xcodeproj file in XCode and then set your team from the Runner Target -> Signing & Capabilities tab.
 >
 
 - Ensure that cocoapods is up to date

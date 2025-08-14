@@ -41,7 +41,9 @@
           "bluetoothUsageDescription": "This app uses Bluetooth to connect to a Ditto device.",
           "localNetworkUsageDescription": "This app uses location services to connect to a Ditto device."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

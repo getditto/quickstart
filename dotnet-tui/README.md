@@ -16,7 +16,7 @@
 
 ## .NET Console App
 
-These commands will build and run the console app on Windows, macOS, and Linux:
+These commands will build and run the console app on Windows, macOS, and Linux (note may not run in Warp):
 
 ```
 cd DittoDotNetTasksConsole

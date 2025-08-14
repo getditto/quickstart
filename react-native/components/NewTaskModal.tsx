@@ -1,16 +1,23 @@
 import React from 'react';
-import { useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View, TouchableOpacity } from 'react-native';
+import {useState} from 'react';
+import {
+  Button,
+  Modal,
+  ModalProps,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 type NewTaskModalProps = {
-  visible: boolean;
-  onSubmit: (taskName: string) => void,
-  onClose?: () => void,
-}
+  onSubmit: (taskName: string) => void;
+  onClose?: () => void;
+};
 
 type Props = NewTaskModalProps;
 
-const NewTaskModal: React.FC<Props> = ({ visible, onSubmit, onClose }) => {
+const NewTaskModal: React.FC<Props> = ({onSubmit, onClose, ...props}) => {
   const [input, setInput] = useState('');
 
   const submit = () => {
@@ -25,17 +32,18 @@ const NewTaskModal: React.FC<Props> = ({ visible, onSubmit, onClose }) => {
   }
 
   return (
-    <View style={styles.modalOverlay}>
-      <TouchableOpacity 
-        style={styles.backdrop} 
-        activeOpacity={1} 
-        onPress={onClose}
-      />
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>New Task</Text>
-        <TextInput style={styles.input} value={input} onChangeText={setInput} />
-        <Button title="Submit" onPress={submit} />
-        <Button title="Close" onPress={onClose} />
+    <Modal animationType="slide" {...props}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>New Task</Text>
+          <TextInput
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+          />
+          <Button title="Submit" onPress={submit} />
+          <Button title="Close" onPress={onClose} />
+        </View>
       </View>
     </View>
   );

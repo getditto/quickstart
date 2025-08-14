@@ -8,12 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		3C25368E872ED62DD7F18F9B /* libPods-reactnativeexpo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D99670F1A5BA3D103C76F4C3 /* libPods-reactnativeexpo.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		694C8267C3B3D6780520B071 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E839783DC0EC32DAC58F3D9B /* ExpoModulesProvider.swift */; };
-		87D123DA1ECE06671A11443A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 03BA7961B5924A1531A558A3 /* PrivacyInfo.xcprivacy */; };
+		5ECD1FB5015815681FD016C5 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B40C404D15D0385A145835E /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		EFCD5BCC3458EE075118B746 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3CAF0B1E81BF077E2B817C30 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		FEAEF32C77FCC4EA959F54D4 /* libPods-reactnativeexpo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 168F2E1A2C9DAE103F6DA027 /* libPods-reactnativeexpo.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,12 +21,13 @@
 		13B07F961A680F5B00A75B9A /* reactnativeexpo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = reactnativeexpo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = reactnativeexpo/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = reactnativeexpo/Info.plist; sourceTree = "<group>"; };
-		168F2E1A2C9DAE103F6DA027 /* libPods-reactnativeexpo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-reactnativeexpo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		864AC78955E245A9F32D0EE8 /* Pods-reactnativeexpo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-reactnativeexpo.release.xcconfig"; path = "Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo.release.xcconfig"; sourceTree = "<group>"; };
+		3CAF0B1E81BF077E2B817C30 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = reactnativeexpo/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		5B40C404D15D0385A145835E /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-reactnativeexpo/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = reactnativeexpo/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		E839783DC0EC32DAC58F3D9B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-reactnativeexpo/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		EAF549E2A6F1D0F366F3D283 /* Pods-reactnativeexpo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-reactnativeexpo.debug.xcconfig"; path = "Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo.debug.xcconfig"; sourceTree = "<group>"; };
+		BBC413C954C223DD8DA039CE /* Pods-reactnativeexpo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-reactnativeexpo.debug.xcconfig"; path = "Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo.debug.xcconfig"; sourceTree = "<group>"; };
+		C7A7A02EA2CBE91EE8FCBFDD /* Pods-reactnativeexpo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-reactnativeexpo.release.xcconfig"; path = "Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo.release.xcconfig"; sourceTree = "<group>"; };
+		D99670F1A5BA3D103C76F4C3 /* libPods-reactnativeexpo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-reactnativeexpo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = reactnativeexpo/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* reactnativeexpo-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "reactnativeexpo-Bridging-Header.h"; path = "reactnativeexpo/reactnativeexpo-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,7 +38,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FEAEF32C77FCC4EA959F54D4 /* libPods-reactnativeexpo.a in Frameworks */,
+				3C25368E872ED62DD7F18F9B /* libPods-reactnativeexpo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,7 +62,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				03BA7961B5924A1531A558A3 /* PrivacyInfo.xcprivacy */,
+				3CAF0B1E81BF077E2B817C30 /* PrivacyInfo.xcprivacy */,
 			);
 			name = reactnativeexpo;
 			sourceTree = "<group>";
@@ -70,7 +71,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				168F2E1A2C9DAE103F6DA027 /* libPods-reactnativeexpo.a */,
+				D99670F1A5BA3D103C76F4C3 /* libPods-reactnativeexpo.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -97,8 +98,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				CDA88A03C1190FBD29D33623 /* Pods */,
-				0DD31B174E41DBD2E328516E /* ExpoModulesProviders */,
+				A6B4B7BB981AE97B5FCB0548 /* Pods */,
+				F77FD87302EA39B4BE85D148 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -113,6 +114,16 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		A6B4B7BB981AE97B5FCB0548 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				BBC413C954C223DD8DA039CE /* Pods-reactnativeexpo.debug.xcconfig */,
+				C7A7A02EA2CBE91EE8FCBFDD /* Pods-reactnativeexpo.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -122,14 +133,20 @@
 			path = reactnativeexpo/Supporting;
 			sourceTree = "<group>";
 		};
-		CDA88A03C1190FBD29D33623 /* Pods */ = {
+		E54D3E5F9C1C20D6DF528B3D /* reactnativeexpo */ = {
 			isa = PBXGroup;
 			children = (
-				EAF549E2A6F1D0F366F3D283 /* Pods-reactnativeexpo.debug.xcconfig */,
-				864AC78955E245A9F32D0EE8 /* Pods-reactnativeexpo.release.xcconfig */,
+				5B40C404D15D0385A145835E /* ExpoModulesProvider.swift */,
 			);
-			name = Pods;
-			path = Pods;
+			name = reactnativeexpo;
+			sourceTree = "<group>";
+		};
+		F77FD87302EA39B4BE85D148 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				E54D3E5F9C1C20D6DF528B3D /* reactnativeexpo */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,13 +157,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "reactnativeexpo" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				10DA2718E97C518D1A30042C /* [Expo] Configure project */,
+				ED6794F828F376BDBB715F7C /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				CA135E07FD854CDA29DC103D /* [CP] Embed Pods Frameworks */,
+				2D8F7B104A7E88DA71E72C60 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +213,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				87D123DA1ECE06671A11443A /* PrivacyInfo.xcprivacy in Resources */,
+				EFCD5BCC3458EE075118B746 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,24 +257,25 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		10DA2718E97C518D1A30042C /* [Expo] Configure project */ = {
+		2D8F7B104A7E88DA71E72C60 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputFileListPaths = (
-			);
 			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/DittoReactNativeIOS/DittoReactNative.framework/DittoReactNative",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
 			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
+			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/DittoReactNative.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-reactnativeexpo/expo-configure-project.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -293,25 +311,24 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		CA135E07FD854CDA29DC103D /* [CP] Embed Pods Frameworks */ = {
+		ED6794F828F376BDBB715F7C /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/DittoReactNativeIOS/DittoReactNative.framework/DittoReactNative",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			inputFileListPaths = (
 			);
-			name = "[CP] Embed Pods Frameworks";
+			inputPaths = (
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
 			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/DittoReactNative.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-reactnativeexpo/Pods-reactnativeexpo-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-reactnativeexpo/expo-configure-project.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -321,7 +338,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				694C8267C3B3D6780520B071 /* ExpoModulesProvider.swift in Sources */,
+				5ECD1FB5015815681FD016C5 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -330,7 +347,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = EAF549E2A6F1D0F366F3D283 /* Pods-reactnativeexpo.debug.xcconfig */;
+			baseConfigurationReference = BBC413C954C223DD8DA039CE /* Pods-reactnativeexpo.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -366,7 +383,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 864AC78955E245A9F32D0EE8 /* Pods-reactnativeexpo.release.xcconfig */;
+			baseConfigurationReference = C7A7A02EA2CBE91EE8FCBFDD /* Pods-reactnativeexpo.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
