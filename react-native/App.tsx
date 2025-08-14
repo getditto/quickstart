@@ -144,45 +144,25 @@ const App = () => {
   const initDitto = async () => {
     try {
       // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
-     // 1. Online Playground (server + pre-configured token - easiest for development)
       const databaseId = DITTO_APP_ID;
       const playgroundToken = DITTO_PLAYGROUND_TOKEN;
 
       const connectConfig: DittoConfigConnect = {
         mode: 'server',
-        url: `https://${databaseId}.cloud.ditto.live`, // Auto-generated from app ID
+        url: `https://${databaseId}.cloud.ditto.live`,
       };
-
-      // 2. Online with Authentication (server + login flow for production)
-      // const connectConfig: DittoConfigConnect = {
-      //   mode: 'server',
-      //   url: 'https://your-app-id.cloud.ditto.live',
-      // };
-
-      // 3. Local Development (P2P only, no server)
-      // const connectConfig: DittoConfigConnect = {
-      //   mode: 'smallPeersOnly',
-      // };
-
-      // 4. P2P Production (P2P with shared key)
-      // const connectConfig: DittoConfigConnect = {
-      //   mode: 'smallPeersOnly',
-      //   privateKey: 'your-base64-encoded-private-key-here',
-      // };
 
       const config = new DittoConfig(databaseId, connectConfig, "newfodlerxx");
 
       ditto.current = await Ditto.open(config);
 
-      // Disable local transports on macOS to avoid permission issues
+      ditto.current.updateTransportConfig(config => {
+        if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
+          config.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+        }
+        return config;
+      });
 
-      // if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
-      //   console.log('Using custom WebSocket URL:', DITTO_WEBSOCKET_URL);
-      //   ditto.current.updateTransportConfig(config => {
-      //     config.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
-      //     return config;
-      //   });
-      // }
 
       if (connectConfig.mode === 'server') {
         await ditto.current.auth.setExpirationHandler(async (ditto, timeUntilExpiration) => {
@@ -215,35 +195,20 @@ const App = () => {
 
       ditto.current.sync.start();
 
-      // Disable DQL strict mode
-      // https://docs.ditto.live/dql/strict-mode
-      await ditto.current.store.execute(
-        'ALTER SYSTEM SET DQL_STRICT_MODE = false',
-      );
+      await ditto.current.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
 
-      ditto.current.startSync();
+      taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
-      // Register a subscription, which determines what data syncs to this peer
-      // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-      taskSubscription.current = ditto.current.sync.registerSubscription(
-        'SELECT * FROM tasks',
-      );
+      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted', response => {
+        const fetchedTasks: Task[] = response.items.map(doc => ({
+          id: doc.value._id,
+          title: doc.value.title as string,
+          done: doc.value.done,
+          deleted: doc.value.deleted,
+        }));
 
-      // Register observer, which runs against the local database on this peer
-      // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-      taskObserver.current = ditto.current.store.registerObserver(
-        'SELECT * FROM tasks WHERE NOT deleted',
-        response => {
-          const fetchedTasks: Task[] = response.items.map(doc => ({
-            id: doc.value._id,
-            title: doc.value.title as string,
-            done: doc.value.done,
-            deleted: doc.value.deleted,
-          }));
-
-          setTasks(fetchedTasks);
-        },
-      );
+        setTasks(fetchedTasks);
+      });
     } catch (error) {
       console.error('Error syncing tasks:', error);
     }

@@ -7,18 +7,21 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
 type EditTaskModalProps = {
+  visible: boolean;
   task: {id: string; title: string} | null;
   onSubmit: (taskId: string, newTitle: string) => void;
   onClose?: () => void;
-};
+} & Partial<ModalProps>;
 
 type Props = EditTaskModalProps;
 
 const EditTaskModal: React.FC<Props> = ({
+  visible,
   task,
   onSubmit,
   onClose,

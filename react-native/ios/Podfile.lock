@@ -1910,8 +1910,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
-  DittoReactNative: 74ae64735c5f85edb37388dbf62cce8b19678dde
-  DittoReactNativeIOS: b22a331b36d31ff37c8d80d2f4ba8b95673bc5f7
+  DittoReactNative: fa202a3b59e6af51c9c962d70d71428a45748c9b
+  DittoReactNativeIOS: 9588841020916afdd7c9a61e78d36b1153178384
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
   FBLazyVector: abbac80c6f89e71a8c55c7e92ec015c8a9496753
