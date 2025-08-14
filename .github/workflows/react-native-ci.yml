@@ -118,7 +118,13 @@ jobs:
       run: bundle install
     
     - name: Set Xcode version
-      run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      run: |
+        if ! xcode-select -p | grep -q "Xcode_16.2.app"; then
+          sudo xcode-select -s /Applications/Xcode_16.2.app
+          echo "Set Xcode to 16.2"
+        else
+          echo "Xcode 16.2 already selected"
+        fi
     
     - name: Install CocoaPods
       working-directory: react-native/ios
@@ -151,6 +157,15 @@ jobs:
     - name: Install Ruby gems
       working-directory: react-native
       run: bundle install
+    
+    - name: Set Xcode version
+      run: |
+        if ! xcode-select -p | grep -q "Xcode_16.2.app"; then
+          sudo xcode-select -s /Applications/Xcode_16.2.app
+          echo "Set Xcode to 16.2"
+        else
+          echo "Xcode 16.2 already selected"
+        fi
     
     - name: Install CocoaPods for macOS
       working-directory: react-native/macos
