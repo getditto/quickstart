@@ -99,7 +99,7 @@ jobs:
         run: npm run test
 
   cpp:
-    name: cpp-quickstart
+    name: C++ Quickstart (ubuntu-latest)
     strategy:
       matrix:
         os: ["ubuntu-latest"]
