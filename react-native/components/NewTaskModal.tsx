@@ -33,9 +33,9 @@ const NewTaskModal: React.FC<Props> = ({visible, onSubmit, onClose}) => {
 
   return (
     <View style={styles.modalOverlay}>
-      <TouchableOpacity 
-        style={styles.backdrop} 
-        activeOpacity={1} 
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
         onPress={onClose}
       />
       <View style={styles.modalContent}>

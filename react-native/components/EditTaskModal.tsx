@@ -2,8 +2,6 @@ import React from 'react';
 import {useState, useEffect} from 'react';
 import {
   Button,
-  Modal,
-  ModalProps,
   StyleSheet,
   Text,
   TextInput,
@@ -16,7 +14,7 @@ type EditTaskModalProps = {
   task: {id: string; title: string} | null;
   onSubmit: (taskId: string, newTitle: string) => void;
   onClose?: () => void;
-} & Partial<ModalProps>;
+};
 
 type Props = EditTaskModalProps;
 
@@ -25,7 +23,6 @@ const EditTaskModal: React.FC<Props> = ({
   task,
   onSubmit,
   onClose,
-  ...props
 }) => {
   const [input, setInput] = useState('');
 

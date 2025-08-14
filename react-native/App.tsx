@@ -152,25 +152,25 @@ const App = () => {
         url: `https://${databaseId}.cloud.ditto.live`,
       };
 
-      const config = new DittoConfig(databaseId, connectConfig, "newfodlerxx");
+      const config = new DittoConfig(databaseId, connectConfig, 'custom-folder');
 
       ditto.current = await Ditto.open(config);
 
-      ditto.current.updateTransportConfig(config => {
+      ditto.current.updateTransportConfig(transportConfig => {
         if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
-          config.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+          transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
         }
-        return config;
+        return transportConfig;
       });
 
 
       if (connectConfig.mode === 'server') {
-        await ditto.current.auth.setExpirationHandler(async (ditto, timeUntilExpiration) => {
+        await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
           console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
 
-          if (ditto.auth.loginSupported) {
+          if (dittoInstance.auth.loginSupported) {
             const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
-            const reLoginResult = await ditto.auth.login(playgroundToken, devProvider);
+            const reLoginResult = await dittoInstance.auth.login(playgroundToken, devProvider);
             if (reLoginResult.error) {
               console.error('Re-authentication failed:', reLoginResult.error);
             } else {
