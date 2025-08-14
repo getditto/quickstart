@@ -158,3 +158,39 @@ jobs:
           # Test that the app can show SDK version
           ./build/taskscpp --ditto-sdk-version
           echo "✅ SDK version command works"
+
+  flutter:
+    name: Flutter App Lint and Test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Create test .env file
+        run: |
+          echo "DITTO_APP_ID=test_app_id" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=test_playground_token" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=https://auth.example.com" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=wss://websocket.example.com" >> flutter_app/.env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Analyze code
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Run unit tests
+        working-directory: flutter_app
+        run: flutter test
+
+      - name: Check formatting
+        working-directory: flutter_app
+        run: dart format --set-exit-if-changed .
