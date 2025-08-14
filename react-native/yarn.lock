@@ -1088,10 +1088,10 @@
     "@deno/shim-deno-test" "^0.4.0"
     which "^2.0.2"
 
-"@dittolive/ditto@4.12.0-preview.1":
-  version "4.12.0-preview.1"
-  resolved "https://registry.yarnpkg.com/@dittolive/ditto/-/ditto-4.12.0-preview.1.tgz#c5f0d1a1cfe50075c7589db215dd6eac57f723b5"
-  integrity sha512-qHkDoVyLwbviWg8T51aIjdn6us+pUAnhFdRL2/MuVvWe+6eGFA3EkvSvs6JwhlFUKFKbDhxBm/kQmaKj51uGiA==
+"@dittolive/ditto@4.12.0-experimental-js-persistence-directory.1":
+  version "4.12.0-experimental-js-persistence-directory.1"
+  resolved "https://registry.yarnpkg.com/@dittolive/ditto/-/ditto-4.12.0-experimental-js-persistence-directory.1.tgz#de69b0946ea4e8901f709b9ebe76a37ed65bf9f0"
+  integrity sha512-+vf5AuYAHud0oHNPewVGjaXQoOYQBPFv5VbN4B1ycpmMvb9Hd8kuBzCsOG0lAozgWYuN2jIqoGPmEbx8z8NkTQ==
   dependencies:
     "@expo/config-plugins" "^9.0.11"
     cbor-redux "^1.0.0"

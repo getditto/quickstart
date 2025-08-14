@@ -11,7 +11,10 @@ import {
   Button,
 } from 'react-native';
 import {
+  Authenticator,
   Ditto,
+  DittoConfig,
+  DittoConfigConnect,
   IdentityOnlinePlayground,
   StoreObserver,
   SyncSubscription,
@@ -124,15 +127,74 @@ const App = () => {
 
   const initDitto = async () => {
     try {
-
       // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
-      ditto.current = new Ditto(identity);
+     // 1. Online Playground (server + pre-configured token - easiest for development)
+      const databaseId = DITTO_APP_ID;
+      const playgroundToken = DITTO_PLAYGROUND_TOKEN;
 
-      if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
-        ditto.current.updateTransportConfig(config => {
-          config.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
-          return config;
+      const connectConfig: DittoConfigConnect = {
+        mode: 'server',
+        url: `https://${databaseId}.cloud.ditto.live`, // Auto-generated from app ID
+      };
+
+      // 2. Online with Authentication (server + login flow for production)
+      // const connectConfig: DittoConfigConnect = {
+      //   mode: 'server',
+      //   url: 'https://your-app-id.cloud.ditto.live',
+      // };
+
+      // 3. Local Development (P2P only, no server)
+      // const connectConfig: DittoConfigConnect = {
+      //   mode: 'smallPeersOnly',
+      // };
+
+      // 4. P2P Production (P2P with shared key)
+      // const connectConfig: DittoConfigConnect = {
+      //   mode: 'smallPeersOnly',
+      //   privateKey: 'your-base64-encoded-private-key-here',
+      // };
+
+      const config = new DittoConfig(databaseId, connectConfig, "newfodlerxx");
+
+      ditto.current = await Ditto.open(config);
+
+      // Disable local transports on macOS to avoid permission issues
+
+      // if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
+      //   console.log('Using custom WebSocket URL:', DITTO_WEBSOCKET_URL);
+      //   ditto.current.updateTransportConfig(config => {
+      //     config.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+      //     return config;
+      //   });
+      // }
+
+      if (connectConfig.mode === 'server') {
+        await ditto.current.auth.setExpirationHandler(async (ditto, timeUntilExpiration) => {
+          console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
+
+          if (ditto.auth.loginSupported) {
+            const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+            const reLoginResult = await ditto.auth.login(playgroundToken, devProvider);
+            if (reLoginResult.error) {
+              console.error('Re-authentication failed:', reLoginResult.error);
+            } else {
+              console.log('Successfully re-authenticated with info:', reLoginResult);
+            }
+          }
         });
+
+        if (ditto.current.auth.loginSupported) {
+          // Use the development provider constant from Ditto
+          const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+          console.log('Using development provider:', devProvider);
+
+          const loginResult = await ditto.current.auth.login(playgroundToken, devProvider);
+          if (loginResult.error) {
+            console.error('Login failed:', loginResult.error);
+          } else {
+            console.log('Successfully logged in with info:', loginResult);
+          }
+        }
       }
 
       ditto.current.sync.start();
