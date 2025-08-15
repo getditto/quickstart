@@ -156,11 +156,6 @@ func main() {
 		log.Fatal("Failed to configure transport:", err)
 	}
 
-	// Disable sync with v3 peers (required for DQL)
-	if err := d.DisableSyncWithV3(); err != nil {
-		log.Printf("Warning: Failed to disable sync with v3: %v", err)
-	}
-
 	// Start sync (authentication handler will be called automatically if needed)
 	if err := d.StartSync(); err != nil {
 		log.Fatal("Failed to start sync:", err)
