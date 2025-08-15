@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   android:
-    name: Android
+    name: Android (ubuntu-24.04)
 
     # https://github.com/actions/runner-images#available-images
     runs-on: ubuntu-24.04
@@ -61,7 +61,7 @@ jobs:
           cargo build
 
   js-web:
-    name: JavaScript Web Lint
+    name: JavaScript Web Lint (ubuntu-24.04)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +80,7 @@ jobs:
         run: npm run lint
 
   js-node:
-    name: JavaScript TUI Lint
+    name: JavaScript TUI Lint (ubuntu-24.04)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -99,7 +99,7 @@ jobs:
         run: npm run test
 
   cpp:
-    name: cpp-quickstart
+    name: CPP Quickstart (ubuntu-latest)
     strategy:
       matrix:
         os: ["ubuntu-latest"]
