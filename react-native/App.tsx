@@ -15,15 +15,13 @@ import {
   Ditto,
   DittoConfig,
   DittoConfigConnect,
-  IdentityOnlinePlayground,
   StoreObserver,
   SyncSubscription,
 } from '@dittolive/ditto';
 import {
   DITTO_APP_ID,
   DITTO_PLAYGROUND_TOKEN,
-  DITTO_AUTH_URL,
-  DITTO_WEBSOCKET_URL,
+  DITTO_AUTH_URL
 } from '@env';
 
 import Fab from './components/Fab';
@@ -39,28 +37,6 @@ type Task = {
   done: boolean;
   deleted: boolean;
 };
-
-// https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
-const dittoCloudIdentity: IdentityOnlinePlayground = {
-  type: 'onlinePlayground',
-  appID: DITTO_APP_ID,
-  token: DITTO_PLAYGROUND_TOKEN,
-};
-
-const customBYOC: IdentityOnlinePlayground = {
-  type: 'onlinePlayground',
-  appID: DITTO_APP_ID,
-  token: DITTO_PLAYGROUND_TOKEN,
-  customAuthURL: DITTO_AUTH_URL,
-  enableDittoCloudSync: false,
-};
-
-var identity;
-if (typeof DITTO_AUTH_URL === 'string' && DITTO_AUTH_URL.length > 0) {
-  identity = customBYOC;
-} else {
-  identity = dittoCloudIdentity;
-}
 
 async function requestPermissions() {
   const permissions = [
@@ -149,20 +125,12 @@ const App = () => {
 
       const connectConfig: DittoConfigConnect = {
         mode: 'server',
-        url: `https://${databaseId}.cloud.ditto.live`,
+        url: DITTO_AUTH_URL,
       };
 
       const config = new DittoConfig(databaseId, connectConfig, 'custom-folder');
 
       ditto.current = await Ditto.open(config);
-
-      ditto.current.updateTransportConfig(transportConfig => {
-        if (typeof DITTO_WEBSOCKET_URL === 'string' && DITTO_WEBSOCKET_URL.length > 0) {
-          transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
-        }
-        return transportConfig;
-      });
-
 
       if (connectConfig.mode === 'server') {
         await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
@@ -247,7 +215,7 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <DittoInfo appId={identity.appID} token={identity.token} />
+      <DittoInfo appId={DITTO_APP_ID} token={DITTO_PLAYGROUND_TOKEN} />
       <DittoSync value={syncEnabled} onChange={toggleSync} />
       <Fab onPress={() => setModalVisible(true)} />
       <NewTaskModal
