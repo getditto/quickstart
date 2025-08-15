@@ -17,7 +17,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		03BA7961B5924A1531A558A3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = reactnativeexpo/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* reactnativeexpo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = reactnativeexpo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = reactnativeexpo/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = reactnativeexpo/Info.plist; sourceTree = "<group>"; };
@@ -45,14 +44,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0DD31B174E41DBD2E328516E /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				4F5B389599473E5FA2BB8ADB /* reactnativeexpo */,
-			);
-			name = ExpoModulesProviders;
-			sourceTree = "<group>";
-		};
 		13B07FAE1A68108700A75B9A /* reactnativeexpo */ = {
 			isa = PBXGroup;
 			children = (
@@ -74,14 +65,6 @@
 				D99670F1A5BA3D103C76F4C3 /* libPods-reactnativeexpo.a */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		4F5B389599473E5FA2BB8ADB /* reactnativeexpo */ = {
-			isa = PBXGroup;
-			children = (
-				E839783DC0EC32DAC58F3D9B /* ExpoModulesProvider.swift */,
-			);
-			name = reactnativeexpo;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {

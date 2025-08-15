@@ -14,7 +14,7 @@
     "clean": "rm -rf node_modules && yarn install && cd ios && rm -rf Podfile.lock && rm -rf Pods && pod install && cd .."
   },
   "dependencies": {
-    "@dittolive/ditto": "4.12.0-experimental-js-persistence-directory.1",
+    "@dittolive/ditto": "4.12.0",
     "react": "19.0.0",
     "react-native": "0.79.1",
     "react-native-bouncy-checkbox": "^4.1.2"
@@ -26,9 +26,9 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
-    "@react-native-community/cli": "18.0.0",
-    "@react-native-community/cli-platform-android": "18.0.0",
-    "@react-native-community/cli-platform-ios": "18.0.0",
+    "@react-native-community/cli": "19.0.0",
+    "@react-native-community/cli-platform-android": "19.0.0",
+    "@react-native-community/cli-platform-ios": "19.0.0",
     "react-native-macos": "^0.78.4",
     "@react-native/babel-preset": "0.79.1",
     "@react-native/eslint-config": "0.79.1",

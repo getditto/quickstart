@@ -21,7 +21,7 @@ import {
 import {
   DITTO_APP_ID,
   DITTO_PLAYGROUND_TOKEN,
-  DITTO_AUTH_URL
+  DITTO_AUTH_URL,
 } from '@env';
 
 import Fab from './components/Fab';
