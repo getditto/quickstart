@@ -11,7 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 )
 
-replace github.com/getditto/ditto-go-sdk => ../../ditto/sdks/go
+replace github.com/getditto/ditto-go-sdk => /Users/kristopherjohnson/work/go-sdk/sdks/go
 
 require (
 	github.com/fxamacker/cbor/v2 v2.5.0 // indirect
@@ -20,4 +20,6 @@ require (
 	github.com/nsf/termbox-go v0.0.0-20190121233118-02980233997d // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/term v0.34.0 // indirect
 )
