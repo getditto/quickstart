@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   lint:
+    name: Lint (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
@@ -38,6 +39,7 @@ jobs:
       run: yarn lint
 
   build-android:
+    name: Build Android (ubuntu-latest)
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 30
@@ -81,6 +83,7 @@ jobs:
       run: yarn build:android
 
   build-ios:
+    name: Build iOS (macos-latest)
     runs-on: macos-latest
     needs: lint
     timeout-minutes: 30
@@ -109,6 +112,11 @@ jobs:
         key: cocoapods-${{ runner.os }}-${{ hashFiles('react-native/ios/Podfile.lock') }}
         restore-keys: |
           cocoapods-${{ runner.os }}-
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16.4'
     
     - name: Install Ruby gems
       working-directory: react-native
@@ -141,6 +149,11 @@ jobs:
     - name: Install dependencies
       working-directory: react-native
       run: yarn install --frozen-lockfile
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16.4'
     
     - name: Install Ruby gems
       working-directory: react-native
