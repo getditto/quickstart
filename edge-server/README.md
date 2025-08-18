@@ -56,7 +56,7 @@ Copy the `quickstart_config_sample.yaml` file at the top level of the quickstart
    # For Linux x86_64
    just download-binary x86_64-unknown-linux-gnu
    
-   # For Linux x86_64
+   # For Linux ARM64
    just download-binary aarch64-unknown-linux-gnu
    ```
 

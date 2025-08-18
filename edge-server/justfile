@@ -50,7 +50,7 @@ get-tasks:
     | jq .
 
 # Updates a task's completion status
-update-task id done="false":
+update-task id done="not-done":
     @cat requests/update.json \
     | jq '.query_args.id = "{{ id }}" | .query_args.done = {{ if done == "done" { "true" } else { "false" } }}' \
     | curl \
