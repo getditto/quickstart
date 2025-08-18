@@ -1,0 +1,21 @@
+resources:
+  my_ditto_app:
+    resource_type: DittoDatabase
+    db_id: "YOUR_DB_ID_HERE"
+    device_name: "edge-device-1"
+    auth:
+      server:
+        access_token: "YOUR_ACCESS_TOKEN"
+        auth_url: "https://YOUR-AUTH-URL.cloud.dittolive.app"
+        provider: "__playgroundProvider"
+  my_ditto_subscription:
+    resource_type: DittoSubscription
+    app_ids:
+      - "YOUR_DB_ID_HERE"
+    query: "SELECT * FROM tasks"
+  my_http_server:
+    resource_type: HttpServer
+    app_id: "YOUR_DB_ID_HERE"
+    base_path: my_server
+    http_api: true
+    listen_addr: "0.0.0.0:8080"

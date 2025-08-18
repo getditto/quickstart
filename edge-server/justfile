@@ -1,0 +1,73 @@
+date := `date +%Y-%m-%d`
+
+# Downloads the edge server binary to this machine.
+download-binary target:
+    # Download the appropriate binary
+    URL="https://edge-server-nightlies.s3.us-east-1.amazonaws.com/{{ date }}/ditto-edge-server_{{ target }}" && \
+    echo "Downloading edge server for {{ target }}..." && \
+    curl --fail -L "$URL" -o edge-server && \
+    chmod +x edge-server && \
+    echo "Successfully downloaded edge server binary for {{ target }}"
+
+# Runs the quickstart example binary
+run-quickstart:
+    ./edge-server run -c quickstart_config.yaml
+
+download-image target:
+    # Download the appropriate container
+    URL="https://edge-server-nightlies.s3.us-east-1.amazonaws.com/{{ date }}/ditto-edge-server-container_{{ target }}.tar" && \
+    echo "Downloading edge server image for {{ target }}..." && \
+    curl --fail -L "$URL" -o edge-server-image.tar && \
+    echo "Successfully downloaded edge server image for {{ target }}"
+
+load-image:
+    LOADED_IMAGE=$(docker load -i edge-server-image.tar | grep "Loaded image:" | cut -d' ' -f3) && \
+    docker tag $LOADED_IMAGE edge-server-quickstart:latest
+
+run-quickstart-image:
+    docker run --rm -p 127.0.0.1:8080:8080 -v ./quickstart_config.yaml:/config.yaml edge-server-quickstart:latest run -c /config.yaml
+
+# Creates a new task with the given title
+create-task title:
+    @cat requests/create.json \
+    | jq '.query_args.newTask.title = "{{ title }}"' \
+    | curl \
+    --request POST \
+    --header "Content-Type: application/json" \
+    --data @- \
+    --fail-with-body \
+    http://127.0.0.1:8080/my_server/execute \
+    | jq .
+
+# Gets all non-deleted tasks
+get-tasks:
+    @curl \
+    --request POST \
+    --header "Content-Type: application/json" \
+    --data @requests/get.json \
+    --fail-with-body \
+    http://127.0.0.1:8080/my_server/execute \
+    | jq .
+
+# Updates a task's completion status
+update-task id done="false":
+    @cat requests/update.json \
+    | jq '.query_args.id = "{{ id }}" | .query_args.done = {{ if done == "done" { "true" } else { "false" } }}' \
+    | curl \
+    --fail-with-body \
+    --request POST \
+    --header "Content-Type: application/json" \
+    --data @- \
+    http://127.0.0.1:8080/my_server/execute \
+    | jq .
+
+# Soft deletes a task
+delete-task id:
+    @cat requests/delete.json \
+    | jq '.query_args.id = "{{ id }}"' \
+    | curl \
+    --request POST \
+    --header "Content-Type: application/json" \
+    --data @- \
+    http://127.0.0.1:8080/my_server/execute \
+    | jq .
