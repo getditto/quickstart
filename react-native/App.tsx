@@ -22,6 +22,7 @@ import {
   DITTO_AUTH_URL,
   DITTO_WEBSOCKET_URL,
 } from '@env';
+import { getDittoInstance, setDittoInstance } from './dittoSingleton';
 
 import Fab from './components/Fab';
 import NewTaskModal from './components/NewTaskModal';
@@ -139,9 +140,36 @@ const App = () => {
   };
 
   const initDitto = async () => {
+    // Check for existing global instance first
+    const existingInstance = getDittoInstance();
+    if (existingInstance) {
+      ditto.current = existingInstance;
+      
+      // Re-register observers for this component
+      taskObserver.current = ditto.current.store.registerObserver(
+        'SELECT * FROM tasks WHERE NOT deleted',
+        response => {
+          const fetchedTasks: Task[] = response.items.map(doc => ({
+            id: doc.value._id,
+            title: doc.value.title as string,
+            done: doc.value.done,
+            deleted: doc.value.deleted,
+          }));
+          setTasks(fetchedTasks);
+        },
+      );
+      return;
+    }
+    
+    // Prevent multiple Ditto instances
+    if (ditto.current) {
+      return;
+    }
+    
     try {
       // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
       ditto.current = new Ditto(identity);
+      setDittoInstance(ditto.current);
 
       // Initialize transport config
       ditto.current.updateTransportConfig(config => {
@@ -185,18 +213,32 @@ const App = () => {
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     (async () => {
       const granted =
         Platform.OS === 'android' ? await requestPermissions() : true;
-      if (granted) {
+      if (granted && mounted) {
         initDitto();
-      } else {
+      } else if (!granted) {
         Alert.alert(
           'Permission Denied',
           'You need to grant all permissions to use this app.',
         );
       }
     })();
+    
+    // Cleanup function
+    return () => {
+      mounted = false;
+      if (ditto.current) {
+        console.log('Cleaning up Ditto instance');
+        ditto.current.stopSync();
+        taskObserver.current?.cancel();
+        taskSubscription.current?.cancel();
+        // Note: We don't set ditto.current to null here to prevent re-initialization
+      }
+    };
   }, []);
 
   const renderItem = ({item}: {item: Task}) => (
@@ -217,43 +259,48 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <DittoInfo appId={identity.appID} token={identity.token} />
-      <DittoSync value={syncEnabled} onChange={toggleSync} />
-      <Fab onPress={() => setModalVisible(true)} />
-      <NewTaskModal
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-        onSubmit={task => {
-          createTask(task);
-          setModalVisible(false);
-        }}
-        onClose={() => setModalVisible(false)}
-      />
-      <EditTaskModal
-        visible={editingTask !== null}
-        task={editingTask}
-        onRequestClose={() => setEditingTask(null)}
-        onSubmit={(taskId, newTitle) => {
-          updateTaskTitle(taskId, newTitle);
-          setEditingTask(null);
-        }}
-        onClose={() => setEditingTask(null)}
-      />
-      <FlatList
-        contentContainerStyle={styles.listContainer}
-        data={tasks}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-      />
+      <View style={styles.appContainer}>
+        <DittoInfo appId={identity.appID} token={identity.token} />
+        <DittoSync value={syncEnabled} onChange={toggleSync} />
+        <Fab onPress={() => setModalVisible(true)} />
+        <FlatList
+          contentContainerStyle={styles.listContainer}
+          data={tasks}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+        />
+        <NewTaskModal
+          visible={modalVisible}
+          onSubmit={task => {
+            createTask(task);
+            setModalVisible(false);
+          }}
+          onClose={() => setModalVisible(false)}
+        />
+        <EditTaskModal
+          visible={editingTask !== null}
+          task={editingTask}
+          onRequestClose={() => setEditingTask(null)}
+          onSubmit={(taskId, newTitle) => {
+            updateTaskTitle(taskId, newTitle);
+            setEditingTask(null);
+          }}
+          onClose={() => setEditingTask(null)}
+        />
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    height: '100%',
-    padding: 20,
+    flex: 1,
     backgroundColor: '#fff',
+  },
+  appContainer: {
+    flex: 1,
+    padding: 20,
+    position: 'relative',
   },
   listContainer: {
     gap: 5,
