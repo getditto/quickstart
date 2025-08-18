@@ -9,6 +9,13 @@ This guide provides step-by-step instructions for getting started with the Ditto
 - **jq**: For JSON processing (used in API examples)
 - **Docker** (optional): For running the containerized version
 
+To install `just`, use:
+```
+brew install just
+```
+
+If you prefer to run commands directly, copy-paste commands from the `justfile`.
+
 ## Supported Platforms
 
 The following platforms are supported by edge-server
