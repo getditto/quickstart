@@ -144,18 +144,6 @@ func main() {
 		}
 	}
 
-	// Configure transport
-	err = d.UpdateTransportConfig(func(tc *ditto.TransportConfig) {
-		tc.PeerToPeer.BluetoothLE.Enabled = true
-		tc.PeerToPeer.LAN.Enabled = true
-		tc.PeerToPeer.LAN.MDNSEnabled = true
-		tc.PeerToPeer.LAN.MulticastEnabled = true
-		tc.SetWebsocketURLs([]string{websocketURL})
-	})
-	if err != nil {
-		log.Fatal("Failed to configure transport:", err)
-	}
-
 	// Start sync (authentication handler will be called automatically if needed)
 	if err := d.StartSync(); err != nil {
 		log.Fatal("Failed to start sync:", err)
@@ -175,6 +163,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to register subscription:", err)
 	}
+	defer subscription.Cancel()
 	app.subscription = subscription
 
 	// Create observer for local changes
@@ -191,9 +180,8 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to register observer:", err)
 	}
+	defer observer.Cancel()
 	app.observer = observer
-
-	// Skip initial query for now - let observer handle it
 
 	// Run the app
 	app.Run()
