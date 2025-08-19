@@ -4,13 +4,13 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
   Platform,
-  TouchableOpacity,
 } from 'react-native';
 
 type NewTaskModalProps = {
-  visible?: boolean;
+  visible: boolean;
   onSubmit: (taskName: string) => void;
   onClose?: () => void;
 };
@@ -115,6 +115,11 @@ const styles = StyleSheet.create({
     width: 400,
     maxWidth: '90%',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 18,

@@ -35,14 +35,6 @@
           "Microsoft.ReactNative": "0.79.3"
         }
       },
-      "Microsoft.UI.Xaml": {
-        "type": "Transitive",
-        "resolved": "2.8.0",
-        "contentHash": "vxdHxTr63s5KVtNddMFpgvjBjUH50z7seq/5jLWmmSuf8poxg+sXrywkofUdE8ZstbpO9y3FL/IXXUcPYbeesA==",
-        "dependencies": {
-          "Microsoft.Web.WebView2": "1.0.1264.42"
-        }
-      },
       "Microsoft.VCRTForwarders.140": {
         "type": "Transitive",
         "resolved": "1.0.2-rc",
@@ -63,7 +55,9 @@
         "dependencies": {
           "Microsoft.ReactNative": "[0.79.3, )",
           "Microsoft.ReactNative.Cxx": "[0.79.3, )",
-          "Microsoft.UI.Xaml": "[2.8.0, )"
+          "Microsoft.VCRTForwarders.140": "[1.0.2-rc, )",
+          "Microsoft.WindowsAppSDK": "[1.7.250401001, )",
+          "boost": "[1.83.0, )"
         }
       },
       "dittoreactnativesampleapp": {

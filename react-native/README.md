@@ -10,7 +10,7 @@ A sample React Native application that lets you create tasks and sync them with 
 ## Documentation
 
 - [React Native Install Guide](https://docs.ditto.live/sdk/latest/install-guides/react-native)
-- [Javascript/React Native API Reference](https://software.ditto.live/js/Ditto/4.11.1/api-reference/)
+- [Javascript/React Native API Reference](https://software.ditto.live/js/Ditto/4.12.0/api-reference/)
 - [Javascript/React Native Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
 ## Prerequisites
@@ -38,8 +38,8 @@ yarn install
 
 ### Run the Application
 
-Running the `start` script launches the "Metro" dev tool, which will build the iOS or Android apps on demand.
-After running the start command, press `i` to launch the iOS simulator or `a` to launch the Android emulator.
+Running the `start` script launches the "Metro" dev tool, which will build the iOS, Android, or macOS apps on demand.
+After running the start command, press `i` to launch the iOS simulator, `a` to launch the Android emulator, or `m` to launch the macOS app.
 
 ```bash
 yarn start
@@ -64,10 +64,17 @@ For Windows:
 yarn windows
 ```
 
+For macOS:
+
+```bash
+yarn react-native run-macos
+```
+
 ## Features
 
 - **Task Creation**: Users can add new tasks to their list.
 - **Real-time Sync**: Tasks are synchronized in real-time across all devices using the same Ditto application.
+- **Cross-Platform**: Supports iOS, Android, Windows, and macOS platforms.
 
 ## Additional Information
 

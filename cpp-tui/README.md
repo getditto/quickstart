@@ -16,7 +16,7 @@ subdirectory of this project.
 ## Documentation
 
 - [C++ Install Guide](https://docs.ditto.live/install-guides/cpp)
-- [C++ API Reference](https://software.ditto.live/cpp/Ditto/4.9.0/api-reference/)
+- [C++ API Reference](https://software.ditto.live/cpp/Ditto/4.11.0/api-reference/)
 - [C++ Release Notes](https://docs.ditto.live/release-notes/cpp)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -27,14 +27,14 @@ Assuming you have the prerequisites installed, you can build and run the app by 
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
 2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
-3. In a shell, navigate to the `quickstart/cpp/taskscpp` directory and run the command `make build` to build the C++ application.
+3. In a shell, navigate to the `quickstart/cpp-tui/taskscpp` directory and run the command `make build` to build the C++ application.
 
 ## Running the Application
 
 The application is named `taskscpp` and is located in the `quickstart/cpp/taskscpp/build` directory.
 
 You can run the application and see the available command-line options from the
-`quickstart/cpp/taskscpp` directory by running this command:
+`quickstart/cpp-tui/taskscpp` directory by running this command:
 
 ```sh
 ./build/taskscpp --help
