@@ -120,10 +120,10 @@ just get-tasks
 
 ```bash
 # Mark a task as completed (use the task ID from get-tasks)
-just update-task <task-id> done
+just update-task <task-id> true
 
 # Mark a task as not completed
-just update-task <task-id> not-done
+just update-task <task-id> false
 ```
 
 ### Delete a Task
