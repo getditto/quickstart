@@ -58,7 +58,7 @@
     "init-windows": {
       "name": "DittoReactNativeSampleApp",
       "namespace": "DittoReactNativeSampleApp",
-      "template": "cpp-app"
+      "template": "old/uwp-cpp-app"
     }
   }
 }

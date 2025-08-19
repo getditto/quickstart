@@ -78,3 +78,7 @@ ditto
 
 # Claude settings
 .claude/settings.local.json
+
+# MSBuild logs
+*.binlog
+msbuild_*.binlog
