@@ -49,7 +49,7 @@ cd quickstart/edge-server
 #### Obtain App ID and Playground Token
 
 - Log in to your Ditto Portal account
-- Navigate to your application and obtain the Database ID, Playground Token, and Auth URL (see [Sync Credentials](https://docs.ditto.live/get-started/sync-credentials)
+- Navigate to your application and obtain the Database ID, Playground Token, and Auth URL (see [Sync Credentials](https://docs.ditto.live/cloud/portal/getting-sdk-connection-details)
  for more details)
 
 Copy the `quickstart_config_sample.yaml` file at the top level of the quickstart repo to `quickstart_config.yaml` and substitute the appropriate fields in the config with values obtained from the portal.
