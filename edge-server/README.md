@@ -4,10 +4,10 @@ This guide provides step-by-step instructions for getting started with the Ditto
 
 ## Prerequisites
 
-- **Just**: Command runner tool ([installation guide](https://github.com/casey/just#installation))
+- **just**: Command runner tool ([installation guide](https://github.com/casey/just#installation))
 - **curl**: For downloading binaries and making HTTP requests
 - **jq**: For JSON processing (used in API examples)
-- **Docker** (optional): For running the containerized version
+- **Docker**: For running the containerized version
 
 To install `just`, use:
 ```
@@ -20,10 +20,10 @@ If you prefer to run commands directly, copy-paste commands from the `justfile`.
 
 The following platforms are supported by edge-server
 
-- aarch64-unknown-linux-gnu (binary)
-- x86_64-unknown-linux-gnu (binary)
 - linux/arm64 (docker image)
 - linux/amd64 (docker image)
+- aarch64-unknown-linux-gnu (binary)
+- x86_64-unknown-linux-gnu (binary)
 
 ## Getting Started
 
@@ -53,49 +53,32 @@ cd quickstart/edge-server
  for more details)
 
 Copy the `quickstart_config_sample.yaml` file at the top level of the quickstart repo to `quickstart_config.yaml` and substitute the appropriate fields in the config with values obtained from the portal.
+```bash
+cp quickstart_config_sample.yaml quickstart_config.yaml
+```
 
 ### Download and Run Edge Server
-#### Option 1: Binary Installation
-
-1. **Download the Edge Server binary** for your platform:
-
-   ```bash
-   # For Linux x86_64
-   just download-binary x86_64-unknown-linux-gnu
-   
-   # For Linux ARM64
-   just download-binary aarch64-unknown-linux-gnu
-   ```
-
-2. **Run the Edge Server** with the quickstart configuration:
-
-   ```bash
-   just run-quickstart
-   ```
-
-
-#### Option 2: Docker Installation
 
 1. **Download the Edge Server Docker image**:
 
    ```bash
    # For linux/amd64 platform
-   just download-image x86_64-unknown-linux-gnu
+   just download x86_64-unknown-linux-gnu
    
    # For linux/arm64 platform
-   just download-image aarch64-unknown-linux-gnu
+   just download aarch64-unknown-linux-gnu
    ```
 
 2. **Load the image into Docker**:
 
    ```bash
-   just load-image
+   just load
    ```
 
 3. **Run the Edge Server container**:
 
    ```bash
-   just run-quickstart-image
+   just run
    ```
 
 ## Testing the API
@@ -106,7 +89,7 @@ Once the server is running, you can interact with the Tasks API using the provid
 
 ```bash
 # Create a new task with a custom title
-just create-task "Buy groceries"
+just create-task Buy groceries
 ```
 
 ### Get All Tasks
@@ -144,7 +127,7 @@ The Edge Server uses `quickstart_config.yaml` for configuration. Key settings in
 
 ### Important Security Note
 
-⚠️ **Development Only**: This quickstart uses playground authentication which is NOT suitable for production. For production deployments, configure proper authentication using "Online with Authentication" identity.
+⚠️ **Development Only**: This quickstart uses playground authentication which is **NOT** secure or suitable for production. For production deployments, configure proper authentication using "Online with Authentication" identity.
 
 ## Troubleshooting
 
@@ -163,6 +146,7 @@ The Edge Server uses `quickstart_config.yaml` for configuration. Key settings in
 
 ## Next Steps
 
+- Explore other edge server functionalities through the CLI with `just run help`
 - Explore the [Ditto documentation](https://docs.ditto.live) for advanced features
 - Configure authentication for production use
 - Integrate with the other quickstart applications in this repository
@@ -175,3 +159,23 @@ The Edge Server uses `quickstart_config.yaml` for configuration. Key settings in
 - `requests/` - Example JSON requests for API operations
 - `edge-server` - Binary executable (after download)
 - `edge-server-image.tar` - Docker image (after download)
+
+
+## Alternative Option: Binary Installation
+
+If you want to run the edge server as a raw binary for either `aarch64-unknown-linux-gnu` or `x86_64-unknown-linux-gnu` targets, the following `just` commands are provided:
+
+1. **Download the Edge Server binary** for your platform:
+
+   ```bash
+   # For Linux x86_64
+   just download-bin x86_64-unknown-linux-gnu
+   
+   # For Linux ARM64
+   just download-bin aarch64-unknown-linux-gnu
+   ```
+
+2. **Run the Edge Server** with the quickstart configuration:
+
+   ```bash
+   just run-bin
