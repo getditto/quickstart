@@ -146,7 +146,7 @@ The Edge Server uses `quickstart_config.yaml` for configuration. Key settings in
 
 ## Next Steps
 
-- Explore other edge server functionalities through the CLI with `just run help`
+- Explore other edge server functionaly through the CLI with `just run help`
 - Explore the [Ditto documentation](https://docs.ditto.live) for advanced features
 - Configure authentication for production use
 - Integrate with the other quickstart applications in this repository
