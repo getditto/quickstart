@@ -9,7 +9,7 @@
     "macos": "react-native run-macos",
     "build:android": "react-native build-android --extra-params \"--no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a\"",
     "build:ios": "react-native build-ios --mode Debug",
-    "build:windows": "react-native run-windows --release",
+    "build:windows": "react-native run-windows --release --no-deploy --no-launch",
     "build:macos": "react-native build-macos --mode Debug",
     "lint": "eslint .",
     "start": "react-native start",
@@ -18,7 +18,7 @@
     "test:windows": "jest --config jest.config.windows.js"
   },
   "dependencies": {
-    "@dittolive/ditto": "file:C:/Users/teodo/Projects/ditto/sdks/js/dist/ditto-packed3.tgz",
+    "@dittolive/ditto": "^4.12.0",
     "react": "19.0.0",
     "react-native": "0.79.1",
     "react-native-bouncy-checkbox": "^4.1.2",

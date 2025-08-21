@@ -166,3 +166,47 @@ jobs:
     - name: Build macOS
       working-directory: react-native
       run: yarn build:macos
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-2022
+    needs: lint
+    timeout-minutes: 40
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+        cache-dependency-path: react-native/yarn.lock
+    
+    - name: Install dependencies
+      working-directory: react-native
+      run: yarn install --frozen-lockfile
+    
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v2
+      with:
+        msbuild-architecture: x64
+    
+    - name: Setup Visual Studio
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~\.nuget\packages
+          react-native\windows\packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('react-native/windows/**/*.csproj', 'react-native/windows/**/*.sln') }}
+        restore-keys: |
+          nuget-${{ runner.os }}-
+    
+    - name: Build Windows
+      working-directory: react-native
+      run: yarn build:windows
