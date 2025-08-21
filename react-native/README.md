@@ -18,6 +18,15 @@ A sample React Native application that lets you create tasks and sync them with 
 - **Ditto Portal Account**: Ensure you have a Ditto account. Sign up [here](https://portal.ditto.live/signup).
 - **App Credentials**: After registration, create an application within the Ditto Portal to obtain your `AppID`, `Online Playground Token`, `Auth URL`, and `Websocket URL`. Visit the [Ditto Portal](https://portal.ditto.live/) to manage your applications.
 
+### Windows-specific Prerequisites
+
+- **Windows 10 or 11** (version 10.0.19041.0 or higher)
+- **Visual Studio 2022** with the following workloads:
+  - Universal Windows Platform development
+  - Desktop development with C++
+  - Node.js development (under Individual Components)
+- **Developer Mode**: Enabled in Windows Settings > Update & Security > For developers
+
 ## Getting Started
 
 ### Install Dependencies
@@ -49,6 +58,12 @@ For Android:
 yarn react-native run-android
 ```
 
+For Windows:
+
+```bash
+yarn windows
+```
+
 For macOS:
 
 ```bash
@@ -59,11 +74,19 @@ yarn react-native run-macos
 
 - **Task Creation**: Users can add new tasks to their list.
 - **Real-time Sync**: Tasks are synchronized in real-time across all devices using the same Ditto application.
-- **Cross-Platform**: Supports iOS, Android, and macOS platforms.
+- **Cross-Platform**: Supports iOS, Android, Windows, and macOS platforms.
 
 ## Additional Information
 
-- Limitation: React Native's Fast Refresh must be disabled and it's something we're working on fixing.
+### Windows-specific Notes
+
+- **NuGet.config**: Required for Windows to resolve React Native Windows packages from the correct sources.
+- **Ditto Singleton Pattern**: The app uses a singleton pattern (`dittoSingleton.ts`) to prevent multiple Ditto instances, particularly important for Windows which may remount components more frequently than other platforms.
+- **Custom Modal Implementation**: Windows uses a custom modal overlay instead of the native Modal component to ensure proper rendering within window bounds.
+
+### Known Limitations
+
+- React Native's Fast Refresh may cause file lock issues with Ditto on Windows due to component remounting. The singleton pattern mitigates this issue.
 
 ## iOS Installation
 
