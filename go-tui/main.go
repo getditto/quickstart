@@ -98,7 +98,7 @@ func main() {
 	config := &ditto.DittoConfig{
 		DatabaseID:           appID,
 		PersistenceDirectory: tempDir,
-		Connect: &ditto.ServerConnect{
+		Connect: &ditto.DittoConfigConnectServer{
 			URL: authURL,
 		},
 	}
