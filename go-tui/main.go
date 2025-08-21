@@ -145,7 +145,7 @@ func main() {
 	}
 
 	// Start sync (authentication handler will be called automatically if needed)
-	if err := d.StartSync(); err != nil {
+	if err := d.Sync().Start(); err != nil {
 		log.Fatal("Failed to start sync:", err)
 	}
 
