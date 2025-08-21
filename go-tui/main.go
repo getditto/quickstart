@@ -110,12 +110,12 @@ func main() {
 	defer d.Close()
 
 	// Set up authentication handler for development mode
-	if auth := d.Authenticator(); auth != nil {
-		err = auth.SetExpirationHandler(func(dit *ditto.Ditto, timeUntilExpiration time.Duration) {
+	if auth := d.Auth(); auth != nil {
+		auth.SetExpirationHandler(func(dit *ditto.Ditto, timeUntilExpiration time.Duration) {
 			log.Printf("Expiration handler called with time: %v", timeUntilExpiration)
 			// For development mode, login with the playground token
 			provider := ditto.AuthenticationProviderDevelopment()
-			err := dit.Authenticator().Login(token, provider, func(clientInfo map[string]interface{}, err error) {
+			err := dit.Auth().Login(token, provider, func(clientInfo map[string]interface{}, err error) {
 				if err != nil {
 					log.Printf("Login failed: %v", err)
 				} else {
