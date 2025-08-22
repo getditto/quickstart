@@ -3,7 +3,10 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
-use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto };
+use dittolive_ditto::{
+    fs::TempRoot, identity::OnlineWithAuthentication, prelude::DittoAuthenticationEventHandler,
+    AppId, Ditto,
+};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
@@ -23,7 +26,7 @@ pub struct Cli {
     /// The websocket URL this app should use for authentication
     #[clap(long, env = "DITTO_WEBSOCKET_URL")]
     websocket_url: String,
-    
+
     /// Path to write logs on disk
     #[clap(long, default_value = "/tmp/ditto-quickstart.log")]
     log: PathBuf,
@@ -53,10 +56,12 @@ async fn main() -> Result<()> {
 
     // Initialize and launch app
     let ditto = try_init_ditto(
-        cli.app_id, 
-        cli.token, 
-        cli.custom_auth_url, 
-        cli.websocket_url).await?;
+        cli.app_id,
+        cli.token,
+        cli.custom_auth_url,
+        cli.websocket_url,
+    )
+    .await?;
     let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, ditto)
         .context("failed to start tui task")?;
     tracing::info!(success = true, "Initialized!");
@@ -88,27 +93,60 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+struct AuthHandler {
+    token: String,
+    provider: String,
+}
+
+impl DittoAuthenticationEventHandler for AuthHandler {
+    fn authentication_expiring_soon(
+        &self,
+        _auth: dittolive_ditto::auth::DittoAuthenticator,
+        seconds_remaining: Duration,
+    ) {
+        tracing::warn!(
+            "Authentication is expiring soon: {}",
+            seconds_remaining.as_secs()
+        );
+    }
+
+    fn authentication_required(&self, auth: dittolive_ditto::auth::DittoAuthenticator) {
+        if let Err(e) = auth.login_with_token_and_feedback(&self.token, &self.provider) {
+            tracing::error!(%e, "Authentication failed");
+        }
+    }
+}
+
 async fn try_init_ditto(
-    app_id: AppId, 
-    token: String, 
-    custom_auth_url: String, 
-    websocket_url: String) -> Result<Ditto> {
-    // We use a temporary directory to store Ditto's local database.  
+    app_id: AppId,
+    _token: String,
+    custom_auth_url: String,
+    websocket_url: String,
+) -> Result<Ditto> {
+    // We use a temporary directory to store Ditto's local database.
     // This means that data will not be persistent between runs of the
     // application, but it allows us to run multiple instances of the
     // application concurrently on the same machine.  For a production
     // application, we would want to store the database in a more permanent
     // location, and if multiple instances are needed, ensure that each
     // instance has its own persistence directory.
+
+    let my_handler = AuthHandler {
+        token: "simple-ditto".into(),
+        provider: "koyeb-rust".into(),
+    };
+
     let ditto = Ditto::builder()
         .with_root(Arc::new(TempRoot::new()))
-        .with_identity(|root| OnlinePlayground::new(
-            root, 
-            app_id.clone(), 
-            token, 
-            false, // This is required to be set to false to use the correct URLs
-            Some(custom_auth_url.as_str())
-        ))?
+        .with_identity(|root| {
+            OnlineWithAuthentication::new(
+                root,
+                app_id.clone(),
+                my_handler,
+                false, // This is required to be set to false to use the correct URLs
+                Some(custom_auth_url.as_str()),
+            )
+        })?
         .build()?;
 
     ditto.update_transport_config(|config| {
@@ -122,7 +160,10 @@ async fn try_init_ditto(
 
     // disable DQL strict mode
     // https://docs.ditto.live/dql/strict-mode
-    _ = ditto.store().execute_v2("ALTER SYSTEM SET DQL_STRICT_MODE = false").await?;
+    _ = ditto
+        .store()
+        .execute_v2("ALTER SYSTEM SET DQL_STRICT_MODE = false")
+        .await?;
 
     // Start sync
     _ = ditto.start_sync();
