@@ -1,0 +1,7 @@
+{
+  "query": "UPDATE tasks SET done = :done WHERE _id = :id",
+  "query_args": {
+    "id": "task_id",
+    "done": true
+  }
+}

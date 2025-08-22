@@ -1,0 +1,10 @@
+{
+  "query": "INSERT INTO tasks DOCUMENTS (:newTask)",
+  "query_args": {
+    "newTask": {
+      "title": "your_title",
+      "done": false,
+      "deleted": false
+    }
+  }
+}

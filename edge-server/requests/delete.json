@@ -1,0 +1,6 @@
+{
+  "query": "UPDATE tasks SET deleted = true WHERE _id = :id",
+  "query_args": {
+    "id": "task_id"
+  }
+}

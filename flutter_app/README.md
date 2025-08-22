@@ -47,7 +47,7 @@ flutter pub get
 #### Obtain App ID and Playground Token
 
 - Log in to your Ditto Portal account
-- Navigate to your application and obtain the App ID and Playground Token (see [Sync Credentials](https://docs.ditto.live/get-started/sync-credentials)
+- Navigate to your application and obtain the App ID and Playground Token (see [Sync Credentials](https://docs.ditto.live/cloud/portal/getting-sdk-connection-details)
  for more details)
 
 Copy the `.env.sample` file at the top level of the quickstart repo to `.env` and put it into the flutter_app directory (same directory as pubspec.yaml) and add your app ID, online playground token, authUrl and websocket URL.  The app will crash if you don't provide an .env file.
