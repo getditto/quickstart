@@ -34,12 +34,12 @@ export DITTO_WEBSOCKET_URL=""
 
 ## Building
 
-Build the FFI library (required for Ditto SDK):
+First, build the FFI library (required for Ditto SDK):
 ```bash
-(cd ../../ditto/sdks/go && make build) && go build -o go-tui main.go && ./go-tui  2>/dev/null
+(cd ../../ditto/sdks/go && make build)
 ```
 
-Build the application:
+Then build the application:
 ```bash
 go build -o ditto-tasks-termui
 ```
