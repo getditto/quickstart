@@ -2,7 +2,7 @@ resources:
   my_ditto_db:
     resource_type: DittoDatabase
     db_id: "YOUR_DB_ID_HERE"
-    device_name: "edge-device-1"
+    device_name: "your-device-name"
     auth:
       server:
         access_token: "YOUR_ACCESS_TOKEN"

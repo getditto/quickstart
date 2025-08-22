@@ -4,15 +4,10 @@ This guide provides step-by-step instructions for getting started with the Ditto
 
 ## Prerequisites
 
-- **just**: Command runner tool ([installation guide](https://github.com/casey/just#installation))
 - **curl**: For downloading binaries and making HTTP requests
 - **jq**: For JSON processing (used in API examples)
 - **Docker**: For running the containerized version
-
-To install `just`, use:
-```
-brew install just
-```
+- **just**: Command runner tool ([installation guide](https://github.com/casey/just#installation), optional)
 
 If you prefer to run commands directly, copy-paste commands from the `justfile`.
 
