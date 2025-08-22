@@ -534,11 +534,9 @@ func parseTasks(result *ditto.QueryResult) []Task {
 
 	// Don't pre-allocate when we're filtering
 	var tasks []Task
-	for i := 0; i < result.ItemCount(); i++ {
-		queryItem, err := result.GetItem(i)
-		if err != nil {
-			continue
-		}
+	items := result.Items()
+	for i := 0; i < len(items); i++ {
+		queryItem := items[i]
 
 		// Get the value as a map
 		if queryItem == nil || queryItem.Value == nil {
