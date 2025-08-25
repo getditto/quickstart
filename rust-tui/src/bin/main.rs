@@ -93,27 +93,26 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-struct AuthHandler {
-    token: String,
-    provider: String,
-}
+struct AuthHandler {}
 
 impl DittoAuthenticationEventHandler for AuthHandler {
     fn authentication_expiring_soon(
         &self,
-        _auth: dittolive_ditto::auth::DittoAuthenticator,
+        auth: dittolive_ditto::auth::DittoAuthenticator,
         seconds_remaining: Duration,
     ) {
         tracing::warn!(
             "Authentication is expiring soon: {}",
             seconds_remaining.as_secs()
         );
+        auth.login_with_token_and_feedback("full_access", "dummyProvider")
+            .expect("should be able to login");
     }
 
     fn authentication_required(&self, auth: dittolive_ditto::auth::DittoAuthenticator) {
-        if let Err(e) = auth.login_with_token_and_feedback(&self.token, &self.provider) {
-            tracing::error!(%e, "Authentication failed");
-        }
+        tracing::warn!("Authentication is required");
+        auth.login_with_token_and_feedback("full_access", "dummyProvider")
+            .expect("should be able to login");
     }
 }
 
@@ -131,10 +130,7 @@ async fn try_init_ditto(
     // location, and if multiple instances are needed, ensure that each
     // instance has its own persistence directory.
 
-    let my_handler = AuthHandler {
-        token: "simple-ditto".into(),
-        provider: "koyeb-rust".into(),
-    };
+    let my_handler = AuthHandler {};
 
     let ditto = Ditto::builder()
         .with_root(Arc::new(TempRoot::new()))
