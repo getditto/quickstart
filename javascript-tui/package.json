@@ -18,7 +18,7 @@
 		"dist"
 	],
 	"dependencies": {
-		"@dittolive/ditto": "^4.11.1",
+		"@dittolive/ditto": "^4.11.4-rc.2",
 		"dotenv": "^16.4.5",
 		"ink": "^4.1.0",
 		"meow": "^11.0.0",
