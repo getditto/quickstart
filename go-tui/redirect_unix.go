@@ -20,7 +20,7 @@ func redirectStderr() {
 	// Redirect stderr to /dev/null so it doesn't interfere with TUI output
 	// This is similar to what the C++ TUI does with freopen
 	if isTerminal(os.Stderr.Fd()) {
-		devNull, err := os.OpenFile("/dev/null", os.O_WRONLY, 0)
+		devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 		if err == nil {
 			// Redirect stderr to /dev/null
 			syscall.Dup2(int(devNull.Fd()), int(os.Stderr.Fd()))
