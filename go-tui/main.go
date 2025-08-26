@@ -429,9 +429,9 @@ func (a *App) updateTable() {
 			selector = "❯❯"
 		}
 
-		done := "☐"
+		done := " ☐"
 		if task.Done {
-			done = "✅"
+			done = " ✓"
 		}
 
 		rows = append(rows, []string{selector, done, task.Title})
@@ -442,6 +442,7 @@ func (a *App) updateTable() {
 	}
 
 	a.taskTable.Rows = rows
+	a.taskTable.ColumnWidths = []int{2, 5, a.taskTable.Dx() - 7}
 
 	// Highlight selected row
 	a.taskTable.RowStyles = map[int]ui.Style{} // clear existing highlight(s)
