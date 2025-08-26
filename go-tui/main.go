@@ -212,7 +212,7 @@ func NewApp(d *ditto.Ditto) *App {
 	app.taskTable.BorderStyle = ui.NewStyle(ui.ColorCyan)
 	app.taskTable.RowSeparator = false
 	app.taskTable.FillRow = true
-	app.taskTable.RowStyles[0] = ui.NewStyle(ui.ColorWhite, ui.ColorClear, ui.ModifierBold)
+	app.taskTable.TextStyle = ui.NewStyle(ui.ColorWhite, ui.ColorClear, ui.ModifierBold)
 
 	app.inputBox = widgets.NewParagraph()
 	app.inputBox.Title = " New Task "
@@ -444,6 +444,7 @@ func (a *App) updateTable() {
 	a.taskTable.Rows = rows
 
 	// Highlight selected row
+	a.taskTable.RowStyles = map[int]ui.Style{} // clear existing highlight(s)
 	if a.selectedIdx >= 0 && a.selectedIdx < len(a.tasks) {
 		a.taskTable.RowStyles[a.selectedIdx+1] = ui.NewStyle(ui.ColorBlue, ui.ColorClear, ui.ModifierBold)
 	}
