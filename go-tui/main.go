@@ -375,9 +375,6 @@ func (a *App) render() {
 
 	// Layout calculations
 	tableHeight := termHeight - 3 // Leave room for status bar
-	if a.inputMode != NormalMode {
-		tableHeight = termHeight - 8 // Make room for input box
-	}
 
 	// Set widget positions
 	a.taskTable.SetRect(0, 0, termWidth, tableHeight)
@@ -400,7 +397,7 @@ func (a *App) render() {
 		if boxWidth > 60 {
 			boxWidth = 60
 		}
-		boxHeight := 3
+		boxHeight := 8
 		boxX := (termWidth - boxWidth) / 2
 		boxY := (termHeight - boxHeight) / 2
 
