@@ -123,20 +123,20 @@ class TasksListScreenViewModel : ViewModel() {
     fun toggle(taskId: String) {
         viewModelScope.launch {
             try {
-                val doc = ditto.store.execute(
+                val qresult = ditto.store.execute(
                     "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
                     mapOf("_id" to taskId)
-                ).items.first()
+                )
+                val doc = qresult.items.first()
 
+                qresult.close()
                 doc.close()
 
                 launch {
                     delay(1000)
                     // WHY IS THIS NOT CRASHING?! Doc's `dittoffi_query_result_item_free` has been called. 
-                    val materialized = doc.materialize()
                     val jsonData = doc.jsonString()
                     println(jsonData)
-                    println(materialized)
 
                     val done = doc.value["done"] as Boolean
 
