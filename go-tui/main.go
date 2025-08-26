@@ -256,6 +256,8 @@ func (a *App) Run() {
 					a.editingID = ""
 					a.render()
 				}
+			case "<Resize>":
+				a.render()
 			default:
 				a.handleEvent(e)
 			}
