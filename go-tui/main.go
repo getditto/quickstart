@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/getditto/ditto-go-sdk/ditto"
@@ -36,17 +35,23 @@ type App struct {
 	ditto        *ditto.Ditto
 	observer     *ditto.StoreObserver
 	subscription *ditto.SyncSubscription
-	tasks        []Task
-	selectedIdx  int
-	inputMode    InputMode
-	inputBuffer  string
-	editingID    string
-	tasksChan    chan []Task
-	errorMsg     string
-	errorTimer   *time.Timer
-	ctx          context.Context
-	cancel       context.CancelFunc
-	mu           sync.RWMutex
+
+	tasks       []Task
+	tasksChan   chan []Task
+	selectedIdx int
+
+	inputMode   InputMode
+	inputBuffer string
+	editingID   string
+
+	errorMsg struct {
+		value string // Owned by the app goroutine
+		ch    chan string
+		reset <-chan time.Time
+	}
+
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	// UI widgets
 	taskTable *widgets.Table
@@ -199,6 +204,8 @@ func NewApp(d *ditto.Ditto) *App {
 		cancel:      cancel,
 	}
 
+	app.errorMsg.ch = make(chan string, 1)
+
 	// Create widgets
 	app.taskTable = widgets.NewTable()
 	app.taskTable.Title = " Tasks (j↓, k↑, ⏎ toggle done) "
@@ -256,6 +263,12 @@ func (a *App) Run() {
 		case tasks := <-a.tasksChan:
 			a.updateTasks(tasks)
 			a.render()
+		case msg := <-a.errorMsg.ch:
+			a.errorMsg.value = msg
+			a.render()
+		case <-a.errorMsg.reset:
+			a.errorMsg.value = ""
+			a.render()
 		}
 	}
 }
@@ -274,19 +287,15 @@ func (a *App) handleEvent(e ui.Event) {
 func (a *App) handleNormalMode(e ui.Event) {
 	switch e.ID {
 	case "j", "<Down>":
-		a.mu.Lock()
 		if a.selectedIdx < len(a.tasks)-1 {
 			a.selectedIdx++
 		}
-		a.mu.Unlock()
 		a.render()
 
 	case "k", "<Up>":
-		a.mu.Lock()
 		if a.selectedIdx > 0 {
 			a.selectedIdx--
 		}
-		a.mu.Unlock()
 		a.render()
 
 	case "<Enter>", " ":
@@ -398,28 +407,17 @@ func (a *App) render() {
 	}
 
 	// Render error if present
-	if a.errorMsg != "" {
-		a.errorBar.Text = fmt.Sprintf("Error: %s", a.errorMsg)
+	if a.errorMsg.value != "" {
+		a.errorBar.Text = fmt.Sprintf("Error: %s", a.errorMsg.value)
 		a.errorBar.SetRect(0, termHeight-3, termWidth, termHeight-2)
 		ui.Render(a.errorBar)
 
-		// Clear error after 3 seconds using time.AfterFunc
-		if a.errorTimer != nil {
-			a.errorTimer.Stop()
-		}
-		a.errorTimer = time.AfterFunc(3*time.Second, func() {
-			a.mu.Lock()
-			a.errorMsg = ""
-			a.mu.Unlock()
-			a.render()
-		})
+		// Clear error after 3 seconds using the reset channel
+		a.errorMsg.reset = time.After(3 * time.Second)
 	}
 }
 
 func (a *App) updateTable() {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-
 	// Headers
 	headers := []string{"", "Done", "Title"}
 
@@ -504,10 +502,9 @@ func (a *App) deleteTask(id string) {
 	}
 }
 
+// Set the UI error message. May be called by any goroutine.
 func (a *App) setError(msg string) {
-	a.mu.Lock()
-	a.errorMsg = msg
-	a.mu.Unlock()
+	a.errorMsg.ch <- msg
 }
 
 func loadEnv() error {
@@ -563,8 +560,6 @@ func parseTasks(result *ditto.QueryResult) []Task {
 
 // getSelectedTask returns the currently selected task and whether the selection is valid
 func (a *App) getSelectedTask() (Task, bool) {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
 	if a.selectedIdx < len(a.tasks) {
 		return a.tasks[a.selectedIdx], true
 	}
@@ -573,8 +568,6 @@ func (a *App) getSelectedTask() (Task, bool) {
 
 // updateTasks updates the task list and adjusts selection if needed
 func (a *App) updateTasks(tasks []Task) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
 	a.tasks = tasks
 	if a.selectedIdx >= len(a.tasks) && len(a.tasks) > 0 {
 		a.selectedIdx = len(a.tasks) - 1
