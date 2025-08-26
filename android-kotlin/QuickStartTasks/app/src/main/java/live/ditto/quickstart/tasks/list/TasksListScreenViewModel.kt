@@ -9,6 +9,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -127,17 +128,28 @@ class TasksListScreenViewModel : ViewModel() {
                     mapOf("_id" to taskId)
                 ).items.first()
 
-                val done = doc.value["done"] as Boolean
+                doc.close()
 
-                // Update tasks into the ditto collection using DQL UPDATE statement
-                // https://docs.ditto.live/sdk/latest/crud/update#updating
-                ditto.store.execute(
-                    "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
-                    mapOf(
-                        "toggled" to !done,
-                        "_id" to taskId
+                launch {
+                    delay(1000)
+                    // WHY IS THIS NOT CRASHING?! Doc's `dittoffi_query_result_item_free` has been called. 
+                    val materialized = doc.materialize()
+                    val jsonData = doc.jsonString()
+                    println(jsonData)
+                    println(materialized)
+
+                    val done = doc.value["done"] as Boolean
+
+                    // Update tasks into the ditto collection using DQL UPDATE statement
+                    // https://docs.ditto.live/sdk/latest/crud/update#updating
+                    ditto.store.execute(
+                        "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
+                        mapOf(
+                            "toggled" to !done,
+                            "_id" to taskId
+                        )
                     )
-                )
+                }
             } catch (e: DittoError) {
                 Log.e(TAG, "Unable to toggle done state", e)
             }
