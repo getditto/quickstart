@@ -123,33 +123,29 @@ class TasksListScreenViewModel : ViewModel() {
     fun toggle(taskId: String) {
         viewModelScope.launch {
             try {
-                val qresult = ditto.store.execute(
+                val queryResult = ditto.store.execute(
                     "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
                     mapOf("_id" to taskId)
                 )
-                val doc = qresult.items.first()
+                val doc = queryResult.items.first()
 
-                qresult.close()
+                queryResult.close()
                 doc.close()
 
-                launch {
-                    delay(1000)
-                    // WHY IS THIS NOT CRASHING?! Doc's `dittoffi_query_result_item_free` has been called. 
-                    val jsonData = doc.jsonString()
-                    println(jsonData)
+                val jsonData = doc.jsonString()
+                println(jsonData)
 
-                    val done = doc.value["done"] as Boolean
+                val done = doc.value["done"] as Boolean
 
-                    // Update tasks into the ditto collection using DQL UPDATE statement
-                    // https://docs.ditto.live/sdk/latest/crud/update#updating
-                    ditto.store.execute(
-                        "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
-                        mapOf(
-                            "toggled" to !done,
-                            "_id" to taskId
-                        )
+                // Update tasks into the ditto collection using DQL UPDATE statement
+                // https://docs.ditto.live/sdk/latest/crud/update#updating
+                ditto.store.execute(
+                    "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
+                    mapOf(
+                        "toggled" to !done,
+                        "_id" to taskId
                     )
-                }
+                )
             } catch (e: DittoError) {
                 Log.e(TAG, "Unable to toggle done state", e)
             }
