@@ -1,4 +1,4 @@
-module github.com/getditto/quickstart/go-tui
+module github.com/getditto/quickstart/go-tui/ditto-tasks-termui
 
 go 1.24
 
