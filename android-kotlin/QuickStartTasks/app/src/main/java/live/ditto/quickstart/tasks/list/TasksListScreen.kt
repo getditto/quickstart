@@ -50,7 +50,7 @@ import java.util.UUID
 @Composable
 fun TasksListScreen(navController: NavController) {
     val tasksListViewModel: TasksListScreenViewModel = viewModel()
-    val tasks: List<Task> by tasksListViewModel.tasks.observeAsState(emptyList())
+    val tasks = remember { tasksListViewModel.tasks }
     val syncEnabled: Boolean by tasksListViewModel.syncEnabled.observeAsState(true)
 
     var showDeleteDialog by remember { mutableStateOf(false) }
