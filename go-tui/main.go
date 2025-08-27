@@ -1,17 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/getditto/ditto-go-sdk/ditto"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
-	"github.com/getditto/ditto-go-sdk/ditto"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
@@ -35,27 +35,48 @@ type App struct {
 	ditto        *ditto.Ditto
 	observer     *ditto.StoreObserver
 	subscription *ditto.SyncSubscription
-	tasks        []Task
-	selectedIdx  int
-	inputMode    InputMode
-	inputBuffer  string
-	editingID    string
-	tasksChan    chan []Task
-	errorMsg     string
-	mu           sync.RWMutex
-	
+
+	tasks       []Task
+	tasksChan   chan []Task
+	selectedIdx int
+
+	inputMode   InputMode
+	inputBuffer string
+	editingID   string
+
+	errorMsg struct {
+		value string // Owned by the app goroutine
+		ch    chan string
+		reset <-chan time.Time
+	}
+
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	// UI widgets
-	taskTable    *widgets.Table
-	inputBox     *widgets.Paragraph
-	statusBar    *widgets.Paragraph
-	errorBar     *widgets.Paragraph
+	taskTable *widgets.Table
+	inputBox  *widgets.Paragraph
+	statusBar *widgets.Paragraph
+	errorBar  *widgets.Paragraph
 }
 
 func main() {
-	// Suppress Ditto logs
-	os.Setenv("RUST_LOG", "warn")
-	os.Setenv("RUST_BACKTRACE", "0")
-	
+	// Platform-specific stderr redirection (Unix: /dev/null, Windows: no-op for now)
+	redirectStderr()
+
+	// Also redirect Go's log output to a file for debugging
+	logPath := filepath.Join(os.TempDir(), "ditto-tasks-termui.log")
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		log.SetOutput(logFile)
+		defer logFile.Close()
+	} else {
+		log.Printf("Failed to open log file: %v", err)
+	}
+
+	// Set Ditto log level to Error to suppress most logs
+	// ditto.SetLogLevel(ditto.LogLevelError) // Commented out - causing segfault
+
 	// Load environment variables
 	if err := loadEnv(); err != nil {
 		log.Printf("Warning: Could not load .env file: %v", err)
@@ -78,38 +99,58 @@ func main() {
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create OnlinePlayground identity
-	identity := ditto.NewOnlinePlaygroundIdentity(appID, token).
-		WithCustomAuthURL(authURL).
-		WithCustomWebsocketURL(websocketURL).
-		WithCloudSync(false)
+	// Initialize Ditto with Server connection API
+	config := &ditto.DittoConfig{
+		DatabaseID:           appID,
+		PersistenceDirectory: tempDir,
+		Connect: &ditto.DittoConfigConnectServer{
+			URL: authURL,
+		},
+	}
 
-	// Initialize Ditto
-	d, err := ditto.OpenWithIdentity(tempDir, identity)
+	d, err := ditto.Open(config)
 	if err != nil {
 		log.Fatal("Failed to open Ditto:", err)
 	}
 	defer d.Close()
 
-	// Configure transport
-	transportCfg := ditto.NewTransportConfig()
-	transportCfg.PeerToPeer.BluetoothLE.Enabled = true
-	transportCfg.PeerToPeer.LAN.Enabled = true
-	transportCfg.PeerToPeer.LAN.MDNSEnabled = true
-	transportCfg.PeerToPeer.LAN.MulticastEnabled = true
-	transportCfg.Connect.WebsocketURLs = []string{websocketURL}
-	
-	if err := d.SetTransportConfig(transportCfg); err != nil {
-		log.Fatal("Failed to set transport config:", err)
+	// Set up authentication handler for development mode
+	if auth := d.Auth(); auth != nil {
+		auth.SetExpirationHandler(func(dit *ditto.Ditto, timeUntilExpiration time.Duration) {
+			log.Printf("Expiration handler called with time: %v", timeUntilExpiration)
+			// For development mode, login with the playground token
+			provider := ditto.AuthenticationProviderDevelopment()
+			err := dit.Auth().Login(token, provider, func(clientInfo map[string]interface{}, err error) {
+				if err != nil {
+					log.Printf("Login failed: %v", err)
+				} else {
+					log.Printf("Login successful")
+				}
+			})
+			if err != nil {
+				log.Printf("Failed to initiate login: %v", err)
+			}
+		})
+		if err != nil {
+			log.Fatal("Failed to set expiration handler:", err)
+		}
+
+		// Explicitly login after setting handler
+		provider := ditto.AuthenticationProviderDevelopment()
+		err = auth.Login(token, provider, func(clientInfo map[string]interface{}, err error) {
+			if err != nil {
+				log.Printf("Initial login failed: %v", err)
+			} else {
+				log.Printf("Initial login successful: %v", clientInfo)
+			}
+		})
+		if err != nil {
+			log.Printf("Failed to initiate initial login: %v", err)
+		}
 	}
 
-	// Disable sync with v3 peers (required for DQL)
-	if err := d.DisableSyncWithV3(); err != nil {
-		log.Printf("Warning: Failed to disable sync with v3: %v", err)
-	}
-
-	// Start sync
-	if err := d.StartSync(); err != nil {
+	// Start sync (authentication handler will be called automatically if needed)
+	if err := d.Sync().Start(); err != nil {
 		log.Fatal("Failed to start sync:", err)
 	}
 
@@ -121,12 +162,13 @@ func main() {
 
 	// Create app
 	app := NewApp(d)
-	
+
 	// Create subscription for syncing
 	subscription, err := d.Sync().RegisterSubscription("SELECT * FROM tasks")
 	if err != nil {
 		log.Fatal("Failed to register subscription:", err)
 	}
+	defer subscription.Cancel()
 	app.subscription = subscription
 
 	// Create observer for local changes
@@ -134,36 +176,35 @@ func main() {
 		"SELECT * FROM tasks WHERE deleted = false ORDER BY _id",
 		func(result *ditto.QueryResult) {
 			tasks := parseTasks(result)
-			app.tasksChan <- tasks
+			select {
+			case app.tasksChan <- tasks:
+			case <-app.ctx.Done():
+			}
 		},
 	)
 	if err != nil {
 		log.Fatal("Failed to register observer:", err)
 	}
+	defer observer.Cancel()
 	app.observer = observer
-	
-	// Force an initial query
-	go func() {
-		time.Sleep(200 * time.Millisecond)
-		result, err := d.Store().Execute("SELECT * FROM tasks WHERE deleted = false ORDER BY _id")
-		if err == nil && result != nil {
-			tasks := parseTasks(result)
-			app.tasksChan <- tasks
-		}
-	}()
 
 	// Run the app
 	app.Run()
 }
 
 func NewApp(d *ditto.Ditto) *App {
+	ctx, cancel := context.WithCancel(context.Background())
 	app := &App{
 		ditto:       d,
 		tasks:       []Task{},
 		selectedIdx: 0,
 		inputMode:   NormalMode,
-		tasksChan:   make(chan []Task, 10),
+		tasksChan:   make(chan []Task, 1), // Buffer size 1 - latest update wins
+		ctx:         ctx,
+		cancel:      cancel,
 	}
+
+	app.errorMsg.ch = make(chan string, 1)
 
 	// Create widgets
 	app.taskTable = widgets.NewTable()
@@ -171,16 +212,16 @@ func NewApp(d *ditto.Ditto) *App {
 	app.taskTable.BorderStyle = ui.NewStyle(ui.ColorCyan)
 	app.taskTable.RowSeparator = false
 	app.taskTable.FillRow = true
-	app.taskTable.RowStyles[0] = ui.NewStyle(ui.ColorWhite, ui.ColorClear, ui.ModifierBold)
-	
+	app.taskTable.TextStyle = ui.NewStyle(ui.ColorWhite, ui.ColorClear, ui.ModifierBold)
+
 	app.inputBox = widgets.NewParagraph()
 	app.inputBox.Title = " New Task "
 	app.inputBox.BorderStyle = ui.NewStyle(ui.ColorMagenta)
-	
+
 	app.statusBar = widgets.NewParagraph()
 	app.statusBar.Border = false
 	app.statusBar.Text = "[c](fg:yellow): create  [e](fg:yellow): edit  [d](fg:yellow): delete  [q](fg:yellow): quit  [s](fg:yellow): toggle sync"
-	
+
 	app.errorBar = widgets.NewParagraph()
 	app.errorBar.Border = false
 	app.errorBar.TextStyle = ui.NewStyle(ui.ColorRed)
@@ -189,45 +230,40 @@ func NewApp(d *ditto.Ditto) *App {
 }
 
 func (a *App) Run() {
+	defer a.cancel() // Ensure context is canceled when Run exits
+
 	// Initial render
 	a.render()
 
 	// Create event polling channel
 	uiEvents := ui.PollEvents()
-	
+
 	// Main event loop
 	for {
 		select {
+		case <-a.ctx.Done():
+			return
 		case e := <-uiEvents:
-			switch e.ID {
-			case "q", "<C-c>":
-				if a.inputMode == NormalMode {
-					return
-				}
-			case "<Escape>":
-				if a.inputMode != NormalMode {
-					a.inputMode = NormalMode
-					a.inputBuffer = ""
-					a.editingID = ""
-					a.render()
-				}
-			default:
-				a.handleEvent(e)
-			}
-			
+			a.handleEvent(e)
+
 		case tasks := <-a.tasksChan:
-			a.mu.Lock()
-			a.tasks = tasks
-			if a.selectedIdx >= len(a.tasks) && len(a.tasks) > 0 {
-				a.selectedIdx = len(a.tasks) - 1
-			}
-			a.mu.Unlock()
+			a.updateTasks(tasks)
+			a.render()
+		case msg := <-a.errorMsg.ch:
+			a.errorMsg.value = msg
+			a.render()
+		case <-a.errorMsg.reset:
+			a.errorMsg.value = ""
 			a.render()
 		}
 	}
 }
 
 func (a *App) handleEvent(e ui.Event) {
+	if e.ID == "<Resize>" {
+		a.render()
+		return
+	}
 	switch a.inputMode {
 	case NormalMode:
 		a.handleNormalMode(e)
@@ -240,58 +276,43 @@ func (a *App) handleEvent(e ui.Event) {
 
 func (a *App) handleNormalMode(e ui.Event) {
 	switch e.ID {
+	case "q", "<C-c>":
+		a.cancel() // signal main event loop to exit
 	case "j", "<Down>":
-		a.mu.Lock()
 		if a.selectedIdx < len(a.tasks)-1 {
 			a.selectedIdx++
 		}
-		a.mu.Unlock()
 		a.render()
-		
+
 	case "k", "<Up>":
-		a.mu.Lock()
 		if a.selectedIdx > 0 {
 			a.selectedIdx--
 		}
-		a.mu.Unlock()
 		a.render()
-		
+
 	case "<Enter>", " ":
-		a.mu.RLock()
-		if a.selectedIdx < len(a.tasks) {
-			task := a.tasks[a.selectedIdx]
-			a.mu.RUnlock()
+		if task, ok := a.getSelectedTask(); ok {
 			go a.toggleTask(task.ID, !task.Done)
-		} else {
-			a.mu.RUnlock()
 		}
-		
+
 	case "c":
 		a.inputMode = CreateMode
 		a.inputBuffer = ""
 		a.render()
-		
+
 	case "e":
-		a.mu.RLock()
-		if a.selectedIdx < len(a.tasks) {
-			task := a.tasks[a.selectedIdx]
+		if task, ok := a.getSelectedTask(); ok {
 			a.inputMode = EditMode
 			a.inputBuffer = task.Title
 			a.editingID = task.ID
+			a.render()
 		}
-		a.mu.RUnlock()
-		a.render()
-		
+
 	case "d":
-		a.mu.RLock()
-		if a.selectedIdx < len(a.tasks) {
-			task := a.tasks[a.selectedIdx]
-			a.mu.RUnlock()
+		if task, ok := a.getSelectedTask(); ok {
 			go a.deleteTask(task.ID)
-		} else {
-			a.mu.RUnlock()
 		}
-		
+
 	case "s":
 		// Toggle sync (placeholder for now - could implement sync toggle)
 		a.setError("Sync toggle not yet implemented")
@@ -301,6 +322,11 @@ func (a *App) handleNormalMode(e ui.Event) {
 
 func (a *App) handleInputMode(e ui.Event, isEdit bool) {
 	switch e.ID {
+	case "<Escape>":
+		a.inputMode = NormalMode
+		a.inputBuffer = ""
+		a.editingID = ""
+		a.render()
 	case "<Enter>":
 		if strings.TrimSpace(a.inputBuffer) != "" {
 			if isEdit {
@@ -313,17 +339,17 @@ func (a *App) handleInputMode(e ui.Event, isEdit bool) {
 			a.editingID = ""
 			a.render()
 		}
-		
+
 	case "<Backspace>":
 		if len(a.inputBuffer) > 0 {
 			a.inputBuffer = a.inputBuffer[:len(a.inputBuffer)-1]
 			a.render()
 		}
-		
+
 	case "<Space>":
 		a.inputBuffer += " "
 		a.render()
-		
+
 	default:
 		// Handle regular character input
 		if len(e.ID) == 1 {
@@ -335,26 +361,23 @@ func (a *App) handleInputMode(e ui.Event, isEdit bool) {
 
 func (a *App) render() {
 	termWidth, termHeight := ui.TerminalDimensions()
-	
+
 	// Clear screen
 	ui.Clear()
-	
+
 	// Update table data
 	a.updateTable()
-	
+
 	// Layout calculations
 	tableHeight := termHeight - 3 // Leave room for status bar
-	if a.inputMode != NormalMode {
-		tableHeight = termHeight - 8 // Make room for input box
-	}
-	
+
 	// Set widget positions
 	a.taskTable.SetRect(0, 0, termWidth, tableHeight)
 	a.statusBar.SetRect(0, termHeight-2, termWidth, termHeight)
-	
+
 	// Render main widgets
 	ui.Render(a.taskTable, a.statusBar)
-	
+
 	// Render input box if in input mode
 	if a.inputMode != NormalMode {
 		title := " New Task "
@@ -363,44 +386,35 @@ func (a *App) render() {
 		}
 		a.inputBox.Title = title
 		a.inputBox.Text = a.inputBuffer + "█" // Add cursor
-		
+
 		// Center the input box
 		boxWidth := termWidth - 10
 		if boxWidth > 60 {
 			boxWidth = 60
 		}
-		boxHeight := 3
+		boxHeight := 8
 		boxX := (termWidth - boxWidth) / 2
 		boxY := (termHeight - boxHeight) / 2
-		
+
 		a.inputBox.SetRect(boxX, boxY, boxX+boxWidth, boxY+boxHeight)
 		ui.Render(a.inputBox)
 	}
-	
+
 	// Render error if present
-	if a.errorMsg != "" {
-		a.errorBar.Text = fmt.Sprintf("Error: %s", a.errorMsg)
+	if a.errorMsg.value != "" {
+		a.errorBar.Text = fmt.Sprintf("Error: %s", a.errorMsg.value)
 		a.errorBar.SetRect(0, termHeight-3, termWidth, termHeight-2)
 		ui.Render(a.errorBar)
-		
-		// Clear error after 3 seconds
-		go func() {
-			time.Sleep(3 * time.Second)
-			a.mu.Lock()
-			a.errorMsg = ""
-			a.mu.Unlock()
-			a.render()
-		}()
+
+		// Clear error after 3 seconds using the reset channel
+		a.errorMsg.reset = time.After(3 * time.Second)
 	}
 }
 
 func (a *App) updateTable() {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-	
 	// Headers
 	headers := []string{"", "Done", "Title"}
-	
+
 	// Rows
 	rows := [][]string{headers}
 	for i, task := range a.tasks {
@@ -408,22 +422,24 @@ func (a *App) updateTable() {
 		if i == a.selectedIdx {
 			selector = "❯❯"
 		}
-		
-		done := "☐"
+
+		done := " ☐"
 		if task.Done {
-			done = "✅"
+			done = " ✓"
 		}
-		
+
 		rows = append(rows, []string{selector, done, task.Title})
 	}
-	
+
 	if len(rows) == 1 {
 		rows = append(rows, []string{"", "", "No tasks yet. Press 'c' to create one!"})
 	}
-	
+
 	a.taskTable.Rows = rows
-	
+	a.taskTable.ColumnWidths = []int{2, 5, a.taskTable.Dx() - 7}
+
 	// Highlight selected row
+	a.taskTable.RowStyles = map[int]ui.Style{} // clear existing highlight(s)
 	if a.selectedIdx >= 0 && a.selectedIdx < len(a.tasks) {
 		a.taskTable.RowStyles[a.selectedIdx+1] = ui.NewStyle(ui.ColorBlue, ui.ColorClear, ui.ModifierBold)
 	}
@@ -482,10 +498,9 @@ func (a *App) deleteTask(id string) {
 	}
 }
 
+// Set the UI error message. May be called by any goroutine.
 func (a *App) setError(msg string) {
-	a.mu.Lock()
-	a.errorMsg = msg
-	a.mu.Unlock()
+	a.errorMsg.ch <- msg
 }
 
 func loadEnv() error {
@@ -510,26 +525,27 @@ func parseTasks(result *ditto.QueryResult) []Task {
 		return []Task{}
 	}
 
-	tasks := make([]Task, 0, result.ItemCount())
-	for i := 0; i < result.ItemCount(); i++ {
-		queryItem, err := result.GetItem(i)
-		if err != nil {
-			continue
-		}
-		
+	// Don't pre-allocate when we're filtering
+	var tasks []Task
+	items := result.Items()
+	for i := 0; i < len(items); i++ {
+		queryItem := items[i]
+
 		// Get the value as a map
-		// Value is already typed as map[string]interface{} in the struct
 		if queryItem == nil || queryItem.Value == nil {
 			continue
 		}
-		item := queryItem.Value
+		item, ok := queryItem.Value.(map[string]interface{})
+		if !ok {
+			continue
+		}
 
 		// Parse the task from the document
 		task := Task{
-			ID:      getString(item, "_id"),
-			Title:   getString(item, "title"),
-			Done:    getBool(item, "done"),
-			Deleted: getBool(item, "deleted"),
+			ID:      getStringValue(item, "_id"),
+			Title:   getStringValue(item, "title"),
+			Done:    getBoolValue(item, "done"),
+			Deleted: getBoolValue(item, "deleted"),
 		}
 		if !task.Deleted {
 			tasks = append(tasks, task)
@@ -538,15 +554,40 @@ func parseTasks(result *ditto.QueryResult) []Task {
 	return tasks
 }
 
-func getString(m map[string]interface{}, key string) string {
-	if v, ok := m[key].(string); ok {
+// getSelectedTask returns the currently selected task and whether the selection is valid
+func (a *App) getSelectedTask() (Task, bool) {
+	if a.selectedIdx < len(a.tasks) {
+		return a.tasks[a.selectedIdx], true
+	}
+	return Task{}, false
+}
+
+// updateTasks updates the task list and adjusts selection if needed
+func (a *App) updateTasks(tasks []Task) {
+	a.tasks = tasks
+	if a.selectedIdx >= len(a.tasks) && len(a.tasks) > 0 {
+		a.selectedIdx = len(a.tasks) - 1
+	}
+}
+
+// Generic helper for type assertions
+func getValueAs[T any](m map[string]interface{}, key string) (T, bool) {
+	if v, ok := m[key].(T); ok {
+		return v, true
+	}
+	var zero T
+	return zero, false
+}
+
+func getStringValue(m map[string]interface{}, key string) string {
+	if v, ok := getValueAs[string](m, key); ok {
 		return v
 	}
 	return ""
 }
 
-func getBool(m map[string]interface{}, key string) bool {
-	if v, ok := m[key].(bool); ok {
+func getBoolValue(m map[string]interface{}, key string) bool {
+	if v, ok := getValueAs[bool](m, key); ok {
 		return v
 	}
 	return false
