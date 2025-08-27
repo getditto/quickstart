@@ -5,14 +5,19 @@ import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  //load in the .env file
-  await dotenv.load(fileName: ".env");
-  runApp(const MaterialApp(home: DittoExample()));
-}
+/// The following are injected at compile time when you pass `--dart-define-from-file=.env`
+const databaseID = String.fromEnvironment("DITTO_DATABASE_ID");
+const playgroundToken = String.fromEnvironment("DITTO_PLAYGROUND_TOKEN");
+
+const config = DittoConfig(
+  databaseID: databaseID,
+  connect: DittoConfigConnectServer(
+    url: "https://$databaseID.cloud.ditto.live",
+  ),
+);
+
+void main() => runApp(const MaterialApp(home: DittoExample()));
 
 class DittoExample extends StatefulWidget {
   const DittoExample({super.key});
@@ -23,18 +28,10 @@ class DittoExample extends StatefulWidget {
 
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
-  final appID =
-      dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
-  final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
-      (throw Exception("env not found"));
-  final authUrl = dotenv.env['DITTO_AUTH_URL'];
-  final websocketUrl =
-      dotenv.env['DITTO_WEBSOCKET_URL'] ?? (throw Exception("env not found"));
 
   @override
   void initState() {
     super.initState();
-
     _initDitto();
   }
 
@@ -61,26 +58,22 @@ class _DittoExampleState extends State<DittoExample> {
 
     await Ditto.init();
 
-    final identity = OnlinePlaygroundIdentity(
-        appID: appID,
-        token: token,
-        enableDittoCloudSync:
-            false, // This is required to be set to false to use the correct URLs
-        customAuthUrl: authUrl);
+    final ditto = await Ditto.open(config);
 
-    final ditto = await Ditto.open(identity: identity);
+    await ditto.auth.setExpirationHandler((ditto, remaining) {
+      ditto.auth.login(token: playgroundToken, provider: "__playgroundProvider");
+    });
 
     ditto.updateTransportConfig((config) {
       // Note: this will not enable peer-to-peer sync on the web platform
       config.setAllPeerToPeerEnabled(true);
-      config.connect.webSocketUrls.add(websocketUrl);
     });
 
     // Disable DQL strict mode
     // https://docs.ditto.live/dql/strict-mode
     await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
 
-    ditto.startSync();
+    ditto.sync.start();
 
     setState(() => _ditto = ditto);
   }
@@ -150,18 +143,17 @@ class _DittoExampleState extends State<DittoExample> {
       );
 
   Widget get _portalInfo => Column(children: [
-        Text("AppID: $appID"),
-        Text("Token: $token"),
+        Text("Config: ${config.databaseID}"),
       ]);
 
   Widget get _syncTile => SwitchListTile(
         title: const Text("Sync Active"),
-        value: _ditto!.isSyncActive,
+        value: _ditto!.sync.isActive,
         onChanged: (value) {
           if (value) {
-            setState(() => _ditto!.startSync());
+            setState(() => _ditto!.sync.start());
           } else {
-            setState(() => _ditto!.stopSync());
+            setState(() => _ditto!.sync.stop());
           }
         },
       );
