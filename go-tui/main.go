@@ -244,23 +244,7 @@ func (a *App) Run() {
 		case <-a.ctx.Done():
 			return
 		case e := <-uiEvents:
-			switch e.ID {
-			case "q", "<C-c>":
-				if a.inputMode == NormalMode {
-					return
-				}
-			case "<Escape>":
-				if a.inputMode != NormalMode {
-					a.inputMode = NormalMode
-					a.inputBuffer = ""
-					a.editingID = ""
-					a.render()
-				}
-			case "<Resize>":
-				a.render()
-			default:
-				a.handleEvent(e)
-			}
+			a.handleEvent(e)
 
 		case tasks := <-a.tasksChan:
 			a.updateTasks(tasks)
@@ -276,6 +260,10 @@ func (a *App) Run() {
 }
 
 func (a *App) handleEvent(e ui.Event) {
+	if e.ID == "<Resize>" {
+		a.render()
+		return
+	}
 	switch a.inputMode {
 	case NormalMode:
 		a.handleNormalMode(e)
@@ -288,6 +276,8 @@ func (a *App) handleEvent(e ui.Event) {
 
 func (a *App) handleNormalMode(e ui.Event) {
 	switch e.ID {
+	case "q", "<C-c>":
+		a.cancel() // signal main event loop to exit
 	case "j", "<Down>":
 		if a.selectedIdx < len(a.tasks)-1 {
 			a.selectedIdx++
@@ -332,6 +322,11 @@ func (a *App) handleNormalMode(e ui.Event) {
 
 func (a *App) handleInputMode(e ui.Event, isEdit bool) {
 	switch e.ID {
+	case "<Escape>":
+		a.inputMode = NormalMode
+		a.inputBuffer = ""
+		a.editingID = ""
+		a.render()
 	case "<Enter>":
 		if strings.TrimSpace(a.inputBuffer) != "" {
 			if isEdit {
