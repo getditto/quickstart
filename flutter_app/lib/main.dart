@@ -65,8 +65,12 @@ class _DittoExampleState extends State<DittoExample> {
     });
 
     ditto.updateTransportConfig((config) {
-      // Note: this will not enable peer-to-peer sync on the web platform
-      // config.setAllPeerToPeerEnabled(true);
+      config.peerToPeer
+        ..bluetoothLE.isEnabled = false
+        ..awdl.isEnabled = false
+        ..wifiAware.isEnabled = false
+        ..lan.isEnabled = false
+        ..lan.isMdnsEnabled = false;
     });
 
     // Disable DQL strict mode
