@@ -1,1 +1,0 @@
-   7:8>\Pch\pch.cpp(1,1): error C1083: Cannot open compiler intermediate file: 'C:\Users\teodo\Projects\quickstart\react-native\node_modules\react-native-windows\build\x64\Debug\Microsoft.ReactNative\pch.pch': Invalid argument [C:\Users\teodo\Projects\quickstart\react-native\node_modules\react-native-windows\Microsoft.ReactNative\Microsoft.ReactNative.vcxproj]

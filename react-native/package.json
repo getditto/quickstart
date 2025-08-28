@@ -14,11 +14,10 @@
     "lint": "eslint .",
     "start": "react-native start",
     "clean": "rm -rf node_modules && yarn install && cd ios && rm -rf Podfile.lock && rm -rf Pods && pod install && cd ..",
-    "clean:windows": "cd windows && rd /s /q packages Build x64 && cd ..",
-    "test:windows": "jest --config jest.config.windows.js"
+    "clean:windows": "cd windows && rd /s /q packages Build x64 && cd .."
   },
   "dependencies": {
-    "@dittolive/ditto": "file:C:/Users/teodo/Projects/ditto/sdks/js/dist/ditto-packed3.tgz",
+    "@dittolive/ditto": "file:C:/Users/teoc0/Projects/ditto/sdks/js/dist/ditto-package13.tgz",
     "react": "19.0.0",
     "react-native": "0.79.1",
     "react-native-bouncy-checkbox": "^4.1.2",
@@ -39,6 +38,7 @@
     "@react-native/eslint-config": "0.79.1",
     "@react-native/metro-config": "0.79.1",
     "@react-native/typescript-config": "0.79.1",
+    "@rnx-kit/jest-preset": "^0.1.17",
     "@types/jest": "^29.5.13",
     "@types/react": "^19.0.0",
     "@types/react-test-renderer": "^19.0.0",
@@ -48,8 +48,7 @@
     "prettier": "2.8.8",
     "react-native-dotenv": "^3.4.11",
     "react-test-renderer": "19.0.0",
-    "typescript": "5.0.4",
-    "@rnx-kit/jest-preset": "^0.1.17"
+    "typescript": "5.0.4"
   },
   "engines": {
     "node": ">=18"
@@ -58,7 +57,7 @@
     "init-windows": {
       "name": "DittoReactNativeSampleApp",
       "namespace": "DittoReactNativeSampleApp",
-      "template": "old/uwp-cpp-app"
+      "template": "cpp-app"
     }
   }
 }
