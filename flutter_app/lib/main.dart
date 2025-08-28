@@ -1,5 +1,4 @@
 import 'package:ditto_live/ditto_live.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
@@ -13,7 +12,7 @@ const playgroundToken = String.fromEnvironment("DITTO_PLAYGROUND_TOKEN");
 const config = DittoConfig(
   databaseID: databaseID,
   connect: DittoConfigConnectServer(
-    url: "https://$databaseID.cloud.ditto.live",
+    url: String.fromEnvironment("DITTO_AUTH_URL"),
   ),
 );
 
@@ -67,7 +66,7 @@ await ditto.auth.setExpirationHandler((ditto, remaining) {
 
 ditto.updateTransportConfig((config) {
   // Note: this will not enable peer-to-peer sync on the web platform
-  config.setAllPeerToPeerEnabled(true);
+  // config.setAllPeerToPeerEnabled(true);
 });
 
     // Disable DQL strict mode

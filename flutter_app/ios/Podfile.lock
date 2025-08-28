@@ -1,8 +1,8 @@
 PODS:
-  - ditto_live (4.10.0):
-    - DittoFlutterIOS (= 4.11.0)
+  - ditto_live (5.0.0-experimental-windows.5):
+    - DittoFlutter (= 5.0.0-experimental-windows.5)
     - Flutter
-  - DittoFlutterIOS (4.11.0)
+  - DittoFlutter (5.0.0-experimental-windows.5)
   - Flutter (1.0.0)
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -18,7 +18,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - DittoFlutterIOS
+    - DittoFlutter
 
 EXTERNAL SOURCES:
   ditto_live:
@@ -31,8 +31,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
 
 SPEC CHECKSUMS:
-  ditto_live: 51724cade5c12227ae9c6c85e5a49e38fa55de02
-  DittoFlutterIOS: 19e17c1ddba9266a48be31fa24308e08dbbc2381
+  ditto_live: a7d2b82fec43fadca6c95ac43f531d6bafde99be
+  DittoFlutter: c5c594b468d2027ba0392cedd39e03b3a9e133e5
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
