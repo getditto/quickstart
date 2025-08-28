@@ -8,12 +8,11 @@ import 'package:permission_handler/permission_handler.dart';
 /// The following are injected at compile time when you pass `--dart-define-from-file=.env`
 const databaseID = String.fromEnvironment("DITTO_DATABASE_ID");
 const playgroundToken = String.fromEnvironment("DITTO_PLAYGROUND_TOKEN");
+const authUrl = String.fromEnvironment("DITTO_AUTH_URL");
 
 const config = DittoConfig(
   databaseID: databaseID,
-  connect: DittoConfigConnectServer(
-    url: String.fromEnvironment("DITTO_AUTH_URL"),
-  ),
+  connect: DittoConfigConnectServer(url: authUrl),
 );
 
 void main() => runApp(const MaterialApp(home: DittoExample()));
@@ -58,16 +57,17 @@ class _DittoExampleState extends State<DittoExample> {
 
     await Ditto.init();
 
-final ditto = await Ditto.open(config);
+    final ditto = await Ditto.open(config);
 
-await ditto.auth.setExpirationHandler((ditto, remaining) {
-  ditto.auth.login(token: playgroundToken, provider: "__playgroundProvider");
-});
+    await ditto.auth.setExpirationHandler((ditto, remaining) {
+      ditto.auth
+          .login(token: playgroundToken, provider: "__playgroundProvider");
+    });
 
-ditto.updateTransportConfig((config) {
-  // Note: this will not enable peer-to-peer sync on the web platform
-  // config.setAllPeerToPeerEnabled(true);
-});
+    ditto.updateTransportConfig((config) {
+      // Note: this will not enable peer-to-peer sync on the web platform
+      // config.setAllPeerToPeerEnabled(true);
+    });
 
     // Disable DQL strict mode
     // https://docs.ditto.live/dql/strict-mode
