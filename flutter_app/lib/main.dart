@@ -47,7 +47,8 @@ class _DittoExampleState extends State<DittoExample> {
   /// 6. Disables DQL strict mode
   /// 7. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
-    if (!kIsWeb) {
+    final platform = Ditto.currentPlatform;
+    if (platform case SupportedPlatform.android || SupportedPlatform.ios) {
       await [
         Permission.bluetoothConnect,
         Permission.bluetoothAdvertise,
@@ -58,16 +59,16 @@ class _DittoExampleState extends State<DittoExample> {
 
     await Ditto.init();
 
-    final ditto = await Ditto.open(config);
+final ditto = await Ditto.open(config);
 
-    await ditto.auth.setExpirationHandler((ditto, remaining) {
-      ditto.auth.login(token: playgroundToken, provider: "__playgroundProvider");
-    });
+await ditto.auth.setExpirationHandler((ditto, remaining) {
+  ditto.auth.login(token: playgroundToken, provider: "__playgroundProvider");
+});
 
-    ditto.updateTransportConfig((config) {
-      // Note: this will not enable peer-to-peer sync on the web platform
-      config.setAllPeerToPeerEnabled(true);
-    });
+ditto.updateTransportConfig((config) {
+  // Note: this will not enable peer-to-peer sync on the web platform
+  config.setAllPeerToPeerEnabled(true);
+});
 
     // Disable DQL strict mode
     // https://docs.ditto.live/dql/strict-mode
