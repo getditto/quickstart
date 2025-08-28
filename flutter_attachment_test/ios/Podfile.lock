@@ -1,0 +1,42 @@
+PODS:
+  - ditto_live (4.10.0):
+    - DittoFlutterIOS (= 4.11.0)
+    - Flutter
+  - DittoFlutterIOS (4.11.0)
+  - Flutter (1.0.0)
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - permission_handler_apple (9.3.0):
+    - Flutter
+
+DEPENDENCIES:
+  - ditto_live (from `.symlinks/plugins/ditto_live/ios`)
+  - Flutter (from `Flutter`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+
+SPEC REPOS:
+  trunk:
+    - DittoFlutterIOS
+
+EXTERNAL SOURCES:
+  ditto_live:
+    :path: ".symlinks/plugins/ditto_live/ios"
+  Flutter:
+    :path: Flutter
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
+
+SPEC CHECKSUMS:
+  ditto_live: 51724cade5c12227ae9c6c85e5a49e38fa55de02
+  DittoFlutterIOS: 19e17c1ddba9266a48be31fa24308e08dbbc2381
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+
+PODFILE CHECKSUM: 1959d098c91d8a792531a723c4a9d7e9f6a01e38
+
+COCOAPODS: 1.16.2
