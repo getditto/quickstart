@@ -13,7 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  ditto_live: ^5.0.0-experimental-flutter.4
+  ditto_live: ^5.0.0-experimental-flutter.5
   equatable: ^2.0.5
   permission_handler: ^11.3.1
   json_annotation: ^4.9.0

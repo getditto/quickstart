@@ -61,10 +61,10 @@ packages:
     dependency: "direct main"
     description:
       name: ditto_live
-      sha256: "4b89b2de8b5739c2a9ab14460d0c5f86394472920c751afb32e5a3b5691a04ab"
+      sha256: "0fcdf580bf5d4f536cd479f2b846a886091991f79541bb92462b00dacae70dfa"
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.0-experimental-flutter.2"
+    version: "5.0.0-experimental-windows.5"
   equatable:
     dependency: "direct main"
     description:

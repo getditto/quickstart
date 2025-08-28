@@ -1,12 +1,14 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=/Users/cameron/.puro/envs/3.32.0/flutter"
+export "FLUTTER_ROOT=/Users/cameron/.puro/envs/3.32.4/flutter"
 export "FLUTTER_APPLICATION_PATH=/Users/cameron/quickstart/flutter_app"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
+export "FLUTTER_TARGET=/Users/cameron/quickstart/flutter_app/lib/main.dart"
 export "FLUTTER_BUILD_DIR=build"
 export "FLUTTER_BUILD_NAME=1.0.0"
 export "FLUTTER_BUILD_NUMBER=1"
+export "DART_DEFINES=RElUVE9fREFUQUJBU0VfSUQ9Y2FmOWU4NzAtZDQxNi00YjFjLTlhYjQtZmI2ZTgzMTlkZDI1,RElUVE9fUExBWUdST1VORF9UT0tFTj1jYjYzOWM3Ni01NjMzLTQ0ZGQtYWQyOC0wM2E1YTQzZjA5MmU=,RElUVE9fV0VCU09DS0VUX1VSTD13c3M6Ly9jYWY5ZTg3MC1kNDE2LTRiMWMtOWFiNC1mYjZlODMxOWRkMjUuY2xvdWQuZGl0dG8ubGl2ZQ==,RElUVE9fQVVUSF9VUkw9aHR0cHM6Ly9jYWY5ZTg3MC1kNDE2LTRiMWMtOWFiNC1mYjZlODMxOWRkMjUuY2xvdWQuZGl0dG8ubGl2ZQ==,RElUVE9fTElDRU5TRT0kRElUVE9fTElDRU5TRQ==,RkxVVFRFUl9WRVJTSU9OPTMuMzIuNA==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049NmZiYTI0NDdlOQ==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049OGNkMTllNTA5ZA==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My44LjE="
 export "DART_OBFUSCATION=false"
 export "TRACK_WIDGET_CREATION=true"
 export "TREE_SHAKE_ICONS=false"
-export "PACKAGE_CONFIG=.dart_tool/package_config.json"
+export "PACKAGE_CONFIG=/Users/cameron/quickstart/flutter_app/.dart_tool/package_config.json"
