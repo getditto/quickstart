@@ -26,7 +26,7 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({visible, onSubmit, onClose})
     }
   };
 
-  if (!visible) return null;
+  if (!visible) {return null;}
 
   // For Windows, render as an absolute positioned overlay within the app
   if (Platform.OS === 'windows') {

@@ -123,7 +123,7 @@ const App = () => {
     const existingInstance = getDittoInstance();
     if (existingInstance) {
       ditto.current = existingInstance;
-      
+
       // Re-register observers for this component
       taskObserver.current = ditto.current.store.registerObserver(
         'SELECT * FROM tasks WHERE NOT deleted',
@@ -139,12 +139,12 @@ const App = () => {
       );
       return;
     }
-    
+
     // Prevent multiple Ditto instances
     if (ditto.current) {
       return;
     }
-    
+
     try {
       // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
       const databaseId = DITTO_APP_ID;
@@ -212,7 +212,7 @@ const App = () => {
 
   useEffect(() => {
     let mounted = true;
-    
+
     (async () => {
       const granted =
         Platform.OS === 'android' ? await requestPermissions() : true;
@@ -225,7 +225,7 @@ const App = () => {
         );
       }
     })();
-    
+
     // Cleanup function
     return () => {
       mounted = false;
