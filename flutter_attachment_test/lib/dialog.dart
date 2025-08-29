@@ -1,16 +1,21 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:ditto_live/ditto_live.dart';
 
 import 'task.dart';
 
-Future<Task?> showAddTaskDialog(BuildContext context, [Task? task]) =>
+Future<Task?> showAddTaskDialog(BuildContext context,
+        [Task? task, Ditto? ditto]) =>
     showDialog<Task>(
       context: context,
-      builder: (context) => _Dialog(task),
+      builder: (context) => _Dialog(task, ditto),
     );
 
 class _Dialog extends StatefulWidget {
   final Task? taskToEdit;
-  const _Dialog(this.taskToEdit);
+  final Ditto? ditto;
+  const _Dialog(this.taskToEdit, this.ditto);
 
   @override
   State<_Dialog> createState() => _DialogState();
@@ -19,19 +24,30 @@ class _Dialog extends StatefulWidget {
 class _DialogState extends State<_Dialog> {
   late final _name = TextEditingController(text: widget.taskToEdit?.title);
   late var _done = widget.taskToEdit?.done ?? false;
+  final ImagePicker _picker = ImagePicker();
+  XFile? _selectedImage;
+
+  Future<Attachment?> _createAttachment() async {
+    final newAttachment =
+        await widget.ditto!.store.newAttachment(_selectedImage!.path);
+    return newAttachment;
+  }
 
   @override
   Widget build(BuildContext context) => AlertDialog(
         icon: const Icon(Icons.add_task),
         title: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
         contentPadding: EdgeInsets.zero,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _textInput(_name, "Name"),
-            _doneSwitch,
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildImageSelector(),
+              _textInput(_name, "Name"),
+              _doneSwitch,
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -40,11 +56,12 @@ class _DialogState extends State<_Dialog> {
           ),
           ElevatedButton(
             child: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
-            onPressed: () {
+            onPressed: () async {
               final task = Task(
                 title: _name.text,
                 done: _done,
                 deleted: false,
+                image: (await _createAttachment())?.token,
               );
               Navigator.of(context).pop(task);
             },
@@ -66,4 +83,53 @@ class _DialogState extends State<_Dialog> {
         value: _done,
         onChanged: (value) => setState(() => _done = value),
       );
+
+  Widget _buildImageSelector() {
+    return GestureDetector(
+      onTap: _pickImage,
+      child: Container(
+        height: 200,
+        width: 200,
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[400]!),
+        ),
+        child: _selectedImage != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(_selectedImage!.path),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_photo_alternate,
+                    size: 48,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap to select an image',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _selectedImage = image;
+      });
+    }
+  }
 }

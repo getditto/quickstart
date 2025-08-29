@@ -6,6 +6,7 @@ import 'package:flutter_attachment_test/task.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'image_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,9 +24,13 @@ class DittoExample extends StatefulWidget {
 
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
+  // Map to track loading progress for each task by task ID
+  final Map<String, double> _loadingProgress = {};
+  final Map<String, Attachment?> _loadedAttachments = {};
   final appID =
       dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
-  final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
+  final playground_token =
+      dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
       (throw Exception("env not found"));
   final authUrl = dotenv.env['DITTO_AUTH_URL'];
   final websocketUrl =
@@ -55,18 +60,19 @@ class _DittoExampleState extends State<DittoExample> {
         Permission.bluetoothConnect,
         Permission.bluetoothAdvertise,
         Permission.nearbyWifiDevices,
-        Permission.bluetoothScan
+        Permission.bluetoothScan,
       ].request();
     }
 
     await Ditto.init();
 
     final identity = OnlinePlaygroundIdentity(
-        appID: appID,
-        token: token,
-        enableDittoCloudSync:
-            false, // This is required to be set to false to use the correct URLs
-        customAuthUrl: authUrl);
+      appID: appID,
+      token: playground_token,
+      enableDittoCloudSync:
+          false, // This is required to be set to false to use the correct URLs
+      customAuthUrl: authUrl,
+    );
 
     final ditto = await Ditto.open(identity: identity);
 
@@ -86,12 +92,12 @@ class _DittoExampleState extends State<DittoExample> {
   }
 
   Future<void> _addTask() async {
-    final task = await showAddTaskDialog(context);
+    final task = await showAddTaskDialog(context, null, _ditto!);
     if (task == null) return;
 
     // https://docs.ditto.live/sdk/latest/crud/create
     await _ditto!.store.execute(
-      "INSERT INTO tasks DOCUMENTS (:task)",
+      "INSERT INTO COLLECTION tasks (image ATTACHMENT) VALUES (:task)",
       arguments: {"task": task.toJson()},
     );
   }
@@ -129,101 +135,173 @@ class _DittoExampleState extends State<DittoExample> {
   }
 
   Widget get _loading => Scaffold(
-        appBar: AppBar(title: const Text("Ditto Tasks")),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center, // Center vertically
-            crossAxisAlignment:
-                CrossAxisAlignment.center, // Center horizontally
-            children: [
-              const CircularProgressIndicator(),
-              const Text("Ensure your AppID and Token are correct"),
-              _portalInfo
-            ],
-          ),
-        ),
-      );
+    appBar: AppBar(title: const Text("Ditto Tasks")),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+        crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
+        children: [
+          const CircularProgressIndicator(),
+          const Text("Ensure your AppID and Token are correct"),
+          _portalInfo,
+        ],
+      ),
+    ),
+  );
 
   Widget get _fab => FloatingActionButton(
-        onPressed: _addTask,
-        child: const Icon(Icons.add_task),
-      );
+    onPressed: _addTask,
+    child: const Icon(Icons.add_task),
+  );
 
-  Widget get _portalInfo => Column(children: [
-        Text("AppID: $appID"),
-        Text("Token: $token"),
-      ]);
+  Widget get _portalInfo => Column(
+    children: [Text("AppID: $appID"), Text("Token: $playground_token")],
+  );
 
   Widget get _syncTile => SwitchListTile(
-        title: const Text("Sync Active"),
-        value: _ditto!.isSyncActive,
-        onChanged: (value) {
-          if (value) {
-            setState(() => _ditto!.startSync());
-          } else {
-            setState(() => _ditto!.stopSync());
-          }
-        },
-      );
+    title: const Text("Sync Active"),
+    value: _ditto!.isSyncActive,
+    onChanged: (value) {
+      if (value) {
+        setState(() => _ditto!.startSync());
+      } else {
+        setState(() => _ditto!.stopSync());
+      }
+    },
+  );
 
   Widget get _tasksList => DqlBuilder(
-        ditto: _ditto!,
-        query: "SELECT * FROM tasks WHERE deleted = false",
-        builder: (context, result) {
-          final tasks = result.items.map((r) => r.value).map(Task.fromJson);
-          return ListView(
-            children: tasks.map(_singleTask).toList(),
-          );
-        },
-      );
+    ditto: _ditto!,
+    query: "SELECT * FROM tasks WHERE deleted = false",
+    builder: (context, result) {
+      final tasks = result.items.map((r) => r.value).map(Task.fromJson);
+      return ListView(children: tasks.map(_singleTask).toList());
+    },
+  );
 
   Widget _singleTask(Task task) => Dismissible(
-        key: Key("${task.id}-${task.title}"),
-        onDismissed: (direction) async {
-          // Use the Soft-Delete pattern
-          // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
-          await _ditto!.store.execute(
-            "UPDATE tasks SET deleted = true WHERE _id = '${task.id}'",
-          );
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Deleted Task ${task.title}")),
-            );
-          }
-        },
-        background: _dismissibleBackground(true),
-        secondaryBackground: _dismissibleBackground(false),
-        child: CheckboxListTile(
-          title: Text(task.title),
-          value: task.done,
-          onChanged: (value) => _ditto!.store.execute(
-            "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",
-          ),
-          secondary: IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: "Edit Task",
-            onPressed: () async {
-              final newTask = await showAddTaskDialog(context, task);
-              if (newTask == null) return;
-
-              // https://docs.ditto.live/sdk/latest/crud/update
-              _ditto!.store.execute(
-                "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
-              );
-            },
-          ),
-        ),
+    key: Key("${task.id}-${task.title}"),
+    onDismissed: (direction) async {
+      // Use the Soft-Delete pattern
+      // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
+      await _ditto!.store.execute(
+        "UPDATE tasks SET deleted = true WHERE _id = '${task.id}'",
       );
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Deleted Task ${task.title}")));
+      }
+    },
+    background: _dismissibleBackground(true),
+    secondaryBackground: _dismissibleBackground(false),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: CheckboxListTile(
+                title: Text(task.title),
+                value: task.done,
+                onChanged: (value) => _ditto!.store.execute(
+                  "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",
+                ),
+                secondary: IconButton(
+                  icon: const Icon(Icons.edit),
+                  tooltip: "Edit Task",
+                  onPressed: () async {
+                    final newTask = await showAddTaskDialog(
+                      context,
+                      task,
+                      _ditto!,
+                    );
+                    if (newTask == null) return;
+
+                    // https://docs.ditto.live/sdk/latest/crud/update
+                    _ditto!.store.execute(
+                      "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
+                    );
+                  },
+                ),
+              ),
+            ),
+            task.image != null
+                ? SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.25,
+                    child: Center(
+                      child:
+                          _loadingProgress.containsKey(task.id!) &&
+                              _loadingProgress[task.id!]! < 1.0
+                          ? Text(
+                              'Loading: ${(_loadingProgress[task.id!]! * 100).toStringAsFixed(1)}%',
+                              textAlign: TextAlign.center,
+                            )
+                          : ElevatedButton(
+                              onPressed: () async {
+                                if (_loadingProgress.containsKey(task.id!) &&
+                                    _loadingProgress[task.id!]! == 1.0) {
+                                  showImageDialog(
+                                    context,
+                                    await _loadedAttachments[task.id!]!.data,
+                                  );
+                                } else {
+                                  _loadAttachment(task.image!, task.id!);
+                                }
+                              },
+                              child: Center(
+                                child: _loadingProgress.containsKey(task.id!)
+                                    ? const Text('Show Image', textAlign: TextAlign.center)
+                                    : const Text('Load Image', textAlign: TextAlign.center),
+                              ),
+                            ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  void _loadAttachment(AttachmentToken token, String taskId) {
+    setState(() {
+      _loadingProgress[taskId] = 0.0;
+    });
+
+    _ditto!.store.fetchAttachment(token.toJson(), (event) {
+      switch (event) {
+        case AttachmentFetchEventProgress progress:
+          setState(() {
+            _loadingProgress[taskId] =
+                progress.totalBytes / progress.downloadedBytes;
+          });
+          break;
+        case AttachmentFetchEventCompleted _:
+          setState(() {
+            _loadingProgress[taskId] = 1.0;
+            _loadedAttachments[taskId] = event.attachment;
+          });
+          break;
+        case AttachmentFetchEventDeleted _:
+          setState(() {
+            _loadingProgress.remove(taskId);
+          });
+          break;
+        default:
+          throw "unknown attachment fetch event type";
+      }
+    });
+  }
 
   Widget _dismissibleBackground(bool primary) => Container(
-        color: Colors.red,
-        child: Align(
-          alignment: primary ? Alignment.centerLeft : Alignment.centerRight,
-          child: const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Icon(Icons.delete),
-          ),
-        ),
-      );
+    color: Colors.red,
+    child: Align(
+      alignment: primary ? Alignment.centerLeft : Alignment.centerRight,
+      child: const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Icon(Icons.delete),
+      ),
+    ),
+  );
 }

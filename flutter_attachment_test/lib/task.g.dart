@@ -7,24 +7,19 @@ part of 'task.dart';
 // **************************************************************************
 
 Task _$TaskFromJson(Map<String, dynamic> json) => Task(
-      id: json['_id'] as String?,
-      title: json['title'] as String,
-      done: json['done'] as bool,
-      deleted: json['deleted'] as bool,
-    );
+  id: json['_id'] as String?,
+  title: json['title'] as String,
+  done: json['done'] as bool,
+  deleted: json['deleted'] as bool,
+  image: json['image'] == null
+      ? null
+      : AttachmentToken.fromJson(json['image'] as Map<String, dynamic>),
+);
 
-Map<String, dynamic> _$TaskToJson(Task instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('_id', instance.id);
-  val['title'] = instance.title;
-  val['done'] = instance.done;
-  val['deleted'] = instance.deleted;
-  return val;
-}
+Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
+  '_id': ?instance.id,
+  'title': instance.title,
+  'done': instance.done,
+  'deleted': instance.deleted,
+  'image': instance.image,
+};

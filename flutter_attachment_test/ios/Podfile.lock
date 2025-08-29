@@ -1,9 +1,11 @@
 PODS:
-  - ditto_live (4.10.0):
-    - DittoFlutterIOS (= 4.11.0)
+  - ditto_live (4.12.0):
+    - DittoFlutter (= 4.12.0)
     - Flutter
-  - DittoFlutterIOS (4.11.0)
+  - DittoFlutter (4.12.0)
   - Flutter (1.0.0)
+  - image_picker_ios (0.0.1):
+    - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -13,27 +15,31 @@ PODS:
 DEPENDENCIES:
   - ditto_live (from `.symlinks/plugins/ditto_live/ios`)
   - Flutter (from `Flutter`)
+  - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
 
 SPEC REPOS:
   trunk:
-    - DittoFlutterIOS
+    - DittoFlutter
 
 EXTERNAL SOURCES:
   ditto_live:
     :path: ".symlinks/plugins/ditto_live/ios"
   Flutter:
     :path: Flutter
+  image_picker_ios:
+    :path: ".symlinks/plugins/image_picker_ios/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
 
 SPEC CHECKSUMS:
-  ditto_live: 51724cade5c12227ae9c6c85e5a49e38fa55de02
-  DittoFlutterIOS: 19e17c1ddba9266a48be31fa24308e08dbbc2381
-  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  ditto_live: 9950da173cd15a29f2cfd2ee8ef617ad0ba8cbc2
+  DittoFlutter: 5d40ce5f5059818ffdef0ed57502c0f65135413a
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
 

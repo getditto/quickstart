@@ -41,6 +41,7 @@ dependencies:
   permission_handler: ^11.3.1
   json_annotation: ^4.9.0
   flutter_dotenv: ^5.1.0
+  image_picker: ^1.2.0
 
 dev_dependencies:
   flutter_test:
