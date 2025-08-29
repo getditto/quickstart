@@ -218,8 +218,8 @@ jobs:
               {
                   'browser': 'Firefox',
                   'browser_version': '121.0',
-                  'os': 'macOS',
-                  'os_version': 'Sonoma'
+                  'os': 'Windows',
+                  'os_version': '11'
               }
           ]
 
@@ -278,7 +278,7 @@ jobs:
           echo "" >> test-report.md
           echo "## Tested Browsers" >> test-report.md
           echo "- Chrome 120.0 (Windows 11)" >> test-report.md
-          echo "- Firefox 121.0 (macOS Sonoma)" >> test-report.md
+          echo "- Firefox 121.0 (Windows 11)" >> test-report.md
 
       - name: Upload test artifacts
         if: always()
