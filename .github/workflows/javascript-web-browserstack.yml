@@ -151,5 +151,4 @@ jobs:
             javascript-web/server.log
             test-report.md
             *screenshot*.png
-            sync_failure_debug_*.png
             .github/scripts/browserstack-test.py

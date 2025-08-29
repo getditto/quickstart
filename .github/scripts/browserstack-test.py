@@ -18,7 +18,7 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 
-def wait_for_sync_document(driver, doc_id, max_wait=45):
+def wait_for_sync_document(driver, doc_id, max_wait=30):
     """Wait for a specific document to appear in the task list."""
     print(f"Waiting for document '{doc_id}' to sync...")
     # Extract the run ID from the document ID (format: github_test_RUNID_RUNNUMBER)
@@ -26,48 +26,18 @@ def wait_for_sync_document(driver, doc_id, max_wait=45):
     print(f"Looking for GitHub Run ID: {run_id}")
     
     start_time = time.time()
-    attempt = 0
     
     while (time.time() - start_time) < max_wait:
-        attempt += 1
         try:
             # Based on TaskList.tsx, tasks are rendered as div.group elements containing spans with the title
-            task_selectors = [
-                "div.group span",  # Task title spans inside group divs
-                "div.group",  # The task container divs themselves
-                ".group span",  # Alternative class selector
-                "span",  # All spans (broader search)
-            ]
-            
-            found_elements = []
-            for selector in task_selectors:
-                try:
-                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                    if elements:
-                        found_elements.extend(elements)
-                        if len(found_elements) > 0:
-                            break
-                except:
-                    continue
-            
-            # Log what we found every 5 attempts
-            if attempt % 5 == 0:
-                print(f"  Attempt {attempt}: Found {len(found_elements)} potential task elements")
-                if found_elements and len(found_elements) <= 20:
-                    for i, elem in enumerate(found_elements[:10]):  # Show first 10 elements
-                        try:
-                            text = elem.text.strip()
-                            if text and len(text) > 0:
-                                print(f"    Element {i}: '{text[:100]}'")
-                        except:
-                            pass
+            # Use the most specific selector first
+            task_elements = driver.find_elements(By.CSS_SELECTOR, "div.group span")
             
             # Check each element for our GitHub run ID
-            for element in found_elements:
+            for element in task_elements:
                 try:
                     element_text = element.text.strip()
-                    # Check if the run ID appears anywhere in the text
-                    # The title format is "GitHub Test Task {GITHUB_RUN_ID}"
+                    # Check if the run ID appears in the text and it's our GitHub test task
                     if run_id in element_text and "GitHub Test Task" in element_text:
                         print(f"✓ Found synced document: {element_text}")
                         return True
@@ -75,25 +45,12 @@ def wait_for_sync_document(driver, doc_id, max_wait=45):
                     continue
                     
         except Exception as e:
-            if attempt % 10 == 0:
-                print(f"  Search attempt {attempt} failed with error: {str(e)}")
+            # Only log errors occasionally to reduce noise
+            pass
         
-        time.sleep(1.5)  # Wait a bit longer between attempts
+        time.sleep(1)  # Check every second
     
-    print(f"❌ Document not found after {attempt} attempts and {max_wait} seconds")
-    # Try one more time with a very broad search to see what's on the page
-    try:
-        all_text_elements = driver.find_elements(By.XPATH, "//*[contains(text(), 'GitHub')]")
-        if all_text_elements:
-            print(f"  Found {len(all_text_elements)} elements containing 'GitHub':")
-            for i, elem in enumerate(all_text_elements[:5]):
-                try:
-                    print(f"    - {elem.text.strip()}")
-                except:
-                    pass
-    except:
-        pass
-    
+    print(f"❌ Document not found after {max_wait} seconds")
     return False
 
 
@@ -171,9 +128,6 @@ def run_test(browser_config):
                 print("✓ GitHub test document successfully synced from Ditto Cloud")
             else:
                 print("❌ GitHub test document did not sync within timeout period")
-                # Take a debug screenshot
-                driver.save_screenshot(f"sync_failure_debug_{browser_config['browser']}.png")
-                print(f"Debug screenshot saved for {browser_config['browser']}")
                 raise Exception("Failed to sync test document from Ditto Cloud")
         else:
             print("⚠ No GitHub test document ID provided, skipping sync verification")
