@@ -1,0 +1,16 @@
+name: javascript-web-browserstack-test
+
+on:
+  push:
+    branches: [nr/js-integration-test]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Simple test
+        run: echo "This is a test workflow"
