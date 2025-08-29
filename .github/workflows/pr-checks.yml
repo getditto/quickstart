@@ -200,7 +200,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: 3.x
 
       - name: Create .env file
         run: |
@@ -232,3 +232,7 @@ jobs:
       - name: Build APK
         working-directory: flutter_app
         run: flutter build apk --debug
+
+      - name: Build Web
+        working-directory: flutter_app
+        run: flutter build web
