@@ -209,6 +209,14 @@ jobs:
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
 
+      - name: Create local.properties
+        working-directory: flutter_app/android
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > local.properties
+          echo "flutter.buildMode=debug" >> local.properties  
+          echo "flutter.versionName=1.0.0" >> local.properties
+          echo "flutter.versionCode=1" >> local.properties
+
       - name: Get dependencies
         working-directory: flutter_app
         run: flutter pub get
