@@ -189,3 +189,38 @@ jobs:
       - name: Run tests
         working-directory: kotlin-multiplatform
         run: ./gradlew test
+
+  flutter:
+    name: Flutter (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Analyze project
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Run tests
+        working-directory: flutter_app
+        run: flutter test
+
+      - name: Build APK
+        working-directory: flutter_app
+        run: flutter build apk --debug
