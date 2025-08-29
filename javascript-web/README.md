@@ -16,7 +16,7 @@ the Ditto SDK in a client-side app running in the browser.
 
 To get started, you'll first need to create an app in the [Ditto Portal][0]
 with the "Online Playground" authentication type. You'll need to find your
-AppID and Playground Token in order to use this quickstart.
+AppID and Playground Token in order to use this quick start.
 
 [0]: https://portal.ditto.live
 
