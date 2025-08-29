@@ -97,7 +97,7 @@ class _DittoExampleState extends State<DittoExample> {
 
     // https://docs.ditto.live/sdk/latest/crud/create
     await _ditto!.store.execute(
-      "INSERT INTO COLLECTION tasks (image ATTACHMENT) VALUES (:task)",
+      "INSERT INTO tasks VALUES (:task)",
       arguments: {"task": task.toJson()},
     );
   }
@@ -264,12 +264,12 @@ class _DittoExampleState extends State<DittoExample> {
     ),
   );
 
-  void _loadAttachment(AttachmentToken token, String taskId) {
+  void _loadAttachment(Map<String, dynamic> token, String taskId) {
     setState(() {
       _loadingProgress[taskId] = 0.0;
     });
 
-    _ditto!.store.fetchAttachment(token.toJson(), (event) {
+    _ditto!.store.fetchAttachment(token, (event) {
       switch (event) {
         case AttachmentFetchEventProgress progress:
           setState(() {

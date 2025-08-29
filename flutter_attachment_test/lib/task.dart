@@ -1,5 +1,4 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:ditto_live/ditto_live.dart';
 
 part 'task.g.dart';
 
@@ -10,7 +9,7 @@ class Task {
   final String title;
   final bool done;
   final bool deleted;
-  final AttachmentToken? image;
+  final Map<String, dynamic>? image; // This should be an Attachment Type but there are issues with it
 
   const Task({
     this.id,

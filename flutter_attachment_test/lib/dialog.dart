@@ -61,7 +61,7 @@ class _DialogState extends State<_Dialog> {
                 title: _name.text,
                 done: _done,
                 deleted: false,
-                image: (await _createAttachment())?.token,
+                image: (await _createAttachment())?.toJson(),
               );
               Navigator.of(context).pop(task);
             },

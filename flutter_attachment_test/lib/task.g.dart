@@ -11,9 +11,7 @@ Task _$TaskFromJson(Map<String, dynamic> json) => Task(
   title: json['title'] as String,
   done: json['done'] as bool,
   deleted: json['deleted'] as bool,
-  image: json['image'] == null
-      ? null
-      : AttachmentToken.fromJson(json['image'] as Map<String, dynamic>),
+  image: json['image'] as Map<String, dynamic>?,
 );
 
 Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
