@@ -204,10 +204,10 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
 
       - name: Get dependencies
         working-directory: flutter_app
