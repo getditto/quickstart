@@ -13,7 +13,7 @@ After you have completed the [common prerequisites] you will need the following:
 ## Documentation
 
 - [Install Guide](https://docs.ditto.live/sdk/latest/install-guides/java/android)
-- [API Reference](https://software.ditto.live/android/Ditto/4.11.4-rc.2/api-reference/)
+- [API Reference](https://software.ditto.live/android/Ditto/4.11.4/api-reference/)
 - [SDK Release Notes](https://docs.ditto.live/sdk/latest/release-notes/java)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -54,7 +54,7 @@ This line in `gradle/libs.versions.toml` specifies which version of the Ditto
 SDK to use:
 
 ```kotlin
-ditto = "4.11.4-rc.2"
+ditto = "4.11.4"
 ```
 
 To use a newer version of the SDK, change the version number on this line.

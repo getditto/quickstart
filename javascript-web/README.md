@@ -9,7 +9,7 @@ the Ditto SDK in a client-side app running in the browser.
 ## Documentation
 
 - [Javascript Install Guide](https://docs.ditto.live/sdk/latest/install-guides/js)
-- [Javascript API Reference](https://software.ditto.live/js/Ditto/4.11.4-rc.2/api-reference/)
+- [Javascript API Reference](https://software.ditto.live/js/Ditto/4.11.4/api-reference/)
 - [Javascript Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
 ## Getting Started
