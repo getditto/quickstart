@@ -184,7 +184,7 @@ jobs:
 
       - name: Build project
         working-directory: kotlin-multiplatform
-        run: ./gradlew build
+        run: ./gradlew assemble
 
       - name: Run tests
         working-directory: kotlin-multiplatform
