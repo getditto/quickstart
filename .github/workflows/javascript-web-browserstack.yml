@@ -116,10 +116,11 @@ jobs:
           echo "Build started with ID: $BUILD_ID"
           
           # Define test script for each browser
-          cat << 'EOF' > test_script.py
+          cat << EOF > test_script.py
 import time
 import json
 import sys
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -136,7 +137,7 @@ def run_test(browser_config):
         'os': browser_config['os'],
         'os_version': browser_config['os_version'],
         'name': f"Ditto Tasks Test - {browser_config['browser']} {browser_config['browser_version']}",
-        'build': 'Ditto JavaScript Web Build #${{ github.run_number }}',
+        'build': 'Ditto JavaScript Web Build #' + os.environ.get('GITHUB_RUN_NUMBER', '0'),
         'browserstack.local': 'true',
         'browserstack.debug': 'true',
         'browserstack.video': 'true',
@@ -327,7 +328,7 @@ EOF
           pip3 install selenium
 
           # Run the test script
-          python3 test_script.py
+          GITHUB_RUN_NUMBER="${{ github.run_number }}" python3 test_script.py
 
       - name: Stop BrowserStack Local tunnel
         if: always()
