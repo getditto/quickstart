@@ -132,13 +132,22 @@ jobs:
           export DITTO_APP_ID="${{ secrets.DITTO_APP_ID }}"
           export DITTO_PLAYGROUND_TOKEN="${{ secrets.DITTO_PLAYGROUND_TOKEN }}"
           
+          # Convert relative path to absolute path from current working directory
+          FULL_APP_PATH="$(pwd)/../${MACOS_APP_PATH}"
+          echo "🚀 Launching macOS app: $FULL_APP_PATH"
+          
+          # Verify app exists
+          if [ ! -d "$FULL_APP_PATH" ]; then
+            echo "❌ App not found at: $FULL_APP_PATH"
+            exit 1
+          fi
+          
           # Launch the macOS app in background
-          echo "🚀 Launching macOS app: $MACOS_APP_PATH"
-          open "$MACOS_APP_PATH" &
+          open "$FULL_APP_PATH" &
           sleep 5
           
-          # Run the macOS-specific tests without config (since macOS doesn't need device config)
-          maestro test .maestro/flows/macos/
+          # Run Maestro tests with explicit platform configuration for macOS
+          maestro test --platform=desktop .maestro/flows/macos/
         env:
           DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
           DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
