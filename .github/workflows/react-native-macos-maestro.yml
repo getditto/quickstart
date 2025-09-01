@@ -55,7 +55,7 @@ jobs:
           # Build for macOS using xcodebuild to generate actual .app file
           cd macos
           xcodebuild -workspace DittoReactNativeSampleApp.xcworkspace \
-            -scheme DittoReactNativeSampleApp \
+            -scheme DittoReactNativeSampleApp-macOS \
             -configuration Debug \
             -destination 'platform=macOS' \
             -derivedDataPath build \
