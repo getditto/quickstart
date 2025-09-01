@@ -32,6 +32,13 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
     
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=test_app_id" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
+        echo "DITTO_AUTH_URL=https://test.com" >> .env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+    
     - name: Run linting
       working-directory: kotlin-multiplatform
       run: ./gradlew detekt
@@ -56,6 +63,13 @@ jobs:
     
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
+    
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=test_app_id" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
+        echo "DITTO_AUTH_URL=https://test.com" >> .env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
     
     - name: Build Android
       working-directory: kotlin-multiplatform
@@ -84,6 +98,13 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
     
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=test_app_id" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
+        echo "DITTO_AUTH_URL=https://test.com" >> .env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+    
     - name: Build iOS
       working-directory: kotlin-multiplatform
       run: ./gradlew composeApp:linkDebugFrameworkIosSimulatorArm64
@@ -105,6 +126,13 @@ jobs:
     
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
+    
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=test_app_id" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
+        echo "DITTO_AUTH_URL=https://test.com" >> .env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
     
     - name: Build Desktop
       working-directory: kotlin-multiplatform
@@ -128,6 +156,13 @@ jobs:
     
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
+    
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=test_app_id" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
+        echo "DITTO_AUTH_URL=https://test.com" >> .env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
     
     - name: Run integration test
       working-directory: kotlin-multiplatform
