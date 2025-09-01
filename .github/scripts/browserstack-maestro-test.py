@@ -147,8 +147,11 @@ class BrowserStackMaestroRunner:
         response = requests.post(execute_url, json=payload, headers=self.headers)
         
         if response.status_code == 200:
-            build_id = response.json().get('buildId')
+            response_data = response.json()
+            # Try different possible response field names for build ID
+            build_id = response_data.get('buildId') or response_data.get('build_id') or response_data.get('id')
             print(f"✅ Maestro build started successfully: {build_id}")
+            print(f"📝 Full response: {response_data}")
             return build_id
         else:
             raise Exception(f"Failed to execute Maestro build: {response.status_code} - {response.text}")
