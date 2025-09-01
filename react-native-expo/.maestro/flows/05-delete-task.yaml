@@ -1,0 +1,36 @@
+appId: com.anonymous.reactnativeexpo
+tags:
+  - "core"
+  - "delete"
+---
+# Test: Delete Task
+# This flow tests the task deletion functionality
+- launchApp:
+    appId: com.anonymous.reactnativeexpo
+- runFlow:
+    when:
+      visible: "Permission"
+    commands:
+      - tapOn: "Allow"
+- assertVisible: 
+    text: "Ditto Tasks"
+# Create a task first
+- tapOn: "+"
+- assertVisible: "Add Task"
+- runScript: |
+    const timestamp = Date.now();
+    output.testTaskTitle = `Delete Test Task ${timestamp}`;
+- tapOn:
+    id: "task-input"
+- inputText: "${output.testTaskTitle}"
+- tapOn: "Add Task"
+- assertNotVisible: "Add Task"
+- assertVisible: "${output.testTaskTitle}"
+# Delete the task
+- tapOn:
+    text: "Delete"
+    near: "${output.testTaskTitle}"
+# Wait for the deletion to sync
+- waitForAnimationToEnd
+# Verify the task is no longer visible
+- assertNotVisible: "${output.testTaskTitle}"

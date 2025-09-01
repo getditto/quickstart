@@ -1,0 +1,166 @@
+name: react-native-expo-ios-maestro-browserstack
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'react-native-expo/**'
+      - '.github/workflows/react-native-expo-ios-maestro-browserstack.yml'
+      - '.github/scripts/browserstack-maestro-test.py'
+  push:
+    branches: [main]
+    paths:
+      - 'react-native-expo/**'
+      - '.github/workflows/react-native-expo-ios-maestro-browserstack.yml'
+      - '.github/scripts/browserstack-maestro-test.py'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maestro-ios-tests:
+    name: Maestro iOS Tests on BrowserStack
+    runs-on: macos-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: react-native-expo/yarn.lock
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.4'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Insert test document into Ditto Cloud
+        run: |
+          # Use GitHub run ID to create deterministic document ID
+          DOC_ID="github_expo_ios_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          # Insert document using curl with correct JSON structure
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"title\": \"GitHub Expo iOS Test Task ${GITHUB_RUN_ID}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          # Extract HTTP status code and response body
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          
+          # Check if insertion was successful
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+            echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+          else
+            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        working-directory: react-native-expo
+        run: yarn install
+
+      - name: Install iOS pods
+        working-directory: react-native-expo/ios
+        run: pod install
+
+      - name: Build iOS app
+        working-directory: react-native-expo
+        run: |
+          # Build for iOS simulator (for testing)
+          yarn run build:ios
+        env:
+          EXPO_USE_METRO: 1
+
+      - name: Verify iOS app exists
+        run: |
+          # Look for the built iOS app
+          IOS_APP_PATH=$(find react-native-expo/ios/build -name "*.app" | head -1)
+          if [ -n "$IOS_APP_PATH" ]; then
+            echo "✓ iOS app found: $IOS_APP_PATH"
+            echo "IOS_APP_PATH=$IOS_APP_PATH" >> $GITHUB_ENV
+          else
+            echo "❌ iOS app not found"
+            echo "Searching for iOS build artifacts:"
+            find react-native-expo/ios -name "*.app" -type d || echo "No .app files found"
+            exit 1
+          fi
+
+      - name: Install Python dependencies
+        run: |
+          pip3 install requests
+
+      - name: Make test script executable
+        run: chmod +x .github/scripts/browserstack-maestro-test.py
+
+      - name: Execute Maestro tests on BrowserStack iOS devices
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
+          APP_TYPE: "expo"
+          PLATFORM_TYPE: "ios"
+          GITHUB_WORKSPACE: ${{ github.workspace }}
+        run: |
+          python3 .github/scripts/browserstack-maestro-test.py
+
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "# React Native Expo iOS Maestro Test Report" > maestro-ios-test-report.md
+          echo "" >> maestro-ios-test-report.md
+          echo "## Test Configuration" >> maestro-ios-test-report.md
+          echo "- **App Type**: React Native with Expo" >> maestro-ios-test-report.md
+          echo "- **Platform**: iOS" >> maestro-ios-test-report.md
+          echo "- **Test Framework**: Maestro" >> maestro-ios-test-report.md
+          echo "- **Platform**: BrowserStack App Automate" >> maestro-ios-test-report.md
+          echo "- **GitHub Run**: #${{ github.run_number }}" >> maestro-ios-test-report.md
+          echo "" >> maestro-ios-test-report.md
+          echo "## Tested Devices" >> maestro-ios-test-report.md
+          echo "- iPhone 14 (iOS 16)" >> maestro-ios-test-report.md
+          echo "- iPhone 15 (iOS 17)" >> maestro-ios-test-report.md
+          echo "- iPad Pro 12.9 2022 (iOS 16)" >> maestro-ios-test-report.md
+          echo "" >> maestro-ios-test-report.md
+          echo "## Sync Verification" >> maestro-ios-test-report.md
+          echo "- **External Test Document ID**: ${GITHUB_TEST_DOC_ID:-Not generated}" >> maestro-ios-test-report.md
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: expo-ios-maestro-test-results
+          path: |
+            maestro-ios-test-report.md
+            .github/scripts/browserstack-maestro-test.py
