@@ -19,7 +19,7 @@ class BrowserStackMaestroRunner:
     def __init__(self):
         self.username = os.getenv('BROWSERSTACK_USERNAME')
         self.access_key = os.getenv('BROWSERSTACK_ACCESS_KEY')
-        self.api_base_url = 'https://api.browserstack.com/app-automate'
+        self.api_base_url = 'https://api-cloud.browserstack.com/app-automate'
         
         if not self.username or not self.access_key:
             raise ValueError("BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY must be set")
@@ -85,7 +85,7 @@ class BrowserStackMaestroRunner:
         """Upload Maestro test suite to BrowserStack"""
         print(f"🧪 Uploading Maestro test suite: {zip_path}")
         
-        upload_url = f"{self.api_base_url}/maestro/upload-suite"
+        upload_url = f"{self.api_base_url}/maestro/v2/test-suite"
         
         with open(zip_path, 'rb') as suite_file:
             files = {'file': suite_file}
@@ -112,7 +112,8 @@ class BrowserStackMaestroRunner:
         print(f"🚀 Starting Maestro build: {build_name}")
         print(f"📱 Testing on {len(devices)} device(s)")
         
-        execute_url = f"{self.api_base_url}/maestro/build"
+        # Platform-specific execution URLs (default to android for now)
+        execute_url = f"{self.api_base_url}/maestro/v2/android/build"
         
         payload = {
             "app": app_url,
@@ -151,7 +152,7 @@ class BrowserStackMaestroRunner:
     
     def get_build_status(self, build_id: str) -> Dict[str, Any]:
         """Get the status of a Maestro build"""
-        status_url = f"{self.api_base_url}/maestro/builds/{build_id}"
+        status_url = f"{self.api_base_url}/maestro/v2/builds/{build_id}"
         
         response = requests.get(status_url, headers=self.headers)
         
@@ -181,7 +182,7 @@ class BrowserStackMaestroRunner:
     
     def get_build_devices(self, build_id: str) -> List[Dict[str, Any]]:
         """Get device results for a build"""
-        devices_url = f"{self.api_base_url}/maestro/builds/{build_id}/devices"
+        devices_url = f"{self.api_base_url}/maestro/v2/builds/{build_id}/devices"
         
         response = requests.get(devices_url, headers=self.headers)
         
