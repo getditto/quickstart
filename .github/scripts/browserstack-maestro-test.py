@@ -120,7 +120,7 @@ class BrowserStackMaestroRunner:
         
         payload = {
             "app": app_url,
-            "suite": suite_url,
+            "testSuite": suite_url,
             "devices": devices,
             "buildName": build_name,
         }
