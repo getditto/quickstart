@@ -27,39 +27,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+      uses: ./.github/actions/android-sdk-setup
     
     - name: Setup NDK
       run: |
         echo "y" | sdkmanager "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
     
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+    - name: Setup Ditto Environment
+      uses: ./.github/actions/ditto-env-setup
     
-    - name: Create .env file
-      run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_playground_token" >> .env
-        echo "DITTO_AUTH_URL=https://auth.example.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://websocket.example.com" >> .env
-    
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+    - name: Cache Gradle
+      uses: ./.github/actions/gradle-cache
     
     - name: Run linting
       working-directory: android-cpp/QuickStartTasksCPP
@@ -75,39 +55,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+      uses: ./.github/actions/android-sdk-setup
     
     - name: Setup NDK
       run: |
         echo "y" | sdkmanager "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
     
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+    - name: Setup Ditto Environment
+      uses: ./.github/actions/ditto-env-setup
     
-    - name: Create .env file
-      run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_playground_token" >> .env
-        echo "DITTO_AUTH_URL=https://auth.example.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://websocket.example.com" >> .env
-    
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+    - name: Cache Gradle
+      uses: ./.github/actions/gradle-cache
     
     - name: Run unit tests
       working-directory: android-cpp/QuickStartTasksCPP
@@ -132,29 +92,23 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+      uses: ./.github/actions/android-sdk-setup
     
     - name: Setup NDK
       run: |
         echo "y" | sdkmanager "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
     
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-    
     - name: Create .env file
       run: |
-        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID || 'test_app_id' }}" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN || 'test_playground_token' }}" >> .env
-        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL || 'https://auth.example.com' }}" >> .env
-        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL || 'wss://websocket.example.com' }}" >> .env
+      uses: ./.github/actions/ditto-env-setup
+      with:
+        use-secrets: 'true'
+        ditto-app-id: ${{ secrets.DITTO_APP_ID }}
+        ditto-playground-token: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        ditto-auth-url: ${{ secrets.DITTO_AUTH_URL }}
+        ditto-websocket-url: ${{ secrets.DITTO_WEBSOCKET_URL }}
     
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
@@ -186,29 +140,23 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+      uses: ./.github/actions/android-sdk-setup
     
     - name: Setup NDK
       run: |
         echo "y" | sdkmanager "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
     
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-    
     - name: Create .env file
       run: |
-        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID || 'test_app_id' }}" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN || 'test_playground_token' }}" >> .env
-        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL || 'https://auth.example.com' }}" >> .env
-        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL || 'wss://websocket.example.com' }}" >> .env
+      uses: ./.github/actions/ditto-env-setup
+      with:
+        use-secrets: 'true'
+        ditto-app-id: ${{ secrets.DITTO_APP_ID }}
+        ditto-playground-token: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        ditto-auth-url: ${{ secrets.DITTO_AUTH_URL }}
+        ditto-websocket-url: ${{ secrets.DITTO_WEBSOCKET_URL }}
     
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
