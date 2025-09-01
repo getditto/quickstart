@@ -36,13 +36,35 @@ class BrowserStackMaestroRunner:
         """Upload the React Native app to BrowserStack"""
         print(f"📱 Uploading app: {app_path}")
         
+        # Handle iOS .app directories by zipping them first
+        if os.path.isdir(app_path) and app_path.endswith('.app'):
+            print(f"📦 Zipping iOS .app directory: {app_path}")
+            zip_path = f"{app_path}.zip"
+            
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(app_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, os.path.dirname(app_path))
+                        zipf.write(file_path, arcname)
+            
+            actual_app_path = zip_path
+            print(f"✅ Created zip: {zip_path}")
+        else:
+            actual_app_path = app_path
+        
         upload_url = f"{self.api_base_url}/upload"
         
-        with open(app_path, 'rb') as app_file:
+        with open(actual_app_path, 'rb') as app_file:
             files = {'file': app_file}
             headers_without_content_type = {k: v for k, v in self.headers.items() if k != 'Content-Type'}
             
             response = requests.post(upload_url, files=files, headers=headers_without_content_type)
+        
+        # Clean up temporary zip file if created
+        if actual_app_path != app_path and os.path.exists(actual_app_path):
+            os.unlink(actual_app_path)
+            print(f"🗑️ Cleaned up temporary zip: {actual_app_path}")
         
         if response.status_code == 200:
             app_url = response.json().get('app_url')
