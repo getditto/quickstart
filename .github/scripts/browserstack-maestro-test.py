@@ -289,8 +289,13 @@ def main():
         app_dir = os.path.join(PROJECT_ROOT, 'react-native')
         maestro_dir = os.path.join(app_dir, '.maestro')
         if PLATFORM_TYPE == 'ios':
-            # Bare React Native doesn't have iOS support in our current setup
-            raise ValueError("iOS testing not supported for bare React Native in current implementation")
+            # Use the iOS .app file built by xcodebuild for bare React Native
+            ios_app_path = os.getenv('IOS_APP_PATH')
+            if ios_app_path:
+                app_path = ios_app_path if ios_app_path.startswith('/') else os.path.join(PROJECT_ROOT, ios_app_path)
+            else:
+                # Fallback to expected xcodebuild output location for bare RN
+                app_path = os.path.join(app_dir, 'ios', 'build', 'Build', 'Products', 'Debug-iphonesimulator', 'DittoReactNativeSampleApp.app')
         else:
             app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
     
