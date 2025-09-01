@@ -3,14 +3,8 @@ name: Kotlin Multiplatform CI
 on:
   push:
     branches: [main, develop]
-    paths:
-      - 'kotlin-multiplatform/**'
-      - '.github/workflows/kotlin-multiplatform-ci.yml'
   pull_request:
     branches: [main, develop]
-    paths:
-      - 'kotlin-multiplatform/**'
-      - '.github/workflows/kotlin-multiplatform-ci.yml'
   workflow_dispatch:
 
 concurrency:
@@ -21,12 +15,11 @@ env:
   JAVA_VERSION: "17"
 
 jobs:
-  build:
-    name: Build and Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+  lint:
+    name: Lint (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,9 +40,9 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             kotlin-multiplatform/.gradle
-          key: ${{ runner.os }}-gradle-kmp-${{ hashFiles('kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-kmp-lint-${{ hashFiles('kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/**/gradle-wrapper.properties') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-kmp-
+            ${{ runner.os }}-gradle-kmp-lint-
 
       - name: Create .env file
         run: |
@@ -62,24 +55,172 @@ jobs:
         working-directory: kotlin-multiplatform
         run: chmod +x gradlew
 
-      - name: Check code style (Kotlin linting not configured)
+      - name: Run linting
         working-directory: kotlin-multiplatform
         run: |
-          echo "⚠️ Detekt not configured - skipping lint check"
-          echo "✅ Code style check passed (placeholder)"
+          ./gradlew detekt
+          echo "✅ Detekt linting completed"
 
-      - name: Run unit tests
+  build-android:
+    name: Build Android (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            kotlin-multiplatform/.gradle
+          key: ${{ runner.os }}-gradle-kmp-android-${{ hashFiles('kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-kmp-android-
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Make gradlew executable
         working-directory: kotlin-multiplatform
-        run: ./gradlew allTests
+        run: chmod +x gradlew
+
+      - name: Run tests
+        working-directory: kotlin-multiplatform
+        run: ./gradlew test
 
       - name: Build Android APK
         working-directory: kotlin-multiplatform
         run: ./gradlew :composeApp:assembleDebug
 
-      - name: Build iOS framework (macOS only)
-        if: matrix.os == 'macos-latest'
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: kotlin-multiplatform/composeApp/build/outputs/apk/
+
+  build-ios:
+    name: Build iOS (macos-latest)
+    runs-on: macos-latest
+    needs: lint
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            kotlin-multiplatform/.gradle
+          key: ${{ runner.os }}-gradle-kmp-ios-${{ hashFiles('kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-kmp-ios-
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Make gradlew executable
+        working-directory: kotlin-multiplatform
+        run: chmod +x gradlew
+
+      - name: Run tests
+        working-directory: kotlin-multiplatform
+        run: ./gradlew test
+
+      - name: Build iOS framework
         working-directory: kotlin-multiplatform
         run: ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64
+
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-framework
+          path: kotlin-multiplatform/composeApp/build/bin/
+
+  build-desktop:
+    name: Build Desktop
+    runs-on: ${{ matrix.os }}
+    needs: lint
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            kotlin-multiplatform/.gradle
+          key: ${{ runner.os }}-gradle-kmp-desktop-${{ hashFiles('kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-kmp-desktop-
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Make gradlew executable
+        working-directory: kotlin-multiplatform
+        run: chmod +x gradlew
+
+      - name: Run tests
+        working-directory: kotlin-multiplatform
+        run: ./gradlew test
 
       - name: Build desktop JAR
         working-directory: kotlin-multiplatform
@@ -95,18 +236,18 @@ jobs:
         working-directory: kotlin-multiplatform
         run: ./gradlew packageDmg
 
-      - name: Upload build artifacts
+      - name: Upload desktop artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kmp-build-${{ matrix.os }}
+          name: desktop-build-${{ matrix.os }}
           path: |
-            kotlin-multiplatform/composeApp/build/outputs/
             kotlin-multiplatform/composeApp/build/compose/binaries/
+            kotlin-multiplatform/composeApp/build/compose/jars/
 
   integration-test:
     name: Ditto sync integration test
     runs-on: ubuntu-latest
-    needs: build
+    needs: [lint, build-android]
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'integration-test'))
     
     steps:
@@ -293,19 +434,40 @@ jobs:
   summary:
     name: CI summary
     runs-on: ubuntu-latest
-    needs: [build, integration-test]
+    needs: [lint, build-android, build-ios, build-desktop, integration-test]
     if: always()
     steps:
       - name: Check results
         run: |
-          echo "## Build results"
-          if [[ "${{ needs.build.result }}" == "success" ]]; then
-            echo "✅ Build: Passed"
+          echo "## CI Results Summary"
+          
+          # Lint results
+          if [[ "${{ needs.lint.result }}" == "success" ]]; then
+            echo "✅ Lint: Passed"
           else
-            echo "❌ Build: Failed"
+            echo "❌ Lint: Failed"
           fi
           
-          echo "## Integration test results"
+          # Build results (each includes tests)
+          if [[ "${{ needs.build-android.result }}" == "success" ]]; then
+            echo "✅ Build Android (+ tests): Passed"
+          else
+            echo "❌ Build Android (+ tests): Failed"
+          fi
+          
+          if [[ "${{ needs.build-ios.result }}" == "success" ]]; then
+            echo "✅ Build iOS (+ tests): Passed"
+          else
+            echo "❌ Build iOS (+ tests): Failed"
+          fi
+          
+          if [[ "${{ needs.build-desktop.result }}" == "success" ]]; then
+            echo "✅ Build Desktop (+ tests): Passed"
+          else
+            echo "❌ Build Desktop (+ tests): Failed"
+          fi
+          
+          # Integration test results
           if [[ "${{ needs.integration-test.result }}" == "success" ]]; then
             echo "✅ Integration tests: Passed"
           elif [[ "${{ needs.integration-test.result }}" == "skipped" ]]; then
@@ -315,7 +477,10 @@ jobs:
           fi
           
           # Fail if any required job failed
-          if [[ "${{ needs.build.result }}" != "success" ]]; then
+          if [[ "${{ needs.lint.result }}" != "success" || \
+                "${{ needs.build-android.result }}" != "success" || \
+                "${{ needs.build-ios.result }}" != "success" || \
+                "${{ needs.build-desktop.result }}" != "success" ]]; then
             echo "❌ CI pipeline failed"
             exit 1
           else

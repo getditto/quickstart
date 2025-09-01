@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.detekt)
 
     id("quickstart-conventions")
 }
@@ -127,6 +128,15 @@ android {
         targetCompatibility = javaVersion
         sourceCompatibility = javaVersion
     }
+}
+
+detekt {
+    toolVersion = libs.versions.detekt.get()
+    config.setFrom(rootProject.file("detekt.yml"))
+    buildUponDefaultConfig = true
+    autoCorrect = false
+    ignoreFailures = false
+    parallel = true
 }
 
 dependencies {

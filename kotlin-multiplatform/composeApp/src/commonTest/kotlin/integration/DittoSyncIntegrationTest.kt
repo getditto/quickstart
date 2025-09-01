@@ -3,11 +3,14 @@ package integration
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
+// Platform-specific expect/actual for environment access
+expect fun getEnvironmentVariable(name: String): String?
+
 class DittoSyncIntegrationTest {
     
     @Test
     fun testDittoSyncIntegration() = runBlocking {
-        val testDocId = System.getenv("GITHUB_TEST_DOC_ID")
+        val testDocId = getEnvironmentVariable("GITHUB_TEST_DOC_ID")
         if (testDocId.isNullOrBlank()) {
             println("⚠️ Skipping integration test - no test document ID found")
             return@runBlocking
@@ -17,10 +20,10 @@ class DittoSyncIntegrationTest {
         
         try {
             // Initialize Ditto with environment variables
-            val appId = System.getenv("DITTO_APP_ID")
-            val token = System.getenv("DITTO_PLAYGROUND_TOKEN")
-            val authUrl = System.getenv("DITTO_AUTH_URL")
-            val websocketUrl = System.getenv("DITTO_WEBSOCKET_URL")
+            val appId = getEnvironmentVariable("DITTO_APP_ID")
+            val token = getEnvironmentVariable("DITTO_PLAYGROUND_TOKEN")
+            val authUrl = getEnvironmentVariable("DITTO_AUTH_URL")
+            val websocketUrl = getEnvironmentVariable("DITTO_WEBSOCKET_URL")
             
             println("📝 Ditto config - AppID: ${appId?.take(8)}...")
             println("📝 Auth URL: $authUrl")
