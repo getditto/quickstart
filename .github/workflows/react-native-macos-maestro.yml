@@ -146,8 +146,8 @@ jobs:
           open "$FULL_APP_PATH" &
           sleep 5
           
-          # Run Maestro tests with explicit platform configuration for macOS
-          maestro test --platform=desktop .maestro/flows/macos/
+          # Run Maestro tests on macOS (no platform flag needed - Maestro detects macOS automatically)
+          maestro test .maestro/flows/macos/
         env:
           DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
           DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
