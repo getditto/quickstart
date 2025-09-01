@@ -134,7 +134,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip3 install requests
+          pip3 install --break-system-packages requests
 
       - name: Make test script executable
         run: chmod +x .github/scripts/browserstack-maestro-test.py
