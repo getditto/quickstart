@@ -3,7 +3,7 @@
 # Workflow for building and testing android-cpp on BrowserStack physical devices
 #
 ---
-name: android-cpp-browserstack
+name: Android CPP BrowserStack Tests
 
 on:
   pull_request:
