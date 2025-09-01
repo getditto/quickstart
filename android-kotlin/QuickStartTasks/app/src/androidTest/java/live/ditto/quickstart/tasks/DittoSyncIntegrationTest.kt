@@ -50,11 +50,11 @@ class DittoSyncIntegrationTest {
     fun testGitHubDocumentSyncFromDittoCloud() {
         // Get GitHub test document info from BrowserStack test runner args
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val githubDocId = instrumentation.getArguments().getString("github_test_doc_id")
-        val runId = instrumentation.getArguments().getString("github_run_id")
+        val githubDocId = InstrumentationRegistry.getArguments().getString("github_test_doc_id")
+        val runId = InstrumentationRegistry.getArguments().getString("github_run_id")
         
         // If GitHub document info is available, test sync from cloud
-        if (!githubDocId.isNullOrEmpty() && !runId.isNullOrEmpty()) {
+        if (githubDocId != null && runId != null) {
             // Wait for document sync with extended timeout for BrowserStack
             waitForGitHubDocumentSyncCompose(runId, 45)
             

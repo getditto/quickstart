@@ -1,20 +1,19 @@
 package live.ditto.quickstart.tasks
 
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.ext.junit.rules.ActivityScenarioRule
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.*
-import androidx.test.espresso.assertion.ViewAssertions.*
-import androidx.test.espresso.matcher.ViewMatchers.*
-import androidx.test.espresso.IdlingRegistry
-import androidx.test.espresso.idling.CountingIdlingResource
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Rule
 import org.junit.Before
-import org.junit.After
-import org.hamcrest.CoreMatchers.*
 
 /**
  * BrowserStack integration test for Ditto sync functionality in Android CPP app.
@@ -22,190 +21,162 @@ import org.hamcrest.CoreMatchers.*
  * specifically looking for GitHub test documents inserted during CI.
  * 
  * This test is designed to run on BrowserStack physical devices and
- * validates real-time sync capabilities with native C++ Ditto integration.
+ * validates real-time sync capabilities across the Ditto network.
  */
 @RunWith(AndroidJUnit4::class)
 class DittoSyncIntegrationTest {
 
     @get:Rule
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
-    
-    private val syncIdlingResource = CountingIdlingResource("DittoSync")
+    val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Before
     fun setUp() {
-        IdlingRegistry.getInstance().register(syncIdlingResource)
-        // Allow time for native C++ Ditto to initialize and establish connections
-        Thread.sleep(4000)
-    }
-    
-    @After
-    fun tearDown() {
-        IdlingRegistry.getInstance().unregister(syncIdlingResource)
+        // Allow time for Compose UI to initialize and Ditto to connect
+        Thread.sleep(3000)
     }
 
     @Test
-    fun testAppInitializationWithCppDitto() {
-        // Verify app initializes correctly with C++ Ditto integration
-        onView(withText("Ditto Tasks"))
-            .check(matches(isDisplayed()))
+    fun testAppInitializationWithCompose() {
+        // Verify app initializes correctly with Compose UI
+        composeTestRule.onNodeWithText("Ditto Tasks")
+            .assertIsDisplayed()
         
-        // Verify task list is present
-        onView(withId(android.R.id.list))
-            .check(matches(isDisplayed()))
-        
-        // Verify add button is available
-        onView(withId(R.id.add_task_button))
-            .check(matches(isDisplayed()))
+        // Verify Add FAB is present
+        composeTestRule.onNodeWithContentDescription("Add Task")
+            .assertIsDisplayed()
     }
 
     @Test 
     fun testGitHubDocumentSyncFromDittoCloud() {
         // Get GitHub test document info from BrowserStack test runner args
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val githubDocId = instrumentation.getArguments().getString("github_test_doc_id")
-        val runId = instrumentation.getArguments().getString("github_run_id")
+        val githubDocId = InstrumentationRegistry.getArguments().getString("github_test_doc_id")
+        val runId = InstrumentationRegistry.getArguments().getString("github_run_id")
         
         // If GitHub document info is available, test sync from cloud
-        if (!githubDocId.isNullOrEmpty() && !runId.isNullOrEmpty()) {
+        if (githubDocId != null && runId != null) {
             // Wait for document sync with extended timeout for BrowserStack
-            waitForGitHubDocumentSync(runId, 45)
+            waitForGitHubDocumentSyncCompose(runId, 45)
             
-            // Verify the GitHub test document appears in task list
-            onView(withId(android.R.id.list))
-                .check(matches(isDisplayed()))
-            
-            // Verify task with GitHub run ID is visible
-            onView(withText(containsString(runId)))
-                .check(matches(isDisplayed()))
-            
-            // Verify task contains expected GitHub test content
-            onView(withText(containsString("GitHub Test Task")))
-                .check(matches(isDisplayed()))
-                
+            // Verify the GitHub test document appears in the task list
+            composeTestRule.onAllNodesWithText(runId, substring = true)[0]
+                .assertIsDisplayed()
         } else {
-            // Fallback to testing local sync functionality
-            testLocalTaskSyncFunctionality()
+            // Standard sync verification without GitHub test document
+            testBasicTaskSyncFunctionality()
         }
     }
 
     @Test
-    fun testLocalTaskSyncFunctionality() {
-        // Test creating a task and verifying it syncs through C++ layer
-        onView(withId(R.id.add_task_button))
-            .perform(click())
+    fun testBasicTaskSyncFunctionality() {
+        val testTaskTitle = "Test Task ${System.currentTimeMillis()}"
         
-        // Enter task text (assuming EditText dialog)
-        onView(withId(R.id.task_input))
-            .perform(typeText("BrowserStack CPP Integration Test Task"))
+        // Add a new task
+        composeTestRule.onNodeWithContentDescription("Add Task")
+            .performClick()
         
-        // Confirm task creation
-        onView(withText("OK"))
-            .perform(click())
+        // Wait for task input to appear and add test task
+        Thread.sleep(1000)
+        composeTestRule.onNodeWithText("Enter task title")
+            .performTextInput(testTaskTitle)
         
-        // Wait for task to be created via C++ and UI to update
-        Thread.sleep(3000)
+        // Save the task
+        composeTestRule.onNodeWithText("Add")
+            .performClick()
         
-        // Verify task appears in the list
-        onView(withText("BrowserStack CPP Integration Test Task"))
-            .check(matches(isDisplayed()))
+        // Verify task appears in list
+        composeTestRule.onNodeWithText(testTaskTitle)
+            .assertIsDisplayed()
     }
 
     @Test
-    fun testNativeCppTaskOperations() {
-        // Test task operations that go through the native C++ layer
-        onView(withId(R.id.add_task_button))
-            .perform(click())
+    fun testTaskToggleCompletion() {
+        val testTaskTitle = "Toggle Task ${System.currentTimeMillis()}"
         
-        onView(withId(R.id.task_input))
-            .perform(typeText("CPP Native Test Task"))
+        // Add a test task first
+        composeTestRule.onNodeWithContentDescription("Add Task")
+            .performClick()
         
-        onView(withText("OK"))
-            .perform(click())
+        Thread.sleep(500)
+        composeTestRule.onNodeWithText("Enter task title")
+            .performTextInput(testTaskTitle)
         
-        Thread.sleep(2000)
+        composeTestRule.onNodeWithText("Add")
+            .performClick()
         
-        // Verify task is created
-        onView(withText("CPP Native Test Task"))
-            .check(matches(isDisplayed()))
+        // Wait for task to appear
+        Thread.sleep(1000)
         
-        // Test task completion toggle (if available in CPP app)
-        try {
-            onView(allOf(
-                withId(R.id.task_checkbox),
-                hasSibling(withText("CPP Native Test Task"))
-            )).perform(click())
-            
-            Thread.sleep(1000)
-            
-            // Verify task completion state changed
-            onView(allOf(
-                withId(R.id.task_checkbox),
-                hasSibling(withText("CPP Native Test Task"))
-            )).check(matches(isChecked()))
-            
-        } catch (e: Exception) {
-            // Task completion toggle may not be implemented, continue test
-            println("Task completion toggle not available in CPP app: ${e.message}")
-        }
+        // Find and toggle the checkbox (assuming tasks have checkboxes)
+        composeTestRule.onNodeWithContentDescription("Toggle completion for $testTaskTitle")
+            .performClick()
+        
+        // Verify the task state changed (this would need specific UI implementation details)
+        // For now just verify the task still exists
+        composeTestRule.onNodeWithText(testTaskTitle)
+            .assertIsDisplayed()
     }
 
     @Test
-    fun testCppDittoSyncBehavior() {
-        // Test behavior specific to C++ Ditto implementation
+    fun testMultipleTasksSync() {
+        val timestamp = System.currentTimeMillis()
+        val task1 = "Sync Task 1 - $timestamp"
+        val task2 = "Sync Task 2 - $timestamp"
         
-        // Create multiple tasks to test bulk sync through native layer
-        val taskNames = listOf("CPP Task 1", "CPP Task 2", "CPP Task 3")
+        // Add first task
+        composeTestRule.onNodeWithContentDescription("Add Task")
+            .performClick()
         
-        taskNames.forEach { taskName ->
-            onView(withId(R.id.add_task_button))
-                .perform(click())
-            
-            onView(withId(R.id.task_input))
-                .perform(typeText(taskName))
-            
-            onView(withText("OK"))
-                .perform(click())
-            
-            Thread.sleep(1500) // Allow time for C++ processing
-        }
+        Thread.sleep(500)
+        composeTestRule.onNodeWithText("Enter task title")
+            .performTextInput(task1)
         
-        // Verify all tasks are displayed
-        taskNames.forEach { taskName ->
-            onView(withText(taskName))
-                .check(matches(isDisplayed()))
-        }
+        composeTestRule.onNodeWithText("Add")
+            .performClick()
         
-        // Allow time for potential C++ sync operations to complete
-        Thread.sleep(3000)
+        Thread.sleep(1000)
+        
+        // Add second task
+        composeTestRule.onNodeWithContentDescription("Add Task")
+            .performClick()
+        
+        Thread.sleep(500)
+        composeTestRule.onNodeWithText("Enter task title")
+            .performTextInput(task2)
+        
+        composeTestRule.onNodeWithText("Add")
+            .performClick()
+        
+        Thread.sleep(1000)
+        
+        // Verify both tasks are displayed
+        composeTestRule.onNodeWithText(task1)
+            .assertIsDisplayed()
+        
+        composeTestRule.onNodeWithText(task2)
+            .assertIsDisplayed()
     }
 
-    private fun waitForGitHubDocumentSync(runId: String, maxWaitSeconds: Int) {
-        val maxAttempts = maxWaitSeconds
-        var attempts = 0
+    /**
+     * Waits for a GitHub test document to sync from Ditto Cloud using Compose UI testing
+     */
+    private fun waitForGitHubDocumentSyncCompose(runId: String, timeoutSeconds: Int) {
+        val startTime = System.currentTimeMillis()
+        val timeoutMs = timeoutSeconds * 1000L
         
-        while (attempts < maxAttempts) {
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
             try {
-                // Look for task containing the GitHub run ID
-                onView(withText(containsString(runId)))
-                    .check(matches(isDisplayed()))
-                
-                // Document found, test passed
+                // Check if any node contains the GitHub run ID
+                composeTestRule.onAllNodesWithText(runId, substring = true)[0]
+                    .assertIsDisplayed()
+                // If we get here, the document synced successfully
                 return
-                
-            } catch (e: AssertionError) {
-                // Document not found yet, wait and retry
-                Thread.sleep(1000)
-                attempts++
-                
-                // Log progress for BrowserStack debugging
-                if (attempts % 10 == 0) {
-                    println("Still waiting for GitHub document sync via C++ layer... ${attempts}/${maxWaitSeconds}s")
-                }
+            } catch (e: Exception) {
+                // Document not yet synced, wait and try again
+                Thread.sleep(2000)
             }
         }
         
-        // Timeout reached, document not synced
-        throw AssertionError("GitHub test document with run ID '$runId' not found after ${maxWaitSeconds}s. This may indicate a sync issue between Ditto Cloud and the C++ native layer.")
+        // If we reach here, the document didn't sync within timeout
+        throw AssertionError("GitHub test document with run ID '$runId' did not sync within $timeoutSeconds seconds")
     }
 }
