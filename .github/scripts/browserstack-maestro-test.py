@@ -266,11 +266,9 @@ def main():
     if not os.path.exists(maestro_flows_dir):
         raise FileNotFoundError(f"Maestro flows directory not found: {maestro_flows_dir}")
     
-    # Define test devices for both Android and iOS
+    # Define test devices for both Android and iOS (reduced to single device for initial testing)
     android_devices = [
         "Google Pixel 7-13.0",
-        "Samsung Galaxy S23-13.0",
-        "OnePlus 11R-13.0",
     ]
     
     ios_devices = [
