@@ -102,7 +102,7 @@ jobs:
           xcodebuild -workspace reactnativeexpo.xcworkspace \
             -scheme reactnativeexpo \
             -configuration Debug \
-            -destination 'id=dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder' \
+            -destination 'id=75860960-263C-416D-B8B8-60C5169ACF52' \
             -derivedDataPath build \
             build
         env:
