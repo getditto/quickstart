@@ -96,15 +96,18 @@ jobs:
         run: |
           mkdir -p react-native/.maestro/flows/macos
           
-          # Create macOS app launch test (app already launched manually)
+          # Create macOS app launch test
           cat > react-native/.maestro/flows/macos/01-macos-app-launch.yaml << 'EOF'
-          appId: com.dittoreactnativesampleapp
+          appId: ${MAESTRO_APP_PATH}
           tags:
             - "macos"
             - "smoke"
           ---
-          # Test: macOS App State Verification
-          # This flow tests the already-launched macOS app state
+          # Test: macOS App Launch and State Verification
+          # This flow launches and tests the macOS app
+          
+          - launchApp:
+              appId: ${MAESTRO_APP_PATH}
           
           # Wait for app to be fully loaded
           - waitForAnimationToEnd:
@@ -117,7 +120,7 @@ jobs:
           
           # Simple success indicator
           - evalScript: |
-              output.log("✓ macOS app state verified successfully")
+              output.log("✓ macOS app launched and verified successfully")
           EOF
           
           # Create macOS config
@@ -139,7 +142,7 @@ jobs:
           
           # Convert relative path to absolute path from current working directory
           FULL_APP_PATH="$(pwd)/../${MACOS_APP_PATH}"
-          echo "🚀 Launching macOS app: $FULL_APP_PATH"
+          echo "🚀 macOS app path: $FULL_APP_PATH"
           
           # Verify app exists
           if [ ! -d "$FULL_APP_PATH" ]; then
@@ -147,11 +150,10 @@ jobs:
             exit 1
           fi
           
-          # Launch the macOS app in background
-          open "$FULL_APP_PATH" &
-          sleep 5
+          # Set the app path for Maestro to use
+          export MAESTRO_APP_PATH="$FULL_APP_PATH"
           
-          # Run Maestro tests on macOS (no platform flag needed - Maestro detects macOS automatically)
+          # Run Maestro tests on macOS (let Maestro handle app launch)
           maestro test .maestro/flows/macos/
         env:
           DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
