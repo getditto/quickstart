@@ -1,0 +1,210 @@
+name: 'BrowserStack Android APK Test'
+description: 'Upload APKs to BrowserStack and run tests on real Android devices'
+inputs:
+  working-directory:
+    description: 'Working directory containing the Android project'
+    required: true
+  project-name:
+    description: 'Project name for BrowserStack (e.g., "Ditto Android Java")'
+    required: true
+  project-type:
+    description: 'Project type identifier (e.g., "android-java", "android-kotlin")'
+    required: true
+  app-apk-path:
+    description: 'Path to the app APK file'
+    required: true
+  test-apk-path:
+    description: 'Path to the test APK file'
+    required: true
+  browserstack-username:
+    description: 'BrowserStack username'
+    required: true
+  browserstack-access-key:
+    description: 'BrowserStack access key'
+    required: true
+  ditto-api-key:
+    description: 'Ditto API key for test document insertion'
+    required: true
+  ditto-api-url:
+    description: 'Ditto API URL'
+    required: true
+  github-test-doc-id:
+    description: 'GitHub test document ID'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Upload APKs to BrowserStack
+      id: upload
+      shell: bash
+      run: |
+        # Upload app APK
+        echo "Uploading app APK..."
+        APP_UPLOAD_RESPONSE=$(curl -u "${{ inputs.browserstack-username }}:${{ inputs.browserstack-access-key }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+          -F "file=@${{ inputs.app-apk-path }}" \
+          -F "custom_id=ditto-${{ inputs.project-type }}-app-${{ github.run_id }}")
+        
+        echo "App upload response: $APP_UPLOAD_RESPONSE"
+        APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
+        
+        if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+          echo "Error: Failed to upload app APK"
+          echo "Response: $APP_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
+        echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+        echo "App uploaded successfully: $APP_URL"
+        
+        # Upload test APK
+        echo "Uploading test APK..."
+        TEST_UPLOAD_RESPONSE=$(curl -u "${{ inputs.browserstack-username }}:${{ inputs.browserstack-access-key }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/test-suite" \
+          -F "file=@${{ inputs.test-apk-path }}" \
+          -F "custom_id=ditto-${{ inputs.project-type }}-test-${{ github.run_id }}")
+        
+        echo "Test upload response: $TEST_UPLOAD_RESPONSE"
+        TEST_URL=$(echo $TEST_UPLOAD_RESPONSE | jq -r .test_url)
+        
+        if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+          echo "Error: Failed to upload test APK"
+          echo "Response: $TEST_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
+        echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
+        echo "Test APK uploaded successfully: $TEST_URL"
+
+    - name: Execute tests on BrowserStack
+      id: test
+      shell: bash
+      run: |
+        # Validate inputs
+        APP_URL="${{ steps.upload.outputs.app_url }}"
+        TEST_URL="${{ steps.upload.outputs.test_url }}"
+        
+        echo "App URL: $APP_URL"
+        echo "Test URL: $TEST_URL"
+        
+        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+          echo "Error: No valid app URL available"
+          exit 1
+        fi
+        
+        if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+          echo "Error: No valid test URL available"
+          exit 1
+        fi
+        
+        # Create test execution request with diverse device configurations
+        BUILD_RESPONSE=$(curl -u "${{ inputs.browserstack-username }}:${{ inputs.browserstack-access-key }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"app\": \"$APP_URL\",
+            \"testSuite\": \"$TEST_URL\",
+            \"devices\": [
+              \"Google Pixel 8-14.0\",
+              \"Samsung Galaxy S23-13.0\",
+              \"Google Pixel 6-12.0\",
+              \"OnePlus 9-11.0\"
+            ],
+            \"projectName\": \"${{ inputs.project-name }}\",
+            \"buildName\": \"Build #${{ github.run_number }}\",
+            \"buildTag\": \"${{ github.ref_name }}\",
+            \"deviceLogs\": true,
+            \"video\": true,
+            \"networkLogs\": true,
+            \"autoGrantPermissions\": true,
+            \"testAnnotations\": {
+              \"data\": {
+                \"github_run_id\": \"${{ github.run_id }}\",
+                \"github_test_doc_id\": \"${{ inputs.github-test-doc-id }}\",
+                \"project_type\": \"${{ inputs.project-type }}\"
+              }
+            },
+            \"instrumentationLogs\": true,
+            \"testRunnerClass\": \"androidx.test.runner.AndroidJUnitRunner\",
+            \"testRunnerArgs\": {
+              \"github_run_id\": \"${{ github.run_id }}\",
+              \"github_test_doc_id\": \"${{ inputs.github-test-doc-id }}\"
+            }
+          }")
+        
+        echo "BrowserStack API Response:"
+        echo "$BUILD_RESPONSE"
+        
+        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "Error: Failed to create BrowserStack build"
+          echo "Response: $BUILD_RESPONSE"
+          exit 1
+        fi
+        
+        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+        echo "Build started with ID: $BUILD_ID"
+
+    - name: Wait for BrowserStack tests to complete
+      shell: bash
+      run: |
+        BUILD_ID="${{ steps.test.outputs.build_id }}"
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "Error: No valid BUILD_ID available. Skipping test monitoring."
+          exit 1
+        fi
+        
+        MAX_WAIT_TIME=1800  # 30 minutes
+        CHECK_INTERVAL=30   # Check every 30 seconds
+        ELAPSED=0
+        
+        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ inputs.browserstack-username }}:${{ inputs.browserstack-access-key }}" \
+            "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+          
+          BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
+          
+          if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
+            echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+            continue
+          fi
+          
+          echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
+          
+          if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
+            echo "Build completed with status: $BUILD_STATUS"
+            break
+          fi
+          
+          sleep $CHECK_INTERVAL
+          ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+        done
+        
+        # Get final results
+        FINAL_RESULT=$(curl -s -u "${{ inputs.browserstack-username }}:${{ inputs.browserstack-access-key }}" \
+          "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+        
+        echo "Final build result:"
+        echo "$FINAL_RESULT" | jq .
+        
+        if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
+          BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+          if [ "$BUILD_STATUS" != "passed" ]; then
+            echo "Build failed with status: $BUILD_STATUS"
+            FAILED_TESTS=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+            if [ -n "$FAILED_TESTS" ]; then
+              echo "Tests failed on devices: $FAILED_TESTS"
+            fi
+            exit 1
+          else
+            echo "All tests passed successfully!"
+          fi
+        else
+          echo "Warning: Could not parse final results"
+          echo "Raw response: $FINAL_RESULT"
+        fi

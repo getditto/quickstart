@@ -1,0 +1,37 @@
+name: 'Ditto Environment Setup'
+description: 'Create .env file with Ditto credentials for any Ditto project'
+inputs:
+  use-secrets:
+    description: 'Whether to use secrets or test values for environment variables'
+    required: false
+    default: 'false'
+  ditto-app-id:
+    description: 'Ditto App ID (when using secrets)'
+    required: false
+  ditto-playground-token:
+    description: 'Ditto Playground Token (when using secrets)'
+    required: false
+  ditto-auth-url:
+    description: 'Ditto Auth URL (when using secrets)'
+    required: false
+  ditto-websocket-url:
+    description: 'Ditto WebSocket URL (when using secrets)'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Create .env file
+      shell: bash
+      run: |
+        if [ "${{ inputs.use-secrets }}" = "true" ]; then
+          echo "DITTO_APP_ID=${{ inputs.ditto-app-id }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ inputs.ditto-playground-token }}" >> .env
+          echo "DITTO_AUTH_URL=${{ inputs.ditto-auth-url }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ inputs.ditto-websocket-url }}" >> .env
+        else
+          echo "DITTO_APP_ID=test_app_id" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=test_playground_token" >> .env
+          echo "DITTO_AUTH_URL=https://auth.example.com" >> .env
+          echo "DITTO_WEBSOCKET_URL=wss://websocket.example.com" >> .env
+        fi

@@ -1,0 +1,26 @@
+name: 'Android SDK Setup'
+description: 'Setup Java and Android SDK for any Android project (React Native, Flutter, Native)'
+inputs:
+  java-version:
+    description: 'Java version to use'
+    required: false
+    default: '17'
+  java-distribution:
+    description: 'Java distribution to use'
+    required: false
+    default: 'temurin'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: ${{ inputs.java-distribution }}
+    
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
