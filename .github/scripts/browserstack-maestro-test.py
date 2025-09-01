@@ -265,15 +265,15 @@ def main():
     
     # Define test devices for both Android and iOS
     android_devices = [
-        {"device": "Google Pixel 7", "osVersion": "13.0"},
-        {"device": "Samsung Galaxy S23", "osVersion": "13.0"},
-        {"device": "OnePlus 11", "osVersion": "13.0"},
+        "Google Pixel 7-13.0",
+        "Samsung Galaxy S23-13.0",
+        "OnePlus 11-13.0",
     ]
     
     ios_devices = [
-        {"device": "iPhone 14", "osVersion": "16"},
-        {"device": "iPhone 15", "osVersion": "17"},
-        {"device": "iPad Pro 12.9 2022", "osVersion": "16"},
+        "iPhone 14-16",
+        "iPhone 15-17",
+        "iPad Pro 12.9 2022-16",
     ]
     
     # Use appropriate devices based on platform
