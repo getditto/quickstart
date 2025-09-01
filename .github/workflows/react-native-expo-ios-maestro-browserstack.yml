@@ -104,15 +104,25 @@ jobs:
 
       - name: Verify iOS app exists
         run: |
-          # Look for the built iOS app
-          IOS_APP_PATH=$(find react-native-expo/ios/build -name "*.app" | head -1)
+          # Look for the built iOS app in common locations
+          echo "🔍 Searching for iOS app in multiple locations..."
+          
+          # Try common iOS Simulator build paths
+          IOS_APP_PATH=$(find react-native-expo/ios -name "*.app" -type d | grep -E "(Debug-iphonesimulator|build)" | head -1)
+          
           if [ -n "$IOS_APP_PATH" ]; then
             echo "✓ iOS app found: $IOS_APP_PATH"
             echo "IOS_APP_PATH=$IOS_APP_PATH" >> $GITHUB_ENV
           else
-            echo "❌ iOS app not found"
-            echo "Searching for iOS build artifacts:"
-            find react-native-expo/ios -name "*.app" -type d || echo "No .app files found"
+            echo "❌ iOS app not found in expected locations"
+            echo "Searching all iOS build artifacts:"
+            find react-native-expo/ios -name "*.app" -type d || echo "No .app files found anywhere"
+            echo ""
+            echo "Directory structure of ios/build:"
+            ls -la react-native-expo/ios/build/ || echo "build directory not found"
+            echo ""
+            echo "Searching for any build products:"
+            find react-native-expo/ios -type d -name "Build" -o -name "DerivedData" -o -name "Products" || echo "No build directories found"
             exit 1
           fi
 

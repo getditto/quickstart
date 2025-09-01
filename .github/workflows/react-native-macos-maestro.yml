@@ -59,16 +59,25 @@ jobs:
 
       - name: Verify macOS app exists
         run: |
-          # Look for the built macOS app
-          MACOS_APP_PATH=$(find react-native/macos/build -name "*.app" | head -1)
+          # Look for the built macOS app in common locations
+          echo "🔍 Searching for macOS app in multiple locations..."
+          
+          # Try common macOS build paths  
+          MACOS_APP_PATH=$(find react-native/macos -name "*.app" -type d | grep -E "(Debug|build)" | head -1)
+          
           if [ -n "$MACOS_APP_PATH" ]; then
             echo "✓ macOS app found: $MACOS_APP_PATH"
             echo "MACOS_APP_PATH=$MACOS_APP_PATH" >> $GITHUB_ENV
           else
-            echo "❌ macOS app not found"
-            echo "Searching for macOS build artifacts:"
-            find react-native/macos -name "*.app" -type d || echo "No .app files found"
-            ls -la react-native/macos/build/ || echo "Build directory not found"
+            echo "❌ macOS app not found in expected locations"
+            echo "Searching all macOS build artifacts:"
+            find react-native/macos -name "*.app" -type d || echo "No .app files found anywhere"
+            echo ""
+            echo "Directory structure of macos/build:"
+            ls -la react-native/macos/build/ || echo "build directory not found"
+            echo ""
+            echo "Searching for any build products:"
+            find react-native/macos -type d -name "Build" -o -name "DerivedData" -o -name "Products" || echo "No build directories found"
             exit 1
           fi
 
