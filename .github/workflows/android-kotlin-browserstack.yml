@@ -1,22 +1,17 @@
-#
-# .github/workflows/android-cpp-browserstack.yml
-# Workflow for building and testing android-cpp on BrowserStack physical devices
-#
----
-name: android-cpp-browserstack
+name: Android Kotlin BrowserStack Tests
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - 'android-cpp/**'
-      - '.github/workflows/android-cpp-browserstack.yml'
+      - 'android-kotlin/**'
+      - '.github/workflows/android-kotlin-browserstack.yml'
   push:
     branches: [main]
     paths:
-      - 'android-cpp/**'
-      - '.github/workflows/android-cpp-browserstack.yml'
-  workflow_dispatch:  # Allow manual trigger
+      - 'android-kotlin/**'
+      - '.github/workflows/android-kotlin-browserstack.yml'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,6 +21,7 @@ jobs:
   build-and-test:
     name: Build and Test on BrowserStack
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     
     steps:
       - name: Checkout code
@@ -53,10 +49,10 @@ jobs:
       - name: Insert test document into Ditto Cloud
         run: |
           # Use GitHub run ID to create deterministic document ID
-          DOC_ID="github_android_cpp_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          DOC_ID="github_android_kotlin_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
           
-          # Insert document using curl with correct JSON structure for Android CPP app
+          # Insert document using curl with correct JSON structure for Android Kotlin app
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H 'Content-type: application/json' \
             -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
@@ -65,7 +61,7 @@ jobs:
               \"args\": {
                 \"newTask\": {
                   \"_id\": \"${DOC_ID}\",
-                  \"title\": \"GitHub Test Task CPP ${GITHUB_RUN_ID}\",
+                  \"title\": \"GitHub Test Task Kotlin ${GITHUB_RUN_ID}\",
                   \"done\": false,
                   \"deleted\": false
                 }
@@ -98,13 +94,13 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build APK
-        working-directory: android-cpp/QuickStartTasksCPP
+        working-directory: android-kotlin/QuickStartTasks
         run: |
           ./gradlew assembleDebug assembleDebugAndroidTest
           echo "APK built successfully"
 
       - name: Run Unit Tests
-        working-directory: android-cpp/QuickStartTasksCPP
+        working-directory: android-kotlin/QuickStartTasks
         run: ./gradlew test
 
       - name: Upload APKs to BrowserStack
@@ -114,8 +110,8 @@ jobs:
           echo "Uploading app APK..."
           APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-            -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/debug/app-debug.apk" \
-            -F "custom_id=ditto-android-cpp-app")
+            -F "file=@android-kotlin/QuickStartTasks/app/build/outputs/apk/debug/app-debug.apk" \
+            -F "custom_id=ditto-android-kotlin-app-${{ github.run_id }}")
           
           echo "App upload response: $APP_UPLOAD_RESPONSE"
           APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
@@ -133,8 +129,8 @@ jobs:
           echo "Uploading test APK..."
           TEST_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/test-suite" \
-            -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
-            -F "custom_id=ditto-android-cpp-test")
+            -F "file=@android-kotlin/QuickStartTasks/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
+            -F "custom_id=ditto-android-kotlin-test-${{ github.run_id }}")
           
           echo "Test upload response: $TEST_UPLOAD_RESPONSE"
           TEST_URL=$(echo $TEST_UPLOAD_RESPONSE | jq -r .test_url)
@@ -151,7 +147,7 @@ jobs:
       - name: Execute tests on BrowserStack
         id: test
         run: |
-          # Validate inputs before creating test execution request
+          # Validate inputs
           APP_URL="${{ steps.upload.outputs.app_url }}"
           TEST_URL="${{ steps.upload.outputs.test_url }}"
           
@@ -168,7 +164,7 @@ jobs:
             exit 1
           fi
           
-          # Create test execution request
+          # Create test execution request with diverse device configurations
           BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
             -H "Content-Type: application/json" \
@@ -179,9 +175,10 @@ jobs:
                 \"Google Pixel 8-14.0\",
                 \"Samsung Galaxy S23-13.0\",
                 \"Google Pixel 6-12.0\",
-                \"OnePlus 9-11.0\"
+                \"OnePlus 9-11.0\",
+                \"Samsung Galaxy A54-13.0\"
               ],
-              \"projectName\": \"Ditto Android CPP\",
+              \"projectName\": \"Ditto Android Kotlin\",
               \"buildName\": \"Build #${{ github.run_number }}\",
               \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,
@@ -192,7 +189,7 @@ jobs:
                 \"data\": {
                   \"github_run_id\": \"${{ github.run_id }}\",
                   \"github_test_doc_id\": \"${{ env.GITHUB_TEST_DOC_ID }}\",
-                  \"project_type\": \"android-cpp\"
+                  \"project_type\": \"android-kotlin\"
                 }
               },
               \"instrumentationLogs\": true,
@@ -208,7 +205,6 @@ jobs:
           
           BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
           
-          # Check if BUILD_ID is null or empty
           if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
             echo "Error: Failed to create BrowserStack build"
             echo "Response: $BUILD_RESPONSE"
@@ -222,7 +218,6 @@ jobs:
         run: |
           BUILD_ID="${{ steps.test.outputs.build_id }}"
           
-          # Validate BUILD_ID before proceeding
           if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
             echo "Error: No valid BUILD_ID available. Skipping test monitoring."
             exit 1
@@ -238,7 +233,6 @@ jobs:
             
             BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
             
-            # Check for API errors
             if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
               echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
               sleep $CHECK_INTERVAL
@@ -247,9 +241,7 @@ jobs:
             fi
             
             echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
-            echo "Full response: $BUILD_STATUS_RESPONSE"
             
-            # Check for completion states - BrowserStack uses different status values
             if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
               echo "Build completed with status: $BUILD_STATUS"
               break
@@ -266,20 +258,14 @@ jobs:
           echo "Final build result:"
           echo "$FINAL_RESULT" | jq .
           
-          # Check if we got valid results
           if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
-            # Check if the overall build passed
             BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
             if [ "$BUILD_STATUS" != "passed" ]; then
               echo "Build failed with status: $BUILD_STATUS"
-              
-              # Check each device for failures
               FAILED_TESTS=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
-              
               if [ -n "$FAILED_TESTS" ]; then
                 echo "Tests failed on devices: $FAILED_TESTS"
               fi
-              
               exit 1
             else
               echo "All tests passed successfully!"
@@ -294,8 +280,7 @@ jobs:
         run: |
           BUILD_ID="${{ steps.test.outputs.build_id }}"
           
-          # Create test report
-          echo "# BrowserStack Test Report" > test-report.md
+          echo "# BrowserStack Android Kotlin Test Report" > test-report.md
           echo "" >> test-report.md
           
           if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
@@ -313,21 +298,26 @@ jobs:
               "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
             
             echo "## Device Results" >> test-report.md
+            echo "### Tested Devices:" >> test-report.md
             if echo "$RESULTS" | jq -e .devices > /dev/null 2>&1; then
-              echo "$RESULTS" | jq -r '.devices[] | "- \(.device): \(.status)"' >> test-report.md
+              echo "$RESULTS" | jq -r '.devices[] | "- \(.device): \(.sessions[0].status // "unknown")"' >> test-report.md
             else
               echo "Unable to retrieve device results" >> test-report.md
             fi
+            
+            echo "" >> test-report.md
+            echo "## Test Document" >> test-report.md
+            echo "GitHub Test Document ID: ${{ env.GITHUB_TEST_DOC_ID }}" >> test-report.md
           fi
 
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: android-kotlin-browserstack-results
           path: |
-            android-cpp/QuickStartTasksCPP/app/build/outputs/apk/
-            android-cpp/QuickStartTasksCPP/app/build/reports/
+            android-kotlin/QuickStartTasks/app/build/outputs/apk/
+            android-kotlin/QuickStartTasks/app/build/reports/
             test-report.md
 
       - name: Comment PR with results
@@ -341,7 +331,7 @@ jobs:
             
             let body;
             if (buildId === 'null' || buildId === '' || !buildId) {
-              body = `## 📱 BrowserStack Test Results
+              body = `## 📱 BrowserStack Android Kotlin Test Results
               
               **Status:** ❌ Failed (Build creation failed)
               **Build:** [#${{ github.run_number }}](${runUrl})
@@ -352,20 +342,23 @@ jobs:
               - Samsung Galaxy S23 (Android 13)
               - Google Pixel 6 (Android 12)
               - OnePlus 9 (Android 11)
+              - Samsung Galaxy A54 (Android 13)
               `;
             } else {
               const bsUrl = `https://app-automate.browserstack.com/dashboard/v2/builds/${buildId}`;
-              body = `## 📱 BrowserStack Test Results
+              body = `## 📱 BrowserStack Android Kotlin Test Results
               
               **Status:** ${status === 'success' ? '✅ Passed' : '❌ Failed'}
               **Build:** [#${{ github.run_number }}](${runUrl})
               **BrowserStack:** [View detailed results](${bsUrl})
+              **Test Document:** ${{ env.GITHUB_TEST_DOC_ID }}
               
               ### Tested Devices:
               - Google Pixel 8 (Android 14)
               - Samsung Galaxy S23 (Android 13)
               - Google Pixel 6 (Android 12)
               - OnePlus 9 (Android 11)
+              - Samsung Galaxy A54 (Android 13)
               `;
             }
             
