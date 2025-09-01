@@ -1,0 +1,17 @@
+appId: com.anonymous.reactnativeexpo
+tags:
+  - "smoke"
+  - "launch"
+---
+# Test: App Launch and Initial State
+# This flow tests the basic app launch and verifies core UI elements are present
+- launchApp:
+    appId: com.anonymous.reactnativeexpo
+- runFlow:
+    when:
+      visible: "Permission"
+    commands:
+      - tapOn: "Allow"
+- assertVisible: 
+    text: "Ditto Tasks"
+- assertVisible: "+"

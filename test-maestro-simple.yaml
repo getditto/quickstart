@@ -1,0 +1,8 @@
+appId: com.android.settings
+---
+# Simple test to verify Maestro is working by opening Android Settings
+- launchApp
+- waitForAnimationToEnd
+# Instead of looking for specific text, just verify the app launched
+- assertVisible:
+    id: "main_content"

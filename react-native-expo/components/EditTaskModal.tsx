@@ -32,10 +32,12 @@ const EditTaskModal: React.FC<Props> = ({ task, onSubmit, onClose, ...props }) =
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Edit Task</Text>
           <TextInput
+            testID="edit-task-input"
             style={styles.input}
             value={input}
             onChangeText={setInput}
             autoFocus
+            selectTextOnFocus
           />
           <Button title="Save" onPress={submit} />
           <Button title="Cancel" onPress={onClose} />

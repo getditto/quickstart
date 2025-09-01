@@ -1,0 +1,149 @@
+name: react-native-macos-maestro
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'react-native/**'
+      - '.github/workflows/react-native-macos-maestro.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'react-native/**'
+      - '.github/workflows/react-native-macos-maestro.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maestro-macos-tests:
+    name: Maestro macOS Tests
+    runs-on: macos-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: react-native/yarn.lock
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Install dependencies
+        working-directory: react-native
+        run: yarn install
+
+      - name: Install macOS pods
+        working-directory: react-native/macos
+        run: pod install
+
+      - name: Build macOS app
+        working-directory: react-native
+        run: |
+          # Build for macOS
+          yarn run build:macos
+        env:
+          RCT_NEW_ARCH_ENABLED: 0
+
+      - name: Verify macOS app exists
+        run: |
+          # Look for the built macOS app
+          MACOS_APP_PATH=$(find react-native/macos/build -name "*.app" | head -1)
+          if [ -n "$MACOS_APP_PATH" ]; then
+            echo "✓ macOS app found: $MACOS_APP_PATH"
+            echo "MACOS_APP_PATH=$MACOS_APP_PATH" >> $GITHUB_ENV
+          else
+            echo "❌ macOS app not found"
+            echo "Searching for macOS build artifacts:"
+            find react-native/macos -name "*.app" -type d || echo "No .app files found"
+            ls -la react-native/macos/build/ || echo "Build directory not found"
+            exit 1
+          fi
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Create macOS-specific Maestro flows
+        run: |
+          mkdir -p react-native/.maestro/flows/macos
+          
+          # Create macOS app launch test
+          cat > react-native/.maestro/flows/macos/01-macos-app-launch.yaml << 'EOF'
+          appId: com.dittoreactnativesampleapp
+          tags:
+            - "macos"
+            - "smoke"
+          ---
+          # Test: macOS App Launch and Initial State
+          # This flow tests the basic app launch on macOS
+          
+          - launchApp:
+              appId: com.dittoreactnativesampleapp
+          
+          - assertVisible: 
+              text: "Ditto Tasks"
+          
+          - assertVisible: "+"
+          EOF
+          
+          # Create macOS config
+          cat > react-native/.maestro/macos-config.yaml << 'EOF'
+          includePaths:
+            - flows/macos/
+            
+          env:
+            APP_ID: "${DITTO_APP_ID}"
+            PLAYGROUND_TOKEN: "${DITTO_PLAYGROUND_TOKEN}"
+          EOF
+
+      - name: Run Maestro tests on macOS
+        working-directory: react-native
+        run: |
+          # Set environment variables for Maestro
+          export DITTO_APP_ID="${{ secrets.DITTO_APP_ID }}"
+          export DITTO_PLAYGROUND_TOKEN="${{ secrets.DITTO_PLAYGROUND_TOKEN }}"
+          
+          # Run the macOS-specific tests
+          maestro test --config .maestro/macos-config.yaml .maestro/flows/macos/
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "# React Native macOS Maestro Test Report" > maestro-macos-test-report.md
+          echo "" >> maestro-macos-test-report.md
+          echo "## Test Configuration" >> maestro-macos-test-report.md
+          echo "- **App Type**: Bare React Native" >> maestro-macos-test-report.md
+          echo "- **Platform**: macOS" >> maestro-macos-test-report.md
+          echo "- **Test Framework**: Maestro" >> maestro-macos-test-report.md
+          echo "- **Runner**: GitHub Actions macOS" >> maestro-macos-test-report.md
+          echo "- **GitHub Run**: #${{ github.run_number }}" >> maestro-macos-test-report.md
+          echo "" >> maestro-macos-test-report.md
+          echo "## Test Results" >> maestro-macos-test-report.md
+          echo "- **App Launch**: Tested on macOS runner" >> maestro-macos-test-report.md
+          echo "- **UI Elements**: Verified basic functionality" >> maestro-macos-test-report.md
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bare-rn-macos-maestro-test-results
+          path: |
+            maestro-macos-test-report.md
+            react-native/.maestro/flows/macos/

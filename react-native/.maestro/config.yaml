@@ -1,0 +1,6 @@
+includePaths:
+  - flows/
+  
+env:
+  APP_ID: "${DITTO_APP_ID}"
+  PLAYGROUND_TOKEN: "${DITTO_PLAYGROUND_TOKEN}"
