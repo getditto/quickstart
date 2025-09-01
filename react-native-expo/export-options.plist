@@ -5,7 +5,7 @@
     <key>method</key>
     <string>development</string>
     <key>signingStyle</key>
-    <string>manual</string>
+    <string>automatic</string>
     <key>stripSwiftSymbols</key>
     <true/>
     <key>uploadBitcode</key>
@@ -14,5 +14,9 @@
     <false/>
     <key>compileBitcode</key>
     <false/>
+    <key>signingCertificate</key>
+    <string>-</string>
+    <key>provisioningProfiles</key>
+    <dict/>
 </dict>
 </plist>

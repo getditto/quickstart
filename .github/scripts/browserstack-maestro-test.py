@@ -42,10 +42,13 @@ class BrowserStackMaestroRunner:
             zip_path = f"{app_path}.zip"
             
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                app_name = os.path.basename(app_path)
                 for root, dirs, files in os.walk(app_path):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, os.path.dirname(app_path))
+                        # Create archive path that puts .app at root level
+                        rel_path = os.path.relpath(file_path, app_path)
+                        arcname = os.path.join(app_name, rel_path)
                         zipf.write(file_path, arcname)
             
             actual_app_path = zip_path
@@ -273,13 +276,13 @@ def main():
         app_dir = os.path.join(PROJECT_ROOT, 'react-native-expo')
         maestro_dir = os.path.join(app_dir, '.maestro')
         if PLATFORM_TYPE == 'ios':
-            # Use the iOS IPA file built by xcodebuild
+            # Use the iOS .app file built by xcodebuild
             ios_app_path = os.getenv('IOS_APP_PATH')
             if ios_app_path:
                 app_path = ios_app_path if ios_app_path.startswith('/') else os.path.join(PROJECT_ROOT, ios_app_path)
             else:
-                # Fallback to expected IPA export location
-                app_path = os.path.join(app_dir, 'ios', 'build', 'ipa', 'reactnativeexpo.ipa')
+                # Fallback to expected xcodebuild output location
+                app_path = os.path.join(app_dir, 'ios', 'build', 'Build', 'Products', 'Debug-iphonesimulator', 'reactnativeexpo.app')
         else:
             app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
     else:  # bare
@@ -296,7 +299,7 @@ def main():
     
     # Validate required files exist
     if not os.path.exists(app_path):
-        app_type_text = "IPA" if PLATFORM_TYPE == 'ios' else "APK"
+        app_type_text = "app" if PLATFORM_TYPE == 'ios' else "APK"
         raise FileNotFoundError(f"App {app_type_text} not found: {app_path}")
     
     if not os.path.exists(maestro_config_path):

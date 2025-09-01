@@ -97,50 +97,38 @@ jobs:
       - name: Build iOS app
         working-directory: react-native-expo
         run: |
-          # Build iOS app for real devices and create IPA for BrowserStack
+          # Build for iOS simulator - BrowserStack can handle .app bundles  
           cd ios
-          
-          # Build and archive the app for real devices
           xcodebuild -workspace reactnativeexpo.xcworkspace \
             -scheme reactnativeexpo \
             -configuration Debug \
-            -sdk iphoneos \
+            -destination 'id=75860960-263C-416D-B8B8-60C5169ACF52' \
             -derivedDataPath build \
-            -archivePath build/reactnativeexpo.xcarchive \
-            archive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-          
-          # Export the archive as IPA
-          xcodebuild -exportArchive \
-            -archivePath build/reactnativeexpo.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist ../export-options.plist
+            build
         env:
           EXPO_USE_METRO: 1
 
-      - name: Verify iOS IPA exists
+      - name: Verify iOS app exists
         run: |
-          # Look for the exported IPA file
-          echo "🔍 Searching for iOS IPA file..."
+          # Look for the built iOS app in xcodebuild output location
+          echo "🔍 Searching for iOS app in xcodebuild output..."
           
-          # Look for IPA in the export path
-          IOS_IPA_PATH=$(find react-native-expo/ios/build/ipa -name "*.ipa" -type f | head -1)
+          # Look in the derivedDataPath we specified (including Debug subdirectory)  
+          IOS_APP_PATH=$(find react-native-expo/ios/build/Build/Products/Debug* -name "*.app" -type d | head -1)
           
-          if [ -n "$IOS_IPA_PATH" ]; then
-            echo "✓ iOS IPA found: $IOS_IPA_PATH"
-            echo "IOS_APP_PATH=$IOS_IPA_PATH" >> $GITHUB_ENV
+          if [ -n "$IOS_APP_PATH" ]; then
+            echo "✓ iOS app found: $IOS_APP_PATH"
+            echo "IOS_APP_PATH=$IOS_APP_PATH" >> $GITHUB_ENV
           else
-            echo "❌ iOS IPA not found in export output"
-            echo "Checking export output structure:"
-            find react-native-expo/ios/build -name "*.ipa" -type f || echo "No .ipa files found in build output"
+            echo "❌ iOS app not found in xcodebuild output"
+            echo "Checking xcodebuild output structure:"
+            find react-native-expo/ios/build -name "*.app" -type d || echo "No .app files found in build output"
             echo ""
-            echo "Archive directory structure:"
-            ls -la react-native-expo/ios/build/ || echo "Build directory not found"
+            echo "Build directory structure:"
+            ls -la react-native-expo/ios/build/Build/Products/ || echo "Products directory not found"
             echo ""
-            echo "IPA export directory:"
-            ls -la react-native-expo/ios/build/ipa/ || echo "IPA directory not found"
+            echo "Full build tree:"
+            find react-native-expo/ios/build -type d -name "*Debug*" || echo "No Debug directories found"
             exit 1
           fi
 
