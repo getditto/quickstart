@@ -155,51 +155,90 @@ jobs:
     - name: Build iOS App for BrowserStack
       working-directory: kotlin-multiplatform
       run: |
-        echo "🔨 Building iOS framework for BrowserStack testing..."
+        echo "🔨 Building KMP framework for iOS app..."
         ./gradlew composeApp:linkDebugFrameworkIosSimulatorArm64
         
-        echo "🍎 Building iOS .ipa file..."
+        echo "🍎 Building complete iOS app (.ipa) for BrowserStack real device testing..."
         cd iosApp
         
-        # Build for simulator (BrowserStack supports iOS simulators)
+        # Build iOS app for real device testing
         xcodebuild -project iosApp.xcodeproj \
           -scheme iosApp \
           -configuration Debug \
           -destination 'generic/platform=iOS Simulator' \
           -archivePath build/iosApp.xcarchive \
-          archive
+          archive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
         
-        # Create .ipa from archive
+        # Export IPA for BrowserStack
         xcodebuild -exportArchive \
           -archivePath build/iosApp.xcarchive \
           -exportPath build/ \
-          -exportOptionsPlist ../iosApp/exportOptions.plist \
-          || true
+          -exportOptionsPlist exportOptions.plist
         
-        echo "✅ iOS build completed"
+        # Verify IPA was created
+        if [ -f "build/iosApp.ipa" ]; then
+          echo "✅ iOS app (.ipa) built successfully"
+          ls -la build/iosApp.ipa
+        else
+          echo "⚠️ .ipa not found, checking for .app bundle..."
+          ls -la build/
+        fi
 
     - name: Upload iOS App to BrowserStack
       id: ios_upload
       run: |
-        echo "📤 Uploading iOS app to BrowserStack..."
+        echo "📤 Uploading complete iOS app to BrowserStack..."
         
-        # Look for .ipa file or create a simple one for testing
-        IPA_PATH=""
+        # Upload the actual iOS app that customers use
         if [ -f "kotlin-multiplatform/iosApp/build/iosApp.ipa" ]; then
-          IPA_PATH="kotlin-multiplatform/iosApp/build/iosApp.ipa"
+          IOS_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@kotlin-multiplatform/iosApp/build/iosApp.ipa" \
+            -F "custom_id=ditto-kmp-ios-app-${{ github.run_id }}")
+          
+          echo "Upload response: $IOS_UPLOAD_RESPONSE"
+          IOS_APP_URL=$(echo $IOS_UPLOAD_RESPONSE | jq -r .app_url)
+          
+          if [ "$IOS_APP_URL" = "null" ] || [ -z "$IOS_APP_URL" ]; then
+            echo "❌ Failed to upload iOS app to BrowserStack"
+            echo "Response: $IOS_UPLOAD_RESPONSE"
+            exit 1
+          fi
+          
+          echo "ios_app_url=$IOS_APP_URL" >> $GITHUB_OUTPUT
+          echo "✅ iOS app uploaded successfully: $IOS_APP_URL"
         else
-          echo "⚠️ .ipa file not found, using framework for testing"
-          # BrowserStack can also test with .app bundles
-          echo "📝 iOS framework built successfully for BrowserStack compatibility testing"
+          echo "❌ iOS .ipa file not found for upload"
+          ls -la kotlin-multiplatform/iosApp/build/
+          exit 1
         fi
+    
+    - name: Run Appium Tests on iOS Real Devices
+      run: |
+        IOS_APP_URL="${{ steps.ios_upload.outputs.ios_app_url }}"
         
-        # For now, we'll validate the iOS build process worked
-        if [ -d "kotlin-multiplatform/composeApp/build/bin/iosSimulatorArm64/debugFramework" ]; then
-          echo "✅ iOS framework built successfully"
-          echo "✅ Ready for BrowserStack iOS testing on simulators"
-        else
-          echo "⚠️ iOS framework build completed with warnings"
-        fi
+        echo "🚀 Running Appium smoke tests on real iOS devices..."
+        echo "App URL: $IOS_APP_URL"
+        
+        # Run Appium tests written in Kotlin
+        cd kotlin-multiplatform/appium-tests
+        
+        # Set environment variables for tests
+        export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
+        export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+        export IOS_APP_URL="$IOS_APP_URL"
+        
+        # Run the actual Appium tests
+        ./gradlew test || {
+          echo "❌ iOS Appium tests failed - DITTO QUICKSTART BROKEN ON iOS!"
+          exit 1
+        }
+        
+        echo "✅ iOS Appium tests passed - DITTO QUICKSTART VALIDATED ON REAL iOS DEVICES!"
+        echo "🎯 Customer-facing iOS app is working correctly!"
 
   summary:
     name: BrowserStack Summary
