@@ -105,6 +105,7 @@ class BrowserStackMaestroRunner:
     
     def execute_maestro_build(self, app_url: str, suite_url: str, 
                              devices: List[Dict[str, str]], 
+                             platform_type: str = 'android',
                              build_name: str = None,
                              tags: List[str] = None) -> str:
         """Execute Maestro tests on BrowserStack devices"""
@@ -115,8 +116,9 @@ class BrowserStackMaestroRunner:
         print(f"🚀 Starting Maestro build: {build_name}")
         print(f"📱 Testing on {len(devices)} device(s)")
         
-        # Platform-specific execution URLs (default to android for now)
-        execute_url = f"{self.api_base_url}/maestro/v2/android/build"
+        # Platform-specific execution URLs
+        platform = 'ios' if platform_type == 'ios' else 'android'
+        execute_url = f"{self.api_base_url}/maestro/v2/{platform}/build"
         
         payload = {
             "app": app_url,
@@ -243,15 +245,29 @@ def main():
     # Configuration
     PROJECT_ROOT = os.getenv('GITHUB_WORKSPACE', os.getcwd())
     APP_TYPE = os.getenv('APP_TYPE', 'expo')  # 'expo' or 'bare'
+    PLATFORM_TYPE = os.getenv('PLATFORM_TYPE', 'android')  # android, ios, or both
     
     if APP_TYPE == 'expo':
         app_dir = os.path.join(PROJECT_ROOT, 'react-native-expo')
         maestro_dir = os.path.join(app_dir, '.maestro')
-        app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
+        if PLATFORM_TYPE == 'ios':
+            # Use the iOS .app file built by xcodebuild
+            ios_app_path = os.getenv('IOS_APP_PATH')
+            if ios_app_path:
+                app_path = os.path.join(PROJECT_ROOT, ios_app_path)
+            else:
+                # Fallback to expected xcodebuild output location
+                app_path = os.path.join(app_dir, 'ios', 'build', 'Build', 'Products', 'Debug-iphonesimulator', 'reactnativeexpo.app')
+        else:
+            app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
     else:  # bare
         app_dir = os.path.join(PROJECT_ROOT, 'react-native')
         maestro_dir = os.path.join(app_dir, '.maestro')
-        app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
+        if PLATFORM_TYPE == 'ios':
+            # Bare React Native doesn't have iOS support in our current setup
+            raise ValueError("iOS testing not supported for bare React Native in current implementation")
+        else:
+            app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
     
     maestro_config_path = os.path.join(maestro_dir, 'config.yaml')
     maestro_flows_dir = os.path.join(maestro_dir, 'flows')
@@ -277,12 +293,11 @@ def main():
         "iPad Pro 12.9 2022-16",
     ]
     
-    # Use appropriate devices based on platform
-    platform_type = os.getenv('PLATFORM_TYPE', 'android')  # android, ios, or both
+    # Use appropriate devices based on platform (already defined above)
     
-    if platform_type == 'ios':
+    if PLATFORM_TYPE == 'ios':
         test_devices = ios_devices
-    elif platform_type == 'both':
+    elif PLATFORM_TYPE == 'both':
         test_devices = android_devices + ios_devices
     else:
         test_devices = android_devices
@@ -318,6 +333,7 @@ def main():
             app_url=app_url,
             suite_url=suite_url,
             devices=test_devices,
+            platform_type=PLATFORM_TYPE,
             build_name=build_name,
             tags=test_tags
         )
