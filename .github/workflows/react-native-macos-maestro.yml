@@ -68,8 +68,8 @@ jobs:
           # Look for the built macOS app in xcodebuild output location
           echo "🔍 Searching for macOS app in xcodebuild output..."
           
-          # Look in the derivedDataPath we specified
-          MACOS_APP_PATH=$(find react-native/macos/build/Build/Products -name "*.app" -type d | head -1)
+          # Look in the derivedDataPath we specified (including Debug subdirectory)
+          MACOS_APP_PATH=$(find react-native/macos/build/Build/Products/Debug -name "*.app" -type d | head -1)
           
           if [ -n "$MACOS_APP_PATH" ]; then
             echo "✓ macOS app found: $MACOS_APP_PATH"
