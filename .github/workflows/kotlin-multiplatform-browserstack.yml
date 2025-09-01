@@ -172,19 +172,21 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
         
-        # Export IPA for BrowserStack
-        xcodebuild -exportArchive \
-          -archivePath build/iosApp.xcarchive \
-          -exportPath build/ \
-          -exportOptionsPlist exportOptions.plist
+# Extract the .app bundle from archive for BrowserStack
+        # BrowserStack supports both .ipa and .app uploads
+        APP_BUNDLE_PATH="build/iosApp.xcarchive/Products/Applications/QuickStartTasks.app"
         
-        # Verify IPA was created
-        if [ -f "build/iosApp.ipa" ]; then
-          echo "✅ iOS app (.ipa) built successfully"
-          ls -la build/iosApp.ipa
+        if [ -d "$APP_BUNDLE_PATH" ]; then
+          echo "✅ iOS app bundle built successfully"
+          ls -la "$APP_BUNDLE_PATH"
+          
+          # Copy app bundle to build directory for upload
+          cp -r "$APP_BUNDLE_PATH" build/QuickStartTasks.app
+          echo "📦 iOS app ready for BrowserStack upload"
         else
-          echo "⚠️ .ipa not found, checking for .app bundle..."
-          ls -la build/
+          echo "❌ iOS app bundle not found"
+          find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found"
+          exit 1
         fi
 
     - name: Upload iOS App to BrowserStack
@@ -192,11 +194,18 @@ jobs:
       run: |
         echo "📤 Uploading complete iOS app to BrowserStack..."
         
-        # Upload the actual iOS app that customers use
-        if [ -f "kotlin-multiplatform/iosApp/build/iosApp.ipa" ]; then
+# Upload the iOS app bundle to BrowserStack
+        # BrowserStack supports .app bundles for testing
+        if [ -d "kotlin-multiplatform/iosApp/build/QuickStartTasks.app" ]; then
+          echo "📤 Creating zip of iOS app bundle for BrowserStack..."
+          cd kotlin-multiplatform/iosApp/build
+          zip -r QuickStartTasks.app.zip QuickStartTasks.app
+          cd ../../..
+          
+          echo "📤 Uploading iOS app to BrowserStack..."
           IOS_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-            -F "file=@kotlin-multiplatform/iosApp/build/iosApp.ipa" \
+            -F "file=@kotlin-multiplatform/iosApp/build/QuickStartTasks.app.zip" \
             -F "custom_id=ditto-kmp-ios-app-${{ github.run_id }}")
           
           echo "Upload response: $IOS_UPLOAD_RESPONSE"
@@ -211,7 +220,7 @@ jobs:
           echo "ios_app_url=$IOS_APP_URL" >> $GITHUB_OUTPUT
           echo "✅ iOS app uploaded successfully: $IOS_APP_URL"
         else
-          echo "❌ iOS .ipa file not found for upload"
+          echo "❌ iOS app bundle not found for upload"
           ls -la kotlin-multiplatform/iosApp/build/
           exit 1
         fi
