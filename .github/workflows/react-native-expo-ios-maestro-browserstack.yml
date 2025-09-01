@@ -97,32 +97,38 @@ jobs:
       - name: Build iOS app
         working-directory: react-native-expo
         run: |
-          # Build for iOS simulator (for testing)
-          yarn run build:ios
+          # Build for iOS simulator using xcodebuild to generate actual .app file
+          cd ios
+          xcodebuild -workspace reactnativeexpo.xcworkspace \
+            -scheme reactnativeexpo \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest' \
+            -derivedDataPath build \
+            build
         env:
           EXPO_USE_METRO: 1
 
       - name: Verify iOS app exists
         run: |
-          # Look for the built iOS app in common locations
-          echo "🔍 Searching for iOS app in multiple locations..."
+          # Look for the built iOS app in xcodebuild output location
+          echo "🔍 Searching for iOS app in xcodebuild output..."
           
-          # Try common iOS Simulator build paths
-          IOS_APP_PATH=$(find react-native-expo/ios -name "*.app" -type d | grep -E "(Debug-iphonesimulator|build)" | head -1)
+          # Look in the derivedDataPath we specified
+          IOS_APP_PATH=$(find react-native-expo/ios/build/Build/Products -name "*.app" -type d | head -1)
           
           if [ -n "$IOS_APP_PATH" ]; then
             echo "✓ iOS app found: $IOS_APP_PATH"
             echo "IOS_APP_PATH=$IOS_APP_PATH" >> $GITHUB_ENV
           else
-            echo "❌ iOS app not found in expected locations"
-            echo "Searching all iOS build artifacts:"
-            find react-native-expo/ios -name "*.app" -type d || echo "No .app files found anywhere"
+            echo "❌ iOS app not found in xcodebuild output"
+            echo "Checking xcodebuild output structure:"
+            find react-native-expo/ios/build -name "*.app" -type d || echo "No .app files found in build output"
             echo ""
-            echo "Directory structure of ios/build:"
-            ls -la react-native-expo/ios/build/ || echo "build directory not found"
+            echo "Build directory structure:"
+            ls -la react-native-expo/ios/build/Build/Products/ || echo "Products directory not found"
             echo ""
-            echo "Searching for any build products:"
-            find react-native-expo/ios -type d -name "Build" -o -name "DerivedData" -o -name "Products" || echo "No build directories found"
+            echo "Full build tree:"
+            find react-native-expo/ios/build -type d -name "*Debug*" || echo "No Debug directories found"
             exit 1
           fi
 
