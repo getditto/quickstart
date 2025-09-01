@@ -1,17 +1,10 @@
 name: react-native-macos-maestro
 
+# DISABLED: Maestro macOS has persistent device detection issues
+# Error: "Want to use 0 devices" - Maestro desktop app support limitation
+# BrowserStack provides complete cross-platform coverage for real device testing
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'react-native/**'
-      - '.github/workflows/react-native-macos-maestro.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'react-native/**'
-      - '.github/workflows/react-native-macos-maestro.yml'
-  workflow_dispatch:
+  workflow_dispatch: # Only manual trigger for debugging
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
