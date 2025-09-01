@@ -105,9 +105,16 @@ jobs:
         echo "DITTO_AUTH_URL=https://test.com" >> .env
         echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
     
-    - name: Build iOS
+    - name: Build iOS Framework
       working-directory: kotlin-multiplatform
       run: ./gradlew composeApp:linkDebugFrameworkIosSimulatorArm64
+    
+    - name: Run iOS Simulator Tests
+      working-directory: kotlin-multiplatform
+      run: |
+        echo "🧪 Running iOS simulator tests for shared KMP code..."
+        ./gradlew composeApp:iosSimulatorArm64Test composeApp:iosX64Test --continue
+        echo "✅ iOS simulator tests completed (both ARM64 and x64)"
 
   build-desktop:
     name: Build Desktop (ubuntu-latest)
