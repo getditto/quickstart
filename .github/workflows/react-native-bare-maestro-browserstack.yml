@@ -118,8 +118,8 @@ jobs:
       - name: Build Android APK
         working-directory: react-native
         run: |
-          # Use the build command from package.json
-          yarn run build:android
+          # Build APK directly using Gradle assembleDebug task
+          cd android && ./gradlew assembleDebug --no-daemon --console=plain
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
 
