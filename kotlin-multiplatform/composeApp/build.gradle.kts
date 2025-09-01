@@ -61,6 +61,9 @@ kotlin {
             implementation(libs.datastore.preferences)
             implementation(libs.datastore)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
