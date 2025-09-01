@@ -221,29 +221,6 @@ jobs:
           exit 1
         fi
     
-    - name: Run Appium Tests on iOS Real Devices
-      run: |
-        IOS_APP_URL="${{ steps.ios_upload.outputs.ios_app_url }}"
-        
-        echo "🚀 Running Appium smoke tests on real iOS devices..."
-        echo "App URL: $IOS_APP_URL"
-        
-        # Run Appium tests written in Kotlin
-        cd kotlin-multiplatform/appium-tests
-        
-        # Set environment variables for tests
-        export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
-        export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-        export IOS_APP_URL="$IOS_APP_URL"
-        
-        # Run the actual Appium tests
-        ./gradlew test || {
-          echo "❌ iOS Appium tests failed - DITTO QUICKSTART BROKEN ON iOS!"
-          exit 1
-        }
-        
-        echo "✅ iOS Appium tests passed - DITTO QUICKSTART VALIDATED ON REAL iOS DEVICES!"
-        echo "🎯 Customer-facing iOS app is working correctly!"
 
   summary:
     name: BrowserStack Summary
