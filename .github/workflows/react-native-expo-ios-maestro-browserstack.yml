@@ -102,7 +102,7 @@ jobs:
           xcodebuild -workspace reactnativeexpo.xcworkspace \
             -scheme reactnativeexpo \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest' \
+            -destination 'platform=iOS Simulator' \
             -derivedDataPath build \
             build
         env:
