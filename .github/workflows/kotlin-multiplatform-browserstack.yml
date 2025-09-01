@@ -172,7 +172,7 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
         
-# Extract the .app bundle from archive for BrowserStack
+        # Extract the .app bundle from archive for BrowserStack
         # BrowserStack supports both .ipa and .app uploads
         APP_BUNDLE_PATH="build/iosApp.xcarchive/Products/Applications/QuickStartTasks.app"
         
@@ -194,7 +194,7 @@ jobs:
       run: |
         echo "📤 Uploading complete iOS app to BrowserStack..."
         
-# Upload the iOS app bundle to BrowserStack
+        # Upload the iOS app bundle to BrowserStack
         # BrowserStack supports .app bundles for testing
         if [ -d "kotlin-multiplatform/iosApp/build/QuickStartTasks.app" ]; then
           echo "📤 Creating zip of iOS app bundle for BrowserStack..."
