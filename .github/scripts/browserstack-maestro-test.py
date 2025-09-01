@@ -234,7 +234,7 @@ def main():
     """Main execution function"""
     
     # Configuration
-    PROJECT_ROOT = os.getenv('GITHUB_WORKSPACE', '/Users/teodorc/Projects/worktrees/teodor/add-rn-apps-tests-pipeline')
+    PROJECT_ROOT = os.getenv('GITHUB_WORKSPACE', os.getcwd())
     APP_TYPE = os.getenv('APP_TYPE', 'expo')  # 'expo' or 'bare'
     
     if APP_TYPE == 'expo':

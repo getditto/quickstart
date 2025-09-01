@@ -81,9 +81,9 @@ setup_environment() {
         fi
     fi
     
-    # Export environment variables
-    export DITTO_APP_ID=$(grep DITTO_APP_ID "$ENV_FILE" | cut -d '=' -f2)
-    export DITTO_PLAYGROUND_TOKEN=$(grep DITTO_PLAYGROUND_TOKEN "$ENV_FILE" | cut -d '=' -f2)
+    # Export environment variables safely
+    export DITTO_APP_ID="$(awk -F= '/^DITTO_APP_ID[[:space:]]*=/ {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}' "$ENV_FILE")"
+    export DITTO_PLAYGROUND_TOKEN="$(awk -F= '/^DITTO_PLAYGROUND_TOKEN[[:space:]]*=/ {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}' "$ENV_FILE")"
     
     log_success "Environment setup complete"
 }
@@ -191,7 +191,7 @@ run_all_tests() {
     local failed_tests=0
     
     if [ -d "$MAESTRO_DIR/flows" ]; then
-        find "$MAESTRO_DIR/flows" -name "*.yaml" -o -name "*.yml" | sort | while read -r flow; do
+        while IFS= read -r flow; do
             total_tests=$((total_tests + 1))
             
             if run_test_flow "$flow"; then
@@ -199,7 +199,7 @@ run_all_tests() {
             else
                 failed_tests=$((failed_tests + 1))
             fi
-        done
+        done < <(find "$MAESTRO_DIR/flows" -name "*.yaml" -o -name "*.yml" | sort)
         
         # Summary
         echo
