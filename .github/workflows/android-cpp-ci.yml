@@ -27,7 +27,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up JDK 17
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         java-version: '17'
@@ -61,7 +61,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     
-    - name: Run lint
+    - name: Run linting
       working-directory: android-cpp/QuickStartTasksCPP
       run: ./gradlew lintDebug
     
@@ -97,7 +97,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up JDK 17
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         java-version: '17'
@@ -131,11 +131,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     
-    - name: Build Debug APK
+    - name: Build Android Debug APK
       working-directory: android-cpp/QuickStartTasksCPP
       run: ./gradlew assembleDebug
     
-    - name: Build Test APK
+    - name: Build Android Test APK
       working-directory: android-cpp/QuickStartTasksCPP
       run: ./gradlew assembleDebugAndroidTest
     

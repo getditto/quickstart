@@ -176,7 +176,7 @@ jobs:
                 \"Samsung Galaxy S23-13.0\",
                 \"Google Pixel 6-12.0\",
                 \"OnePlus 9-11.0\",
-                \"Samsung Galaxy A54-13.0\"
+                \"Samsung Galaxy S22-12.0\"
               ],
               \"projectName\": \"Ditto Android Kotlin\",
               \"buildName\": \"Build #${{ github.run_number }}\",
@@ -342,7 +342,7 @@ jobs:
               - Samsung Galaxy S23 (Android 13)
               - Google Pixel 6 (Android 12)
               - OnePlus 9 (Android 11)
-              - Samsung Galaxy A54 (Android 13)
+              - Samsung Galaxy S22 (Android 12)
               `;
             } else {
               const bsUrl = `https://app-automate.browserstack.com/dashboard/v2/builds/${buildId}`;
@@ -358,7 +358,7 @@ jobs:
               - Samsung Galaxy S23 (Android 13)
               - Google Pixel 6 (Android 12)
               - OnePlus 9 (Android 11)
-              - Samsung Galaxy A54 (Android 13)
+              - Samsung Galaxy S22 (Android 12)
               `;
             }
             
