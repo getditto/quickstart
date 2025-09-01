@@ -132,8 +132,13 @@ jobs:
           export DITTO_APP_ID="${{ secrets.DITTO_APP_ID }}"
           export DITTO_PLAYGROUND_TOKEN="${{ secrets.DITTO_PLAYGROUND_TOKEN }}"
           
-          # Run the macOS-specific tests
-          maestro test --config .maestro/macos-config.yaml .maestro/flows/macos/
+          # Launch the macOS app in background
+          echo "🚀 Launching macOS app: $MACOS_APP_PATH"
+          open "$MACOS_APP_PATH" &
+          sleep 5
+          
+          # Run the macOS-specific tests without config (since macOS doesn't need device config)
+          maestro test .maestro/flows/macos/
         env:
           DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
           DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
