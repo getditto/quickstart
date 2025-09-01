@@ -96,23 +96,28 @@ jobs:
         run: |
           mkdir -p react-native/.maestro/flows/macos
           
-          # Create macOS app launch test
+          # Create macOS app launch test (app already launched manually)
           cat > react-native/.maestro/flows/macos/01-macos-app-launch.yaml << 'EOF'
           appId: com.dittoreactnativesampleapp
           tags:
             - "macos"
             - "smoke"
           ---
-          # Test: macOS App Launch and Initial State
-          # This flow tests the basic app launch on macOS
+          # Test: macOS App State Verification
+          # This flow tests the already-launched macOS app state
           
-          - launchApp:
-              appId: com.dittoreactnativesampleapp
+          # Wait for app to be fully loaded
+          - waitForAnimationToEnd:
+              timeout: 10000
           
           - assertVisible: 
               text: "Ditto Tasks"
           
           - assertVisible: "+"
+          
+          # Simple success indicator
+          - evalScript: |
+              output.log("✓ macOS app state verified successfully")
           EOF
           
           # Create macOS config
