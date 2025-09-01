@@ -100,8 +100,7 @@ jobs:
         echo "y" | sdkmanager "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
     
-    - name: Create .env file
-      run: |
+    - name: Setup Ditto Environment
       uses: ./.github/actions/ditto-env-setup
       with:
         use-secrets: 'true'
@@ -110,15 +109,8 @@ jobs:
         ditto-auth-url: ${{ secrets.DITTO_AUTH_URL }}
         ditto-websocket-url: ${{ secrets.DITTO_WEBSOCKET_URL }}
     
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+    - name: Cache Gradle
+      uses: ./.github/actions/gradle-cache
     
     - name: Build Android Debug APK
       working-directory: android-cpp/QuickStartTasksCPP
@@ -148,8 +140,7 @@ jobs:
         echo "y" | sdkmanager "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
     
-    - name: Create .env file
-      run: |
+    - name: Setup Ditto Environment
       uses: ./.github/actions/ditto-env-setup
       with:
         use-secrets: 'true'
@@ -158,15 +149,8 @@ jobs:
         ditto-auth-url: ${{ secrets.DITTO_AUTH_URL }}
         ditto-websocket-url: ${{ secrets.DITTO_WEBSOCKET_URL }}
     
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+    - name: Cache Gradle
+      uses: ./.github/actions/gradle-cache
     
     - name: Build Android Test APK
       working-directory: android-cpp/QuickStartTasksCPP
