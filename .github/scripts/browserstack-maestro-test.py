@@ -94,8 +94,11 @@ class BrowserStackMaestroRunner:
             response = requests.post(upload_url, files=files, headers=headers_without_content_type)
         
         if response.status_code == 200:
-            suite_url = response.json().get('suite_url')
+            response_data = response.json()
+            # Try different possible response field names
+            suite_url = response_data.get('test_url') or response_data.get('suite_url') or response_data.get('test_suite_url')
             print(f"✅ Maestro suite uploaded successfully: {suite_url}")
+            print(f"📝 Full response: {response_data}")
             return suite_url
         else:
             raise Exception(f"Failed to upload Maestro suite: {response.status_code} - {response.text}")
