@@ -265,9 +265,9 @@ def main():
     
     # Define test devices for both Android and iOS
     android_devices = [
-        "Google Pixel 7-13.0",
-        "Samsung Galaxy S23-13.0",
-        "OnePlus 11-13.0",
+        "Pixel 7-13.0",
+        "Galaxy S23-13.0",
+        "OnePlus 11R-13.0",
     ]
     
     ios_devices = [
