@@ -136,6 +136,8 @@ class BrowserStackMaestroRunner:
             "buildName": build_name,
             # Enable device logs for debugging
             "deviceLogs": True,
+            # Reduce parallel execution to avoid BrowserStack resource conflicts
+            "parallelSessions": 1,
             # Run critical Ditto sync integration tests
             "execute": [
                 "maestro_suite/flows/01-app-launch.yaml",
