@@ -61,31 +61,27 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
         
-        # Package unsigned .ipa in Payload format for BrowserStack
-        APP_NAME="Tasks"
-        IPA_DIR="build/ipa"
-        mkdir -p "$IPA_DIR/Payload"
+        echo "📦 Exporting unsigned .ipa for BrowserStack..."
         
-        # Find the .app bundle in the archive
-        APP_BUNDLE_PATH=$(find build/Tasks.xcarchive/Products/Applications/ -maxdepth 1 -name "*.app" -type d | head -n 1)
+        # Export .ipa using xcodebuild (proper way for device distribution)
+        xcodebuild -exportArchive \
+          -archivePath build/Tasks.xcarchive \
+          -exportPath build/ipa \
+          -exportOptionsPlist export-options.plist
         
-        if [ -d "$APP_BUNDLE_PATH" ]; then
-          echo "✅ iOS app bundle built successfully: $APP_BUNDLE_PATH"
-          ls -la "$APP_BUNDLE_PATH"
+        # Find the exported .ipa file
+        IPA_PATH=$(find build/ipa -name "*.ipa" -type f | head -1)
+        
+        if [ -f "$IPA_PATH" ]; then
+          echo "✅ iOS .ipa exported successfully: $IPA_PATH"
+          ls -la "$IPA_PATH"
           
-          # Copy app bundle to Payload directory
-          cp -R "$APP_BUNDLE_PATH" "$IPA_DIR/Payload/"
-          
-          # Create .ipa file (zip with Payload structure)
-          cd "$IPA_DIR"
-          zip -r "${APP_NAME}-unsigned.ipa" Payload
-          
-          echo "📦 iOS .ipa created successfully: $IPA_DIR/${APP_NAME}-unsigned.ipa"
-          ls -la "$IPA_DIR/${APP_NAME}-unsigned.ipa"
+          # Set output for upload step
+          echo "ipa_file_path=$IPA_PATH" >> $GITHUB_OUTPUT
           
         else
-          echo "❌ iOS app bundle not found in archive"
-          find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found"
+          echo "❌ No .ipa file produced"
+          find build/ -name "*.ipa" -type f 2>/dev/null || echo "No .ipa files found"
           exit 1
         fi
     
@@ -136,11 +132,11 @@ jobs:
         echo "📦 Uploading .ipa file to BrowserStack: $IPA_FILE"
         ls -la "$IPA_FILE"
         
-        # Upload .ipa to BrowserStack (proper format for iOS real device testing)
+        # Upload .ipa to BrowserStack Maestro v2 endpoint (proper endpoint for iOS real device testing)
         APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
           -F "file=@$IPA_FILE" \
-          -F "custom_id=ditto-swift-ios-${{ github.run_id }}")
+          -F "custom_id=swift-ios-${{ github.run_id }}")
         
         echo "Upload response: $APP_UPLOAD_RESPONSE"
         APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
