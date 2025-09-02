@@ -286,7 +286,7 @@ jobs:
           
           # Install Python dependencies for iOS Appium
           echo "📦 Installing Python dependencies for iOS testing..."
-          pip3 install Appium-Python-Client selenium
+          pip3 install --break-system-packages Appium-Python-Client selenium
           
           # Make iOS test script executable
           chmod +x .github/scripts/browserstack-ios-test.py
