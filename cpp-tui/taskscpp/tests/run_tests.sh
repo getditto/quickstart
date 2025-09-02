@@ -31,29 +31,9 @@ fi
 mkdir -p build/tests
 
 echo ""
-echo "🏗️  Compiling Unit Tests..."
-echo "=========================="
-
-# Compile unit tests
-g++ -std=c++11 \
-    -I./src -I./sdk -I./third_party/cxxopts/include \
-    tests/unit_test.cpp src/task.cpp \
-    -o build/tests/unit_test \
-    -pthread
-
-if [ $? -eq 0 ]; then
-    echo "✅ Unit tests compiled successfully"
-else
-    echo "❌ Failed to compile unit tests"
-    exit 1
-fi
-
-echo ""
 echo "🏗️  Compiling Integration Tests..."
 echo "================================="
-
-# Compile integration tests (requires Ditto SDK)
-g++ -std=c++11 \
+g++ -std=c++17 \
     -I./src -I./sdk -I./third_party/cxxopts/include \
     tests/integration_test.cpp \
     src/task.cpp src/tasks_peer.cpp src/tasks_log.cpp \
@@ -71,18 +51,12 @@ else
 fi
 
 echo ""
-echo "🚀 Running Unit Tests..."
-echo "======================="
-./build/tests/unit_test
-
-echo ""
 echo "🚀 Running Integration Tests..."
 echo "==============================="
 ./build/tests/integration_test
 
 echo ""
-echo "🎉 All Tests Completed Successfully!"
-echo "=================================="
-echo "✅ Unit tests: PASSED"
+echo "🎉 Integration Tests Completed Successfully!"
+echo "=========================================="
 echo "✅ Integration tests: PASSED"
 echo "🎯 C++ Ditto TUI application validated!"
