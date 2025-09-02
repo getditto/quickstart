@@ -25,7 +25,7 @@ jobs:
       - name: Select Xcode
         run: |
           # Use the latest stable Xcode version
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
       - name: Create .env file
