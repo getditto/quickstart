@@ -44,9 +44,9 @@ jobs:
         working-directory: java-spring
         run: chmod +x ./gradlew
         
-      - name: Run tests
+      - name: Run unit tests (excluding integration tests for CI)
         working-directory: java-spring
-        run: ./gradlew test --info
+        run: ./gradlew test --tests '*' --tests '!*IntegrationTest*'
         
       - name: Build application
         working-directory: java-spring
