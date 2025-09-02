@@ -19,6 +19,12 @@ namespace nlohmann {
     // Brace initializer constructor - this is key for {{"key", value}} syntax
     json(std::initializer_list<std::pair<std::string, json>> init) {}
     
+    // Additional constructors for different value types to support brace initialization
+    json(const std::string& s) {}
+    json(bool b) {}
+    json(int i) {}
+    json(const char* s) {}
+    
     // Copy constructor and assignment
     json(const json& other) {}
     json& operator=(const json& other) { return *this; }
@@ -185,6 +191,13 @@ namespace ditto {
                                              std::shared_ptr<StoreObserver> observer) {
       return std::shared_ptr<SyncSubscription>(new SyncSubscription());
     }
+    
+    // Alternative method name used in some versions
+    template<typename Callback>
+    std::shared_ptr<SyncSubscription> register_observer(const std::string& query, Callback callback) {
+      Log::i("Store", "Registered observer for query: " + query);
+      return std::shared_ptr<SyncSubscription>(new SyncSubscription());
+    }
   };
   
   // Transport and networking
@@ -256,13 +269,19 @@ namespace ditto {
     
     // Mock sync() method for subscription management
     struct MockSync {
-      void register_subscription(const std::string& query) {
+      std::shared_ptr<SyncSubscription> register_subscription(const std::string& query) {
         Log::i("MockSync", "Registered subscription: " + query);
+        return std::shared_ptr<SyncSubscription>(new SyncSubscription());
       }
     };
     
     MockSync sync() {
       return MockSync{};
+    }
+    
+    // Additional methods used by tasks_peer.cpp
+    static std::string get_sdk_version() {
+      return "mock-sdk-1.0.0";
     }
   };
   
