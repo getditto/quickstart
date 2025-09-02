@@ -134,8 +134,10 @@ class BrowserStackMaestroRunner:
             "testSuite": suite_url,
             "devices": devices,
             "buildName": build_name,
-            # Specify which flows to execute from the parent folder structure
-            "execute": ["maestro_suite/flows"]
+            # Enable device logs for debugging
+            "deviceLogs": True,
+            # Specify which flows to execute - match ZIP structure
+            "execute": "maestro_suite/flows/"
         }
         
         # Add optional parameters
