@@ -3,9 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>ad-hoc</string>
-    <key>signingStyle</key>
-    <string>manual</string>
+    <string>none</string>
     <key>stripSwiftSymbols</key>
     <false/>
     <key>compileBitcode</key>
