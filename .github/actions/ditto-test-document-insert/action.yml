@@ -1,0 +1,53 @@
+name: 'Ditto Test Document Insert'
+description: 'Insert a GitHub test document into Ditto Cloud for integration testing'
+inputs:
+  project-type:
+    description: 'Project type identifier (e.g., "android-java", "android-kotlin", "flutter")'
+    required: true
+  ditto-api-key:
+    description: 'Ditto API key for document insertion'
+    required: true
+  ditto-api-url:
+    description: 'Ditto API URL'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Insert test document into Ditto Cloud
+      shell: bash
+      run: |
+        # Use GitHub run ID to create deterministic document ID
+        DOC_ID="github_${{ inputs.project-type }}_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        # Insert document using curl with correct JSON structure
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ inputs.ditto-api-key }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"GitHub Test Task ${{ inputs.project-type }} ${GITHUB_RUN_ID}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ inputs.ditto-api-url }}/api/v4/store/execute")
+        
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | head -n-1)
+        
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
