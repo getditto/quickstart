@@ -84,8 +84,8 @@ jobs:
       run: |
         echo "📱 Validating iOS app build for BrowserStack deployment..."
         
-        # Find the dynamically created iOS app bundle
-        APP_BUNDLE=$(find swift/build/ -maxdepth 1 -name "*.app" -type d | head -n 1)
+        # Find the iOS app bundle (copied to swift/build directory in previous step)  
+        APP_BUNDLE=$(find swift/build/ -name "*.app" -type d | head -n 1)
         
         if [ -d "$APP_BUNDLE" ]; then
           APP_NAME=$(basename "$APP_BUNDLE" .app)
@@ -112,7 +112,10 @@ jobs:
           
         else
           echo "❌ iOS app bundle not found"
-          ls -la swift/build/
+          echo "Checking swift/build/ directory:"
+          ls -la swift/build/ || echo "swift/build/ directory doesn't exist"
+          echo "Checking swift/ directory for any .app bundles:"
+          find swift/ -name "*.app" -type d || echo "No .app bundles found in swift/"
           exit 1
         fi
     
@@ -128,7 +131,11 @@ jobs:
           exit 1
         fi
         
-        # Create a zip file of the .app bundle for BrowserStack upload
+        # For iOS .app bundles, BrowserStack accepts zip upload
+        echo "📦 Preparing .app bundle for BrowserStack upload"
+        ls -la "$APP_BUNDLE_PATH"
+        
+        # Create a zip file for the .app bundle (BrowserStack standard format)
         cd $(dirname "$APP_BUNDLE_PATH")
         APP_NAME=$(basename "$APP_BUNDLE_PATH")
         zip -r "${APP_NAME}.zip" "$APP_NAME"
@@ -136,7 +143,7 @@ jobs:
         echo "📦 Created app bundle zip: ${APP_NAME}.zip"
         ls -la "${APP_NAME}.zip"
         
-        # Upload to BrowserStack
+        # Upload to BrowserStack (iOS apps don't need .brs files for basic upload)
         APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
           -F "file=@${APP_NAME}.zip" \
