@@ -126,11 +126,39 @@ class DittoSyncIntegrationTest {
     
     private fun verifyCloudDocumentSync(docId: String, taskTitle: String): Boolean {
         // The document should already be inserted by the CI pipeline via HTTP API
-        // This test just verifies that the Cloud document syncs to the app
+        // This test verifies that the Cloud document syncs to the local CPP Ditto instance
         println("✓ Test document should be inserted by CI pipeline with ID: $docId")
         println("✓ Title: $taskTitle")
-        println("✓ Now waiting for sync verification...")
-        return true
+        println("✓ Now waiting for document to sync from Cloud...")
+        
+        // Wait for document to sync from Cloud to local CPP Ditto instance
+        val maxWaitTime = 30000L // 30 seconds
+        val checkInterval = 1000L // Check every second
+        val startTime = System.currentTimeMillis()
+        
+        while ((System.currentTimeMillis() - startTime) < maxWaitTime) {
+            try {
+                // Query local CPP Ditto store for the document using TasksLib JNI
+                val task = TasksLib.getTaskWithId(docId)
+                
+                if (task._id == docId && task.title.isNotEmpty()) {
+                    println("✓ Document found in local CPP Ditto store: $docId")
+                    println("✓ Task title: ${task.title}")
+                    println("✓ Task done: ${task.done}")
+                    return true
+                }
+                
+                println("⏳ Document not yet synced, waiting... (${(System.currentTimeMillis() - startTime) / 1000}s)")
+                Thread.sleep(checkInterval)
+                
+            } catch (e: Exception) {
+                println("⚠ Error querying document via TasksLib: ${e.message}")
+                Thread.sleep(checkInterval)
+            }
+        }
+        
+        println("❌ Document did not sync within ${maxWaitTime / 1000} seconds")
+        return false
     }
 
     @Test

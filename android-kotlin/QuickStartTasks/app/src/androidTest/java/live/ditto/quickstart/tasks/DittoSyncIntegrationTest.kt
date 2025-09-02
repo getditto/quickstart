@@ -145,11 +145,44 @@ class DittoSyncIntegrationTest {
     
     private fun verifyCloudDocumentSync(docId: String, taskTitle: String): Boolean {
         // The document should already be inserted by the CI pipeline via HTTP API
-        // This test just verifies that the Cloud document syncs to the Kotlin app
+        // This test verifies that the Cloud document syncs to the local Ditto instance
         println("✓ Test document should be inserted by CI pipeline with ID: $docId")
         println("✓ Title: $taskTitle")
-        println("✓ Now waiting for sync verification...")
-        return true
+        println("✓ Now waiting for document to sync from Cloud...")
+        
+        // Wait for document to sync from Cloud to local Ditto instance
+        val maxWaitTime = 30000L // 30 seconds
+        val checkInterval = 1000L // Check every second
+        val startTime = System.currentTimeMillis()
+        
+        while ((System.currentTimeMillis() - startTime) < maxWaitTime) {
+            try {
+                // Query local Ditto store for the document
+                val results = runBlocking {
+                    testDitto.store.execute(
+                        "SELECT * FROM tasks WHERE _id = :docId",
+                        mapOf("docId" to docId)
+                    )
+                }
+                
+                if (results.items.isNotEmpty()) {
+                    println("✓ Document found in local Ditto store: $docId")
+                    val document = results.items.first()
+                    println("✓ Document content: $document")
+                    return true
+                }
+                
+                println("⏳ Document not yet synced, waiting... (${(System.currentTimeMillis() - startTime) / 1000}s)")
+                Thread.sleep(checkInterval)
+                
+            } catch (e: Exception) {
+                println("⚠ Error querying document: ${e.message}")
+                Thread.sleep(checkInterval)
+            }
+        }
+        
+        println("❌ Document did not sync within ${maxWaitTime / 1000} seconds")
+        return false
     }
 
     @Test
