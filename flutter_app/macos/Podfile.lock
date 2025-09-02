@@ -1,0 +1,36 @@
+PODS:
+  - ditto_live (4.12.1-experimental-windows.1):
+    - DittoFlutter (= 4.12.1-experimental-windows.1)
+    - FlutterMacOS
+  - DittoFlutter (4.12.1-experimental-windows.1)
+  - FlutterMacOS (1.0.0)
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - ditto_live (from `Flutter/ephemeral/.symlinks/plugins/ditto_live/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
+
+SPEC REPOS:
+  trunk:
+    - DittoFlutter
+
+EXTERNAL SOURCES:
+  ditto_live:
+    :path: Flutter/ephemeral/.symlinks/plugins/ditto_live/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  path_provider_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
+
+SPEC CHECKSUMS:
+  ditto_live: 593a0078e738430d9e97b81888aed6ee019d6847
+  DittoFlutter: 8307bd4be7ac58684b7d0074abea9e9ee957fa66
+  FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+
+PODFILE CHECKSUM: 7eb978b976557c8c1cd717d8185ec483fd090a82
+
+COCOAPODS: 1.16.2

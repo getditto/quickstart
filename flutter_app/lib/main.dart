@@ -1,5 +1,4 @@
 import 'package:ditto_live/ditto_live.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
@@ -24,7 +23,7 @@ class DittoExample extends StatefulWidget {
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
   final appID =
-      dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
+      dotenv.env['DITTO_DATABASE_ID'] ?? (throw Exception("env not found"));
   final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
       (throw Exception("env not found"));
   final authUrl = dotenv.env['DITTO_AUTH_URL'];
@@ -50,7 +49,8 @@ class _DittoExampleState extends State<DittoExample> {
   /// 6. Disables DQL strict mode
   /// 7. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
-    if (!kIsWeb) {
+    final platform = Ditto.currentPlatform;
+    if (platform case SupportedPlatform.android || SupportedPlatform.ios) {
       await [
         Permission.bluetoothConnect,
         Permission.bluetoothAdvertise,
@@ -72,7 +72,7 @@ class _DittoExampleState extends State<DittoExample> {
 
     ditto.updateTransportConfig((config) {
       // Note: this will not enable peer-to-peer sync on the web platform
-      config.setAllPeerToPeerEnabled(true);
+      // config.setAllPeerToPeerEnabled(true);
       config.connect.webSocketUrls.add(websocketUrl);
     });
 
