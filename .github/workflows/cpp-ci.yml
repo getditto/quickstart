@@ -83,41 +83,49 @@ jobs:
           fi
           echo "✅ Code style check passed"
       
+      - name: Download and setup Ditto C++ SDK
+        working-directory: cpp-tui/taskscpp
+        run: |
+          echo "📥 Downloading real Ditto C++ SDK for integration test..."
+          curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/4.12.0/dist/Ditto.tar.gz
+          tar xvfz Ditto.tar.gz
+          
+          # Copy SDK files to expected location
+          cp Ditto.h sdk/
+          cp libditto.a sdk/
+          
+          echo "✅ Real Ditto C++ SDK installed"
+      
       - name: Build application
         working-directory: cpp-tui/taskscpp
         run: |
           echo "🔧 Generating env.h..."
           awk -f scripts/generate_env.awk ../../.env > src/env.h
           
-          echo "🔨 Building C++ TUI application..."
-          # Use mock SDK for CI build
-          cp mock_sdk_comprehensive.h sdk/Ditto.h
-          echo "void ditto_mock() {}" > sdk/mock.cpp
-          g++ -c sdk/mock.cpp -o sdk/mock.o
-          ar rcs sdk/libditto.a sdk/mock.o
+          echo "🔨 Building C++ TUI application with REAL Ditto SDK..."
           make build
           
-          echo "✅ C++ TUI app built successfully"
+          echo "✅ C++ TUI app built with real Ditto SDK"
       
-      - name: Run integration tests
+      - name: Run integration tests with REAL Ditto SDK
         working-directory: cpp-tui/taskscpp
         env:
           GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
-          echo "🧪 Running C++ integration tests..."
+          echo "🧪 Running REAL C++ integration tests with Ditto Cloud..."
           echo "📝 Test document ID: ${GITHUB_TEST_DOC_ID}"
+          echo "🌐 This test will connect to REAL Ditto Cloud and verify sync works"
           
-          # Build integration test
-          g++ -std=c++11 -I./src -I./sdk -I./third_party/cxxopts/include \
+          # Build integration test with REAL Ditto SDK
+          g++ -std=c++17 -I./src -I./sdk -I./third_party/cxxopts/include \
             tests/integration_test.cpp \
             src/task.cpp src/tasks_peer.cpp src/tasks_log.cpp \
-            -L./sdk -lditto \
-            -o build/integration_test \
-            -pthread
+            -L./sdk -lditto -ldl -lrt -pthread \
+            -o build/integration_test
           
-          echo "🚀 Running integration test..."
+          echo "🚀 Running integration test with real Ditto SDK..."
           ./build/integration_test
           
-          echo "✅ C++ integration tests completed successfully"
+          echo "✅ REAL C++ integration tests completed successfully"

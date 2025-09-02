@@ -56,40 +56,42 @@ jobs:
             exit 1
           fi
       
-      - name: Install dependencies and build C++ TUI
+      - name: Install dependencies and setup real Ditto SDK
         working-directory: cpp-tui/taskscpp
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake clang build-essential
           
+          echo "📥 Downloading real Ditto C++ SDK..."
+          curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/4.12.0/dist/Ditto.tar.gz
+          tar xvfz Ditto.tar.gz
+          cp Ditto.h sdk/
+          cp libditto.a sdk/
+          
           # Generate env.h
           awk -f scripts/generate_env.awk ../../.env > src/env.h
           
-          # Use mock SDK and build
-          cp mock_sdk_comprehensive.h sdk/Ditto.h
-          echo "void ditto_mock() {}" > sdk/mock.cpp
-          g++ -c sdk/mock.cpp -o sdk/mock.o
-          ar rcs sdk/libditto.a sdk/mock.o
+          # Build with real SDK
           make build
           
-          echo "✅ C++ TUI app built for BrowserStack testing"
+          echo "✅ C++ TUI app built with real Ditto SDK for BrowserStack testing"
       
-      - name: Test sync with BrowserStack document
+      - name: Test sync with BrowserStack document  
         working-directory: cpp-tui/taskscpp
         env:
           BROWSERSTACK_TEST_DOC_ID: ${{ env.BROWSERSTACK_TEST_DOC_ID }}
         run: |
           echo "🧪 Testing sync with BrowserStack document: ${BROWSERSTACK_TEST_DOC_ID}"
+          echo "🌐 This will connect to REAL Ditto Cloud and verify document syncs"
           
-          # Build and run integration test
-          g++ -std=c++11 -I./src -I./sdk -I./third_party/cxxopts/include \
+          # Build and run integration test with REAL Ditto SDK
+          g++ -std=c++17 -I./src -I./sdk -I./third_party/cxxopts/include \
             tests/integration_test.cpp \
             src/task.cpp src/tasks_peer.cpp src/tasks_log.cpp \
-            -L./sdk -lditto \
-            -o build/integration_test \
-            -pthread
+            -L./sdk -lditto -ldl -lrt -pthread \
+            -o build/integration_test
           
-          # Run test that will verify the document syncs
+          # Run test that will verify the document syncs via real Ditto SDK
           ./build/integration_test
           
-          echo "✅ BrowserStack sync test completed successfully"
+          echo "✅ BrowserStack sync test with REAL Ditto SDK completed successfully"
