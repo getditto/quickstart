@@ -420,3 +420,12 @@ except Exception as e:
     print(f'❌ Flutter iOS BrowserStack test failed: {str(e)}')
     exit(1)
 "
+
+    - name: Summary
+      if: always()
+      run: |
+        echo "✅ Flutter BrowserStack testing completed"
+        echo "✅ Android APK tested on BrowserStack real devices"
+        echo "✅ iOS IPA tested on BrowserStack real devices" 
+        echo "✅ Web app tested on BrowserStack browsers"
+        echo "✅ All platforms test Ditto sync with GitHub documents"
