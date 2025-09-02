@@ -113,64 +113,57 @@ jobs:
         # Install required Python packages
         pip3 install Appium-Python-Client selenium
         
-        # Create and run BrowserStack test script
-        cat > android_test.py << 'EOF'
-import os
-import time
-from appium import webdriver
-from appium.options.android import UiAutomator2Options
-
-# BrowserStack capabilities for Flutter Android testing
-options = UiAutomator2Options()
-options.app = os.environ['APP_URL']
-options.device_name = 'Google Pixel 8'
-options.os_version = '14.0'
-options.platform_name = 'Android'
-options.browser_name = ''
-options.project_name = 'Flutter Ditto Sync Test'
-options.build_name = f'Flutter Android Build {os.environ["GITHUB_RUN_NUMBER"]}'
-options.session_name = f'Flutter Android Test - Document {os.environ["GITHUB_TEST_DOC_ID"]}'
-
-bs_url = f'https://{os.environ["BROWSERSTACK_USERNAME"]}:{os.environ["BROWSERSTACK_ACCESS_KEY"]}@hub-cloud.browserstack.com/wd/hub'
-
-try:
-    driver = webdriver.Remote(bs_url, options=options)
-    print('✅ Flutter Android app launched on BrowserStack device')
-    
-    # Wait for app to initialize
-    time.sleep(10)
-    
-    # Basic app verification - check if Ditto Tasks title appears
-    try:
-        app_title = driver.find_element('xpath', '//*[contains(@text, "Ditto Tasks")]')
-        if app_title:
-            print('✅ Flutter app loaded successfully - Ditto Tasks title found')
-    except:
-        print('⚠ App title verification failed, but continuing...')
-    
-    # Wait for potential sync with test document
-    time.sleep(15)
-    
-    # Look for the GitHub test document
-    test_doc_id = os.environ['GITHUB_TEST_DOC_ID']
-    run_id = test_doc_id.split('_')[2]
-    try:
-        test_doc = driver.find_element('xpath', f'//*[contains(@text, "{run_id}")]')
-        if test_doc:
-            print(f'✅ Found GitHub test document with run ID: {run_id}')
-            print('✅ Ditto sync verification successful')
-    except:
-        print(f'⚠ GitHub test document not found, but app launched successfully')
-    
-    print('✅ Flutter Android BrowserStack test completed successfully')
-    driver.quit()
-    
-except Exception as e:
-    print(f'❌ Flutter Android BrowserStack test failed: {str(e)}')
-    exit(1)
-EOF
+        # Use direct Python execution for BrowserStack test
+        python3 << 'PYTHON_SCRIPT'
+        import os
+        import time
+        from appium import webdriver
+        from appium.options.android import UiAutomator2Options
         
-        python3 android_test.py
+        # BrowserStack capabilities
+        options = UiAutomator2Options()
+        options.app = os.environ['APP_URL']
+        options.device_name = 'Google Pixel 8'
+        options.os_version = '14.0'
+        options.platform_name = 'Android'
+        options.browser_name = ''
+        options.project_name = 'Flutter Ditto Sync Test'
+        options.build_name = f'Flutter Android Build {os.environ["GITHUB_RUN_NUMBER"]}'
+        options.session_name = f'Flutter Android Test - Document {os.environ["GITHUB_TEST_DOC_ID"]}'
+        
+        bs_url = f'https://{os.environ["BROWSERSTACK_USERNAME"]}:{os.environ["BROWSERSTACK_ACCESS_KEY"]}@hub-cloud.browserstack.com/wd/hub'
+        
+        try:
+            driver = webdriver.Remote(bs_url, options=options)
+            print('Flutter Android app launched on BrowserStack device')
+            time.sleep(10)
+            
+            try:
+                app_title = driver.find_element('xpath', '//*[contains(@text, "Ditto Tasks")]')
+                if app_title:
+                    print('Flutter app loaded successfully')
+            except:
+                print('App title check failed, continuing...')
+            
+            time.sleep(15)
+            
+            test_doc_id = os.environ['GITHUB_TEST_DOC_ID']
+            run_id = test_doc_id.split('_')[2]
+            try:
+                test_doc = driver.find_element('xpath', f'//*[contains(@text, "{run_id}")]')
+                if test_doc:
+                    print(f'Found GitHub test document: {run_id}')
+                    print('Ditto sync verification successful')
+            except:
+                print('GitHub test document not found, app launched successfully')
+            
+            print('Flutter Android BrowserStack test completed')
+            driver.quit()
+            
+        except Exception as e:
+            print(f'Flutter Android BrowserStack test failed: {str(e)}')
+            exit(1)
+        PYTHON_SCRIPT
 
     - name: Build Flutter Web
       working-directory: flutter_app
@@ -190,77 +183,68 @@ EOF
         WEB_SERVER_PID=$!
         sleep 5
         
-        # Create and run BrowserStack web test script
-        cat > ../../web_test.py << 'EOF'
-import os
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-
-# BrowserStack capabilities for Flutter Web testing
-options = Options()
-options.set_capability('browserName', 'Chrome')
-options.set_capability('browserVersion', 'latest')
-options.set_capability('os', 'Windows')
-options.set_capability('osVersion', '11')
-options.set_capability('projectName', 'Flutter Web Ditto Sync Test')
-options.set_capability('buildName', f'Flutter Web Build {os.environ["GITHUB_RUN_NUMBER"]}')
-options.set_capability('sessionName', f'Flutter Web Test - Document {os.environ["GITHUB_TEST_DOC_ID"]}')
-options.set_capability('local', 'true')
-
-bs_url = f'https://{os.environ["BROWSERSTACK_USERNAME"]}:{os.environ["BROWSERSTACK_ACCESS_KEY"]}@hub.browserstack.com/wd/hub'
-
-try:
-    driver = webdriver.Remote(bs_url, options=options)
-    print('✅ Flutter Web browser session started on BrowserStack')
-    
-    # Navigate to Flutter web app
-    driver.get('http://localhost:3000')
-    
-    # Wait for Flutter app to load
-    WebDriverWait(driver, 30).until(
-        lambda d: d.execute_script('return document.readyState') == 'complete'
-    )
-    
-    # Wait for Flutter to initialize
-    time.sleep(10)
-    
-    # Check for Ditto Tasks title
-    try:
-        app_title = WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.XPATH, '//*[contains(text(), "Ditto Tasks")]'))
-        )
-        print('✅ Flutter Web app loaded successfully - Ditto Tasks title found')
-    except:
-        print('⚠ App title verification failed, but continuing...')
-    
-    # Wait for potential sync with test document
-    time.sleep(15)
-    
-    # Look for the GitHub test document
-    test_doc_id = os.environ['GITHUB_TEST_DOC_ID']
-    run_id = test_doc_id.split('_')[2]
-    try:
-        test_doc = driver.find_element(By.XPATH, f'//*[contains(text(), "{run_id}")]')
-        if test_doc:
-            print(f'✅ Found GitHub test document with run ID: {run_id}')
-            print('✅ Ditto sync verification successful')
-    except:
-        print(f'⚠ GitHub test document not found, but app loaded successfully')
-    
-    print('✅ Flutter Web BrowserStack test completed successfully')
-    driver.quit()
-    
-except Exception as e:
-    print(f'❌ Flutter Web BrowserStack test failed: {str(e)}')
-    exit(1)
-EOF
+        # Use direct Python execution for BrowserStack web test
+        python3 << 'PYTHON_WEB_SCRIPT'
+        import os
+        import time
+        from selenium import webdriver
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.chrome.options import Options
         
-        cd ../..
-        python3 web_test.py
+        # BrowserStack capabilities for Flutter Web testing
+        options = Options()
+        options.set_capability('browserName', 'Chrome')
+        options.set_capability('browserVersion', 'latest')
+        options.set_capability('os', 'Windows')
+        options.set_capability('osVersion', '11')
+        options.set_capability('projectName', 'Flutter Web Ditto Sync Test')
+        options.set_capability('buildName', f'Flutter Web Build {os.environ["GITHUB_RUN_NUMBER"]}')
+        options.set_capability('sessionName', f'Flutter Web Test - Document {os.environ["GITHUB_TEST_DOC_ID"]}')
+        options.set_capability('local', 'true')
+        
+        bs_url = f'https://{os.environ["BROWSERSTACK_USERNAME"]}:{os.environ["BROWSERSTACK_ACCESS_KEY"]}@hub.browserstack.com/wd/hub'
+        
+        try:
+            driver = webdriver.Remote(bs_url, options=options)
+            print('Flutter Web browser session started on BrowserStack')
+            
+            driver.get('http://localhost:3000')
+            
+            WebDriverWait(driver, 30).until(
+                lambda d: d.execute_script('return document.readyState') == 'complete'
+            )
+            
+            time.sleep(10)
+            
+            try:
+                app_title = WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.XPATH, '//*[contains(text(), "Ditto Tasks")]'))
+                )
+                print('Flutter Web app loaded successfully')
+            except:
+                print('App title verification failed, continuing...')
+            
+            time.sleep(15)
+            
+            test_doc_id = os.environ['GITHUB_TEST_DOC_ID']
+            run_id = test_doc_id.split('_')[2]
+            try:
+                test_doc = driver.find_element(By.XPATH, f'//*[contains(text(), "{run_id}")]')
+                if test_doc:
+                    print(f'Found GitHub test document: {run_id}')
+                    print('Ditto sync verification successful')
+            except:
+                print('GitHub test document not found, app loaded successfully')
+            
+            print('Flutter Web BrowserStack test completed')
+            driver.quit()
+            
+        except Exception as e:
+            print(f'Flutter Web BrowserStack test failed: {str(e)}')
+            exit(1)
+        PYTHON_WEB_SCRIPT
         
         # Cleanup web server
         kill $WEB_SERVER_PID 2>/dev/null || true
@@ -369,63 +353,57 @@ EOF
         # Install required Python packages
         pip3 install Appium-Python-Client selenium
         
-        # Create and run BrowserStack iOS test script
-        cat > ios_test.py << 'EOF'
-import os
-import time
-from appium import webdriver
-from appium.options.ios import XCUITestOptions
-
-# BrowserStack capabilities for Flutter iOS testing
-options = XCUITestOptions()
-options.app = os.environ['IOS_APP_URL']
-options.device_name = 'iPhone 15 Pro'
-options.os_version = '17'
-options.platform_name = 'iOS'
-options.project_name = 'Flutter iOS Ditto Sync Test'
-options.build_name = f'Flutter iOS Build {os.environ["GITHUB_RUN_NUMBER"]}'
-options.session_name = f'Flutter iOS Test - Document {os.environ["GITHUB_TEST_DOC_ID_IOS"]}'
-
-bs_url = f'https://{os.environ["BROWSERSTACK_USERNAME"]}:{os.environ["BROWSERSTACK_ACCESS_KEY"]}@hub-cloud.browserstack.com/wd/hub'
-
-try:
-    driver = webdriver.Remote(bs_url, options=options)
-    print('✅ Flutter iOS app launched on BrowserStack device')
-    
-    # Wait for app to initialize
-    time.sleep(15)
-    
-    # Basic app verification - check if Ditto Tasks title appears
-    try:
-        app_title = driver.find_element('xpath', '//*[contains(@name, "Ditto Tasks")]')
-        if app_title:
-            print('✅ Flutter iOS app loaded successfully - Ditto Tasks title found')
-    except:
-        print('⚠ App title verification failed, but continuing...')
-    
-    # Wait for potential sync with test document
-    time.sleep(20)
-    
-    # Look for the GitHub test document
-    test_doc_id = os.environ['GITHUB_TEST_DOC_ID_IOS']
-    run_id = test_doc_id.split('_')[3]  # Different format for iOS
-    try:
-        test_doc = driver.find_element('xpath', f'//*[contains(@name, "{run_id}")]')
-        if test_doc:
-            print(f'✅ Found GitHub test document with run ID: {run_id}')
-            print('✅ Ditto sync verification successful')
-    except:
-        print(f'⚠ GitHub test document not found, but app launched successfully')
-    
-    print('✅ Flutter iOS BrowserStack test completed successfully')
-    driver.quit()
-    
-except Exception as e:
-    print(f'❌ Flutter iOS BrowserStack test failed: {str(e)}')
-    exit(1)
-EOF
+        # Use direct Python execution for BrowserStack iOS test
+        python3 << 'PYTHON_IOS_SCRIPT'
+        import os
+        import time
+        from appium import webdriver
+        from appium.options.ios import XCUITestOptions
         
-        python3 ios_test.py
+        # BrowserStack capabilities for Flutter iOS testing
+        options = XCUITestOptions()
+        options.app = os.environ['IOS_APP_URL']
+        options.device_name = 'iPhone 15 Pro'
+        options.os_version = '17'
+        options.platform_name = 'iOS'
+        options.project_name = 'Flutter iOS Ditto Sync Test'
+        options.build_name = f'Flutter iOS Build {os.environ["GITHUB_RUN_NUMBER"]}'
+        options.session_name = f'Flutter iOS Test - Document {os.environ["GITHUB_TEST_DOC_ID_IOS"]}'
+        
+        bs_url = f'https://{os.environ["BROWSERSTACK_USERNAME"]}:{os.environ["BROWSERSTACK_ACCESS_KEY"]}@hub-cloud.browserstack.com/wd/hub'
+        
+        try:
+            driver = webdriver.Remote(bs_url, options=options)
+            print('Flutter iOS app launched on BrowserStack device')
+            
+            time.sleep(15)
+            
+            try:
+                app_title = driver.find_element('xpath', '//*[contains(@name, "Ditto Tasks")]')
+                if app_title:
+                    print('Flutter iOS app loaded successfully')
+            except:
+                print('App title verification failed, continuing...')
+            
+            time.sleep(20)
+            
+            test_doc_id = os.environ['GITHUB_TEST_DOC_ID_IOS']
+            run_id = test_doc_id.split('_')[3]
+            try:
+                test_doc = driver.find_element('xpath', f'//*[contains(@name, "{run_id}")]')
+                if test_doc:
+                    print(f'Found GitHub test document: {run_id}')
+                    print('Ditto sync verification successful')
+            except:
+                print('GitHub test document not found, app launched successfully')
+            
+            print('Flutter iOS BrowserStack test completed')
+            driver.quit()
+            
+        except Exception as e:
+            print(f'Flutter iOS BrowserStack test failed: {str(e)}')
+            exit(1)
+        PYTHON_IOS_SCRIPT
 
     - name: Summary
       if: always()
