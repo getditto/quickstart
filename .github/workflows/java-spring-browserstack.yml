@@ -27,8 +27,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Java and Maven
-        uses: ./.github/actions/java-maven-setup
+      - name: Setup Android SDK
+        uses: ./.github/actions/android-sdk-setup
 
       - name: Setup Ditto Environment
         uses: ./.github/actions/ditto-env-setup
@@ -46,6 +46,9 @@ jobs:
           ditto-api-key: ${{ secrets.DITTO_API_KEY }}
           ditto-api-url: ${{ secrets.DITTO_API_URL }}
 
+      - name: Cache Gradle
+        uses: ./.github/actions/gradle-cache
+
       - name: Build and Package Application
         working-directory: java-spring
         run: |
@@ -55,13 +58,13 @@ jobs:
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
           
-          # Build the application JAR
-          mvn clean package -DskipTests -Dspring.profiles.active=test
+          # Build the application JAR using Gradle
+          ./gradlew bootJar -x test
           echo "JAR built successfully"
           
           # Verify JAR exists
-          ls -la target/
-          if [ ! -f "target/quickstart-java-spring-0.0.1-SNAPSHOT.jar" ]; then
+          ls -la build/libs/
+          if [ ! -f "build/libs/quickstart-java-spring-0.0.1-SNAPSHOT.jar" ]; then
             echo "Error: JAR file not found"
             exit 1
           fi
@@ -71,7 +74,7 @@ jobs:
         run: |
           # Start the Spring Boot application in background
           echo "Starting Spring Boot application..."
-          nohup java -jar target/quickstart-java-spring-0.0.1-SNAPSHOT.jar --server.port=8080 --spring.profiles.active=test > application.log 2>&1 &
+          nohup java -jar build/libs/quickstart-java-spring-0.0.1-SNAPSHOT.jar --server.port=8080 --spring.profiles.active=test > application.log 2>&1 &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
           
