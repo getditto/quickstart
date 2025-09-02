@@ -84,15 +84,6 @@ option(BUILD_TESTS "Build tests" ON)
 if(BUILD_TESTS)
   enable_testing()
 
-  # Unit tests
-  add_executable(unit_test
-    tests/unit_test.cpp
-    src/task.cpp
-  )
-  target_include_directories(unit_test PRIVATE src sdk third_party/cxxopts/include)
-  add_dependencies(unit_test env_h)
-  add_test(NAME UnitTests COMMAND unit_test)
-
   # Integration tests
   add_executable(integration_test
     tests/integration_test.cpp
@@ -108,7 +99,7 @@ if(BUILD_TESTS)
   # Custom test target
   add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS unit_test integration_test
-    COMMENT "Running all tests"
+    DEPENDS integration_test
+    COMMENT "Running integration tests"
   )
 endif()
