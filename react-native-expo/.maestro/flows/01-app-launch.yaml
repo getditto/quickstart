@@ -13,5 +13,6 @@ tags:
     commands:
       - tapOn: "Allow"
 - assertVisible: 
-    text: "Ditto Tasks C++"
-- assertVisible: "New Task"
+    text: "Ditto Tasks"
+- assertVisible: 
+    id: "add-task-button"
