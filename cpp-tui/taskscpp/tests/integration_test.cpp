@@ -10,7 +10,18 @@
 #include <thread>
 #include <cassert>
 
-using namespace std;
+// Using specific declarations to avoid namespace pollution
+using std::cout;
+using std::endl;
+using std::string;
+using std::vector;
+using std::unique_ptr;
+using std::make_unique;
+using std::chrono::seconds;
+using std::chrono::high_resolution_clock;
+using std::chrono::milliseconds;
+using std::chrono::duration_cast;
+using std::this_thread::sleep_for;
 
 /**
  * Real integration tests for Ditto C++ TUI Tasks app
@@ -25,8 +36,10 @@ private:
 public:
     DittoIntegrationTests() {
         // Generate unique test document ID using GitHub environment variables
-        string github_run_id = getenv("GITHUB_RUN_ID") ? getenv("GITHUB_RUN_ID") : "local_test";
-        string github_run_number = getenv("GITHUB_RUN_NUMBER") ? getenv("GITHUB_RUN_NUMBER") : "1";
+        const char* run_id_env = getenv("GITHUB_RUN_ID");
+        const char* run_number_env = getenv("GITHUB_RUN_NUMBER");
+        string github_run_id = run_id_env ? string(run_id_env) : "local_test";
+        string github_run_number = run_number_env ? string(run_number_env) : "1";
         test_document_id = "cpp_github_test_" + github_run_id + "_" + github_run_number;
         
         cout << "🧪 Starting C++ integration tests..." << endl;

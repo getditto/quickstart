@@ -6,7 +6,13 @@
 #include <string>
 #include <chrono>
 
-using namespace std;
+// Using specific declarations to avoid namespace pollution
+using std::cout;
+using std::endl;
+using std::string;
+using std::chrono::high_resolution_clock;
+using std::chrono::microseconds;
+using std::chrono::duration_cast;
 
 /**
  * Unit tests for C++ TUI Tasks app
