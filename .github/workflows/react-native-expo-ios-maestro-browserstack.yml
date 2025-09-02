@@ -94,60 +94,75 @@ jobs:
         working-directory: react-native-expo/ios
         run: pod install
 
-      - name: Build iOS App (Unsigned for BrowserStack)
+      - name: Build iOS IPA (Unsigned for BrowserStack)
         working-directory: react-native-expo
         run: |
-          # BrowserStack supports unsigned iOS apps for testing - no code signing needed
+          # BrowserStack Maestro v2 requires .ipa files (not .zip/.app)
+          # BrowserStack can re-sign unsigned/dev IPAs automatically
           cd ios
           
-          # Build for real devices without code signing 
+          # Create a basic export options plist for unsigned development IPA
+          cat > export-options-dev.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>compileBitcode</key>
+              <false/>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>signingStyle</key>
+              <string>automatic</string>
+          </dict>
+          </plist>
+          EOF
+          
+          # Build and archive for real devices
           xcodebuild -workspace reactnativeexpo.xcworkspace \
             -scheme reactnativeexpo \
             -configuration Debug \
-            -derivedDataPath build \
+            -archivePath build/reactnativeexpo.xcarchive \
+            clean archive \
             -destination generic/platform=iOS \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+            CODE_SIGNING_REQUIRED=NO
           
-          # Create ZIP of .app bundle (BrowserStack accepts unsigned .app in ZIP)
-          APP_PATH="build/Build/Products/Debug-iphoneos/reactnativeexpo.app"
+          # Export as development IPA (BrowserStack will re-sign)
+          xcodebuild -exportArchive \
+            -archivePath build/reactnativeexpo.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist export-options-dev.plist \
+            -allowProvisioningUpdates
           
-          # Verify app was built
-          if [ ! -d "$APP_PATH" ]; then
-            echo "❌ App build failed - .app not found at $APP_PATH"
-            find build -name "*.app" -type d || echo "No .app bundles found"
-            exit 1
-          fi
-          
-          # Create ZIP for BrowserStack upload
-          cd "$(dirname "$APP_PATH")"
-          zip -r "../reactnativeexpo.zip" "$(basename "$APP_PATH")"
-          
-          echo "✅ Successfully built unsigned iOS app and created ZIP"
+          echo "✅ Successfully built development IPA for BrowserStack"
         env:
           EXPO_USE_METRO: 1
 
-      - name: Verify iOS App ZIP exists
+      - name: Verify iOS IPA exists
         run: |
-          # Look for the unsigned iOS app ZIP for BrowserStack
-          echo "🔍 Searching for iOS app ZIP file..."
+          # Look for the development IPA file for BrowserStack Maestro v2
+          echo "🔍 Searching for iOS IPA file..."
           
-          # Look for ZIP in the build path
-          IOS_ZIP_PATH=$(find react-native-expo/ios/build -name "*.zip" -type f | head -1)
+          # Look for IPA in the export path
+          IOS_IPA_PATH=$(find react-native-expo/ios/build/ipa -name "*.ipa" -type f | head -1)
           
-          if [ -n "$IOS_ZIP_PATH" ]; then
-            echo "✓ iOS app ZIP found: $IOS_ZIP_PATH"
-            echo "IOS_APP_PATH=$IOS_ZIP_PATH" >> $GITHUB_ENV
+          if [ -n "$IOS_IPA_PATH" ]; then
+            echo "✓ iOS IPA found: $IOS_IPA_PATH"
+            echo "IOS_APP_PATH=$IOS_IPA_PATH" >> $GITHUB_ENV
           else
-            echo "❌ iOS app ZIP not found in build output"
+            echo "❌ iOS IPA not found in build output"
             echo "Checking build output structure:"
-            find react-native-expo/ios/build -name "*.zip" -type f || echo "No .zip files found in build output"
+            find react-native-expo/ios/build -name "*.ipa" -type f || echo "No .ipa files found in build output"
             echo ""
             echo "Build directory structure:"
             ls -la react-native-expo/ios/build/ || echo "Build directory not found"
             echo ""
+            echo "IPA export directory:"
+            ls -la react-native-expo/ios/build/ipa/ || echo "IPA directory not found"
             exit 1
           fi
 
