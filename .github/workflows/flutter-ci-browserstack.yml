@@ -152,14 +152,18 @@ jobs:
             time.sleep(15)
             
             test_doc_id = os.environ['GITHUB_TEST_DOC_ID']
-            run_id = test_doc_id.split('_')[2]
-            try:
-                test_doc = driver.find_element('xpath', f'//*[contains(@text, "{run_id}")]')
-                if test_doc:
-                    print(f'Found GitHub test document: {run_id}')
-                    print('Ditto sync verification successful')
-            except:
-                print('GitHub test document not found, app launched successfully')
+            split_doc_id = test_doc_id.split('_')
+            if len(split_doc_id) >= 3:
+                run_id = split_doc_id[2]
+                try:
+                    test_doc = driver.find_element('xpath', f'//*[contains(@text, "{run_id}")]')
+                    if test_doc:
+                        print(f'Found GitHub test document: {run_id}')
+                        print('Ditto sync verification successful')
+                except:
+                    print('GitHub test document not found, app launched successfully')
+            else:
+                print(f'Warning: GITHUB_TEST_DOC_ID ("{test_doc_id}") does not contain at least 3 underscore-separated parts.')
             
             print('Flutter Android BrowserStack test completed')
             driver.quit()
@@ -333,14 +337,18 @@ jobs:
             time.sleep(15)
             
             test_doc_id = os.environ['GITHUB_TEST_DOC_ID_WEB']
-            run_id = test_doc_id.split('_')[3]  # Different format: github_test_web_RUNID_RUNNUMBER
-            try:
-                test_doc = driver.find_element(By.XPATH, f'//*[contains(text(), "{run_id}")]')
-                if test_doc:
-                    print(f'Found GitHub test document: {run_id}')
-                    print('Ditto sync verification successful')
-            except:
-                print('GitHub test document not found, app loaded successfully')
+            parts = test_doc_id.split('_')
+            if len(parts) >= 4:
+                run_id = parts[3]  # Different format: github_test_web_RUNID_RUNNUMBER
+                try:
+                    test_doc = driver.find_element(By.XPATH, f'//*[contains(text(), "{run_id}")]')
+                    if test_doc:
+                        print(f'Found GitHub test document: {run_id}')
+                        print('Ditto sync verification successful')
+                except:
+                    print('GitHub test document not found, app loaded successfully')
+            else:
+                print(f'Error: GITHUB_TEST_DOC_ID_WEB format invalid: {test_doc_id}')
             
             print('Flutter Web BrowserStack test completed')
             driver.quit()

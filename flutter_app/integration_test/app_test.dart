@@ -148,21 +148,25 @@ void main() {
 
       const githubRunId = String.fromEnvironment('GITHUB_TEST_DOC_ID');
       if (githubRunId.isNotEmpty) {
-        final runIdPart = githubRunId.split('_')[2];
-        final testDocumentText = find.textContaining(runIdPart);
-        
-        int attempts = 0;
-        const maxAttempts = 15;
-        
-        while (attempts < maxAttempts && testDocumentText.evaluate().isEmpty) {
-          await tester.pump(const Duration(seconds: 2));
-          attempts++;
-        }
-
-        if (testDocumentText.evaluate().isNotEmpty) {
-          // GitHub test document synced successfully
+        final splitRunId = githubRunId.split('_');
+        if (splitRunId.length >= 3) {
+          final runIdPart = splitRunId[2];
+          final testDocumentText = find.textContaining(runIdPart);
+          
+          int attempts = 0;
+          const maxAttempts = 15;
+          
+          while (attempts < maxAttempts && testDocumentText.evaluate().isEmpty) {
+            await tester.pump(const Duration(seconds: 2));
+            attempts++;
+          }
+          if (testDocumentText.evaluate().isNotEmpty) {
+            // GitHub test document synced successfully
+          } else {
+            // GitHub test document not found within timeout
+          }
         } else {
-          // GitHub test document not found within timeout
+          // GitHub test document ID format invalid, skipping sync verification
         }
       } else {
         // No GitHub test document ID provided, skipping sync verification

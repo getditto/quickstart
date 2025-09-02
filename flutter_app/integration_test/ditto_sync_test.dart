@@ -157,7 +157,8 @@ void main() {
       const githubDocId = String.fromEnvironment('GITHUB_TEST_DOC_ID');
       if (githubDocId.isNotEmpty) {
         
-        final runIdPart = githubDocId.split('_').length > 2 ? githubDocId.split('_')[2] : githubDocId;
+        final parts = githubDocId.split('_');
+        final runIdPart = parts.length > 2 ? parts[2] : githubDocId;
         
         // Look for the test document with retries
         bool found = false;
