@@ -24,7 +24,6 @@ void main() {
       final fab = find.byType(FloatingActionButton);
       expect(fab, findsOneWidget);
 
-      print('✓ Basic UI elements found');
     });
 
     testWidgets('Can add and verify a task', (WidgetTester tester) async {
@@ -52,7 +51,6 @@ void main() {
 
       expect(find.text('Integration Test Task'), findsOneWidget);
       
-      print('✓ Task creation and display verified');
     });
 
     testWidgets('Can mark task as complete', (WidgetTester tester) async {
@@ -84,7 +82,6 @@ void main() {
 
       await tester.pump(const Duration(seconds: 2));
 
-      print('✓ Task completion verified');
     });
 
     testWidgets('Can delete a task by swipe', (WidgetTester tester) async {
@@ -116,7 +113,6 @@ void main() {
 
       await tester.pump(const Duration(seconds: 2));
 
-      print('✓ Task deletion verified');
     });
 
     testWidgets('Sync functionality test', (WidgetTester tester) async {
@@ -138,7 +134,6 @@ void main() {
       await tester.tap(syncTile);
       await tester.pumpAndSettle();
 
-      print('✓ Sync toggle functionality verified');
     });
 
     testWidgets('GitHub test document sync verification', (WidgetTester tester) async {
@@ -163,12 +158,12 @@ void main() {
         }
 
         if (testDocumentText.evaluate().isNotEmpty) {
-          print('✓ GitHub test document synced successfully');
+          // GitHub test document synced successfully
         } else {
-          print('⚠ GitHub test document not found within timeout');
+          // GitHub test document not found within timeout
         }
       } else {
-        print('⚠ No GitHub test document ID provided, skipping sync verification');
+        // No GitHub test document ID provided, skipping sync verification
       }
     });
   });

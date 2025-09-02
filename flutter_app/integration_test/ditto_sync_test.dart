@@ -29,7 +29,6 @@ void main() {
       final SwitchListTile syncSwitch = tester.widget(syncTile);
       expect(syncSwitch.value, isTrue, reason: 'Sync should be active on startup');
 
-      print('✓ Ditto initialized successfully and sync is active');
     });
 
     testWidgets('Create task and verify cloud sync document insertion', (WidgetTester tester) async {
@@ -59,12 +58,10 @@ void main() {
       // Verify task appears in local UI
       expect(find.text(testTaskTitle), findsOneWidget);
       
-      print('✓ Task created and appears in local UI: $testTaskTitle');
       
       // Additional sync verification - wait a bit more for cloud sync
       await tester.pump(const Duration(seconds: 3));
       
-      print('✓ Task creation and local sync completed');
     });
 
     testWidgets('Verify task state changes sync to cloud', (WidgetTester tester) async {
@@ -112,7 +109,6 @@ void main() {
       final CheckboxListTile updatedTile = tester.widget(taskWidget);
       expect(updatedTile.value, isTrue, reason: 'Task should be marked as completed');
 
-      print('✓ Task state change synced successfully');
     });
 
     testWidgets('Sync toggle functionality test', (WidgetTester tester) async {
@@ -148,7 +144,6 @@ void main() {
       SwitchListTile reactivatedSwitch = tester.widget(syncTile);
       expect(reactivatedSwitch.value, isTrue, reason: 'Sync should be reactivated');
 
-      print('✓ Sync toggle functionality working correctly');
     });
 
     testWidgets('GitHub CI test document sync verification', (WidgetTester tester) async {
@@ -161,7 +156,6 @@ void main() {
       // Check for GitHub test document if running in CI
       const githubDocId = String.fromEnvironment('GITHUB_TEST_DOC_ID');
       if (githubDocId.isNotEmpty) {
-        print('Looking for GitHub test document: $githubDocId');
         
         final runIdPart = githubDocId.split('_').length > 2 ? githubDocId.split('_')[2] : githubDocId;
         
@@ -177,16 +171,15 @@ void main() {
         }
 
         if (found) {
-          print('✓ GitHub test document successfully synced from Ditto Cloud');
           final testDocumentFinder = find.textContaining(runIdPart);
           expect(testDocumentFinder, findsOneWidget, 
                 reason: 'GitHub test document should be synced and visible');
         } else {
-          print('⚠ GitHub test document not found - this may indicate sync issues');
+          // GitHub test document not found - this may indicate sync issues
           // Don't fail the test in case it's a timing issue
         }
       } else {
-        print('⚠ No GitHub test document ID provided - skipping cloud sync verification');
+        // No GitHub test document ID provided - skipping cloud sync verification
       }
     });
 
@@ -229,7 +222,6 @@ void main() {
               reason: 'All stress test tasks should be synced and visible');
       }
 
-      print('✓ Multiple tasks sync stress test completed successfully');
     });
   });
 }
