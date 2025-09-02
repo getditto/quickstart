@@ -54,7 +54,7 @@ jobs:
           # First, let's check available platforms
           xcodebuild -showsdks || true
           
-          # Build for generic iOS device (not simulator-specific)
+          # Build for iOS simulator
           xcodebuild build \
             -project Tasks.xcodeproj \
             -scheme Tasks \
