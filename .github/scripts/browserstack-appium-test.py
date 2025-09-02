@@ -67,55 +67,45 @@ class BrowserStackAppiumRunner:
     def create_appium_driver(self, device: str, app_url: str, platform: str) -> webdriver.Remote:
         """Create Appium WebDriver instance for BrowserStack"""
         
-        # BrowserStack capabilities
+        # Standard BrowserStack capabilities
         bs_options = {
             'userName': self.username,
             'accessKey': self.access_key,
-            'appiumVersion': '2.0.0',
             'projectName': 'Ditto React Native Integration Tests',
             'buildName': f"RN Appium Tests - {time.strftime('%Y-%m-%d %H:%M:%S')}",
             'sessionName': f'{device} - Ditto Sync Test',
-            'deviceName': device.split('-')[0],  # Extract device name
-            'osVersion': device.split('-')[1],    # Extract OS version
-            'app': app_url,
-            'autoAcceptAlerts': True,
-            'autoGrantPermissions': True,
             # Critical timeout settings for long-running tests
             'idleTimeout': 300,  # Maximum allowed by BrowserStack
-            'sessionTimeout': 1800,  # 30 minutes
             'networkLogs': True,
             'deviceLogs': True,
             'debug': True,
         }
         
-        # Add environment variables for Ditto configuration
-        env_vars = {}
-        if os.getenv('DITTO_APP_ID'):
-            env_vars['DITTO_APP_ID'] = os.getenv('DITTO_APP_ID')
-        if os.getenv('DITTO_PLAYGROUND_TOKEN'):
-            env_vars['DITTO_PLAYGROUND_TOKEN'] = os.getenv('DITTO_PLAYGROUND_TOKEN')
-        if os.getenv('GITHUB_TEST_DOC_ID'):
-            env_vars['GITHUB_TEST_DOC_ID'] = os.getenv('GITHUB_TEST_DOC_ID')
-        if os.getenv('GITHUB_RUN_NUMBER'):
-            env_vars['GITHUB_RUN_NUMBER'] = os.getenv('GITHUB_RUN_NUMBER')
-        
-        if env_vars:
-            bs_options['customEnvVars'] = env_vars
-            print(f"🔧 Environment variables: {list(env_vars.keys())}")
-        
         if platform == 'ios':
             options = XCUITestOptions()
             options.platform_name = 'iOS'
+            options.device_name = device.split('-')[0]  # Extract device name
+            options.platform_version = device.split('-')[1]  # Extract OS version
         else:
             options = UiAutomator2Options()
             options.platform_name = 'Android'
+            options.device_name = device.split('-')[0]  # Extract device name
+            options.platform_version = device.split('-')[1]  # Extract OS version
         
-        # Add BrowserStack options
+        # Set app
+        options.app = app_url
+        
+        # BrowserStack specific options
         options.set_capability('bstack:options', bs_options)
         
-        # Additional Appium capabilities for timeout management
-        options.set_capability('newCommandTimeout', 300)
-        options.set_capability('appium:newCommandTimeout', 300)
+        # Appium capabilities for timeout management
+        options.new_command_timeout = 300
+        
+        # Permission handling
+        if platform == 'android':
+            options.auto_grant_permissions = True
+        else:
+            options.auto_accept_alerts = True
         
         remote_url = f"https://{self.username}:{self.access_key}@hub-cloud.browserstack.com/wd/hub"
         
