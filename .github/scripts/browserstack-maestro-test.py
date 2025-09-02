@@ -136,8 +136,8 @@ class BrowserStackMaestroRunner:
             "buildName": build_name,
             # Enable device logs for debugging
             "deviceLogs": True,
-            # Specify which flows to execute - match ZIP structure
-            "execute": "maestro_suite/flows/"
+            # Specify which flows to execute - must be array format
+            "execute": ["maestro_suite/flows"]
         }
         
         # Add optional parameters
