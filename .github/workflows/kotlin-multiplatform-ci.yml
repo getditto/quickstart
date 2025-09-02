@@ -179,7 +179,7 @@ jobs:
         DITTO_PLAYGROUND_TOKEN: "test_token"
         DITTO_AUTH_URL: "https://test.com"
         DITTO_WEBSOCKET_URL: "wss://test.com"
-      run: ./gradlew :composeApp:desktopTest --tests="integration.DittoSyncIntegrationTest.testDittoSyncIntegration"
+      run: ./gradlew :composeApp:desktopTest --tests="integration.DittoSyncIntegrationTest"
 
   summary:
     name: Summary
