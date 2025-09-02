@@ -1,0 +1,33 @@
+name: 'Java and Maven Setup'
+description: 'Sets up Java JDK and Maven for Spring Boot projects'
+
+inputs:
+  java-version:
+    description: 'Java version to use'
+    required: false
+    default: '17'
+  maven-version:
+    description: 'Maven version to use'
+    required: false
+    default: '3.9.6'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@v5
+      with:
+        maven-version: ${{ inputs.maven-version }}
