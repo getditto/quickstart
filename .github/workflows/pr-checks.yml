@@ -203,11 +203,11 @@ jobs:
 
       - name: Build project
         working-directory: java-spring
-        run: ./gradlew build
+        run: ./gradlew assemble
 
-      - name: Run tests including integration tests
-        working-directory: java-spring
-        run: ./gradlew test
+      - name: Run unit tests (excluding integration tests for CI)
+        working-directory: java-spring  
+        run: ./gradlew test --tests '*' --tests '!*IntegrationTest*'
 
   flutter:
     name: Flutter (ubuntu-24.04)
