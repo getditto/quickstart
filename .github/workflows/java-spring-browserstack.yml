@@ -30,6 +30,11 @@ jobs:
       - name: Setup Android SDK
         uses: ./.github/actions/android-sdk-setup
 
+      - name: Install FFI dependencies for Ditto SDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev
+
       - name: Setup Ditto Environment
         uses: ./.github/actions/ditto-env-setup
         with:
