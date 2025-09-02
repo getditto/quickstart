@@ -100,9 +100,15 @@ def run_android_test(device_config):
     driver = None
     try:
         print(f"🚀 Connecting to BrowserStack for {device_name}...")
+        
+        # Create UiAutomator2 options for modern Appium
+        from appium.options.android import UiAutomator2Options
+        options = UiAutomator2Options()
+        options.load_capabilities(desired_caps)
+        
         driver = webdriver.Remote(
             command_executor='https://hub.browserstack.com/wd/hub',
-            desired_capabilities=desired_caps
+            options=options
         )
         
         print(f"✅ Connected to {device_name}")

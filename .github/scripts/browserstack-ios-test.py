@@ -112,9 +112,15 @@ def run_ios_test(device_config):
     driver = None
     try:
         print(f"🚀 Connecting to BrowserStack for {device_name}...")
+        
+        # Create XCUITest options for modern Appium  
+        from appium.options.ios import XCUITestOptions
+        options = XCUITestOptions()
+        options.load_capabilities(desired_caps)
+        
         driver = webdriver.Remote(
             command_executor='https://hub.browserstack.com/wd/hub',
-            desired_capabilities=desired_caps
+            options=options
         )
         
         print(f"✅ Connected to {device_name}")
