@@ -16,8 +16,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: rn-expo-android-maestro-browserstack-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   maestro-tests:
