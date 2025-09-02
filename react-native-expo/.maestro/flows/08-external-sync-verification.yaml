@@ -16,11 +16,12 @@ tags:
 - assertVisible: 
     text: "Ditto Tasks"
 # Generate external task ID and title
-- runScript: |
-    const timestamp = Date.now();
-    const runNumber = process.env.GITHUB_RUN_NUMBER || Math.floor(Math.random() * 10000);
-    output.externalTaskId = `github_test_${runNumber}_${timestamp}`;
-    output.externalTaskTitle = `GitHub Test Task ${runNumber}`;
+- runScript:
+    script: |
+      const timestamp = Date.now();
+      const runNumber = process.env.GITHUB_RUN_NUMBER || Math.floor(Math.random() * 10000);
+      output.externalTaskId = `github_test_${runNumber}_${timestamp}`;
+      output.externalTaskTitle = `GitHub Test Task ${runNumber}`;
 # If we have a test document ID from the CI setup, look for it
 - runFlow:
     when:

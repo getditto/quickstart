@@ -18,9 +18,10 @@ tags:
 - tapOn: "+"
 - assertVisible: "Add Task"
 # Generate unique task title with timestamp to avoid conflicts
-- runScript: |
-    const timestamp = Date.now();
-    output.testTaskTitle = `E2E Test Task ${timestamp}`;
+- runScript:
+    script: |
+      const timestamp = Date.now();
+      output.testTaskTitle = `E2E Test Task ${timestamp}`;
 - tapOn:
     id: "task-input"
 - inputText: "${output.testTaskTitle}"

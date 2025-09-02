@@ -232,7 +232,7 @@ run_tests_by_tag() {
     
     cd "$MAESTRO_DIR"
     
-    if maestro test --tag="$tag" flows/; then
+    if maestro test --include-tags="$tag" flows/; then
         log_success "✅ Tests with tag '$tag' passed"
         return 0
     else

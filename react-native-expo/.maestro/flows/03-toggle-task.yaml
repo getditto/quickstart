@@ -17,9 +17,10 @@ tags:
 # First create a task
 - tapOn: "+"
 - assertVisible: "Add Task"
-- runScript: |
-    const timestamp = Date.now();
-    output.testTaskTitle = `Toggle Test Task ${timestamp}`;
+- runScript:
+    script: |
+      const timestamp = Date.now();
+      output.testTaskTitle = `Toggle Test Task ${timestamp}`;
 - tapOn:
     id: "task-input"
 - inputText: "${output.testTaskTitle}"

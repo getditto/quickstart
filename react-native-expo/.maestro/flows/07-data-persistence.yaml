@@ -18,9 +18,10 @@ tags:
 # Create a persistent task
 - tapOn: "+"
 - assertVisible: "Add Task"
-- runScript: |
-    const timestamp = Date.now();
-    output.persistentTaskTitle = `Persistent Task ${timestamp}`;
+- runScript:
+    script: |
+      const timestamp = Date.now();
+      output.persistentTaskTitle = `Persistent Task ${timestamp}`;
 - tapOn:
     id: "task-input"
 - inputText: "${output.persistentTaskTitle}"
