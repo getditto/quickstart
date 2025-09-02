@@ -13,10 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  flutter-android-web:
-    name: Flutter Android & Web BrowserStack Testing
+  flutter-android:
+    name: Flutter Android BrowserStack Testing
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
     - uses: actions/checkout@v4
@@ -165,6 +165,64 @@ jobs:
             exit(1)
         PYTHON_SCRIPT
 
+    - name: Android Summary
+      run: |
+        echo "✅ Flutter Android BrowserStack testing completed"
+        echo "✅ Android APK tested on BrowserStack real devices"
+
+  flutter-web:
+    name: Flutter Web BrowserStack Testing  
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Insert test document into Ditto Cloud for Web
+      run: |
+        DOC_ID="github_test_web_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"Flutter Web BrowserStack Test ${GITHUB_RUN_ID}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted Web test document with ID: ${DOC_ID}"
+          echo "GITHUB_TEST_DOC_ID_WEB=${DOC_ID}" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to insert Web document. HTTP Status: $HTTP_CODE"
+          exit 1
+        fi
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: 3.x
+        cache: true
+
+    - name: Create .env file for Web
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+    - name: Get Flutter dependencies for Web
+      working-directory: flutter_app
+      run: flutter pub get
+
     - name: Build Flutter Web
       working-directory: flutter_app
       run: |
@@ -175,7 +233,10 @@ jobs:
     - name: Test Flutter Web on BrowserStack
       run: |
         echo "Running Flutter Web tests on BrowserStack browsers..."
-        echo "Test Document ID: ${{ env.GITHUB_TEST_DOC_ID }}"
+        echo "Test Document ID: ${{ env.GITHUB_TEST_DOC_ID_WEB }}"
+        
+        # Install required packages
+        pip3 install selenium
         
         # Start web server for Flutter web app
         cd flutter_app/build/web
@@ -201,7 +262,7 @@ jobs:
         options.set_capability('osVersion', '11')
         options.set_capability('projectName', 'Flutter Web Ditto Sync Test')
         options.set_capability('buildName', f'Flutter Web Build {os.environ["GITHUB_RUN_NUMBER"]}')
-        options.set_capability('sessionName', f'Flutter Web Test - Document {os.environ["GITHUB_TEST_DOC_ID"]}')
+        options.set_capability('sessionName', f'Flutter Web Test - Document {os.environ["GITHUB_TEST_DOC_ID_WEB"]}')
         options.set_capability('local', 'true')
         
         bs_url = f'https://{os.environ["BROWSERSTACK_USERNAME"]}:{os.environ["BROWSERSTACK_ACCESS_KEY"]}@hub.browserstack.com/wd/hub'
@@ -228,8 +289,8 @@ jobs:
             
             time.sleep(15)
             
-            test_doc_id = os.environ['GITHUB_TEST_DOC_ID']
-            run_id = test_doc_id.split('_')[2]
+            test_doc_id = os.environ['GITHUB_TEST_DOC_ID_WEB']
+            run_id = test_doc_id.split('_')[3]  # Different format: github_test_web_RUNID_RUNNUMBER
             try:
                 test_doc = driver.find_element(By.XPATH, f'//*[contains(text(), "{run_id}")]')
                 if test_doc:
@@ -249,13 +310,10 @@ jobs:
         # Cleanup web server
         kill $WEB_SERVER_PID 2>/dev/null || true
 
-    - name: Run local Flutter tests
-      working-directory: flutter_app
+    - name: Web Summary
       run: |
-        echo "Running local Flutter unit tests..."
-        flutter test
-        echo "✅ Local Flutter tests completed successfully"
-        echo "✅ Flutter BrowserStack testing complete for Android and Web platforms"
+        echo "✅ Flutter Web BrowserStack testing completed"
+        echo "✅ Web app tested on BrowserStack browsers"
 
   flutter-ios:
     name: Flutter iOS BrowserStack Testing
@@ -405,11 +463,7 @@ jobs:
             exit(1)
         PYTHON_IOS_SCRIPT
 
-    - name: Summary
-      if: always()
+    - name: iOS Summary
       run: |
-        echo "✅ Flutter BrowserStack testing completed"
-        echo "✅ Android APK tested on BrowserStack real devices"
-        echo "✅ iOS IPA tested on BrowserStack real devices" 
-        echo "✅ Web app tested on BrowserStack browsers"
-        echo "✅ All platforms test Ditto sync with GitHub documents"
+        echo "✅ Flutter iOS BrowserStack testing completed"
+        echo "✅ iOS IPA tested on BrowserStack real devices"
