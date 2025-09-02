@@ -39,6 +39,7 @@ jobs:
         ./buildEnv.sh ../.env Tasks/
     
     - name: Build iOS App for BrowserStack
+      id: build_ios
       working-directory: swift
       run: |
         echo "🔨 Building iOS app for BrowserStack real device testing..."
@@ -70,16 +71,16 @@ jobs:
           echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
           ls -la "$APP_BUNDLE_PATH"
           
-          # Create unsigned IPA by zipping Payload/ structure (BrowserStack will re-sign)
+          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
           mkdir -p build/Payload
           cp -R "$APP_BUNDLE_PATH" build/Payload/
-          cd build && zip -qry Tasks-unsigned.ipa Payload && rm -rf Payload
+          (cd build && zip -qry Tasks-unsigned.ipa Payload && rm -rf Payload)
           
-          # Verify IPA was created
-          if [ -f "Tasks-unsigned.ipa" ]; then
-            echo "✅ Unsigned .ipa created successfully: $(pwd)/Tasks-unsigned.ipa"
-            ls -la Tasks-unsigned.ipa
-            echo "ipa_file_path=$(pwd)/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
+          # Verify IPA was created and expose absolute path for later steps
+          if [ -f "build/Tasks-unsigned.ipa" ]; then
+            echo "✅ Unsigned .ipa created successfully: $(pwd)/build/Tasks-unsigned.ipa"
+            ls -la build/Tasks-unsigned.ipa
+            echo "ipa_file_path=$(pwd)/build/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
           else
             echo "❌ Failed to create .ipa file"
             exit 1
@@ -96,30 +97,21 @@ jobs:
       run: |
         echo "📱 Validating iOS .ipa build for BrowserStack deployment..."
         
-        # Find the .ipa file created in previous step
-        IPA_FILE=$(find swift/build/ -name "*.ipa" -type f | head -n 1)
-        
+        IPA_FILE="${{ steps.build_ios.outputs.ipa_file_path }}"
         if [ -f "$IPA_FILE" ]; then
-          echo "✅ iOS .ipa built successfully: $IPA_FILE"
+          echo "✅ Found IPA: $IPA_FILE"
           echo "📦 IPA file details:"
           ls -la "$IPA_FILE"
           
-          # Validate .ipa structure by checking Payload directory
-          cd $(dirname "$IPA_FILE")
-          unzip -l $(basename "$IPA_FILE") | head -10
+          # Validate .ipa structure by checking Payload directory  
+          unzip -l "$IPA_FILE" | head -10
           
-          # Set output for upload step
           echo "ipa_file_path=$IPA_FILE" >> $GITHUB_OUTPUT
-          
           echo "✅ iOS .ipa validation successful"
           echo "🎯 iOS .ipa is ready for BrowserStack real device testing"
-          
         else
-          echo "❌ iOS .ipa file not found"
-          echo "Checking swift/build/ipa/ directory:"
-          ls -la swift/build/ipa/ || echo "swift/build/ipa/ directory doesn't exist"
-          echo "Checking for any .ipa files:"
-          find swift/ -name "*.ipa" -type f || echo "No .ipa files found"
+          echo "❌ IPA not found at $IPA_FILE"
+          find swift -name "*.ipa" -type f || true
           exit 1
         fi
     
