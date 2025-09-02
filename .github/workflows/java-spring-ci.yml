@@ -33,6 +33,13 @@ jobs:
           java-version: '17'
           cache: 'gradle'
           
+      - name: Create minimal .env file for build process
+        run: |
+          echo "DITTO_APP_ID=dummy" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=dummy" >> .env
+          echo "DITTO_AUTH_URL=dummy" >> .env
+          echo "DITTO_WEBSOCKET_URL=dummy" >> .env
+          
       - name: Make gradlew executable
         working-directory: java-spring
         run: chmod +x ./gradlew
