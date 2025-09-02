@@ -97,7 +97,12 @@ def run_android_test(device_config):
     driver = None
     try:
         print(f"🚀 Connecting to BrowserStack for {device_name}...")
-        driver = webdriver.Remote("http://hub.browserstack.com/wd/hub", options=options)
+        # Create authenticated WebDriver URL for BrowserStack
+        bs_username = os.environ['BROWSERSTACK_USERNAME']
+        bs_access_key = os.environ['BROWSERSTACK_ACCESS_KEY']
+        hub_url = f"https://{bs_username}:{bs_access_key}@hub.browserstack.com/wd/hub"
+        
+        driver = webdriver.Remote(hub_url, options=options)
         print(f"✅ Connected to {device_name}")
         
         # Wait for app to launch and initialize
