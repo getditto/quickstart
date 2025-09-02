@@ -60,7 +60,7 @@ jobs:
           "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
         
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
+        RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
         
         echo "HTTP Status: $HTTP_CODE"
         echo "Response: $RESPONSE_BODY"
