@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <cassert>
@@ -16,12 +17,21 @@ using std::endl;
 using std::string;
 using std::vector;
 using std::unique_ptr;
-using std::make_unique;
 using std::chrono::seconds;
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
 using std::chrono::duration_cast;
 using std::this_thread::sleep_for;
+
+// C++11 compatible to_string function
+namespace std11_compat {
+    template<typename T>
+    string to_string(const T& value) {
+        std::ostringstream oss;
+        oss << value;
+        return oss.str();
+    }
+}
 
 /**
  * Real integration tests for Ditto C++ TUI Tasks app
@@ -47,14 +57,14 @@ public:
         cout << "📝 App ID: " << string(DITTO_APP_ID).substr(0, 8) << "..." << endl;
         
         // Initialize TasksPeer with environment credentials
-        peer = make_unique<TasksPeer>(
+        peer = unique_ptr<TasksPeer>(new TasksPeer(
             DITTO_APP_ID,
             DITTO_PLAYGROUND_TOKEN, 
             DITTO_WEBSOCKET_URL,
             DITTO_AUTH_URL,
             true,  // enable_cloud_sync
             "/tmp/ditto_integration_test"
-        );
+        ));
     }
     
     ~DittoIntegrationTests() {
@@ -125,7 +135,7 @@ public:
         
         // CREATE - Add a new task using SDK
         string test_title = "C++ Integration Test Task " + 
-                           (getenv("GITHUB_RUN_ID") ? getenv("GITHUB_RUN_ID") : "local");
+                           (getenv("GITHUB_RUN_ID") ? string(getenv("GITHUB_RUN_ID")) : string("local"));
         string new_task_id = peer->add_task(test_title, false);
         
         assert(!new_task_id.empty());
@@ -252,7 +262,7 @@ public:
         // Test multiple rapid operations
         vector<string> task_ids;
         for (int i = 0; i < 5; i++) {
-            string task_id = peer->add_task("Performance Test " + to_string(i), false);
+            string task_id = peer->add_task("Performance Test " + std11_compat::to_string(i), false);
             task_ids.push_back(task_id);
         }
         

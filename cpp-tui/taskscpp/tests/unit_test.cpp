@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <sstream>
 #include <string>
 #include <chrono>
 
@@ -10,11 +11,20 @@
 using std::cout;
 using std::endl;
 using std::string;
-using std::to_string;
 using std::exception;
 using std::chrono::high_resolution_clock;
 using std::chrono::microseconds;
 using std::chrono::duration_cast;
+
+// C++11 compatible to_string function
+namespace std11_compat {
+    template<typename T>
+    string to_string(const T& value) {
+        std::ostringstream oss;
+        oss << value;
+        return oss.str();
+    }
+}
 
 /**
  * Unit tests for C++ TUI Tasks app
@@ -120,7 +130,7 @@ public:
         
         // Test task creation performance
         for (int i = 0; i < 1000; i++) {
-            Task task("task_" + to_string(i), "Performance Test " + to_string(i), false, false);
+            Task task("task_" + std11_compat::to_string(i), "Performance Test " + std11_compat::to_string(i), false, false);
             assert(!task._id.empty());
         }
         
