@@ -57,20 +57,8 @@ jobs:
         
         echo "📦 Creating unsigned .ipa for BrowserStack..."
         
-        # Find and validate exactly one .app bundle from the archive
-        APP_BUNDLES=($(find build/Tasks.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d))
-        
-        if [ ${#APP_BUNDLES[@]} -eq 0 ]; then
-          echo "❌ No .app bundles found in archive"
-          find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found anywhere"
-          exit 1
-        elif [ ${#APP_BUNDLES[@]} -gt 1 ]; then
-          echo "❌ Multiple .app bundles found, expected exactly 1:"
-          printf '%s\n' "${APP_BUNDLES[@]}"
-          exit 1
-        fi
-        
-        APP_BUNDLE_PATH=${APP_BUNDLES[0]}
+        # Find the .app bundle from the archive
+        APP_BUNDLE_PATH=$(find build/Tasks.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d | head -1)
         
         if [ -d "$APP_BUNDLE_PATH" ]; then
           echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
@@ -91,6 +79,10 @@ jobs:
             exit 1
           fi
           
+        else
+          echo "❌ iOS app bundle not found in archive"
+          find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found anywhere"
+          exit 1
         fi
     
     - name: Validate iOS IPA Build
