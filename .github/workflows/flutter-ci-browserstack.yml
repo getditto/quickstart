@@ -246,7 +246,18 @@ jobs:
         # Install required packages
         pip3 install selenium
         
-        # Start web server for Flutter web app
+        # Download and setup BrowserStack Local for tunneling
+        wget -q https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip
+        unzip -q BrowserStackLocal-linux-x64.zip
+        chmod +x BrowserStackLocal
+        
+        # Start BrowserStack Local tunnel
+        ./BrowserStackLocal --key ${{ secrets.BROWSERSTACK_ACCESS_KEY }} --daemon-mode &
+        TUNNEL_PID=$!
+        echo "BrowserStack Local tunnel started with PID: $TUNNEL_PID"
+        sleep 10
+        
+        # Start web server for Flutter web app  
         cd flutter_app/build/web
         python3 -m http.server 3000 &
         WEB_SERVER_PID=$!
@@ -315,8 +326,9 @@ jobs:
             exit(1)
         PYTHON_WEB_SCRIPT
         
-        # Cleanup web server
+        # Cleanup web server and tunnel
         kill $WEB_SERVER_PID 2>/dev/null || true
+        kill $TUNNEL_PID 2>/dev/null || true
 
     - name: Web Summary
       run: |
@@ -380,39 +392,52 @@ jobs:
       working-directory: flutter_app
       run: flutter pub get
 
-    - name: Build Flutter iOS IPA
+    - name: Build Flutter iOS APP
       working-directory: flutter_app
       run: |
-        echo "Building Flutter iOS IPA for BrowserStack..."
-        flutter build ipa --debug --no-codesign
-        ls -la build/ios/ipa/ || echo "No IPA directory found"
-
-    - name: Upload iOS IPA to BrowserStack
-      run: |
-        echo "Uploading iOS IPA to BrowserStack..."
-        IPA_FILE="flutter_app/build/ios/ipa/flutter_quickstart.ipa"
+        echo "Building Flutter iOS APP for BrowserStack..."
+        flutter build ios --debug --no-codesign
         
-        if [ ! -f "$IPA_FILE" ]; then
-          echo "❌ IPA file not found at $IPA_FILE"
-          find flutter_app -name "*.ipa" -type f || echo "No IPA files found"
+        # Create .app bundle for BrowserStack (they don't need IPA, just APP)
+        if [ -d "build/ios/iphoneos/Runner.app" ]; then
+          echo "✅ iOS APP bundle found: build/ios/iphoneos/Runner.app"
+          ls -la build/ios/iphoneos/
+        else
+          echo "❌ iOS APP bundle not found"
+          find build/ios -name "*.app" -type d || echo "No APP files found"
+        fi
+
+    - name: Upload iOS APP to BrowserStack
+      run: |
+        echo "Uploading iOS APP to BrowserStack..."
+        APP_FILE="flutter_app/build/ios/iphoneos/Runner.app"
+        
+        if [ ! -d "$APP_FILE" ]; then
+          echo "❌ iOS APP bundle not found at $APP_FILE"
+          find flutter_app -name "*.app" -type d || echo "No APP files found"
           exit 1
         fi
         
+        # Create ZIP of APP bundle for upload to BrowserStack
+        cd flutter_app/build/ios/iphoneos/
+        zip -r Runner.app.zip Runner.app/
+        cd ../../../../
+        
         APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-          -F "file=@$IPA_FILE" \
+          -F "file=@flutter_app/build/ios/iphoneos/Runner.app.zip" \
           -F "custom_id=flutter-ios-${{ github.run_id }}")
         
         echo "Upload response: $APP_UPLOAD_RESPONSE"
         APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
         
         if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-          echo "❌ Failed to upload iOS IPA to BrowserStack"
+          echo "❌ Failed to upload iOS APP to BrowserStack"
           exit 1
         fi
         
         echo "IOS_APP_URL=$APP_URL" >> $GITHUB_ENV
-        echo "✅ iOS IPA uploaded to BrowserStack: $APP_URL"
+        echo "✅ iOS APP uploaded to BrowserStack: $APP_URL"
 
     - name: Test Flutter iOS on BrowserStack
       run: |
