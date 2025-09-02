@@ -127,7 +127,7 @@ def run_android_test(device_config):
         options.load_capabilities(desired_caps)
         
         driver = webdriver.Remote(
-            command_executor='https://hub.browserstack.com/wd/hub',
+            command_executor=f"https://{os.environ['BROWSERSTACK_USERNAME']}:{os.environ['BROWSERSTACK_ACCESS_KEY']}@hub.browserstack.com/wd/hub",
             options=options
         )
         
