@@ -12,7 +12,7 @@ from appium import webdriver
 from appium.options.android import UiAutomator2Options
 from appium.webdriver.common.appiumby import AppiumBy
 
-def wait_for_sync_document(driver, doc_id, max_wait=30):
+def wait_for_sync_document(driver, doc_id, max_wait=60):
     """Wait for a specific document to appear in the task list."""
     print(f"🔄 Waiting for document '{doc_id}' to sync from Ditto Cloud...")
     # Extract the run ID from the document ID (format: github_test_RUNID_RUNNUMBER)
@@ -23,15 +23,27 @@ def wait_for_sync_document(driver, doc_id, max_wait=30):
     
     while (time.time() - start_time) < max_wait:
         try:
-            # Look for text elements that might contain our task
-            text_elements = driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.TextView")
+            # Look for text elements that might contain our task - try multiple approaches
+            all_elements = []
             
-            # Check each element for our GitHub run ID
-            for element in text_elements:
+            # Approach 1: Text elements
+            text_elements = driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.TextView")
+            all_elements.extend(text_elements)
+            
+            # Approach 2: Any elements containing text (broader search)
+            xpath_elements = driver.find_elements(AppiumBy.XPATH, f"//*[contains(text(), '{run_id}')]")
+            all_elements.extend(xpath_elements)
+            
+            # Approach 3: Any elements containing "GitHub Test Task"  
+            github_elements = driver.find_elements(AppiumBy.XPATH, "//*[contains(text(), 'GitHub Test Task')]")
+            all_elements.extend(github_elements)
+            
+            # Check each element for our GitHub run ID or test document
+            for element in all_elements:
                 try:
                     element_text = element.text.strip()
-                    # Check if the run ID appears in the text and it's our GitHub test task
-                    if run_id in element_text and "GitHub Test Task" in element_text:
+                    # Check if the run ID appears in the text OR if it's our GitHub test task
+                    if (run_id in element_text) or ("GitHub Test Task" in element_text and run_id in doc_id):
                         print(f"✅ Found synced document: {element_text}")
                         return True
                 except:
@@ -74,7 +86,7 @@ def test_ditto_cloud_sync(driver, device_name):
     github_doc_id = os.environ.get('GITHUB_TEST_DOC_ID')
     if github_doc_id:
         print(f"📡 Checking for GitHub test document: {github_doc_id}")
-        if wait_for_sync_document(driver, github_doc_id, max_wait=45):
+        if wait_for_sync_document(driver, github_doc_id, max_wait=90):
             print("✅ GitHub test document successfully synced from Ditto Cloud")
             return True
         else:

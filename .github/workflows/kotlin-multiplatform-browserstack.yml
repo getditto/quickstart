@@ -62,9 +62,9 @@ jobs:
           }" \
         "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
         
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | head -n-1)
+        # Extract HTTP status code and response body (macOS compatible)  
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+        BODY=$(echo "$RESPONSE" | head -n -1)
         
         # Check if insertion was successful
         if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
@@ -224,9 +224,9 @@ jobs:
           }" \
         "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
         
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | head -n-1)
+        # Extract HTTP status code and response body (macOS compatible)  
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+        BODY=$(echo "$RESPONSE" | head -n -1)
         
         # Check if insertion was successful
         if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
