@@ -8,9 +8,11 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Ditto Tasks App Integration Tests', () {
-    testWidgets('App loads and displays basic UI elements', (WidgetTester tester) async {
+    setUp(() async {
       await dotenv.load(fileName: ".env");
-      
+    });
+
+    testWidgets('App loads and displays basic UI elements', (WidgetTester tester) async {
       app.main();
       await tester.pumpAndSettle();
 

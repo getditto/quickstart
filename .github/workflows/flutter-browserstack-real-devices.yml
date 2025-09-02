@@ -1,0 +1,142 @@
+name: Flutter BrowserStack Real Device Testing
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-browserstack-real-devices.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-browserstack-real-devices.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter-android-browserstack:
+    name: Flutter Android Real Device Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+
+      - name: Set up Java for Android
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Create .env file for Flutter
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Insert test document into Ditto Cloud for Flutter
+        run: |
+          DOC_ID="flutter_android_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"title\": \"Flutter Android BrowserStack Test ${GITHUB_RUN_ID}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted Flutter test document with ID: ${DOC_ID}"
+            echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+          else
+            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Get Flutter dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Build Flutter Android APK for BrowserStack
+        working-directory: flutter_app
+        run: |
+          echo "🏗️ Building Flutter Android APK for real device testing..."
+          flutter build apk --debug
+          echo "✅ Flutter Android APK built successfully"
+          ls -la build/app/outputs/flutter-apk/
+          
+          # Verify APK was created
+          if [ -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
+            echo "✅ APK file found: $(ls -lh build/app/outputs/flutter-apk/app-debug.apk)"
+          else
+            echo "❌ APK file not found"
+            exit 1
+          fi
+
+      - name: Upload Flutter APK to BrowserStack App Automate
+        run: |
+          echo "📤 Uploading Flutter APK to BrowserStack..."
+          RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@flutter_app/build/app/outputs/flutter-apk/app-debug.apk")
+          
+          echo "BrowserStack upload response: $RESPONSE"
+          
+          APP_URL=$(echo "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['app_url'])" 2>/dev/null || echo "")
+          
+          if [ -n "$APP_URL" ]; then
+            echo "✓ Flutter APK uploaded successfully to BrowserStack: $APP_URL"
+            echo "BROWSERSTACK_FLUTTER_ANDROID_APP_URL=$APP_URL" >> $GITHUB_ENV
+          else
+            echo "❌ Failed to upload Flutter APK. Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Run Flutter Android tests on BrowserStack real devices
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BROWSERSTACK_FLUTTER_ANDROID_APP_URL: ${{ env.BROWSERSTACK_FLUTTER_ANDROID_APP_URL }}
+          GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          echo "📱 Starting Flutter Android real device tests on BrowserStack..."
+          echo "App URL: $BROWSERSTACK_FLUTTER_ANDROID_APP_URL"
+          echo "Test Document ID: $GITHUB_TEST_DOC_ID"
+          
+          # Install Appium Python client for real device testing
+          pip3 install appium-python-client selenium
+          
+          # Run Flutter Android real device tests
+          python3 .github/scripts/flutter-android-browserstack-test.py
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-android-browserstack-results
+          path: |
+            flutter_app/build/app/outputs/flutter-apk/
+            *.png
+            .github/scripts/flutter-android-browserstack-test.py
