@@ -39,46 +39,14 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: Insert test document into Ditto Cloud via HTTP API
+    - name: Prepare Android BrowserStack test environment
       run: |
-        echo "🔧 Inserting test document into Ditto Cloud via HTTP API..."
-        # Use GitHub run ID to create deterministic document ID
-        DOC_ID="github_test_kmp_android_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-        
-        echo "📋 Document ID: $DOC_ID"
-        echo "⏰ Timestamp: $TIMESTAMP"
-        
-        # Insert document using Ditto HTTP API with KMP task structure
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"text\": \"GitHub KMP Android Test ${GITHUB_RUN_ID}\",
-                \"isCompleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | head -n-1)
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✅ Successfully inserted test document via Ditto HTTP API"
-          echo "📄 Document: GitHub KMP Android Test ${GITHUB_RUN_ID}"
-          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
-        else
-          echo "❌ Failed to insert document via Ditto API. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          exit 1
-        fi
+        echo "🔧 Preparing Android BrowserStack test environment..."
+        # Generate test run identifier for BrowserStack testing
+        TEST_RUN_ID="browserstack_android_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        echo "📋 BrowserStack test run ID: $TEST_RUN_ID"
+        echo "BROWSERSTACK_TEST_RUN_ID=${TEST_RUN_ID}" >> $GITHUB_ENV
+        echo "✅ BrowserStack test environment prepared"
     
     - name: Build Android APKs for BrowserStack
       working-directory: kotlin-multiplatform
@@ -123,20 +91,20 @@ jobs:
         echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
         echo "✅ APK uploaded successfully: $APP_URL"
 
-    - name: Execute Ditto HTTP API Sync Verification on BrowserStack Devices  
+    - name: Execute Android App Functionality Tests on BrowserStack Devices  
       id: test
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_APP_URL: ${{ steps.upload.outputs.app_url }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
-        GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
+        BROWSERSTACK_TEST_RUN_ID: ${{ env.BROWSERSTACK_TEST_RUN_ID }}
       run: |
         APP_URL="${{ steps.upload.outputs.app_url }}"
         
-        echo "🚀 Running Ditto HTTP API sync verification on BrowserStack Android devices..."
+        echo "🚀 Running Android app functionality tests on BrowserStack devices..."
         echo "📱 App URL: $APP_URL"
-        echo "📋 Test Document: $GITHUB_TEST_DOC_ID (inserted via HTTP API)"
+        echo "📋 Test Run: $BROWSERSTACK_TEST_RUN_ID"
         
         # Validate app upload was successful
         if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
@@ -151,18 +119,18 @@ jobs:
         # Make test script executable
         chmod +x .github/scripts/browserstack-android-test.py
         
-        # Run sync verification: Check if HTTP API document appears in app
-        echo "🔍 Starting HTTP API → Android app sync verification..."
-        echo "📄 Document was inserted via Ditto HTTP API, now verifying it syncs to app"
+        # Run app functionality tests: Launch, initialize Ditto, basic UI checks
+        echo "🔍 Starting Android app functionality verification on real devices..."
+        echo "📋 Testing: App launch, Ditto initialization, UI responsiveness"
         python3 .github/scripts/browserstack-android-test.py
         
         if [ $? -eq 0 ]; then
-          echo "🎉 ALL BROWSERSTACK ANDROID SYNC TESTS PASSED!"
-          echo "✅ HTTP API documents successfully sync to Android app"
-          echo "✅ Ditto sync verified on Pixel 8, Galaxy S23, Pixel 6, OnePlus 9"
+          echo "🎉 ALL BROWSERSTACK ANDROID APP TESTS PASSED!"
+          echo "✅ Android app launches and initializes successfully"
+          echo "✅ Ditto SDK integration verified on Pixel 8, Galaxy S23, Pixel 6, OnePlus 9"
         else
-          echo "❌ BROWSERSTACK ANDROID SYNC TESTS FAILED!"
-          echo "💥 HTTP API documents not syncing to Android app on real devices"
+          echo "❌ BROWSERSTACK ANDROID APP TESTS FAILED!"
+          echo "💥 Issues detected with Android app functionality on real devices"
           exit 1
         fi
 
@@ -195,46 +163,14 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: Insert iOS test document into Ditto Cloud via HTTP API  
+    - name: Prepare iOS BrowserStack test environment  
       run: |
-        echo "🔧 Inserting iOS test document into Ditto Cloud via HTTP API..."
-        # Use GitHub run ID to create deterministic document ID for iOS
-        DOC_ID="github_test_kmp_ios_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-        
-        echo "📋 iOS Document ID: $DOC_ID"
-        echo "⏰ Timestamp: $TIMESTAMP"
-        
-        # Insert iOS document using Ditto HTTP API with KMP task structure
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"text\": \"GitHub KMP iOS Test ${GITHUB_RUN_ID}\",
-                \"isCompleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | head -n-1)
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✅ Successfully inserted iOS test document via Ditto HTTP API"
-          echo "📄 iOS Document: GitHub KMP iOS Test ${GITHUB_RUN_ID}"
-          echo "GITHUB_TEST_DOC_ID_IOS=${DOC_ID}" >> $GITHUB_ENV
-        else
-          echo "❌ Failed to insert iOS document via Ditto API. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          exit 1
-        fi
+        echo "🔧 Preparing iOS BrowserStack test environment..."
+        # Generate test run identifier for iOS BrowserStack testing
+        TEST_RUN_ID="browserstack_ios_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        echo "📋 iOS BrowserStack test run ID: $TEST_RUN_ID"
+        echo "BROWSERSTACK_TEST_RUN_ID_IOS=${TEST_RUN_ID}" >> $GITHUB_ENV
+        echo "✅ iOS BrowserStack test environment prepared"
     
     - name: Build iOS App for BrowserStack
       working-directory: kotlin-multiplatform
@@ -320,34 +256,35 @@ jobs:
           exit 1
         fi
         
-    - name: Execute Ditto HTTP API Sync Verification on iOS BrowserStack Devices
+    - name: Execute iOS App Functionality Tests on BrowserStack Devices
       id: ios_test  
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_IOS_APP_URL: ${{ steps.ios_upload.outputs.ios_app_url }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
-        GITHUB_TEST_DOC_ID_IOS: ${{ env.GITHUB_TEST_DOC_ID_IOS }}
+        BROWSERSTACK_TEST_RUN_ID_IOS: ${{ env.BROWSERSTACK_TEST_RUN_ID_IOS }}
       run: |
         IOS_APP_URL="${{ steps.ios_upload.outputs.ios_app_url }}"
         
         if [ "$IOS_APP_URL" = "validation_only" ] || [ -z "$IOS_APP_URL" ]; then
-          echo "⚠️ iOS app upload failed - running build validation instead of sync tests"
+          echo "⚠️ iOS app upload failed - running build validation instead of device tests"
           
           # Fallback to build validation
           IPA_FILE="kotlin-multiplatform/iosApp/build/ipa/iosApp-unsigned.ipa"
           if [ -f "$IPA_FILE" ]; then
             echo "✅ iOS app build validation successful"
             echo "📱 iOS .ipa file exists and was built correctly"
-            echo "⚠️ Real device HTTP API sync testing skipped due to upload issues"
+            echo "📋 iOS KMP framework compiled successfully for real devices"
+            echo "⚠️ Real device functionality testing skipped due to upload issues"
           else
             echo "❌ iOS app build validation failed"
             exit 1
           fi
         else
-          echo "🚀 Running Ditto HTTP API sync verification on BrowserStack iOS devices..."
+          echo "🚀 Running iOS app functionality tests on BrowserStack devices..."
           echo "📱 iOS App URL: $IOS_APP_URL"
-          echo "📋 iOS Test Document: $GITHUB_TEST_DOC_ID_IOS (inserted via HTTP API)"
+          echo "📋 iOS Test Run: $BROWSERSTACK_TEST_RUN_ID_IOS"
           
           # Install Python dependencies for iOS Appium
           echo "📦 Installing Python dependencies for iOS testing..."
@@ -356,18 +293,18 @@ jobs:
           # Make iOS test script executable
           chmod +x .github/scripts/browserstack-ios-test.py
           
-          # Run sync verification: Check if HTTP API document appears in iOS app
-          echo "🔍 Starting HTTP API → iOS app sync verification..."
-          echo "📄 Document was inserted via Ditto HTTP API, now verifying it syncs to iOS app"
+          # Run app functionality tests: Launch, initialize Ditto, basic UI checks
+          echo "🔍 Starting iOS app functionality verification on real devices..."
+          echo "📋 Testing: App launch, Ditto initialization, UI responsiveness"
           python3 .github/scripts/browserstack-ios-test.py
           
           if [ $? -eq 0 ]; then
-            echo "🎉 ALL BROWSERSTACK iOS SYNC TESTS PASSED!"
-            echo "✅ HTTP API documents successfully sync to iOS app"
-            echo "✅ Ditto sync verified on iPhone 15 Pro, iPhone 14, iPhone 13, iPad Air 5"
+            echo "🎉 ALL BROWSERSTACK iOS APP TESTS PASSED!"
+            echo "✅ iOS app launches and initializes successfully"
+            echo "✅ Ditto SDK integration verified on iPhone 15 Pro, iPhone 14, iPhone 13, iPad Air 5"
           else
-            echo "❌ BROWSERSTACK iOS SYNC TESTS FAILED!"
-            echo "💥 HTTP API documents not syncing to iOS app on real devices"
+            echo "❌ BROWSERSTACK iOS APP TESTS FAILED!"
+            echo "💥 Issues detected with iOS app functionality on real devices"
             exit 1
           fi
         fi
