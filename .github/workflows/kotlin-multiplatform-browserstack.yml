@@ -174,37 +174,45 @@ jobs:
     - name: Build iOS App for BrowserStack
       working-directory: kotlin-multiplatform
       run: |
-        echo "🔨 Building KMP framework for iOS app..."
-        ./gradlew composeApp:linkDebugFrameworkIosSimulatorArm64
+        echo "🔨 Building KMP framework for iOS device (not simulator)..."
+        ./gradlew composeApp:linkDebugFrameworkIosArm64
         
-        echo "🍎 Building complete iOS app (.ipa) for BrowserStack real device testing..."
+        echo "🍎 Building complete iOS .ipa for BrowserStack real device testing..."
         cd iosApp
         
-        # Build iOS app for real device testing
+        # Build iOS app archive for real device (generic/platform=iOS, NOT iOS Simulator)
         xcodebuild -project iosApp.xcodeproj \
           -scheme iosApp \
           -configuration Debug \
-          -destination 'generic/platform=iOS Simulator' \
+          -destination 'generic/platform=iOS' \
           -archivePath build/iosApp.xcarchive \
-          archive \
-          CODE_SIGN_IDENTITY="" \
+          clean archive \
+          CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_IDENTITY=""
         
-        # Extract the .app bundle from archive for BrowserStack
-        # BrowserStack supports both .ipa and .app uploads
-        # Dynamically find the .app bundle name after archive
+        # Package as proper .ipa file (Payload structure) for BrowserStack
+        APP_NAME="iosApp"
+        IPA_DIR="build/ipa"
+        mkdir -p "$IPA_DIR/Payload"
+        
+        # Find the .app bundle in the archive
         APP_BUNDLE_PATH=$(find build/iosApp.xcarchive/Products/Applications/ -maxdepth 1 -name "*.app" -type d | head -n 1)
         
         if [ -d "$APP_BUNDLE_PATH" ]; then
           echo "✅ iOS app bundle built successfully: $APP_BUNDLE_PATH"
-          ls -la "$APP_BUNDLE_PATH"
           
-          # Copy app bundle to build directory for upload
-          cp -r "$APP_BUNDLE_PATH" build/$(basename "$APP_BUNDLE_PATH")
-          echo "📦 iOS app ready for BrowserStack upload"
+          # Copy .app bundle into Payload directory
+          cp -R "$APP_BUNDLE_PATH" "$IPA_DIR/Payload/"
+          
+          # Create .ipa file (zip with Payload structure)
+          cd "$IPA_DIR"
+          zip -r "${APP_NAME}-unsigned.ipa" Payload
+          
+          echo "📦 Created proper .ipa file: build/ipa/${APP_NAME}-unsigned.ipa"
+          ls -la "${APP_NAME}-unsigned.ipa"
         else
-          echo "❌ iOS app bundle not found"
+          echo "❌ iOS app bundle not found in archive"
           find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found"
           exit 1
         fi
@@ -212,44 +220,38 @@ jobs:
     - name: Upload iOS App to BrowserStack
       id: ios_upload
       run: |
-        echo "📤 Uploading iOS app to BrowserStack for real device testing..."
+        echo "📤 Uploading iOS .ipa to BrowserStack for real device testing..."
         
-        # Find the dynamically created iOS app bundle
-        APP_BUNDLE=$(find kotlin-multiplatform/iosApp/build/ -maxdepth 1 -name "*.app" -type d | head -n 1)
+        # Find the proper .ipa file we created
+        IPA_FILE="kotlin-multiplatform/iosApp/build/ipa/iosApp-unsigned.ipa"
         
-        if [ -d "$APP_BUNDLE" ]; then
-          echo "✅ iOS app bundle found: $APP_BUNDLE"
+        if [ -f "$IPA_FILE" ]; then
+          echo "✅ iOS .ipa file found: $IPA_FILE"
+          ls -la "$IPA_FILE"
           
-          # Create a zip archive for BrowserStack upload (BrowserStack accepts .app as .zip)
-          cd kotlin-multiplatform/iosApp/build/
-          APP_NAME=$(basename "$APP_BUNDLE" .app)
-          zip -r "${APP_NAME}.zip" "$(basename "$APP_BUNDLE")"
-          
-          echo "📦 Created iOS app archive: ${APP_NAME}.zip"
-          
-          # Upload to BrowserStack
+          # Upload .ipa to BrowserStack (proper format for iOS real device testing)
           IOS_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-            -F "file=@${APP_NAME}.zip" \
+            -F "file=@${IPA_FILE}" \
             -F "custom_id=ditto-kmp-ios-${{ github.run_id }}")
           
           echo "iOS upload response: $IOS_UPLOAD_RESPONSE"
           IOS_APP_URL=$(echo $IOS_UPLOAD_RESPONSE | jq -r .app_url)
           
           if [ "$IOS_APP_URL" = "null" ] || [ -z "$IOS_APP_URL" ]; then
-            echo "❌ Failed to upload iOS app to BrowserStack"
+            echo "❌ Failed to upload iOS .ipa to BrowserStack"
             echo "Response: $IOS_UPLOAD_RESPONSE"
             # Don't fail the workflow - fall back to build validation only
             echo "⚠️ Falling back to build validation mode"
             echo "ios_app_url=validation_only" >> $GITHUB_OUTPUT
           else
             echo "ios_app_url=$IOS_APP_URL" >> $GITHUB_OUTPUT
-            echo "✅ iOS app uploaded successfully: $IOS_APP_URL"
+            echo "✅ iOS .ipa uploaded successfully: $IOS_APP_URL"
           fi
           
         else
-          echo "❌ iOS app bundle not found"
-          ls -la kotlin-multiplatform/iosApp/build/
+          echo "❌ iOS .ipa file not found at $IPA_FILE"
+          ls -la kotlin-multiplatform/iosApp/build/ || echo "Build directory not found"
           exit 1
         fi
         
