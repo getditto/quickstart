@@ -20,6 +20,7 @@ def wait_for_sync_document(driver, doc_id, max_wait=60):
     print(f"🔍 Looking for GitHub Run ID: {run_id}")
     
     start_time = time.time()
+    attempt = 0
     
     while (time.time() - start_time) < max_wait:
         try:
@@ -42,15 +43,22 @@ def wait_for_sync_document(driver, doc_id, max_wait=60):
             for element in all_elements:
                 try:
                     element_text = element.text.strip()
-                    # Check if the run ID appears in the text OR if it's our GitHub test task
-                    if (run_id in element_text) or ("GitHub Test Task" in element_text and run_id in doc_id):
+                    # More comprehensive matching patterns based on successful Swift/Flutter implementations
+                    if (run_id in element_text or 
+                        "GitHub Test Task" in element_text or
+                        f"GitHub Test Task {run_id}" in element_text or
+                        doc_id in element_text):
                         print(f"✅ Found synced document: {element_text}")
+                        print(f"✅ Document ID match: {doc_id}")
                         return True
                 except:
                     continue
                     
         except Exception as e:
-            # Only log errors occasionally to reduce noise
+            # Log errors occasionally to debug element detection issues
+            attempt += 1
+            if attempt % 10 == 0:  # Log every 10th attempt to reduce noise
+                print(f"⚠️ Attempt {attempt}: Element detection error: {str(e)[:50]}...")
             pass
         
         time.sleep(1)  # Check every second

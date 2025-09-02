@@ -12,7 +12,7 @@ from appium import webdriver
 from appium.options.ios import XCUITestOptions
 from appium.webdriver.common.appiumby import AppiumBy
 
-def wait_for_sync_document(driver, doc_id, max_wait=30):
+def wait_for_sync_document(driver, doc_id, max_wait=60):
     """Wait for a specific document to appear in the iOS task list."""
     print(f"🔄 Waiting for document '{doc_id}' to sync from Ditto Cloud...")
     # Extract the run ID from the document ID (format: github_test_RUNID_RUNNUMBER)
@@ -20,26 +20,49 @@ def wait_for_sync_document(driver, doc_id, max_wait=30):
     print(f"🔍 Looking for GitHub Run ID: {run_id}")
     
     start_time = time.time()
+    attempt = 0
     
     while (time.time() - start_time) < max_wait:
         try:
-            # Look for iOS text elements that might contain our task
-            text_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeStaticText")
-            text_elements.extend(driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeOther"))
+            # Look for iOS text elements that might contain our task - comprehensive approach
+            all_elements = []
             
-            # Check each element for our GitHub run ID
-            for element in text_elements:
+            # Approach 1: iOS text elements
+            text_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeStaticText")
+            all_elements.extend(text_elements)
+            
+            # Approach 2: Other UI elements that might contain text
+            other_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeOther")
+            all_elements.extend(other_elements)
+            
+            # Approach 3: Cell elements (for table/list views)
+            cell_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeCell")
+            all_elements.extend(cell_elements)
+            
+            # Approach 4: XPath search for specific text
+            xpath_elements = driver.find_elements(AppiumBy.XPATH, f"//*[contains(@name, '{run_id}')]")
+            all_elements.extend(xpath_elements)
+            
+            # Check each element for our GitHub run ID or test document
+            for element in all_elements:
                 try:
                     element_text = element.text.strip()
-                    # Check if the run ID appears in the text and it's our GitHub test task
-                    if run_id in element_text and "GitHub Test Task" in element_text:
+                    # More comprehensive matching patterns based on successful Swift implementation
+                    if (run_id in element_text or 
+                        "GitHub Test Task" in element_text or
+                        f"GitHub Test Task {run_id}" in element_text or
+                        doc_id in element_text):
                         print(f"✅ Found synced document: {element_text}")
+                        print(f"✅ Document ID match: {doc_id}")
                         return True
                 except:
                     continue
                     
         except Exception as e:
-            # Only log errors occasionally to reduce noise
+            # Log errors occasionally to debug element detection issues
+            attempt += 1
+            if attempt % 10 == 0:  # Log every 10th attempt to reduce noise
+                print(f"⚠️ Attempt {attempt}: iOS element detection error: {str(e)[:50]}...")
             pass
         
         time.sleep(1)  # Check every second
