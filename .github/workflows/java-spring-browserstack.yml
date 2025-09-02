@@ -64,7 +64,7 @@ jobs:
           
           # Verify JAR exists
           ls -la build/libs/
-          if [ ! -f "build/libs/quickstart-java-spring-0.0.1-SNAPSHOT.jar" ]; then
+          if [ ! -f "build/libs/spring-quickstart-java-0.0.1-SNAPSHOT.jar" ]; then
             echo "Error: JAR file not found"
             exit 1
           fi
@@ -74,7 +74,7 @@ jobs:
         run: |
           # Start the Spring Boot application in background
           echo "Starting Spring Boot application..."
-          nohup java -jar build/libs/quickstart-java-spring-0.0.1-SNAPSHOT.jar --server.port=8080 --spring.profiles.active=test > application.log 2>&1 &
+          nohup java -jar build/libs/spring-quickstart-java-0.0.1-SNAPSHOT.jar --server.port=8080 --spring.profiles.active=test > application.log 2>&1 &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
           
