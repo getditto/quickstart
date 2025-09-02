@@ -158,3 +158,81 @@ jobs:
           # Test that the app can show SDK version
           ./build/taskscpp --ditto-sdk-version
           echo "✅ SDK version command works"
+
+  kotlin-multiplatform:
+    name: Kotlin Multiplatform (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Build project
+        working-directory: kotlin-multiplatform
+        run: ./gradlew assemble
+
+      - name: Run tests
+        working-directory: kotlin-multiplatform
+        run: ./gradlew test
+
+  flutter:
+    name: Flutter (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.x
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Create local.properties
+        working-directory: flutter_app/android
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > local.properties
+          echo "flutter.buildMode=debug" >> local.properties
+          echo "flutter.versionName=1.0.0" >> local.properties
+          echo "flutter.versionCode=1" >> local.properties
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Analyze project
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Run tests
+        working-directory: flutter_app
+        run: flutter test
+
+      - name: Build APK
+        working-directory: flutter_app
+        run: flutter build apk --debug
+
+      - name: Build Web
+        working-directory: flutter_app
+        run: flutter build web
