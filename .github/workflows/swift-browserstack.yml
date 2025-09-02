@@ -97,7 +97,7 @@ jobs:
         echo "📱 Validating iOS .ipa build for BrowserStack deployment..."
         
         # Find the .ipa file created in previous step
-        IPA_FILE=$(find swift/build/ipa/ -name "*.ipa" -type f | head -n 1)
+        IPA_FILE=$(find swift/build/ -name "*.ipa" -type f | head -n 1)
         
         if [ -f "$IPA_FILE" ]; then
           echo "✅ iOS .ipa built successfully: $IPA_FILE"
