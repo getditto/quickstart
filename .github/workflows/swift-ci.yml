@@ -59,7 +59,6 @@ jobs:
             -project Tasks.xcodeproj \
             -scheme Tasks \
             -configuration Debug \
-            -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -allowProvisioningUpdates \
             SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
