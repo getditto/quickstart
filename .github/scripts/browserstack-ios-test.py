@@ -12,9 +12,44 @@ from appium import webdriver
 from appium.options.ios import XCUITestOptions
 from appium.webdriver.common.appiumby import AppiumBy
 
-def test_app_functionality(driver, device_name):
-    """Test basic app functionality: launch, Ditto init, UI elements."""
-    print(f"🔍 Testing iOS app functionality on {device_name}...")
+def wait_for_sync_document(driver, doc_id, max_wait=30):
+    """Wait for a specific document to appear in the iOS task list."""
+    print(f"🔄 Waiting for document '{doc_id}' to sync from Ditto Cloud...")
+    # Extract the run ID from the document ID (format: github_test_RUNID_RUNNUMBER)
+    run_id = doc_id.split('_')[2] if len(doc_id.split('_')) > 2 else doc_id
+    print(f"🔍 Looking for GitHub Run ID: {run_id}")
+    
+    start_time = time.time()
+    
+    while (time.time() - start_time) < max_wait:
+        try:
+            # Look for iOS text elements that might contain our task
+            text_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeStaticText")
+            text_elements.extend(driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeOther"))
+            
+            # Check each element for our GitHub run ID
+            for element in text_elements:
+                try:
+                    element_text = element.text.strip()
+                    # Check if the run ID appears in the text and it's our GitHub test task
+                    if run_id in element_text and "GitHub Test Task" in element_text:
+                        print(f"✅ Found synced document: {element_text}")
+                        return True
+                except:
+                    continue
+                    
+        except Exception as e:
+            # Only log errors occasionally to reduce noise
+            pass
+        
+        time.sleep(1)  # Check every second
+    
+    print(f"❌ Document not found after {max_wait} seconds")
+    return False
+
+def test_ditto_cloud_sync(driver, device_name):
+    """Test Ditto Cloud sync by waiting for the GitHub test document."""
+    print(f"📡 Testing Ditto Cloud sync on {device_name}...")
     
     # Wait for iOS app to launch and initialize
     print("⏳ Waiting for iOS app to initialize...")
@@ -36,39 +71,20 @@ def test_app_functionality(driver, device_name):
     print("🔄 Allowing time for Ditto SDK initialization on iOS...")
     time.sleep(15)  # Give iOS Ditto more time to initialize
     
-    # Test 1: Check for basic iOS app UI elements
-    print("🔍 Checking for essential iOS app UI elements...")
-    try:
-        elements_found = 0
-        
-        # Look for standard iOS text elements
-        text_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeStaticText")
-        text_elements.extend(driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeOther"))
-        if text_elements:
-            print(f"✅ Found {len(text_elements)} iOS text/container elements")
-            elements_found += 1
-        
-        # Look for iOS buttons
-        button_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeButton")
-        if button_elements:
-            print(f"✅ Found {len(button_elements)} iOS button elements")
-            elements_found += 1
-        
-        # Look for iOS cells/lists
-        cell_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeCell")
-        cell_elements.extend(driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeTable"))
-        if cell_elements:
-            print(f"✅ Found {len(cell_elements)} iOS list/cell elements")
-            elements_found += 1
-        
-        if elements_found >= 2:
-            print("✅ Essential iOS app UI elements present")
+    # Test for Ditto Cloud document sync
+    github_doc_id = os.environ.get('GITHUB_TEST_DOC_ID')
+    if github_doc_id:
+        print(f"📡 Checking for GitHub test document: {github_doc_id}")
+        if wait_for_sync_document(driver, github_doc_id, max_wait=45):
+            print("✅ GitHub test document successfully synced from Ditto Cloud")
+            return True
         else:
-            print("⚠️ Some expected iOS UI elements missing, but app is running")
-            
-    except Exception as e:
-        print(f"⚠️ iOS UI element check encountered issues: {e}")
-        print("✅ iOS app is still running and responding")
+            print("❌ GitHub test document did not sync within timeout period")
+            print("💥 CRITICAL: Ditto Cloud → iOS app sync is broken!")
+            return False
+    else:
+        print("⚠️ No GitHub test document ID provided, skipping sync verification")
+        return False
     
     # Test 2: Check iOS app responsiveness
     print("🖱️ Testing iOS app responsiveness...")
@@ -140,13 +156,13 @@ def run_ios_test(device_config):
         driver = webdriver.Remote(hub_url, options=options)
         print(f"✅ Connected to {device_name}")
         
-        # Run iOS app functionality tests
-        if test_app_functionality(driver, device_name):
-            print(f"🎉 iOS FUNCTIONALITY TEST PASSED on {device_name}")
-            print("✅ iOS app launches, initializes, and responds correctly")
+        # Run iOS Ditto Cloud sync tests
+        if test_ditto_cloud_sync(driver, device_name):
+            print(f"🎉 iOS DITTO CLOUD SYNC TEST PASSED on {device_name}")
+            print("✅ iOS app successfully syncs documents from Ditto Cloud")
             return True
         else:
-            print(f"❌ iOS FUNCTIONALITY TEST FAILED on {device_name}")
+            print(f"❌ iOS DITTO CLOUD SYNC TEST FAILED on {device_name}")
             # Take screenshot for debugging
             try:
                 driver.save_screenshot(f"ios_functionality_failed_{device_config['deviceName']}.png")
@@ -173,8 +189,8 @@ def run_ios_test(device_config):
                 pass
 
 def main():
-    """Main function to run iOS BrowserStack functionality tests."""
-    print("📱 DITTO KMP iOS BROWSERSTACK FUNCTIONALITY TESTING")
+    """Main function to run iOS BrowserStack Ditto Cloud sync tests."""
+    print("📱 DITTO KMP iOS BROWSERSTACK CLOUD SYNC TESTING")
     print("=" * 60)
     
     # iOS device configurations to test
@@ -197,15 +213,15 @@ def main():
         })
         
         if success:
-            print(f"✅ iOS Test PASSED on {device_name}: App functionality verified")
+            print(f"✅ iOS Test PASSED on {device_name}: Ditto Cloud sync verified")
         else:
-            print(f"❌ iOS Test FAILED on {device_name}: App functionality issues detected")
+            print(f"❌ iOS Test FAILED on {device_name}: Ditto Cloud sync issues detected")
         
         print(f"📸 iOS test screenshot saved for {device_name}")
     
     # Print summary
     print("\n" + "=" * 60)
-    print("🏁 DITTO KMP iOS BROWSERSTACK FUNCTIONALITY TEST SUMMARY")
+    print("🏁 DITTO KMP iOS BROWSERSTACK CLOUD SYNC TEST SUMMARY")
     print("=" * 60)
     passed = 0
     total = len(results)
@@ -219,18 +235,18 @@ def main():
     
     # Exit with appropriate code
     if passed == total:
-        print("🎉 ALL BROWSERSTACK iOS FUNCTIONALITY TESTS PASSED!")
-        print("✅ iOS app launches and works correctly on all tested devices")
-        print("✅ Ditto KMP iOS app verified on iPhone 15 Pro, iPhone 14, iPhone 13, iPad Air 5")
+        print("🎉 ALL BROWSERSTACK iOS CLOUD SYNC TESTS PASSED!")
+        print("✅ Ditto Cloud → iOS app sync working correctly on all tested devices")
+        print("✅ HTTP API → Ditto KMP iOS sync verified on iPhone 15 Pro, iPhone 14, iPhone 13, iPad Air 5")
         sys.exit(0)
     elif passed > 0:
-        print("⚠️ SOME iOS TESTS PASSED!")
-        print(f"✅ {passed} iOS device(s) working correctly")
-        print(f"❌ {total - passed} iOS device(s) have issues")
+        print("⚠️ SOME iOS CLOUD SYNC TESTS PASSED!")
+        print(f"✅ {passed} iOS device(s) syncing correctly from Ditto Cloud")
+        print(f"❌ {total - passed} iOS device(s) have sync issues")
         sys.exit(0)  # Consider partial success as overall success
     else:
-        print("💥 ALL iOS TESTS FAILED!")
-        print("❌ iOS app has fundamental issues on all devices")
+        print("💥 ALL iOS CLOUD SYNC TESTS FAILED!")
+        print("❌ Ditto Cloud → iOS app sync is broken on all devices")
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -39,6 +39,43 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
+    - name: Insert test document into Ditto Cloud
+      run: |
+        # Use GitHub run ID to create deterministic document ID
+        DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        # Insert document using curl with correct JSON structure for KMP Task model
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"GitHub Test Task ${GITHUB_RUN_ID}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | head -n-1)
+        
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
+    
     - name: Prepare Android BrowserStack test environment
       run: |
         echo "🔧 Preparing Android BrowserStack test environment..."
@@ -99,6 +136,7 @@ jobs:
         BROWSERSTACK_APP_URL: ${{ steps.upload.outputs.app_url }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
         BROWSERSTACK_TEST_RUN_ID: ${{ env.BROWSERSTACK_TEST_RUN_ID }}
+        GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
       run: |
         APP_URL="${{ steps.upload.outputs.app_url }}"
         
@@ -162,6 +200,43 @@ jobs:
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
+    - name: Insert test document into Ditto Cloud
+      run: |
+        # Use GitHub run ID to create deterministic document ID  
+        DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        # Insert document using curl with correct JSON structure for KMP Task model
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"GitHub Test Task ${GITHUB_RUN_ID}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | head -n-1)
+        
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
     
     - name: Prepare iOS BrowserStack test environment  
       run: |
@@ -264,6 +339,7 @@ jobs:
         BROWSERSTACK_IOS_APP_URL: ${{ steps.ios_upload.outputs.ios_app_url }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
         BROWSERSTACK_TEST_RUN_ID_IOS: ${{ env.BROWSERSTACK_TEST_RUN_ID_IOS }}
+        GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
       run: |
         IOS_APP_URL="${{ steps.ios_upload.outputs.ios_app_url }}"
         
