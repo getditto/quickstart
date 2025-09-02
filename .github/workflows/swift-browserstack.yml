@@ -42,7 +42,14 @@ jobs:
       id: build_ios
       working-directory: swift
       run: |
-        echo "🔨 Building iOS device .ipa for BrowserStack real device testing..."
+        echo "🔨 Building iOS app for BrowserStack real device testing..."
+        
+        # Resolve dependencies first
+        xcodebuild -resolvePackageDependencies \
+          -project Tasks.xcodeproj \
+          -scheme Tasks
+        
+        echo "🍎 Building iOS device .ipa for BrowserStack real device testing..."
         
         # Build and archive iOS app for real device (not simulator)
         xcodebuild -project Tasks.xcodeproj \
@@ -81,7 +88,7 @@ jobs:
           
         else
           echo "❌ iOS app bundle not found in archive"
-          find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found anywhere"
+          find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found"
           exit 1
         fi
     
