@@ -19,8 +19,8 @@ namespace nlohmann {
     // Brace initializer constructor - this is key for {{"key", value}} syntax  
     json(std::initializer_list<std::pair<std::string, json>> init) {}
     
-    // Constructor for two-element initialization like {{"key", value}, {"key2", value2}}
-    json(std::pair<std::string, json> p1, std::pair<std::string, json> p2) {}
+    // Constructor for vector<string> values (for items array)
+    json(const std::vector<std::string>& vec) {}
     
     // Additional constructors for different value types to support brace initialization
     json(const std::string& s) {}
@@ -57,6 +57,7 @@ namespace nlohmann {
       mock_value& operator=(const std::string& s) { return *this; }
       mock_value& operator=(bool b) { return *this; }
       mock_value& operator=(int i) { return *this; }
+      mock_value& operator=(const std::vector<std::string>& vec) { return *this; }
       
       // Conversion operators
       operator std::string() const { return "mock-string"; }
@@ -70,6 +71,9 @@ namespace nlohmann {
     
     mock_value operator[](const std::string& key) const { return mock_value{}; }
     mock_value& operator[](const std::string& key) { static mock_value v; return v; }
+    
+    // Assignment operator for json objects
+    json& operator=(const std::vector<std::string>& vec) { return *this; }
     
     // Iterator support (basic)
     typedef mock_value* iterator;

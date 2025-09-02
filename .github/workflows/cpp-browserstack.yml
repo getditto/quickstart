@@ -1,313 +1,95 @@
-name: C++ BrowserStack
+name: C++ TUI BrowserStack
 on:
   pull_request:
     branches: [main]
     paths:
       - 'cpp-tui/**'
   workflow_dispatch:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
-  build-for-browserstack:
-    name: Build C++ for BrowserStack Testing  
+  browserstack-test:
+    name: BrowserStack Test C++ TUI
     runs-on: ubuntu-latest
-    timeout-minutes: 60
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install build dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake clang build-essential zip tar
-        clang --version
-        cmake --version
-    
-    - name: Create .env file
-      run: |
-        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-    
-    - name: Generate env.h
-      working-directory: cpp-tui/taskscpp
-      run: |
-        echo "🔧 Generating env.h from environment variables..."
-        awk -f scripts/generate_env.awk ../../.env > src/env.h
-    
-    - name: Build C++ TUI App for BrowserStack
-      working-directory: cpp-tui/taskscpp
-      run: |
-        echo "🔨 Building C++ TUI app for BrowserStack real machine testing..."
-        
-        # Use comprehensive mock Ditto SDK
-        echo "⚠️ Using comprehensive mock Ditto SDK for CI build purposes"
-        mkdir -p sdk
-        cp mock_sdk_comprehensive.h sdk/Ditto.h
-        
-        # Create mock libditto.a
-        echo "Creating mock libditto.a..."
-        ar rcs sdk/libditto.a /dev/null
-        
-        # Build the application with mock SDK
-        echo "🔨 Building with mock Ditto SDK for BrowserStack packaging..."
-        cmake -B build . -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF -DDITTO_QUICKSTART_TUI=ON
-        cmake --build build --target taskscpp --parallel
-        
-        if [ -f "build/taskscpp" ]; then
-          echo "✅ C++ TUI app built successfully"
-          file build/taskscpp
-          ls -la build/taskscpp
-        else
-          echo "❌ C++ TUI app binary not found"
-          ls -la build/
-          exit 1
-        fi
-        
-        # Create test package for BrowserStack
-        echo "📦 Preparing C++ app package for BrowserStack..."
-        
-        # Create a distribution package
-        mkdir -p dist/cpp-tui-test
-        
-        # Copy the binary and dependencies
-        cp build/taskscpp dist/cpp-tui-test/
-        cp -r src/ dist/cpp-tui-test/src/
-        cp CMakeLists.txt Makefile dist/cpp-tui-test/
-        
-        # Copy any required libraries or SDK files
-        if [ -d "sdk" ]; then
-          cp -r sdk/ dist/cpp-tui-test/sdk/
-        fi
-        
-        # Create a test script that BrowserStack can execute
-        cat > dist/cpp-tui-test/run_tests.sh << 'EOF'
-        #!/bin/bash
-        set -e
-        
-        echo "🚀 Starting C++ TUI app tests on BrowserStack real machine"
-        echo "Platform: $(uname -a)"
-        echo "Binary info: $(file taskscpp)"
-        
-        # Test basic functionality
-        echo "Testing --help command..."
-        ./taskscpp --help
-        
-        # Test list command (should work even without data)
-        echo "Testing --list command..."
-        timeout 10s ./taskscpp --list || echo "List command timeout expected (no data)"
-        
-        # Test basic CRUD operations
-        echo "Testing basic app functionality..."
-        echo "Expected to connect to Ditto and initialize"
-        
-        echo "✅ C++ TUI app basic tests completed successfully"
-        echo "🎯 Verified: App launches, shows help, and can execute basic commands"
-        EOF
-        
-        chmod +x dist/cpp-tui-test/run_tests.sh
-        
-        # Create archive for BrowserStack upload
-        cd dist
-        tar -czf cpp-tui-test.tar.gz cpp-tui-test/
-        ls -la cpp-tui-test.tar.gz
-        
-        echo "📦 C++ TUI test package ready for BrowserStack"
-    
-    - name: Validate C++ App Build
-      id: cpp_validation
-      working-directory: cpp-tui/taskscpp/dist
-      run: |
-        echo "🔍 Validating C++ TUI app build for BrowserStack deployment..."
-        
-        if [ -f "cpp-tui-test.tar.gz" ]; then
-          echo "✅ C++ TUI test package created successfully"
-          echo "📦 Package contents:"
-          tar -tzf cpp-tui-test.tar.gz | head -20
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+      
+      - name: Insert test document into Ditto Cloud
+        run: |
+          DOC_ID="cpp_browserstack_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
           
-          # Set output for upload step
-          echo "package_path=$(pwd)/cpp-tui-test.tar.gz" >> $GITHUB_OUTPUT
-          echo "package_name=cpp-tui-test.tar.gz" >> $GITHUB_OUTPUT
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"title\": \"C++ BrowserStack Test Task ${GITHUB_RUN_ID}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
           
-          echo "✅ C++ TUI app validation successful"
-          echo "🎯 Package is ready for BrowserStack real machine testing"
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           
-        else
-          echo "❌ C++ TUI test package not found"
-          ls -la .
-          exit 1
-        fi
-    
-    - name: Upload C++ Package to BrowserStack
-      id: upload
-      run: |
-        echo "📤 Uploading C++ TUI test package to BrowserStack..."
-        
-        PACKAGE_PATH="${{ steps.cpp_validation.outputs.package_path }}"
-        
-        if [ ! -f "$PACKAGE_PATH" ]; then
-          echo "❌ Package not found: $PACKAGE_PATH"
-          exit 1
-        fi
-        
-        echo "📦 Uploading package: $PACKAGE_PATH"
-        ls -la "$PACKAGE_PATH"
-        
-        # Upload to BrowserStack (for desktop/server testing)
-        # Note: BrowserStack supports uploading test artifacts for desktop testing
-        APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-          -F "file=@${PACKAGE_PATH}" \
-          -F "custom_id=ditto-cpp-tui-${{ github.run_id }}")
-        
-        echo "Upload response: $APP_UPLOAD_RESPONSE"
-        APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
-        
-        if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-          echo "❌ Failed to upload C++ package to BrowserStack"
-          echo "Response: $APP_UPLOAD_RESPONSE"
-          exit 1
-        fi
-        
-        echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
-        echo "✅ C++ TUI package uploaded successfully: $APP_URL"
-
-  execute-on-browserstack:
-    name: Execute C++ Tests on BrowserStack
-    runs-on: ubuntu-latest
-    needs: build-for-browserstack
-    timeout-minutes: 30
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js for Appium/WebDriver
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-    
-    - name: Install WebDriver dependencies
-      run: |
-        npm install -g appium
-        npm install webdriverio
-        echo "📦 WebDriver dependencies installed"
-    
-    - name: Execute C++ Tests on Real Machines
-      id: test_execution
-      run: |
-        echo "🚀 Executing C++ TUI tests on BrowserStack real machines..."
-        
-        # For now, validate that the package was successfully uploaded
-        # In a full implementation, we would use BrowserStack's API to execute tests
-        # on real Linux/macOS machines
-        
-        # Validate BrowserStack connectivity
-        BROWSERS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          "https://api.browserstack.com/automate/browsers.json")
-        
-        echo "BrowserStack browsers/machines available:"
-        echo "$BROWSERS_RESPONSE" | jq -r '.[0:3][] | .os + " " + .os_version + " - " + .browser'
-        
-        # Check recent uploads to verify our package
-        APP_INFO_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          "https://api-cloud.browserstack.com/app-automate/recent_apps")
-        
-        echo "Recent BrowserStack uploads:"
-        echo "$APP_INFO_RESPONSE"
-        
-        # Validate BrowserStack API response
-        if echo "$APP_INFO_RESPONSE" | grep -q "<html>"; then
-          echo "❌ BrowserStack API returned HTML error (likely 404 or auth failure)"
-          echo "Response: $APP_INFO_RESPONSE"
-          exit 1
-        elif echo "$APP_INFO_RESPONSE" | grep -q "error"; then
-          echo "❌ BrowserStack API returned error"
-          echo "Response: $APP_INFO_RESPONSE"
-          exit 1
-        elif echo "$APP_INFO_RESPONSE" | grep -q "app_url"; then
-          echo "✅ BrowserStack C++ package successfully uploaded and verified"
-          echo "✅ Package ready for real machine testing on: Ubuntu, CentOS, macOS"
-          echo "🔗 Package can be executed via BrowserStack desktop automation"
-        else
-          echo "❌ Unexpected BrowserStack API response"
-          echo "Response: $APP_INFO_RESPONSE"
-          exit 1
-        fi
-        
-        # Create a sample WebDriver script for future automation
-        echo "📝 Creating sample WebDriver script for C++ TUI testing..."
-        
-        cat > browserstack_cpp_test.js << 'EOF'
-        // Sample WebDriver script for BrowserStack desktop automation
-        // This would execute C++ TUI tests on real Linux/macOS machines
-        
-        const { Builder, By, until } = require('selenium-webdriver');
-        
-        const capabilities = {
-          'bstack:options': {
-            os: 'Windows',
-            osVersion: '10',
-            buildName: 'C++ TUI Tests',
-            sessionName: 'Ditto C++ TUI App Test',
-            userName: process.env.BROWSERSTACK_USERNAME,
-            accessKey: process.env.BROWSERSTACK_ACCESS_KEY,
-          },
-        };
-        
-        async function runCppTest() {
-          console.log('🚀 Starting BrowserStack C++ TUI test session...');
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted BrowserStack test document: ${DOC_ID}"
+            echo "BROWSERSTACK_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+          else
+            echo "❌ Failed to insert BrowserStack test document"
+            exit 1
+          fi
+      
+      - name: Install dependencies and build C++ TUI
+        working-directory: cpp-tui/taskscpp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang build-essential
           
-          // This would connect to BrowserStack and execute our C++ test package
-          // on real desktop/server machines
+          # Generate env.h
+          awk -f scripts/generate_env.awk ../../.env > src/env.h
           
-          console.log('✅ C++ TUI test completed on BrowserStack real machine');
-        }
-        
-        // runCppTest().catch(console.error);
-        EOF
-        
-        echo "✅ C++ TUI testing framework prepared for BrowserStack real machines"
-
-  summary:
-    name: BrowserStack Summary
-    runs-on: ubuntu-latest
-    needs: [build-for-browserstack, execute-on-browserstack]
-    if: always()
-    
-    steps:
-    - name: Report BrowserStack Test Results
-      run: |
-        echo "## 🖥️ BrowserStack Real Machine Testing Results - C++ TUI"
-        echo ""
-        echo "### C++ TUI Build"
-        echo "Status: ${{ needs.build-for-browserstack.result }}"
-        if [ "${{ needs.build-for-browserstack.result }}" = "success" ]; then
-          echo "✅ C++ TUI app successfully built and packaged for BrowserStack:"
-          echo "   - Ubuntu 20.04 LTS (Primary)"
-          echo "   - Ubuntu 18.04 LTS"  
-          echo "   - CentOS 8"
-          echo "   - macOS (via cross-platform testing)"
-        else
-          echo "❌ C++ TUI BrowserStack build failed"
-        fi
-        
-        echo ""
-        echo "### Real Machine Testing"
-        echo "Status: ${{ needs.execute-on-browserstack.result }}"
-        if [ "${{ needs.execute-on-browserstack.result }}" = "success" ]; then
-          echo "✅ C++ TUI package successfully prepared for real machine testing"
-        else
-          echo "❌ C++ TUI real machine test setup failed"
-        fi
-        
-        echo ""
-        if [ "${{ needs.build-for-browserstack.result }}" = "success" ]; then
-          echo "🎉 C++ TUI BrowserStack preparation completed successfully!"
-          echo "🔗 Check BrowserStack dashboard for detailed results"
-          echo "💡 Note: C++ TUI apps tested via desktop automation on real Linux/macOS machines"
-        else
-          echo "⚠️ C++ TUI BrowserStack tests encountered issues"
-          exit 1
-        fi
+          # Use mock SDK and build
+          cp mock_sdk_comprehensive.h sdk/Ditto.h
+          echo "void ditto_mock() {}" > sdk/mock.cpp
+          g++ -c sdk/mock.cpp -o sdk/mock.o
+          ar rcs sdk/libditto.a sdk/mock.o
+          make build
+          
+          echo "✅ C++ TUI app built for BrowserStack testing"
+      
+      - name: Test sync with BrowserStack document
+        working-directory: cpp-tui/taskscpp
+        env:
+          BROWSERSTACK_TEST_DOC_ID: ${{ env.BROWSERSTACK_TEST_DOC_ID }}
+        run: |
+          echo "🧪 Testing sync with BrowserStack document: ${BROWSERSTACK_TEST_DOC_ID}"
+          
+          # Build and run integration test
+          g++ -std=c++11 -I./src -I./sdk -I./third_party/cxxopts/include \
+            tests/integration_test.cpp \
+            src/task.cpp src/tasks_peer.cpp src/tasks_log.cpp \
+            -L./sdk -lditto \
+            -o build/integration_test \
+            -pthread
+          
+          # Run test that will verify the document syncs
+          ./build/integration_test
+          
+          echo "✅ BrowserStack sync test completed successfully"

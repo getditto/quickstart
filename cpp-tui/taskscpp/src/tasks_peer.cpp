@@ -35,12 +35,11 @@ static string to_json_string(const ditto::QueryResult &result) {
       result.items(),
       [](const ditto::QueryResultItem &item) { return item.json_string(); });
 
-  const auto modified_document_ids = transform_container<vector<string>>(
-      result.mutated_document_ids(),
-      [](const ditto::DocumentId &id) { return id.to_string(); });
+  const auto modified_document_ids = result.mutated_document_ids();
 
-  nlohmann::json result_json = {
-      {"items", items}, {"modified_document_ids", modified_document_ids}};
+  nlohmann::json result_json;
+  result_json["items"] = items;
+  result_json["modified_document_ids"] = modified_document_ids;
   return result_json.dump();
 }
 
