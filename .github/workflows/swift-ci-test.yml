@@ -3,8 +3,6 @@ name: Swift CI Test
 on:
   pull_request:
     branches: [ main ]
-    paths:
-      - 'swift/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
