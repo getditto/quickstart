@@ -17,29 +17,123 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 def create_and_verify_ios_task(driver, test_task_text, max_wait=30):
-    """Create a test task using the iOS app and verify it appears in the UI."""
-    print(f"📝 Creating iOS test task via app: '{test_task_text}'")
+    """Create a test task using the SwiftUI iOS app and verify it appears in the UI."""
+    print(f"📝 Creating iOS test task via SwiftUI app: '{test_task_text}'")
     
     try:
-        # Look for text fields that might accept task input (iOS specific)
-        text_fields = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeTextField")
+        # Step 1: Look for FloatingActionButton or Add button first (similar to Android flow)
+        print("🔍 Looking for iOS add/plus button to navigate to input screen...")
+        add_buttons = []
+        
+        try:
+            # Look for various iOS add button types
+            add_buttons = driver.find_elements(AppiumBy.XPATH, "//*[@name='Add' or contains(@label, 'Add') or contains(@name, '+')]")
+            if not add_buttons:
+                add_buttons = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeButton")
+                add_buttons = [btn for btn in add_buttons if btn.get_attribute("name") and ("add" in btn.get_attribute("name").lower() or "plus" in btn.get_attribute("name").lower())]
+        except:
+            pass
+        
+        if add_buttons:
+            print(f"✅ Found {len(add_buttons)} potential iOS add button(s)")
+            add_buttons[0].click()
+            print("✅ Clicked iOS add button to navigate to input screen")
+            time.sleep(2)  # Wait for navigation
+        else:
+            print("⚠️ No add button found, assuming already on input screen...")
+        
+        # Step 2: Look for text input fields using multiple SwiftUI/iOS approaches
+        print("🔍 Looking for iOS text input fields...")
+        text_fields = []
+        
+        try:
+            # Approach 1: Standard TextField
+            text_fields = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeTextField")
+            
+            # Approach 2: SwiftUI TextEditor or other text input types
+            if not text_fields:
+                text_fields = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeTextView")
+            
+            # Approach 3: Look by accessibility identifier or placeholder
+            if not text_fields:
+                text_fields = driver.find_elements(AppiumBy.XPATH, "//*[contains(@name, 'Task Title') or contains(@placeholderValue, 'Task Title')]")
+            
+            # Approach 4: Any focusable text elements
+            if not text_fields:
+                all_elements = driver.find_elements(AppiumBy.XPATH, "//*[@type='XCUIElementTypeTextField' or @type='XCUIElementTypeTextView' or @type='XCUIElementTypeSecureTextField']")
+                text_fields = [elem for elem in all_elements if elem.is_enabled()]
+        except Exception as e:
+            print(f"⚠️ Error finding text fields: {e}")
         
         if text_fields:
             print(f"✅ Found {len(text_fields)} text field(s) for iOS input")
             
-            # Try to interact with the first text field
-            text_field = text_fields[0]
-            text_field.clear()
-            text_field.send_keys(test_task_text)
-            print(f"✅ Entered iOS task text: {test_task_text}")
+            # Try multiple input approaches similar to Android fix
+            input_success = False
+            for i, text_field in enumerate(text_fields[:3]):  # Try first 3 fields
+                try:
+                    print(f"🔧 Attempting text input on iOS field {i+1}/{len(text_fields)}")
+                    
+                    # Focus and clear the field
+                    text_field.click()
+                    time.sleep(1)
+                    
+                    # Try different input methods for SwiftUI compatibility
+                    try:
+                        text_field.clear()
+                        text_field.send_keys(test_task_text)
+                        print(f"✅ Standard iOS input successful: '{test_task_text}'")
+                        input_success = True
+                        break
+                    except Exception as e1:
+                        print(f"⚠️ Standard iOS input failed: {e1}")
+                    
+                    # Approach 2: Set value directly (iOS specific)
+                    try:
+                        text_field.set_value(test_task_text)
+                        print(f"✅ iOS set_value successful: '{test_task_text}'")
+                        input_success = True
+                        break
+                    except Exception as e2:
+                        print(f"⚠️ iOS set_value failed: {e2}")
+                    
+                    # Approach 3: Character by character for SwiftUI
+                    try:
+                        text_field.clear()
+                        for char in test_task_text:
+                            text_field.send_keys(char)
+                            time.sleep(0.1)
+                        print(f"✅ iOS character input successful: '{test_task_text}'")
+                        input_success = True
+                        break
+                    except Exception as e3:
+                        print(f"⚠️ iOS character input failed: {e3}")
+                        
+                except Exception as e:
+                    print(f"⚠️ iOS field {i+1} interaction failed: {e}")
+                    continue
             
-            # Look for iOS add/submit buttons
-            buttons = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeButton")
-            add_buttons = [btn for btn in buttons if btn.get_attribute("name") and ("add" in btn.get_attribute("name").lower() or "done" in btn.get_attribute("name").lower())]
+            if not input_success:
+                print("❌ All iOS text input approaches failed")
+                return False
+                
+            # Step 3: Look for submit/save button
+            print("🔍 Looking for iOS submit/save button...")
+            submit_buttons = []
             
-            if add_buttons:
-                add_buttons[0].click()
-                print("✅ Clicked iOS add button")
+            try:
+                # Look for Submit, Save, Done, etc.
+                submit_buttons = driver.find_elements(AppiumBy.XPATH, "//*[@name='Submit' or @name='Save' or @name='Done' or contains(@name, 'Submit') or contains(@name, 'Save')]")
+                if not submit_buttons:
+                    buttons = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeButton")
+                    submit_buttons = [btn for btn in buttons if btn.get_attribute("name") and any(word in btn.get_attribute("name").lower() for word in ['submit', 'save', 'done', 'add'])]
+            except:
+                pass
+            
+            if submit_buttons:
+                print(f"✅ Found {len(submit_buttons)} iOS submit button(s)")
+                submit_buttons[0].click()
+                print("✅ Clicked iOS submit button")
                 
                 # Wait for task to be processed
                 print("⏳ Waiting for iOS task to appear and sync...")

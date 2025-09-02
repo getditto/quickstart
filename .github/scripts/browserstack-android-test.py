@@ -69,19 +69,65 @@ def create_and_verify_task(driver, test_task_text, max_wait=30):
             if input_elements:
                 print(f"✅ Found {len(input_elements)} potential input field(s)")
                 
-                # Try to interact with the first input field
-                input_field = input_elements[0]
-                input_field.click()  # Focus the field
-                time.sleep(1)
+                # Try multiple approaches for Compose TextField interaction
+                for i, input_field in enumerate(input_elements[:3]):  # Try first 3 elements
+                    try:
+                        print(f"🔧 Attempting text input on element {i+1}/{len(input_elements)}")
+                        
+                        # Focus the field
+                        input_field.click()
+                        time.sleep(1)
+                        
+                        # Try multiple input approaches for Compose compatibility
+                        success = False
+                        
+                        # Approach 1: Standard send_keys
+                        try:
+                            input_field.clear()
+                            input_field.send_keys(test_task_text)
+                            print(f"✅ Standard send_keys successful: '{test_task_text}'")
+                            success = True
+                        except Exception as e1:
+                            print(f"⚠️ Standard send_keys failed: {e1}")
+                        
+                        # Approach 2: Use driver.set_value (Appium method)
+                        if not success:
+                            try:
+                                driver.execute_script("mobile: type", {"text": test_task_text})
+                                print(f"✅ Mobile type successful: '{test_task_text}'")
+                                success = True
+                            except Exception as e2:
+                                print(f"⚠️ Mobile type failed: {e2}")
+                        
+                        # Approach 3: Use Android keyboard input
+                        if not success:
+                            try:
+                                # Clear field first
+                                input_field.clear()
+                                # Use keyboard input for Compose
+                                driver.press_keycode(67)  # Clear any text
+                                time.sleep(0.5)
+                                # Type character by character for better compatibility
+                                for char in test_task_text:
+                                    input_field.send_keys(char)
+                                    time.sleep(0.1)
+                                print(f"✅ Character-by-character input successful: '{test_task_text}'")
+                                success = True
+                            except Exception as e3:
+                                print(f"⚠️ Character input failed: {e3}")
+                        
+                        if success:
+                            input_found = True
+                            break
+                            
+                    except Exception as e:
+                        print(f"⚠️ Element {i+1} interaction failed: {e}")
+                        continue
                 
-                try:
-                    input_field.clear()
-                except:
-                    print("⚠️ Could not clear field, continuing...")
-                    
-                input_field.send_keys(test_task_text)
-                print(f"✅ Entered text in input field: '{test_task_text}'")
-                input_found = True
+                if input_found:
+                    print(f"✅ Successfully entered text in input field!")
+                else:
+                    print("❌ All input approaches failed")
                 
         except Exception as e:
             print(f"❌ Error interacting with input field: {e}")
