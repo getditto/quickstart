@@ -46,18 +46,15 @@ jobs:
         DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         
-        # Use the same Ditto environment as mobile app - derive API URL from auth URL
-        API_BASE_URL="${{ secrets.DITTO_AUTH_URL }}"
-        # Remove /api/v2/auth if present and add API path
-        API_URL=$(echo "$API_BASE_URL" | sed 's|/api/v2/auth.*||')/api/v4/store/execute
+        # First, ensure HTTP API and mobile app use same Ditto environment by temporarily using the old API credentials
+        # until we can confirm both environments point to same Ditto cluster
+        echo "🔧 Using HTTP API credentials temporarily to ensure sync works"
+        echo "🔧 Testing with mobile app environment: APP_ID=${{ secrets.DITTO_APP_ID }}"
         
-        echo "🔧 Using API URL derived from auth URL: $API_URL"
-        echo "🔧 Using mobile app's Ditto environment (APP_ID: ${{ secrets.DITTO_APP_ID }})"
-        
-        # Insert document using curl with mobile app's Ditto environment  
+        # Insert document using curl with HTTP API credentials (will fix environment consistency later)
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
           -d "{
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
@@ -69,11 +66,11 @@ jobs:
               }
             }
           }" \
-        "$API_URL")
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
         
         # Extract HTTP status code and response body (macOS compatible)  
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
-        BODY=$(echo "$RESPONSE" | head -n -1)
+        HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+        BODY=$(echo "$RESPONSE" | head -n -1 2>/dev/null || echo "$RESPONSE" | sed '$d')
         
         # Check if insertion was successful
         if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
@@ -218,18 +215,14 @@ jobs:
         DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         
-        # Use the same Ditto environment as mobile app - derive API URL from auth URL
-        API_BASE_URL="${{ secrets.DITTO_AUTH_URL }}"
-        # Remove /api/v2/auth if present and add API path
-        API_URL=$(echo "$API_BASE_URL" | sed 's|/api/v2/auth.*||')/api/v4/store/execute
+        # Use HTTP API credentials for now to get sync working, then investigate environment consistency
+        echo "🔧 Using HTTP API credentials for iOS test"
+        echo "🔧 Mobile app environment: APP_ID=${{ secrets.DITTO_APP_ID }}"
         
-        echo "🔧 Using API URL derived from auth URL: $API_URL"
-        echo "🔧 Using mobile app's Ditto environment for iOS test"
-        
-        # Insert document using curl with mobile app's Ditto environment  
+        # Insert document using curl with HTTP API credentials  
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
           -d "{
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
@@ -241,11 +234,11 @@ jobs:
               }
             }
           }" \
-        "$API_URL")
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
         
         # Extract HTTP status code and response body (macOS compatible)  
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
-        BODY=$(echo "$RESPONSE" | head -n -1)
+        HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+        BODY=$(echo "$RESPONSE" | head -n -1 2>/dev/null || echo "$RESPONSE" | sed '$d')
         
         # Check if insertion was successful
         if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
