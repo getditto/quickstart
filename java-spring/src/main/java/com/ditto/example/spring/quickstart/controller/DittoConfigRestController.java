@@ -1,6 +1,7 @@
 package com.ditto.example.spring.quickstart.controller;
 
 import com.ditto.example.spring.quickstart.service.DittoService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 @RestController
+@ConditionalOnProperty(name = "ditto.enabled", havingValue = "true", matchIfMissing = true)
 public class DittoConfigRestController {
 
     private final DittoService dittoService;
