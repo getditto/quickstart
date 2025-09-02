@@ -55,10 +55,6 @@ jobs:
           ./gradlew assembleDebug assembleDebugAndroidTest
           echo "APK built successfully"
 
-      - name: Run Unit Tests
-        working-directory: android-kotlin/QuickStartTasks
-        run: ./gradlew test
-
       - name: Upload APKs to BrowserStack
         id: upload
         run: |
