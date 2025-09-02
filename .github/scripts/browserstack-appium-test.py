@@ -156,9 +156,9 @@ class BrowserStackAppiumRunner:
             # Test 2: Wait for app to load and verify main screen
             print("🧪 Test 2: Main Screen Verification")
             main_screen_found = (
+                self.wait_for_element(driver, (By.ACCESSIBILITY_ID, "main-screen"), 15) or
                 self.wait_for_element(driver, (By.ACCESSIBILITY_ID, "add-task-button"), 15) or
-                self.wait_for_element(driver, (By.XPATH, "//*[contains(@text,'New Task') or contains(@label,'New Task')]"), 15) or
-                self.wait_for_element(driver, (By.XPATH, "//*[contains(@text,'Tasks') or contains(@label,'Tasks')]"), 15)
+                self.wait_for_element(driver, (By.XPATH, "//*[@text='+']"), 15)
             )
             
             if main_screen_found:
@@ -180,13 +180,12 @@ class BrowserStackAppiumRunner:
             # Test 3: Create New Task
             print("🧪 Test 3: Create New Task")
             try:
-                # Try multiple selectors for add button
+                # Try multiple selectors for add button (FAB with + text)
                 add_button = None
                 selectors = [
                     (By.ACCESSIBILITY_ID, "add-task-button"),
-                    (By.XPATH, "//*[contains(@text,'New Task') or contains(@label,'New Task')]"),
-                    (By.XPATH, "//*[@text='+' or @label='+']"),
-                    (By.XPATH, "//*[contains(@content-desc,'add') or contains(@accessibility-id,'add')]")
+                    (By.XPATH, "//*[@text='+']"),
+                    (By.XPATH, "//*[@content-desc='Add new task']"),
                 ]
                 
                 for selector in selectors:
@@ -225,8 +224,8 @@ class BrowserStackAppiumRunner:
                         # Save task
                         save_selectors = [
                             (By.ACCESSIBILITY_ID, "save-task-button"),
-                            (By.XPATH, "//*[contains(@text,'Save') or contains(@label,'Save')]"),
-                            (By.XPATH, "//*[contains(@text,'Add') or contains(@label,'Add')]")
+                            (By.XPATH, "//*[@text='Add Task']"),
+                            (By.XPATH, "//*[contains(@text,'Add')]")
                         ]
                         
                         for selector in save_selectors:
