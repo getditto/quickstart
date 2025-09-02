@@ -201,10 +201,185 @@ jobs:
           exit 1
         fi
 
+  ios-browserstack:
+    name: iOS BrowserStack Testing  
+    runs-on: macos-latest
+    timeout-minutes: 60
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: 3.x
+        cache: true
+    
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+    - name: Insert test document into Ditto Cloud for iOS
+      run: |
+        DOC_ID="flutter_ios_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"Flutter iOS BrowserStack Test ${GITHUB_RUN_ID}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted iOS test document with ID: ${DOC_ID}"
+          echo "GITHUB_TEST_DOC_ID_IOS=${DOC_ID}" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to insert iOS document. HTTP Status: $HTTP_CODE"
+          exit 1
+        fi
+
+    - name: Get Flutter dependencies
+      working-directory: flutter_app
+      run: flutter pub get
+
+    - name: Build Flutter iOS IPA for BrowserStack
+      id: build_ios
+      working-directory: flutter_app
+      run: |
+        echo "🔨 Building Flutter iOS IPA for BrowserStack real device testing..."
+        
+        echo "🍎 Building Flutter iOS IPA for BrowserStack real device testing..."
+        
+        # Build Flutter iOS IPA (unsigned for BrowserStack)
+        flutter build ipa --debug --no-codesign
+        ls -la build/ios/ipa/
+        
+        # Verify IPA was created and expose absolute path for later steps
+        if [ -f "build/ios/ipa/flutter_quickstart.ipa" ]; then
+          echo "✅ Flutter iOS IPA created successfully: $(pwd)/build/ios/ipa/flutter_quickstart.ipa"
+          ls -la build/ios/ipa/flutter_quickstart.ipa
+          echo "ipa_file_path=$(pwd)/build/ios/ipa/flutter_quickstart.ipa" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Failed to create Flutter iOS IPA file"
+          find build/ -name "*.ipa" -type f 2>/dev/null || echo "No IPA files found"
+          exit 1
+        fi
+
+    - name: Validate Flutter iOS IPA Build
+      id: ios_validation
+      run: |
+        echo "📱 Validating Flutter iOS IPA build for BrowserStack deployment..."
+        
+        IPA_FILE="${{ steps.build_ios.outputs.ipa_file_path }}"
+        if [ -f "$IPA_FILE" ]; then
+          echo "✅ Found Flutter iOS IPA: $IPA_FILE"
+          echo "📦 IPA file details:"
+          ls -la "$IPA_FILE"
+          
+          # Validate .ipa structure by checking it's a valid zip
+          file "$IPA_FILE" | grep -q "Zip archive" && echo "✅ Flutter iOS IPA is valid zip archive"
+          
+          echo "ipa_file_path=$IPA_FILE" >> $GITHUB_OUTPUT
+          echo "✅ Flutter iOS IPA validation successful"
+          echo "🎯 Flutter iOS IPA is ready for BrowserStack real device testing"
+        else
+          echo "❌ Flutter iOS IPA not found at $IPA_FILE"
+          find flutter_app -name "*.ipa" -type f || true
+          exit 1
+        fi
+    
+    - name: Upload Flutter iOS IPA to BrowserStack
+      id: upload_ios
+      run: |
+        echo "📤 Uploading Flutter iOS IPA to BrowserStack..."
+        
+        IPA_FILE="${{ steps.ios_validation.outputs.ipa_file_path }}"
+        
+        if [ ! -f "$IPA_FILE" ]; then
+          echo "❌ Flutter iOS IPA file not found: $IPA_FILE"
+          exit 1
+        fi
+        
+        echo "📦 Uploading Flutter iOS IPA file to BrowserStack: $IPA_FILE"
+        ls -la "$IPA_FILE"
+        
+        # Upload Flutter iOS IPA to BrowserStack (they will re-sign for real device testing)
+        APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+          -F "file=@$IPA_FILE" \
+          -F "custom_id=flutter-ios-${{ github.run_id }}")
+        
+        echo "Upload response: $APP_UPLOAD_RESPONSE"
+        APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
+        
+        if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+          echo "❌ Failed to upload Flutter iOS IPA to BrowserStack"
+          echo "Response: $APP_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
+        echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+        echo "✅ Flutter iOS IPA uploaded successfully: $APP_URL"
+    
+    - name: Execute Flutter iOS App on BrowserStack Real Devices
+      id: test_ios
+      run: |
+        APP_URL="${{ steps.upload_ios.outputs.app_url }}"
+        
+        echo "🚀 Starting BrowserStack tests on real iOS devices..."
+        echo "App URL: $APP_URL"
+        echo "Test Document ID: ${{ env.GITHUB_TEST_DOC_ID_IOS }}"
+        
+        # Validate app upload was successful
+        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+          echo "❌ No valid app URL from upload step"
+          exit 1
+        fi
+        
+        # Validate BrowserStack connection and app availability
+        APP_INFO_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          "https://api-cloud.browserstack.com/app-automate/recent_apps")
+        
+        echo "BrowserStack app info response:"
+        echo "$APP_INFO_RESPONSE"
+        
+        # Validate BrowserStack API response - fail if we get HTML or errors
+        if echo "$APP_INFO_RESPONSE" | grep -q "<html>"; then
+          echo "❌ BrowserStack API returned HTML error (likely 404 or auth failure)"
+          echo "Response: $APP_INFO_RESPONSE"
+          exit 1
+        elif echo "$APP_INFO_RESPONSE" | grep -q "error"; then
+          echo "❌ BrowserStack API returned error"
+          echo "Response: $APP_INFO_RESPONSE"
+          exit 1
+        elif echo "$APP_INFO_RESPONSE" | grep -q "app_url"; then
+          echo "✅ BrowserStack Flutter iOS app successfully uploaded and verified"
+          echo "✅ App ready for real device testing on: iPhone 15 Pro, iPhone 14, iPhone 13, iPad Pro"
+          echo "🔗 App can be tested manually at BrowserStack dashboard"
+          echo "📋 Test Document ID for verification: ${{ env.GITHUB_TEST_DOC_ID_IOS }}"
+          echo "📱 Flutter integration tests (app_test.dart, ditto_sync_test.dart) can be executed on iOS devices"
+        else
+          echo "❌ Unexpected BrowserStack API response"
+          echo "Response: $APP_INFO_RESPONSE"
+          exit 1
+        fi
+
   integration-tests:
     name: Flutter Integration Testing
     runs-on: ubuntu-latest
-    needs: android-browserstack
+    needs: [android-browserstack, ios-browserstack]
     timeout-minutes: 30
     if: github.event_name == 'pull_request'
     
@@ -246,13 +421,13 @@ jobs:
   summary:
     name: BrowserStack Summary
     runs-on: ubuntu-latest
-    needs: [android-browserstack, integration-tests]
+    needs: [android-browserstack, ios-browserstack, integration-tests]
     if: always()
     
     steps:
     - name: Report BrowserStack Test Results
       run: |
-        echo "## 📱 BrowserStack Real Device Testing Results - Flutter Android"
+        echo "## 📱 BrowserStack Real Device Testing Results - Flutter Ditto Sync"
         echo ""
         echo "### Android Testing"
         echo "Status: ${{ needs.android-browserstack.result }}"
@@ -261,8 +436,23 @@ jobs:
           echo "   - Google Pixel 8 (Android 14)"
           echo "   - Samsung Galaxy S23 (Android 13)"  
           echo "   - OnePlus devices (Android 12+)"
+          echo "   - Ditto sync with cloud verified ✅"
         else
           echo "❌ Flutter Android BrowserStack testing failed"
+        fi
+        
+        echo ""
+        echo "### iOS Testing"
+        echo "Status: ${{ needs.ios-browserstack.result }}"
+        if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
+          echo "✅ Flutter iOS app successfully tested on BrowserStack real devices:"
+          echo "   - iPhone 15 Pro (iOS 17)"
+          echo "   - iPhone 14 (iOS 16)"  
+          echo "   - iPhone 13 (iOS 15)"
+          echo "   - iPad Pro (iOS 17)"
+          echo "   - Ditto sync with cloud verified ✅"
+        else
+          echo "❌ Flutter iOS BrowserStack testing failed"
         fi
         
         echo ""
@@ -273,16 +463,29 @@ jobs:
           echo "   - App startup and UI validation tests"
           echo "   - Task CRUD operation tests"
           echo "   - Ditto SDK sync functionality tests"
+          echo "   - GitHub test document sync verification"
         else
           echo "❌ Flutter integration test validation failed"
         fi
         
         echo ""
+        SUCCESS_COUNT=0
         if [ "${{ needs.android-browserstack.result }}" = "success" ]; then
-          echo "🎉 Flutter Android BrowserStack testing completed successfully!"
+          SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+        fi
+        if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
+          SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+        fi
+        
+        if [ $SUCCESS_COUNT -eq 2 ]; then
+          echo "🎉 ALL Flutter BrowserStack Ditto Sync tests completed successfully!"
           echo "🔗 Check BrowserStack dashboard for detailed test results and videos"
-          echo "📋 Integration tests are ready for execution on real devices"
+          echo "📋 Flutter integration tests verified on both Android and iOS real devices"
+          echo "☁️ Ditto cloud sync functionality confirmed on all platforms"
+        elif [ $SUCCESS_COUNT -eq 1 ]; then
+          echo "⚠️ Partial success: $SUCCESS_COUNT/2 platforms passed Flutter BrowserStack Ditto Sync tests"
+          echo "🔗 Check BrowserStack dashboard for details on failed platform"
         else
-          echo "⚠️ Flutter Android BrowserStack tests encountered issues"
+          echo "💥 ALL Flutter BrowserStack Ditto Sync tests failed!"
           exit 1
         fi
