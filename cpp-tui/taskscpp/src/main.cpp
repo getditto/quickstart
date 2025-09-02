@@ -151,21 +151,21 @@ int main(int argc, const char *argv[]) {
     }
 
     // Logging configuration
-    ditto::LogLevel log_level = ditto::LogLevel::warning;
+    ditto::LogLevel log_level = ditto::LogLevel::Warning;
     if (opt_parse.count("error") > 0) {
-      log_level = ditto::LogLevel::error;
+      log_level = ditto::LogLevel::Error;
     }
     if (opt_parse.count("warning") > 0) {
-      log_level = ditto::LogLevel::warning;
+      log_level = ditto::LogLevel::Warning;
     }
     if (opt_parse.count("info") > 0) {
-      log_level = ditto::LogLevel::info;
+      log_level = ditto::LogLevel::Info;
     }
     if (opt_parse.count("debug") > 0) {
-      log_level = ditto::LogLevel::debug;
+      log_level = ditto::LogLevel::Debug;
     }
     if (opt_parse.count("verbose") > 0) {
-      log_level = ditto::LogLevel::verbose;
+      log_level = ditto::LogLevel::Verbose;
     }
     set_minimum_log_level(log_level);
 
