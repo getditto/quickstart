@@ -1,0 +1,23 @@
+appId: com.dittoreactnativesampleapp
+tags:
+  - "failure-test" 
+  - "wrong-text"
+---
+# Test: Wrong Text Failure
+# This flow is designed to fail by asserting incorrect text
+
+- launchApp:
+    appId: com.dittoreactnativesampleapp
+
+- runFlow:
+    when:
+      visible: "Permission"
+    commands:
+      - tapOn: "Allow"
+
+- assertVisible: 
+    text: "Ditto Tasks"
+
+# This should fail - asserting wrong text
+- assertVisible:
+    text: "Wrong App Title"

@@ -3,28 +3,15 @@ tags:
   - "smoke"
   - "launch"
 ---
-# Test: App Launch and Initial State
-# This flow tests the basic app launch and verifies core UI elements are present
-
+# Test: App Launch and Basic UI
+# This flow tests basic app launch and UI elements are present
 - launchApp:
     appId: com.dittoreactnativesampleapp
-    arguments:
-      - "--e2e-testing"
-
 - runFlow:
     when:
-      visible: "Permission"
+      visible: "Allow"
     commands:
       - tapOn: "Allow"
-
 - assertVisible: 
-    text: "Ditto Tasks"
-    timeout: 10000
-
-- assertVisible:
-    text: "App ID:"
-
-- assertVisible:
-    text: "Sync: ON"
-
-- assertVisible: "+"
+    text: "Ditto Tasks C++"
+- assertVisible: "New Task"

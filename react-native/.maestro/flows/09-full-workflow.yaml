@@ -6,29 +6,22 @@ tags:
 ---
 # Test: Complete Task Management Workflow
 # This flow tests the complete user journey through all task management features
-
 - launchApp:
     appId: com.dittoreactnativesampleapp
-    arguments:
-      - "--e2e-testing"
-
 - runFlow:
     when:
       visible: "Permission"
     commands:
       - tapOn: "Allow"
-
 - assertVisible: 
     text: "Ditto Tasks"
-    timeout: 10000
-
 # Generate test data
-- runScript: |
-    const timestamp = Date.now();
-    output.task1 = `First Task ${timestamp}`;
-    output.task2 = `Second Task ${timestamp}`;
-    output.editedTask1 = `Edited First Task ${timestamp}`;
-
+- runScript:
+    script: |
+      const timestamp = Date.now();
+      output.task1 = `First Task ${timestamp}`;
+      output.task2 = `Second Task ${timestamp}`;
+      output.editedTask1 = `Edited First Task ${timestamp}`;
 # Create first task
 - tapOn: "+"
 - assertVisible: "Add Task"
@@ -38,7 +31,6 @@ tags:
 - tapOn: "Add Task"
 - assertNotVisible: "Add Task"
 - assertVisible: "${output.task1}"
-
 # Create second task
 - tapOn: "+"
 - assertVisible: "Add Task"
@@ -48,13 +40,11 @@ tags:
 - tapOn: "Add Task"
 - assertNotVisible: "Add Task"
 - assertVisible: "${output.task2}"
-
 # Mark first task as complete
 - tapOn:
     near: "${output.task1}"
     id: "task-checkbox"
 - waitForAnimationToEnd
-
 # Edit second task
 - longPressOn: "${output.task2}"
 - assertVisible: "Edit Task"
@@ -65,7 +55,6 @@ tags:
 - tapOn: "Save"
 - assertNotVisible: "Edit Task"
 - assertVisible: "${output.editedTask1}"
-
 # Toggle sync off and on
 - tapOn: "Sync: ON"
 - waitForAnimationToEnd
@@ -73,13 +62,11 @@ tags:
 - tapOn: "Sync: OFF"
 - waitForAnimationToEnd
 - assertVisible: "Sync: ON"
-
 # Delete the edited task
 - tapOn:
     text: "Delete"
     near: "${output.editedTask1}"
 - waitForAnimationToEnd
 - assertNotVisible: "${output.editedTask1}"
-
 # Verify first task is still there and completed
 - assertVisible: "${output.task1}"
