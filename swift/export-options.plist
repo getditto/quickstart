@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>none</string>
+    <string>debugging</string>
     <key>stripSwiftSymbols</key>
     <false/>
     <key>compileBitcode</key>
