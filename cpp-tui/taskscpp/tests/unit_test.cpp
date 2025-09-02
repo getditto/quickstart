@@ -10,6 +10,8 @@
 using std::cout;
 using std::endl;
 using std::string;
+using std::to_string;
+using std::exception;
 using std::chrono::high_resolution_clock;
 using std::chrono::microseconds;
 using std::chrono::duration_cast;
@@ -114,7 +116,7 @@ public:
     void test_basic_performance() {
         cout << "⚡ Testing basic performance..." << endl;
         
-        auto start_time = chrono::high_resolution_clock::now();
+        auto start_time = high_resolution_clock::now();
         
         // Test task creation performance
         for (int i = 0; i < 1000; i++) {
@@ -122,8 +124,8 @@ public:
             assert(!task._id.empty());
         }
         
-        auto end_time = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::microseconds>(end_time - start_time);
+        auto end_time = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end_time - start_time);
         
         cout << "✅ Created 1000 tasks in " << duration.count() << " microseconds" << endl;
         assert(duration.count() < 10000); // Should be very fast (< 10ms)

@@ -62,6 +62,13 @@ jobs:
             template<typename T> T get() const { return T{}; }
             static json parse(const std::string&) { return json{}; }
             std::string dump() const { return "{}"; }
+            
+            // Mock operator[] for JSON access
+            struct mock_value {
+              bool operator==(const std::string&) const { return true; }
+              bool operator==(bool) const { return true; }
+            };
+            mock_value operator[](const std::string&) const { return mock_value{}; }
           };
         }
         
