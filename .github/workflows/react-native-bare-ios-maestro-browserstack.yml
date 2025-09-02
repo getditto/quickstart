@@ -96,69 +96,47 @@ jobs:
       - name: Build iOS IPA (Unsigned for BrowserStack)
         working-directory: react-native
         run: |
-          # BrowserStack Maestro v2 requires .ipa files (not .zip/.app)
-          # BrowserStack can re-sign unsigned/dev IPAs automatically
+          # BrowserStack requires proper device .ipa files (Payload-style) for Maestro
           cd ios
           
-          # Create a basic export options plist for unsigned development IPA
-          cat > export-options-dev.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>development</string>
-              <key>compileBitcode</key>
-              <false/>
-              <key>stripSwiftSymbols</key>
-              <true/>
-              <key>uploadBitcode</key>
-              <false/>
-              <key>signingStyle</key>
-              <string>automatic</string>
-          </dict>
-          </plist>
-          EOF
-          
-          # Build and archive for real devices
+          # 1) Archive for device (unsigned)
           xcodebuild -workspace DittoReactNativeSampleApp.xcworkspace \
             -scheme DittoReactNativeSampleApp \
             -configuration Debug \
+            -destination 'generic/platform=iOS' \
             -archivePath build/DittoReactNativeSampleApp.xcarchive \
             clean archive \
-            -destination generic/platform=iOS \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGNING_IDENTITY=""
           
-          # Export as development IPA (BrowserStack will re-sign)
-          xcodebuild -exportArchive \
-            -archivePath build/DittoReactNativeSampleApp.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist export-options-dev.plist \
-            -allowProvisioningUpdates
+          # 2) Package an unsigned .ipa (Payload layout)
+          APP_NAME="DittoReactNativeSampleApp"
+          IPA_DIR="build/ipa"
+          mkdir -p "$IPA_DIR/Payload"
+          cp -R "build/DittoReactNativeSampleApp.xcarchive/Products/Applications/${APP_NAME}.app" "$IPA_DIR/Payload/"
+          ( cd "$IPA_DIR" && zip -r "${APP_NAME}-unsigned.ipa" Payload )
           
-          echo "✅ Successfully built development IPA for BrowserStack"
+          echo "✅ Successfully created unsigned device IPA for BrowserStack"
 
       - name: Verify iOS IPA exists
         run: |
-          # Look for the development IPA file for BrowserStack Maestro v2
+          # Look for the unsigned device IPA file for BrowserStack Maestro v2
           echo "🔍 Searching for iOS IPA file..."
           
-          # Look for IPA in the export path
-          IOS_IPA_PATH=$(find react-native/ios/build/ipa -name "*.ipa" -type f | head -1)
+          # Look for the specific unsigned IPA
+          IOS_IPA_PATH="react-native/ios/build/ipa/DittoReactNativeSampleApp-unsigned.ipa"
           
-          if [ -n "$IOS_IPA_PATH" ]; then
+          if [ -f "$IOS_IPA_PATH" ]; then
             echo "✓ iOS IPA found: $IOS_IPA_PATH"
             echo "IOS_APP_PATH=$IOS_IPA_PATH" >> $GITHUB_ENV
           else
-            echo "❌ iOS IPA not found in build output"
+            echo "❌ iOS IPA not found at expected location: $IOS_IPA_PATH"
             echo "Checking build output structure:"
             find react-native/ios/build -name "*.ipa" -type f || echo "No .ipa files found in build output"
             echo ""
             echo "Build directory structure:"
             ls -la react-native/ios/build/ || echo "Build directory not found"
             echo ""
-            echo "IPA export directory:"
+            echo "IPA directory contents:"
             ls -la react-native/ios/build/ipa/ || echo "IPA directory not found"
             exit 1
           fi
