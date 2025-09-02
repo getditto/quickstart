@@ -13,9 +13,10 @@ tags:
     commands:
       - tapOn: "Allow"
 - assertVisible: 
-    text: "Ditto Tasks C++"
-# Tap the floating action button to create a new task
-- tapOn: "New Task"
+    text: "Ditto Tasks"
+# Tap the floating action button (FAB with "+") to create a new task
+- tapOn:
+    id: "add-task-button"
 - assertVisible: "Add Task"
 # Generate unique task title with timestamp to avoid conflicts  
 - tapOn:

@@ -134,6 +134,9 @@ class BrowserStackMaestroRunner:
             "testSuite": suite_url,
             "devices": devices,
             "buildName": build_name,
+            # Critical timeout settings to prevent 38-45 minute hangs
+            "timeout": 1800,  # 30 minutes max execution time (vs default ~45min)
+            "idleTimeout": 300,  # 5 minutes idle timeout
             # Enable device logs for debugging
             "deviceLogs": True,
             # Reduce parallel execution to avoid BrowserStack resource conflicts
