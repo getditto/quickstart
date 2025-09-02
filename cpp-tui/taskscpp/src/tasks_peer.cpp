@@ -118,7 +118,7 @@ public:
 
     ditto->start_sync();
     tasks_subscription =
-        ditto->sync().register_subscription("SELECT * FROM tasks");
+        ditto->get_sync().register_subscription("SELECT * FROM tasks");
   }
 
   void stop_sync() {
@@ -141,8 +141,8 @@ public:
       const auto result =
           ditto->get_store().execute(command, {{"newTask", task_args}});
       auto task_id = result.mutated_document_ids()[0];
-      log_debug("Added task: " + task_id);
-      return task_id;
+      log_debug("Added task: " + task_id.to_string());
+      return task_id.to_string();
     } catch (const exception &err) {
       log_error("Failed to add task: " + string(err.what()));
       throw runtime_error("unable to add task: " + string(err.what()));
