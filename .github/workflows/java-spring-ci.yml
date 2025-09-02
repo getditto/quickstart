@@ -46,7 +46,7 @@ jobs:
         
       - name: Run basic Spring Boot tests only (skip integration tests in CI)
         working-directory: java-spring
-        run: ./gradlew test --tests 'QuickstartApplicationTests'
+        run: ./gradlew test --tests '*QuickstartApplicationTests*'
         
       - name: Build application
         working-directory: java-spring
