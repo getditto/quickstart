@@ -104,72 +104,107 @@ class DittoSyncIntegrationTests: XCTestCase {
     }
     
     /**
-     * Test creating a document locally and verifying it syncs to the cloud
+     * Test REAL cross-device cloud sync - insert with one Ditto instance, verify with another
      */
-    func testLocalToCloudSync() throws {
-        let expectation = XCTestExpectation(description: "Local document synced to cloud")
+    func testRealCrossDeviceCloudSync() throws {
+        let expectation = XCTestExpectation(description: "Document synced across devices")
         
-        print("📱 Testing local to cloud sync...")
+        print("🌍 Testing REAL cross-device cloud sync...")
+        
+        let crossDeviceTestId = "crossdevice_\(testDocumentId!)_\(UUID().uuidString.prefix(8))"
+        let testTaskTitle = "Cross-Device Test Task \(ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? "local")"
         
         do {
             try ditto.startSync()
-            
-            // Register subscription 
             let subscription = try ditto.sync.registerSubscription(query: "SELECT * FROM tasks")
             
-            // Create a local document
-            let localTestId = "local_\(testDocumentId!)_\(UUID().uuidString.prefix(8))"
-            let localTask = TaskModel(title: "Local Test Task \(ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? "local")", done: false, deleted: false)
-            
-            // Insert the document locally
             Task {
                 do {
+                    // Step 1: Insert document with first Ditto instance
                     try await self.ditto.store.execute(
                         query: "INSERT INTO tasks DOCUMENTS (:newTask)",
                         arguments: ["newTask": [
-                            "_id": localTestId,
-                            "title": localTask.title,
-                            "done": localTask.done,
-                            "deleted": localTask.deleted
+                            "_id": crossDeviceTestId,
+                            "title": testTaskTitle,
+                            "done": false,
+                            "deleted": false
                         ]]
                     )
                     
-                    print("✅ Local document inserted: \(localTask.title)")
+                    print("✅ Document inserted with Device 1: \(testTaskTitle)")
                     
-                    // Wait a bit for sync to occur
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                        // Verify the document exists locally (basic check)
+                    // Step 2: Wait for cloud sync
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                         Task {
                             do {
-                                let result = try await self.ditto.store.execute(
-                                    query: "SELECT * FROM tasks WHERE _id = :testId",
-                                    arguments: ["testId": localTestId]
+                                // Step 3: Create NEW Ditto instance (simulates different device)
+                                let ditto2 = Ditto(
+                                    identity: .onlinePlayground(
+                                        appID: Env.DITTO_APP_ID,
+                                        token: Env.DITTO_PLAYGROUND_TOKEN,
+                                        enableDittoCloudSync: true,
+                                        customAuthURL: URL(string: Env.DITTO_AUTH_URL)
+                                    )
                                 )
                                 
-                                if !result.items.isEmpty {
-                                    print("✅ Local document confirmed in local store")
-                                    expectation.fulfill()
-                                } else {
-                                    XCTFail("Local document not found after insertion")
+                                ditto2.updateTransportConfig { transportConfig in
+                                    transportConfig.connect.webSocketURLs.insert(Env.DITTO_WEBSOCKET_URL)
                                 }
+                                
+                                try ditto2.disableSyncWithV3()
+                                try ditto2.startSync()
+                                
+                                let subscription2 = try ditto2.sync.registerSubscription(query: "SELECT * FROM tasks")
+                                
+                                print("🔄 Device 2 started, waiting for sync...")
+                                
+                                // Step 4: Wait for sync and check if document appears on "Device 2"
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                                    Task {
+                                        do {
+                                            let result = try await ditto2.store.execute(
+                                                query: "SELECT * FROM tasks WHERE _id = :testId",
+                                                arguments: ["testId": crossDeviceTestId]
+                                            )
+                                            
+                                            if !result.items.isEmpty {
+                                                if let taskData = result.items.first?.jsonData(),
+                                                   let task = TaskModel(taskData) {
+                                                    print("🎉 SUCCESS: Document synced to Device 2: \(task.title)")
+                                                    
+                                                    // Cleanup
+                                                    ditto2.stopSync()
+                                                    subscription2?.cancel()
+                                                    
+                                                    expectation.fulfill()
+                                                }
+                                            } else {
+                                                XCTFail("❌ FAILED: Document did NOT sync to Device 2 (real cloud sync issue)")
+                                            }
+                                        } catch {
+                                            XCTFail("Failed to query Device 2: \(error)")
+                                        }
+                                    }
+                                }
+                                
                             } catch {
-                                XCTFail("Failed to verify local document: \(error)")
+                                XCTFail("Failed to create Device 2: \(error)")
                             }
                         }
                     }
                     
                 } catch {
-                    XCTFail("Failed to insert local document: \(error)")
+                    XCTFail("Failed to insert document on Device 1: \(error)")
                 }
             }
             
-            // Clean up
+            // Clean up Device 1
             DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
                 subscription?.cancel()
             }
             
         } catch {
-            XCTFail("Failed to start sync for local test: \(error)")
+            XCTFail("Failed to start sync for cross-device test: \(error)")
         }
         
         wait(for: [expectation], timeout: 30.0)
