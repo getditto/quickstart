@@ -64,24 +64,29 @@ class BrowserStackMaestroRunner:
         zip_path = os.path.join(temp_dir, 'maestro-suite.zip')
         
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            # Add config file
-            if os.path.exists(maestro_config_path):
-                zipf.write(maestro_config_path, 'config.yaml')
-                print(f"  ✓ Added config: config.yaml")
+            # BrowserStack expects a parent folder wrapping the config and flows
+            # Structure should be: maestro_suite/config.yaml and maestro_suite/flows/...
+            parent_folder = "maestro_suite"
             
-            # Add all flow files
+            # Add config file inside parent folder
+            if os.path.exists(maestro_config_path):
+                zipf.write(maestro_config_path, f'{parent_folder}/config.yaml')
+                print(f"  ✓ Added config: {parent_folder}/config.yaml")
+            
+            # Add all flow files inside parent folder
             flows_added = 0
             for root, dirs, files in os.walk(flows_dir):
                 for file in files:
                     if file.endswith('.yaml') or file.endswith('.yml'):
                         file_path = os.path.join(root, file)
-                        # Preserve directory structure in zip
-                        arcname = os.path.relpath(file_path, os.path.dirname(flows_dir))
+                        # Preserve directory structure in zip but inside parent folder
+                        relative_path = os.path.relpath(file_path, os.path.dirname(flows_dir))
+                        arcname = f"{parent_folder}/{relative_path}"
                         zipf.write(file_path, arcname)
                         flows_added += 1
                         print(f"  ✓ Added flow: {arcname}")
             
-            print(f"📦 Created Maestro suite with {flows_added} flow files")
+            print(f"📦 Created Maestro suite with {flows_added} flow files in {parent_folder}/ structure")
         
         return zip_path
     
@@ -129,6 +134,8 @@ class BrowserStackMaestroRunner:
             "testSuite": suite_url,
             "devices": devices,
             "buildName": build_name,
+            # Specify which flows to execute from the parent folder structure
+            "execute": ["maestro_suite/flows"]
         }
         
         # Add optional parameters

@@ -16,11 +16,12 @@ tags:
 - assertVisible: 
     text: "Ditto Tasks"
 # Generate test data
-- runScript: |
-    const timestamp = Date.now();
-    output.task1 = `First Task ${timestamp}`;
-    output.task2 = `Second Task ${timestamp}`;
-    output.editedTask1 = `Edited First Task ${timestamp}`;
+- runScript:
+    script: |
+      const timestamp = Date.now();
+      output.task1 = `First Task ${timestamp}`;
+      output.task2 = `Second Task ${timestamp}`;
+      output.editedTask1 = `Edited First Task ${timestamp}`;
 # Create first task
 - tapOn: "+"
 - assertVisible: "Add Task"

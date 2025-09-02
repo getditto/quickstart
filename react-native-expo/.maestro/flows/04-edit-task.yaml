@@ -17,10 +17,11 @@ tags:
 # Create a task first
 - tapOn: "+"
 - assertVisible: "Add Task"
-- runScript: |
-    const timestamp = Date.now();
-    output.originalTitle = `Original Task ${timestamp}`;
-    output.editedTitle = `Edited Task ${timestamp}`;
+- runScript:
+    script: |
+      const timestamp = Date.now();
+      output.originalTitle = `Original Task ${timestamp}`;
+      output.editedTitle = `Edited Task ${timestamp}`;
 - tapOn:
     id: "task-input"
 - inputText: "${output.originalTitle}"
