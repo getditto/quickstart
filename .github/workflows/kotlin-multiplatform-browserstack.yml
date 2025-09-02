@@ -41,14 +41,23 @@ jobs:
     
     - name: Insert test document into Ditto Cloud
       run: |
+        echo "📝 Inserting test document into Ditto Cloud using same environment as mobile app..."
         # Use GitHub run ID to create deterministic document ID
         DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         
-        # Insert document using curl with correct JSON structure for KMP Task model
+        # Use the same Ditto environment as mobile app - derive API URL from auth URL
+        API_BASE_URL="${{ secrets.DITTO_AUTH_URL }}"
+        # Remove /api/v2/auth if present and add API path
+        API_URL=$(echo "$API_BASE_URL" | sed 's|/api/v2/auth.*||')/api/v4/store/execute
+        
+        echo "🔧 Using API URL derived from auth URL: $API_URL"
+        echo "🔧 Using mobile app's Ditto environment (APP_ID: ${{ secrets.DITTO_APP_ID }})"
+        
+        # Insert document using curl with mobile app's Ditto environment  
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
           -d "{
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
@@ -60,7 +69,7 @@ jobs:
               }
             }
           }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        "$API_URL")
         
         # Extract HTTP status code and response body (macOS compatible)  
         HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
@@ -69,9 +78,11 @@ jobs:
         # Check if insertion was successful
         if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
           echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "✓ Using same Ditto environment as mobile app"
           echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
         else
           echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "❌ API URL attempted: $API_URL" 
           echo "Response: $BODY"
           exit 1
         fi
@@ -207,10 +218,18 @@ jobs:
         DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         
-        # Insert document using curl with correct JSON structure for KMP Task model
+        # Use the same Ditto environment as mobile app - derive API URL from auth URL
+        API_BASE_URL="${{ secrets.DITTO_AUTH_URL }}"
+        # Remove /api/v2/auth if present and add API path
+        API_URL=$(echo "$API_BASE_URL" | sed 's|/api/v2/auth.*||')/api/v4/store/execute
+        
+        echo "🔧 Using API URL derived from auth URL: $API_URL"
+        echo "🔧 Using mobile app's Ditto environment for iOS test"
+        
+        # Insert document using curl with mobile app's Ditto environment  
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
           -d "{
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
@@ -222,7 +241,7 @@ jobs:
               }
             }
           }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        "$API_URL")
         
         # Extract HTTP status code and response body (macOS compatible)  
         HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
