@@ -17,6 +17,7 @@ using std::endl;
 using std::string;
 using std::vector;
 using std::unique_ptr;
+using std::exception;
 using std::chrono::seconds;
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
@@ -164,7 +165,7 @@ public:
         cout << "✅ READ operation completed - Found task: " << our_task.title << endl;
         
         // UPDATE - Mark task as done
-        peer->set_task_done(new_task_id, true);
+        peer->mark_task_complete(new_task_id, true);
         
         // Wait for update to persist
         this_thread::sleep_for(chrono::seconds(1));

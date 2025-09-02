@@ -141,7 +141,7 @@ public:
       const auto command = "INSERT INTO tasks DOCUMENTS (:newTask)";
       const auto result =
           ditto->get_store().execute(command, {{"newTask", task_args}});
-      auto task_id = result.mutated_document_ids()[0].to_string();
+      auto task_id = result.mutated_document_ids()[0];
       log_debug("Added task: " + task_id);
       return task_id;
     } catch (const exception &err) {
