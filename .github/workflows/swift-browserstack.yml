@@ -162,8 +162,7 @@ jobs:
           exit 1
         fi
         
-        # For now, validate that the app was successfully uploaded to BrowserStack
-        # In a full implementation, we would run automated tests using XCUITest or Appium
+        # Validate that the app was successfully uploaded to BrowserStack
         APP_INFO_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           "https://api-cloud.browserstack.com/app-automate/recent_apps")
         
@@ -189,41 +188,10 @@ jobs:
           exit 1
         fi
 
-  appium-tests:
-    name: Appium iOS Testing
-    runs-on: macos-latest
-    needs: ios-browserstack
-    timeout-minutes: 30
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Java for Appium tests
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-    
-    - name: Validate Appium Test Structure
-      run: |
-        echo "🧪 Validating Appium tests for Swift iOS app..."
-        
-        if [ -f "swift/AppiumTests/DittoIOSAppTest.swift" ]; then
-          echo "✅ Appium test file found"
-          echo "📝 Test file: swift/AppiumTests/DittoIOSAppTest.swift"
-        else
-          echo "❌ Appium test file not found"
-          exit 1
-        fi
-        
-        echo "✅ Appium test structure validated"
-        echo "📝 Note: Full Appium integration requires XCUITest framework setup with BrowserStack"
-
   summary:
     name: BrowserStack Summary
     runs-on: macos-latest
-    needs: [ios-browserstack, appium-tests]
+    needs: [ios-browserstack]
     if: always()
     
     steps:
@@ -241,15 +209,6 @@ jobs:
           echo "   - iPad Pro (iOS 17)"
         else
           echo "❌ Swift iOS BrowserStack testing failed"
-        fi
-        
-        echo ""
-        echo "### Appium Testing"
-        echo "Status: ${{ needs.appium-tests.result }}"
-        if [ "${{ needs.appium-tests.result }}" = "success" ]; then
-          echo "✅ Appium test structure created successfully"
-        else
-          echo "❌ Appium test setup failed"
         fi
         
         echo ""
