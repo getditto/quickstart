@@ -191,7 +191,7 @@ const App = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} testID="main-screen">
       <DittoInfo appId={identity.appID} token={identity.token} />
       <DittoSync value={syncEnabled} onChange={toggleSync} />
       <Fab onPress={() => setModalVisible(true)} />

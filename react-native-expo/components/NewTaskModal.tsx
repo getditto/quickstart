@@ -31,8 +31,16 @@ const NewTaskModal: React.FC<Props> = ({ onSubmit, onClose, ...props }) => {
             onChangeText={setInput} 
             placeholder="Enter task title"
           />
-          <Button title="Add Task" onPress={submit} />
-          <Button title="Close" onPress={onClose} />
+          <Button 
+            title="Add Task" 
+            testID="save-task-button"
+            onPress={submit} 
+          />
+          <Button 
+            title="Close" 
+            testID="close-modal-button"
+            onPress={onClose} 
+          />
         </View>
       </View>
     </Modal>
