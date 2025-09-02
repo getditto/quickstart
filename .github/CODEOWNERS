@@ -8,8 +8,8 @@
 
 # SDK-specific owners
 /android-cpp/        @kristopherjohnson @teodorciuraru
-/android-java/       @phatblat @anyercastillo
-/android-kotlin/     @phatblat @anyercastillo
+/android-java/       @phatblat @busec0
+/android-kotlin/     @phatblat @busec0
 /cpp-tui/            @kristopherjohnson @teodorciuraru
 /dotnet-maui/        @busec0 @phatblat
 /dotnet-tui/         @busec0 @phatblat
