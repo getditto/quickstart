@@ -18,7 +18,7 @@ class DittoSyncIntegrationTests: XCTestCase {
             identity: .onlinePlayground(
                 appID: Env.DITTO_APP_ID,
                 token: Env.DITTO_PLAYGROUND_TOKEN,
-                enableDittoCloudSync: false,
+                enableDittoCloudSync: true,
                 customAuthURL: URL(string: Env.DITTO_AUTH_URL)
             )
         )
@@ -265,14 +265,8 @@ class DittoSyncIntegrationTests: XCTestCase {
     // MARK: - Helper Methods
     
     private func insertTestDocumentViaAPI(completion: @escaping (Bool) -> Void) {
-        // In a real implementation, this would make an HTTP request to Ditto API
-        // For now, we'll simulate this by inserting directly into Ditto
-        // In production, you would use something like:
-        /*
-         let apiUrl = "https://\(Env.DITTO_API_URL)/api/v4/store/execute"
-         let headers = ["Authorization": "Bearer \(apiToken)"]
-         // Make HTTP POST request...
-         */
+        // Simulating API insertion by inserting directly into Ditto
+        // Note: CI pipeline handles real API insertion via curl before tests run
         
         print("📡 Simulating API insertion (in real test, this would be HTTP request)")
         
