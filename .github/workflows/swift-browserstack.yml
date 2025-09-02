@@ -38,6 +38,42 @@ jobs:
         chmod +x buildEnv.sh
         ./buildEnv.sh ../.env Tasks/
     
+    - name: Insert test document into Ditto Cloud
+      run: |
+        DOC_ID="swift_browserstack_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        echo "📡 Inserting test document into Ditto Cloud: $DOC_ID"
+        
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d '{
+            "statement": "INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE",
+            "arguments": {
+              "newTask": {
+                "_id": "'$DOC_ID'",
+                "title": "BrowserStack Test Task '"$GITHUB_RUN_ID"'",
+                "done": false,
+                "deleted": false
+              }
+            }
+          }' \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
+        
+        echo "HTTP Status: $HTTP_CODE"
+        echo "Response: $RESPONSE_BODY"
+        
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✅ Successfully inserted test document into Ditto Cloud"
+          echo "BROWSERSTACK_TEST_DOC_ID=$DOC_ID" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to insert document into Ditto Cloud"
+          echo "Response: $RESPONSE_BODY"
+          exit 1
+        fi
+    
     - name: Build iOS App for BrowserStack
       id: build_ios
       working-directory: swift

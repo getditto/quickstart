@@ -49,54 +49,86 @@ class DittoSyncIntegrationTests: XCTestCase {
     }
     
     /**
-     * Test inserting a document into Ditto Cloud via API and verifying it syncs locally
+     * Test that document inserted via HTTP API to Ditto Cloud syncs locally
+     * This test expects a document to already be inserted by CI pipeline
      */
     func testCloudSyncFromAPI() throws {
         let expectation = XCTestExpectation(description: "Document synced from cloud")
         
         print("🌐 Testing cloud sync from API...")
+        print("📝 Looking for test document: \(testDocumentId!)")
         
-        // First, insert a document via Ditto API (simulating external client)
-        insertTestDocumentViaAPI { [weak self] success in
-            guard let self = self else { return }
+        do {
+            try ditto.startSync()
             
-            if success {
-                print("✅ Successfully inserted test document via API")
+            // Register subscription to sync the tasks
+            let subscription = try ditto.sync.registerSubscription(query: "SELECT * FROM tasks")
+            
+            // Register observer to watch for our test document
+            let observer = try ditto.store.registerObserver(
+                query: "SELECT * FROM tasks WHERE _id = :testId",
+                arguments: ["testId": testDocumentId!]
+            ) { result in
+                print("📊 Observer triggered, found \(result.items.count) items")
                 
-                // Start sync and wait for the document to appear locally
-                do {
-                    try self.ditto.startSync()
-                    
-                    // Register subscription to sync the tasks
-                    let subscription = try self.ditto.sync.registerSubscription(query: "SELECT * FROM tasks")
-                    
-                    // Register observer to watch for our test document
-                    let observer = try self.ditto.store.registerObserver(
-                        query: "SELECT * FROM tasks WHERE _id = :testId",
-                        arguments: ["testId": self.testDocumentId!]
-                    ) { result in
-                        if !result.items.isEmpty {
-                            let item = result.items[0]
-                            if let taskData = item.jsonData(),
-                               let taskModel = TaskModel(taskData) {
-                                print("🎉 Test document synced locally: \(taskModel.title)")
-                                expectation.fulfill()
-                            }
+                if !result.items.isEmpty {
+                    let item = result.items[0]
+                    if let taskData = item.jsonData(),
+                       let taskModel = TaskModel(taskData) {
+                        let runId = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? "local"
+                        
+                        // Verify this is our GitHub test task
+                        if taskModel.title.contains("GitHub Test Task") && taskModel.title.contains(runId) {
+                            print("🎉 Found synced GitHub test document: \(taskModel.title)")
+                            print("✅ Document ID: \(taskModel.id)")
+                            print("✅ Task completed: \(taskModel.done)")
+                            expectation.fulfill()
+                        } else {
+                            print("⚠️ Found task but not our test document: \(taskModel.title)")
                         }
                     }
-                    
-                    // Clean up resources after test completes
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                        subscription?.cancel()
-                        observer?.cancel()
-                    }
-                    
-                } catch {
-                    XCTFail("Failed to start sync: \(error)")
+                } else {
+                    print("⏳ No documents found yet, continuing to wait...")
                 }
-            } else {
-                XCTFail("Failed to insert test document via API")
             }
+            
+            // Also do a direct query after a short delay to check for document
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                Task {
+                    do {
+                        let result = try await self.ditto.store.execute(
+                            query: "SELECT * FROM tasks WHERE _id = :testId",
+                            arguments: ["testId": self.testDocumentId!]
+                        )
+                        
+                        print("🔍 Direct query found \(result.items.count) items")
+                        if result.items.isEmpty {
+                            print("❌ Direct query: No document found with ID \(self.testDocumentId!)")
+                            
+                            // Query all tasks to see what's there
+                            let allTasks = try await self.ditto.store.execute(query: "SELECT * FROM tasks")
+                            print("📋 All tasks in store: \(allTasks.items.count)")
+                            for item in allTasks.items {
+                                if let taskData = item.jsonData(),
+                                   let task = TaskModel(taskData) {
+                                    print("  - \(task.id): \(task.title)")
+                                }
+                            }
+                        }
+                    } catch {
+                        print("❌ Direct query failed: \(error)")
+                    }
+                }
+            }
+            
+            // Clean up resources after test completes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+                subscription?.cancel()
+                observer?.cancel()
+            }
+            
+        } catch {
+            XCTFail("Failed to start sync: \(error)")
         }
         
         // Wait for sync to complete
@@ -295,37 +327,5 @@ class DittoSyncIntegrationTests: XCTestCase {
         }
         
         wait(for: [expectation], timeout: 30.0)
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func insertTestDocumentViaAPI(completion: @escaping (Bool) -> Void) {
-        // Simulating API insertion by inserting directly into Ditto
-        // Note: CI pipeline handles real API insertion via curl before tests run
-        
-        print("📡 Simulating API insertion (in real test, this would be HTTP request)")
-        
-        Task {
-            do {
-                try await ditto.store.execute(
-                    query: "INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE",
-                    arguments: ["newTask": [
-                        "_id": testDocumentId!,
-                        "title": "GitHub Test Task \(ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? "local")",
-                        "done": false,
-                        "deleted": false
-                    ]]
-                )
-                
-                DispatchQueue.main.async {
-                    completion(true)
-                }
-            } catch {
-                print("❌ Failed to insert test document: \(error)")
-                DispatchQueue.main.async {
-                    completion(false)
-                }
-            }
-        }
     }
 }
