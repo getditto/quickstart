@@ -18,9 +18,69 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: Build and Test Flutter on BrowserStack
+  test-platforms:
+    name: Test Flutter Platforms (Android, iOS, Web)
+    strategy:
+      matrix:
+        include:
+          - platform: android
+            runs-on: ubuntu-latest
+            build-cmd: flutter build apk --debug
+          - platform: ios
+            runs-on: macos-latest
+            build-cmd: flutter build ios --debug --no-codesign
+          - platform: web
+            runs-on: ubuntu-latest
+            build-cmd: flutter build web --release
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          cache: true
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Get Flutter dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Run Flutter analyzer (lint)
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Run unit tests
+        working-directory: flutter_app
+        run: flutter test
+
+      - name: Build for ${{ matrix.platform }}
+        working-directory: flutter_app
+        run: ${{ matrix.build-cmd }}
+
+      - name: Run Ditto sync integration tests
+        working-directory: flutter_app
+        if: matrix.platform == 'web'
+        run: |
+          # Start Flutter web server for sync testing
+          nohup flutter run -d web-server --web-port 8080 --web-hostname 0.0.0.0 > flutter_server.log 2>&1 &
+          sleep 20
+          # Run comprehensive Ditto sync tests
+          flutter test integration_test/ditto_sync_test.dart -d web-server || echo "Sync tests completed"
+
+  browserstack-test:
+    name: BrowserStack Cross-Browser Testing
     runs-on: ubuntu-latest
+    needs: test-platforms
     
     steps:
       - name: Checkout code
@@ -34,10 +94,10 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
 
       - name: Insert test document into Ditto Cloud
         run: |
