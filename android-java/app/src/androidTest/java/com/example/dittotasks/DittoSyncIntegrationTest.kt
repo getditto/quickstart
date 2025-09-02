@@ -80,7 +80,7 @@ class DittoSyncIntegrationTest {
             
             testDitto = Ditto(androidDependencies, identity)
             
-            // Configure transport same as main app
+            // Configure transport for BrowserStack (WebSocket only - avoid permission issues)
             testDitto.updateTransportConfig { config ->
                 config.connect.websocketUrls.add(BuildConfig.DITTO_WEBSOCKET_URL)
                 Unit
