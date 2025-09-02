@@ -174,14 +174,15 @@ jobs:
         
         # Extract the .app bundle from archive for BrowserStack
         # BrowserStack supports both .ipa and .app uploads
-        APP_BUNDLE_PATH="build/iosApp.xcarchive/Products/Applications/QuickStartTasks.app"
+        # Dynamically find the .app bundle name after archive
+        APP_BUNDLE_PATH=$(find build/iosApp.xcarchive/Products/Applications/ -maxdepth 1 -name "*.app" -type d | head -n 1)
         
         if [ -d "$APP_BUNDLE_PATH" ]; then
-          echo "✅ iOS app bundle built successfully"
+          echo "✅ iOS app bundle built successfully: $APP_BUNDLE_PATH"
           ls -la "$APP_BUNDLE_PATH"
           
           # Copy app bundle to build directory for upload
-          cp -r "$APP_BUNDLE_PATH" build/QuickStartTasks.app
+          cp -r "$APP_BUNDLE_PATH" build/$(basename "$APP_BUNDLE_PATH")
           echo "📦 iOS app ready for BrowserStack upload"
         else
           echo "❌ iOS app bundle not found"
@@ -194,19 +195,22 @@ jobs:
       run: |
         echo "📱 Validating iOS app build for customer deployment..."
         
-        # Verify iOS app bundle was built successfully
-        if [ -d "kotlin-multiplatform/iosApp/build/QuickStartTasks.app" ]; then
-          echo "✅ iOS app bundle built successfully"
+        # Find the dynamically created iOS app bundle
+        APP_BUNDLE=$(find kotlin-multiplatform/iosApp/build/ -maxdepth 1 -name "*.app" -type d | head -n 1)
+        
+        if [ -d "$APP_BUNDLE" ]; then
+          APP_NAME=$(basename "$APP_BUNDLE" .app)
+          echo "✅ iOS app bundle built successfully: $APP_BUNDLE"
           echo "📦 App bundle contents:"
-          ls -la kotlin-multiplatform/iosApp/build/QuickStartTasks.app/
+          ls -la "$APP_BUNDLE/"
           
           # Check app info
-          if [ -f "kotlin-multiplatform/iosApp/build/QuickStartTasks.app/Info.plist" ]; then
+          if [ -f "$APP_BUNDLE/Info.plist" ]; then
             echo "✅ iOS app Info.plist found - app is properly configured"
           fi
           
-          # Check main binary
-          if [ -f "kotlin-multiplatform/iosApp/build/QuickStartTasks.app/QuickStartTasks" ]; then
+          # Check main binary (should match app name)
+          if [ -f "$APP_BUNDLE/$APP_NAME" ]; then
             echo "✅ iOS app binary found - customer app will launch correctly"
           fi
           
