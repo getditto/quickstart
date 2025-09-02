@@ -149,8 +149,9 @@ void main() {
       const githubRunId = String.fromEnvironment('GITHUB_TEST_DOC_ID');
       if (githubRunId.isNotEmpty) {
         final splitRunId = githubRunId.split('_');
+        // Expected format: 'github_test_RUNID_RUNNUMBER' where index 2 contains RUNID
         if (splitRunId.length >= 3) {
-          final runIdPart = splitRunId[2];
+          final runIdPart = splitRunId[2]; // Extract RUNID from position 2
           final testDocumentText = find.textContaining(runIdPart);
           
           int attempts = 0;

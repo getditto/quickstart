@@ -15,12 +15,27 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
+def parse_run_id_from_doc_id(doc_id):
+    """
+    Extract the run ID from a document ID.
+    Expected formats:
+    - github_test_RUNID_RUNNUMBER (index 2 contains RUNID)  
+    - github_test_web_RUNID_RUNNUMBER (index 3 contains RUNID)
+    Returns RUNID if format matches, else returns the original doc_id.
+    """
+    parts = doc_id.split('_')
+    if len(parts) >= 4 and parts[2] == 'web':
+        return parts[3]  # Web format
+    elif len(parts) >= 3:
+        return parts[2]  # Standard format
+    else:
+        return doc_id
+
 def wait_for_sync_document(driver, doc_id, max_wait=30):
     """Wait for a specific document to appear in the task list."""
     print(f"Waiting for document '{doc_id}' to sync...")
-    # Extract the run ID from the document ID (format: github_test_RUNID_RUNNUMBER)
-    parts = doc_id.split('_')
-    run_id = parts[2] if len(parts) > 2 else doc_id
+    # Extract the run ID from the document ID using shared parsing logic
+    run_id = parse_run_id_from_doc_id(doc_id)
     print(f"Looking for GitHub Run ID: {run_id}")
     
     start_time = time.time()

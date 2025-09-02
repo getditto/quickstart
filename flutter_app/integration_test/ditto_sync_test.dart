@@ -158,6 +158,7 @@ void main() {
       if (githubDocId.isNotEmpty) {
         
         final parts = githubDocId.split('_');
+        // Expected format: 'github_test_RUNID_RUNNUMBER' where index 2 contains RUNID
         final runIdPart = parts.length > 2 ? parts[2] : githubDocId;
         
         // Look for the test document with retries
