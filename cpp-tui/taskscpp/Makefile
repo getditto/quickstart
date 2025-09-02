@@ -69,6 +69,22 @@ lint: build ## Runs clang-format -n and clang-tidy on all .cpp and .h files
 	$(CLANG_FORMAT) --dry-run --Werror $(CPP_SRC_FILES)
 	$(CLANG_TIDY) -p $(BUILD_DIR) $(CPP_SRC_FILES)
 
+.PHONY: test
+test: build ## Build and run all tests
+	cd $(BUILD_DIR) && $(CTEST) --output-on-failure
+
+.PHONY: test-unit
+test-unit: build ## Build and run unit tests only
+	cd $(BUILD_DIR) && ./unit_test
+
+.PHONY: test-integration
+test-integration: build ## Build and run integration tests only
+	cd $(BUILD_DIR) && ./integration_test
+
+.PHONY: test-script
+test-script: build ## Run tests using the shell script
+	tests/run_tests.sh
+
 .PHONY: clean
 clean: ## Removes all generated files and directories
 	- rm -r $(BUILD_DIR)
