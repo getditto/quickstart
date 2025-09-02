@@ -309,7 +309,6 @@ def main():
     ios_devices = [
         "iPhone 14-16",
         "iPhone 15-17",
-        "iPad Pro 12.9 2022-16",
     ]
     
     # Use appropriate devices based on platform (already defined above)
