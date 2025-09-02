@@ -67,10 +67,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             ONLY_ACTIVE_ARCH=NO
 
-      - name: Build for macOS (if supported)
+      - name: Build for macOS
         working-directory: swift
         run: |
-          # Try to build for macOS as well if the project supports it
           xcodebuild build \
             -project Tasks.xcodeproj \
             -scheme Tasks \
@@ -80,8 +79,7 @@ jobs:
             SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            || echo "macOS build not supported, skipping"
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Run Swift Tests (if available)
         working-directory: swift
