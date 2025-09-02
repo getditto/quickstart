@@ -14,6 +14,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DITTO_SDK_VERSION: "4.12.0"
+
 jobs:
   build-and-test:
     name: Build and Test C++ TUI
@@ -86,8 +89,8 @@ jobs:
       - name: Download and setup Ditto C++ SDK
         working-directory: cpp-tui/taskscpp
         run: |
-          echo "📥 Downloading real Ditto C++ SDK for integration test..."
-          curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/4.12.0/dist/Ditto.tar.gz
+          echo "📥 Downloading real Ditto C++ SDK v${{ env.DITTO_SDK_VERSION }} for integration test..."
+          curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/${{ env.DITTO_SDK_VERSION }}/dist/Ditto.tar.gz
           tar xvfz Ditto.tar.gz
           
           # Copy SDK files to expected location

@@ -131,8 +131,22 @@ public:
             peer->start_sync();
         }
         
-        // Wait a moment for sync to establish
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        // Wait for sync to establish with timeout
+        {
+            const int max_wait_ms = 5000;
+            const int poll_interval_ms = 100;
+            int waited_ms = 0;
+            while (!peer->is_sync_active() && waited_ms < max_wait_ms) {
+                sleep_for(milliseconds(poll_interval_ms));
+                waited_ms += poll_interval_ms;
+            }
+            
+            if (!peer->is_sync_active()) {
+                cout << "⚠️  Warning: Sync did not establish within timeout, continuing anyway..." << endl;
+            } else {
+                cout << "✅ Sync established successfully" << endl;
+            }
+        }
         
         // CREATE - Add a new task using SDK
         string test_title = "C++ Integration Test Task " + 

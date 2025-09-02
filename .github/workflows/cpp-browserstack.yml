@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DITTO_SDK_VERSION: "4.12.0"
+
 jobs:
   browserstack-test:
     name: BrowserStack Test C++ TUI
@@ -62,8 +65,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake clang build-essential
           
-          echo "📥 Downloading real Ditto C++ SDK..."
-          curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/4.12.0/dist/Ditto.tar.gz
+          echo "📥 Downloading real Ditto C++ SDK v${{ env.DITTO_SDK_VERSION }}..."
+          curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/${{ env.DITTO_SDK_VERSION }}/dist/Ditto.tar.gz
           tar xvfz Ditto.tar.gz
           cp Ditto.h sdk/
           cp libditto.a sdk/
