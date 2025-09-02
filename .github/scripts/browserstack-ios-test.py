@@ -135,40 +135,100 @@ def create_and_verify_ios_task(driver, test_task_text, max_wait=30):
                 submit_buttons[0].click()
                 print("✅ Clicked iOS submit button")
                 
-                # Wait for task to be processed
-                print("⏳ Waiting for iOS task to appear and sync...")
-                time.sleep(5)
+                # Enhanced iOS task verification with navigation and sync handling
+                print("⏳ Waiting for iOS task to be processed and synced...")
                 
-                # Verify task appeared - this tests both local storage AND Ditto sync
+                # First try to navigate back to main screen if needed
+                try:
+                    # Look for iOS navigation back button
+                    back_buttons = driver.find_elements(AppiumBy.XPATH, "//*[@name='Back' or @name='Cancel' or contains(@name, 'back')]")
+                    if not back_buttons:
+                        # Try standard iOS navigation
+                        back_buttons = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeButton")
+                        back_buttons = [btn for btn in back_buttons if btn.get_attribute("name") and "back" in btn.get_attribute("name").lower()]
+                    
+                    if back_buttons:
+                        back_buttons[0].click()
+                        print("🔙 Clicked iOS navigation back button")
+                        time.sleep(2)
+                    else:
+                        # Try swipe gesture to go back
+                        driver.swipe(100, 300, 300, 300, 300)
+                        print("↩️ Used swipe gesture to navigate back")
+                        time.sleep(2)
+                except Exception as nav_e:
+                    print(f"🔙 iOS navigation attempt: {nav_e}")
+                
+                # Enhanced verification with multiple approaches and pull-to-refresh
+                task_found = False
                 start_time = time.time()
-                while (time.time() - start_time) < max_wait:
-                    try:
-                        # Look for the task in iOS UI elements
-                        text_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeStaticText")
-                        text_elements.extend(driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeCell"))
-                        
-                        for element in text_elements:
-                            try:
-                                element_text = element.text.strip() if element.text else ""
-                                if test_task_text in element_text:
-                                    print(f"✅ iOS task successfully created and visible: {element_text}")
-                                    return True
-                            except Exception:
-                                continue
-                                
-                        # Also try xpath approach for iOS
-                        task_elements = driver.find_elements(AppiumBy.XPATH, f"//*[contains(@name,'{test_task_text}') or contains(@label,'{test_task_text}') or contains(@value,'{test_task_text}')]")
-                        if task_elements:
-                            print(f"✅ iOS task created and synced via Ditto SDK: {test_task_text}")
-                            return True
+                
+                for attempt in range(3):
+                    print(f"🔍 iOS task verification attempt {attempt + 1}/3...")
+                    
+                    # Try pull-to-refresh on iOS
+                    if attempt > 0:
+                        try:
+                            driver.swipe(200, 200, 200, 500, 800)  # Pull down gesture
+                            print("🔄 Performed iOS pull-to-refresh")
+                            time.sleep(2)
+                        except:
+                            pass
+                    
+                    while (time.time() - start_time) < (max_wait / 3):  # Divide time between attempts
+                        try:
+                            # Method 1: Look for the task in iOS UI elements  
+                            text_elements = driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeStaticText")
+                            text_elements.extend(driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeCell"))
+                            text_elements.extend(driver.find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeOther"))
                             
-                    except Exception:
+                            for element in text_elements:
+                                try:
+                                    element_text = element.text.strip() if element.text else ""
+                                    if test_task_text in element_text:
+                                        print(f"✅ iOS task successfully created and visible: {element_text}")
+                                        task_found = True
+                                        break
+                                except Exception:
+                                    continue
+                            
+                            if task_found:
+                                break
+                                
+                            # Method 2: XPath approach for iOS
+                            task_elements = driver.find_elements(AppiumBy.XPATH, f"//*[contains(@name,'{test_task_text}') or contains(@label,'{test_task_text}') or contains(@value,'{test_task_text}')]")
+                            if task_elements:
+                                print(f"✅ iOS task created and synced via Ditto SDK: {test_task_text}")
+                                task_found = True
+                                break
+                                
+                        except Exception:
+                            pass
+                            
+                        time.sleep(2)
+                    
+                    if task_found:
+                        break
+                        
+                    # Give more time for sync between attempts
+                    extra_wait = 3 + (attempt * 2)  # 3, 5, 7 seconds
+                    print(f"⏳ iOS sync delay: waiting {extra_wait}s...")
+                    time.sleep(extra_wait)
+                
+                if task_found:
+                    return True
+                else:
+                    print(f"❌ iOS task not found in UI after enhanced verification")
+                    
+                    # Debug: Show iOS UI elements for debugging
+                    try:
+                        debug_elements = driver.find_elements(AppiumBy.XPATH, "//*[@name and string-length(@name) > 0]")
+                        visible_names = [elem.get_attribute("name") for elem in debug_elements[:5] if elem.get_attribute("name")]
+                        print(f"📱 Visible iOS elements: {visible_names}...")
+                    except:
                         pass
                         
-                    time.sleep(2)
-                    
-                print(f"❌ iOS task not found in UI after {max_wait} seconds")
-                return False
+                    return False
                 
             else:
                 print("❌ No suitable iOS add buttons found")
