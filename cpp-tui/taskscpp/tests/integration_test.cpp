@@ -132,7 +132,7 @@ public:
         }
         
         // Wait a moment for sync to establish
-        this_thread::sleep_for(chrono::seconds(2));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         
         // CREATE - Add a new task using SDK
         string test_title = "C++ Integration Test Task " + 
@@ -143,7 +143,7 @@ public:
         cout << "✅ CREATE operation completed - Task ID: " << new_task_id.substr(0, 8) << "..." << endl;
         
         // Wait for local persistence
-        this_thread::sleep_for(chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         
         // READ - Get all tasks
         vector<Task> tasks = peer->get_tasks();
@@ -168,7 +168,7 @@ public:
         peer->mark_task_complete(new_task_id, true);
         
         // Wait for update to persist
-        this_thread::sleep_for(chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         
         // Verify update
         vector<Task> updated_tasks = peer->get_tasks();
@@ -184,7 +184,7 @@ public:
         peer->delete_task(new_task_id);
         
         // Wait for delete to persist
-        this_thread::sleep_for(chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         
         // Verify soft delete (should not appear in active tasks)
         vector<Task> active_tasks = peer->get_tasks();
@@ -231,7 +231,7 @@ public:
         
         // Wait for sync to occur
         cout << "⏳ Waiting for cloud sync..." << endl;
-        this_thread::sleep_for(chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         
         // Verify task exists locally
         vector<Task> tasks = peer->get_tasks();
@@ -258,7 +258,7 @@ public:
     void test_performance() {
         cout << "⚡ Testing C++ app performance..." << endl;
         
-        auto start_time = chrono::high_resolution_clock::now();
+        auto start_time = std::chrono::high_resolution_clock::now();
         
         // Test multiple rapid operations
         vector<string> task_ids;
@@ -267,8 +267,8 @@ public:
             task_ids.push_back(task_id);
         }
         
-        auto end_time = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
         
         assert(duration.count() < 5000); // Should complete within 5 seconds
         cout << "✅ Performance test completed in " << duration.count() << "ms" << endl;

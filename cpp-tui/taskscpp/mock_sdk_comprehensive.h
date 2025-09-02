@@ -16,8 +16,11 @@ namespace nlohmann {
     // Default constructor
     json() {}
     
-    // Brace initializer constructor - this is key for {{"key", value}} syntax
+    // Brace initializer constructor - this is key for {{"key", value}} syntax  
     json(std::initializer_list<std::pair<std::string, json>> init) {}
+    
+    // Constructor for two-element initialization like {{"key", value}, {"key2", value2}}
+    json(std::pair<std::string, json> p1, std::pair<std::string, json> p2) {}
     
     // Additional constructors for different value types to support brace initialization
     json(const std::string& s) {}
@@ -35,6 +38,9 @@ namespace nlohmann {
     // Value access methods
     template<typename T> T get() const { return T{}; }
     template<typename T> T value(const std::string& key, const T& default_value) const { return default_value; }
+    
+    // Specific overloads for string literals to avoid template issues
+    std::string value(const std::string& key, const char* default_value) const { return std::string(default_value); }
     
     // Static methods
     static json parse(const std::string& s) { return json{}; }
@@ -192,11 +198,11 @@ namespace ditto {
       return std::shared_ptr<SyncSubscription>(new SyncSubscription());
     }
     
-    // Alternative method name used in some versions
+    // Alternative method name used in some versions - returns StoreObserver instead of SyncSubscription
     template<typename Callback>
-    std::shared_ptr<SyncSubscription> register_observer(const std::string& query, Callback callback) {
+    std::shared_ptr<StoreObserver> register_observer(const std::string& query, Callback callback) {
       Log::i("Store", "Registered observer for query: " + query);
-      return std::shared_ptr<SyncSubscription>(new SyncSubscription());
+      return std::shared_ptr<StoreObserver>(new StoreObserver());
     }
   };
   
