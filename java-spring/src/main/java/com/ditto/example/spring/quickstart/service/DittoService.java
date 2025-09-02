@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 @Component
+@ConditionalOnProperty(name = "ditto.enabled", havingValue = "true", matchIfMissing = true)
 public class DittoService implements DisposableBean {
     private static final String DITTO_SYNC_STATE_COLLECTION = "spring_sync_state";
     private static final String DITTO_SYNC_STATE_ID = "sync_state";

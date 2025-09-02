@@ -4,6 +4,7 @@ import com.ditto.java.*;
 import com.ditto.java.serialization.DittoCborSerializable;
 
 import jakarta.annotation.Nonnull;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
+@ConditionalOnProperty(name = "ditto.enabled", havingValue = "true", matchIfMissing = true)
 public class DittoTaskService {
     private static final String TASKS_COLLECTION_NAME = "tasks";
 
