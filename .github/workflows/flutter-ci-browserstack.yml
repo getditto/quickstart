@@ -300,7 +300,13 @@ jobs:
         options.set_capability('projectName', 'Flutter Web Ditto Sync Test')
         options.set_capability('buildName', f'Flutter Web Build {os.environ["GITHUB_RUN_NUMBER"]}')
         options.set_capability('sessionName', f'Flutter Web Test - Document {os.environ["GITHUB_TEST_DOC_ID_WEB"]}')
-        options.set_capability('local', 'true')
+        
+        # Critical: Enable local testing for BrowserStack Local tunnel
+        options.set_capability('browserstack.local', 'true')
+        options.set_capability('browserstack.localIdentifier', '')
+        options.set_capability('browserstack.debug', 'true')
+        options.set_capability('browserstack.console', 'info')
+        options.set_capability('browserstack.networkLogs', 'true')
         
         bs_url = f'https://{os.environ["BROWSERSTACK_USERNAME"]}:{os.environ["BROWSERSTACK_ACCESS_KEY"]}@hub.browserstack.com/wd/hub'
         
@@ -414,17 +420,35 @@ jobs:
       working-directory: flutter_app
       run: |
         echo "Building Flutter iOS IPA for BrowserStack..."
-        # BrowserStack needs a proper signed IPA, not just APP bundle
-        # Use development signing for BrowserStack testing
-        flutter build ipa --debug --export-method=development
+        # Build iOS archive first (like Swift approach)
+        flutter build ios --debug --no-codesign
         
-        # Check if IPA was created
-        if [ -f "build/ios/ipa/flutter_quickstart.ipa" ]; then
-          echo "✅ iOS IPA found: build/ios/ipa/flutter_quickstart.ipa"
-          ls -la build/ios/ipa/
+        # Create unsigned IPA manually (following Swift BrowserStack pattern)
+        echo "📦 Creating unsigned .ipa for BrowserStack..."
+        
+        # Find the .app bundle
+        APP_BUNDLE_PATH="build/ios/iphoneos/Runner.app"
+        
+        if [ -d "$APP_BUNDLE_PATH" ]; then
+          echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
+          
+          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
+          mkdir -p build/ios/ipa/Payload
+          cp -R "$APP_BUNDLE_PATH" build/ios/ipa/Payload/
+          (cd build/ios/ipa && zip -qry flutter_quickstart.ipa Payload && rm -rf Payload)
+          
+          # Verify IPA was created
+          if [ -f "build/ios/ipa/flutter_quickstart.ipa" ]; then
+            echo "✅ Unsigned .ipa created successfully"
+            ls -la build/ios/ipa/flutter_quickstart.ipa
+          else
+            echo "❌ Failed to create .ipa file"
+            exit 1
+          fi
         else
-          echo "❌ iOS IPA not found, checking build directory"
-          find build/ios -name "*.ipa" -type f || echo "No IPA files found"
+          echo "❌ iOS app bundle not found at $APP_BUNDLE_PATH"
+          find build/ios -name "*.app" -type d || echo "No APP files found"
+          exit 1
         fi
 
     - name: Upload iOS IPA to BrowserStack
