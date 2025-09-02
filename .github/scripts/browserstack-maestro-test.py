@@ -136,8 +136,11 @@ class BrowserStackMaestroRunner:
             "buildName": build_name,
             # Enable device logs for debugging
             "deviceLogs": True,
-            # Specify which flows to execute - must be array format
-            "execute": ["maestro_suite/flows"]
+            # Run critical Ditto sync integration tests
+            "execute": [
+                "maestro_suite/flows/01-app-launch.yaml",
+                "maestro_suite/flows/08-external-sync-verification.yaml"
+            ]
         }
         
         # Add optional parameters

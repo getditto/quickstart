@@ -6,57 +6,40 @@ tags:
 ---
 # Test: Data Persistence and Sync
 # This flow tests that tasks persist across app restarts and verify Ditto sync is working
-
 - launchApp:
     appId: com.dittoreactnativesampleapp
-    arguments:
-      - "--e2e-testing"
-
 - runFlow:
     when:
       visible: "Permission"
     commands:
       - tapOn: "Allow"
-
 - assertVisible: 
     text: "Ditto Tasks"
-    timeout: 10000
-
 # Create a persistent task
 - tapOn: "+"
 - assertVisible: "Add Task"
-
-- runScript: |
-    const timestamp = Date.now();
-    output.persistentTaskTitle = `Persistent Task ${timestamp}`;
-
+- runScript:
+    script: |
+      const timestamp = Date.now();
+      output.persistentTaskTitle = `Persistent Task ${timestamp}`;
 - tapOn:
     id: "task-input"
 - inputText: "${output.persistentTaskTitle}"
 - tapOn: "Add Task"
 - assertNotVisible: "Add Task"
 - assertVisible: "${output.persistentTaskTitle}"
-
 # Wait for sync to occur
 - waitForAnimationToEnd
-
 # Stop and restart the app
 - stopApp
-
 - launchApp:
     appId: com.dittoreactnativesampleapp
-    arguments:
-      - "--e2e-testing"
-
 - runFlow:
     when:
       visible: "Permission"
     commands:
       - tapOn: "Allow"
-
 - assertVisible: 
     text: "Ditto Tasks"
-    timeout: 10000
-
 # Verify the task still exists after restart
 - assertVisible: "${output.persistentTaskTitle}"

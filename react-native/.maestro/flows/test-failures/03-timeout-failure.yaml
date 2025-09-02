@@ -1,0 +1,23 @@
+appId: com.dittoreactnativesampleapp
+tags:
+  - "failure-test"
+  - "timeout"
+---
+# Test: Timeout Failure
+# This flow is designed to fail due to timeout
+
+- launchApp:
+    appId: com.dittoreactnativesampleapp
+
+- runFlow:
+    when:
+      visible: "Permission"
+    commands:
+      - tapOn: "Allow"
+
+- assertVisible: 
+    text: "Ditto Tasks"
+
+# This should fail - waiting for an element that will never appear
+- assertVisible:
+    text: "Element That Never Shows Up"

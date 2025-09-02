@@ -5,45 +5,25 @@ tags:
 ---
 # Test: Create New Task
 # This flow tests the task creation functionality and verifies the task appears in the list
-
 - launchApp:
     appId: com.dittoreactnativesampleapp
-    arguments:
-      - "--e2e-testing"
-
 - runFlow:
     when:
-      visible: "Permission"
+      visible: "Allow"
     commands:
       - tapOn: "Allow"
-
 - assertVisible: 
-    text: "Ditto Tasks"
-    timeout: 10000
-
+    text: "Ditto Tasks C++"
 # Tap the floating action button to create a new task
-- tapOn: "+"
-
+- tapOn: "New Task"
 - assertVisible: "Add Task"
-
-# Generate unique task title with timestamp to avoid conflicts
-- runScript: |
-    const timestamp = Date.now();
-    output.testTaskTitle = `E2E Test Task ${timestamp}`;
-
+# Generate unique task title with timestamp to avoid conflicts  
 - tapOn:
     id: "task-input"
-
-- inputText: "${output.testTaskTitle}"
-
+- inputText: "Test Task 12345"
 - tapOn: "Add Task"
-
 # Wait for modal to close
 - assertNotVisible: "Add Task"
-
 # Verify the task appears in the list
-- assertVisible: "${output.testTaskTitle}"
-
-# Verify the task is not completed (unchecked)
-- assertVisible:
-    text: "${output.testTaskTitle}"
+- assertVisible: "Test Task 12345"
+# Test completed

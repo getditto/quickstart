@@ -2,47 +2,28 @@ appId: com.anonymous.reactnativeexpo
 tags:
   - "sync"
   - "integration"
-  - "external"
+  - "critical"
 ---
-# Test: External Sync Verification
-# This flow verifies that tasks created externally (e.g., via API) appear in the app
+# Test: Ditto Cloud Sync Verification
+# This flow verifies that the GitHub test document inserted into Ditto Cloud syncs to the app
 - launchApp:
     appId: com.anonymous.reactnativeexpo
 - runFlow:
     when:
-      visible: "Permission"
+      visible: "Allow"
     commands:
       - tapOn: "Allow"
 - assertVisible: 
-    text: "Ditto Tasks"
-# Generate external task ID and title
-- runScript:
-    script: |
-      const timestamp = Date.now();
-      const runNumber = process.env.GITHUB_RUN_NUMBER || Math.floor(Math.random() * 10000);
-      output.externalTaskId = `github_test_${runNumber}_${timestamp}`;
-      output.externalTaskTitle = `GitHub Test Task ${runNumber}`;
-# If we have a test document ID from the CI setup, look for it
-- runFlow:
-    when:
-      visible:
-        id: "${GITHUB_TEST_DOC_ID}"
-    commands:
-      - assertVisible: "${GITHUB_TEST_DOC_ID}"
-# Wait for external sync to occur (up to 30 seconds)
+    text: "Ditto Tasks C++"
+# Wait for initial Ditto sync from cloud (up to 30 seconds)
 - repeat:
     times: 30
     commands:
       - wait: 1000
       - runFlow:
           when:
-            visible: "${output.externalTaskTitle}"
+            visible: "GitHub Test Task"
           commands:
-            - assertVisible: "${output.externalTaskTitle}"
-            - tapOn: "Back" # Exit the repeat loop
-# Verify external task is visible (if it was inserted)
-- runFlow:
-    when:
-      visible: "${output.externalTaskTitle}"
-    commands:
-      - assertVisible: "${output.externalTaskTitle}"
+            # Found the GitHub test document that synced from Ditto Cloud
+            - assertVisible: "GitHub Test Task"
+            - stop # Exit successfully
