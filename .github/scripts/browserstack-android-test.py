@@ -136,25 +136,61 @@ def create_and_verify_task(driver, test_task_text, max_wait=30):
             print("❌ Could not find or interact with input field")
             return False
         
-        # Step 3: Look for and click Submit button
-        print("🔍 Looking for Submit button...")
+        # Step 3: Look for and click Submit button with enhanced detection
+        print("🔍 Looking for Submit button with comprehensive detection...")
         
         try:
             submit_buttons = []
             
-            # Look for Submit button by text
-            submit_buttons = driver.find_elements(AppiumBy.XPATH, "//*[@text='Submit' or @text='SUBMIT']")
+            # Approach 1: Look by exact text matches
+            submit_buttons = driver.find_elements(AppiumBy.XPATH, "//*[@text='Submit' or @text='SUBMIT' or @text='Save' or @text='SAVE']")
             
-            # Fallback: look for any buttons with submit-like text
+            # Approach 2: Look by content description
+            if not submit_buttons:
+                submit_buttons = driver.find_elements(AppiumBy.XPATH, "//*[@content-desc='Submit' or @content-desc='Save' or @content-desc='Done']")
+            
+            # Approach 3: Look for buttons with submit-like text
             if not submit_buttons:
                 all_buttons = driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.Button")
                 for button in all_buttons:
                     try:
-                        button_text = button.text or ""
-                        if any(word in button_text.lower() for word in ['submit', 'save', 'add', 'create']):
+                        button_text = (button.text or "").lower()
+                        content_desc = (button.get_attribute("content-desc") or "").lower()
+                        
+                        # Check both text and content description
+                        search_text = f"{button_text} {content_desc}"
+                        if any(word in search_text for word in ['submit', 'save', 'add', 'create', 'done', 'ok']):
                             submit_buttons.append(button)
+                            break
                     except:
                         continue
+            
+            # Approach 4: Look for any clickable elements that might be buttons (Compose buttons)
+            if not submit_buttons:
+                all_clickable = driver.find_elements(AppiumBy.XPATH, "//*[@clickable='true']")
+                for element in all_clickable:
+                    try:
+                        element_text = (element.text or "").lower()
+                        content_desc = (element.get_attribute("content-desc") or "").lower()
+                        
+                        # Check for submit-like text in any clickable element
+                        search_text = f"{element_text} {content_desc}"
+                        if any(word in search_text for word in ['submit', 'save', 'done', 'ok']) and element.is_displayed():
+                            submit_buttons.append(element)
+                            break
+                    except:
+                        continue
+            
+            # Approach 5: If still no luck, find the most recently added button (likely the submit button)
+            if not submit_buttons:
+                print("⚠️ No obvious submit button found, trying most recent clickable button...")
+                all_buttons = driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.Button")
+                all_buttons.extend(driver.find_elements(AppiumBy.XPATH, "//*[@clickable='true' and @focusable='true']"))
+                
+                # Filter for visible, enabled buttons
+                visible_buttons = [btn for btn in all_buttons if btn.is_displayed() and btn.is_enabled()]
+                if visible_buttons:
+                    submit_buttons = [visible_buttons[-1]]  # Take the last (most recent) button
             
             if submit_buttons:
                 print(f"✅ Found {len(submit_buttons)} submit button(s)")
