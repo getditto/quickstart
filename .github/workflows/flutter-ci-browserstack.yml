@@ -201,7 +201,7 @@ jobs:
                   \"video\": true, 
                   \"networkLogs\": true
                 }" \
-            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds)
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build)
           
           echo "Build response: $BUILD_JSON"
           BUILD_ID=$(echo "$BUILD_JSON" | jq -r .build_id)
@@ -441,7 +441,7 @@ jobs:
                   \"video\": true, 
                   \"networkLogs\": true
                 }" \
-            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds)
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build)
           
           echo "Build response: $BUILD_JSON"
           BUILD_ID=$(echo "$BUILD_JSON" | jq -r .build_id)
