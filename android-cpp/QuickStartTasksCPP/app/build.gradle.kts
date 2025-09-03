@@ -82,12 +82,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        
-        // Ensure 64-bit compatibility for Pixel 8 and modern Android devices
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
-        }
-        
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++17"

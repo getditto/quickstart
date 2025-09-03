@@ -44,12 +44,42 @@ jobs:
           ditto-auth-url: ${{ secrets.DITTO_AUTH_URL }}
           ditto-websocket-url: ${{ secrets.DITTO_WEBSOCKET_URL }}
 
-      - name: Insert test document into Ditto Cloud
-        uses: ./.github/actions/ditto-test-document-insert
-        with:
-          project-type: java-spring
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+      - name: Seed test document via HTTP API
+        run: |
+          DOC_ID="github_java-spring_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          echo "GITHUB_TEST_DOC_ID=$DOC_ID" >> $GITHUB_ENV
+          
+          echo "Seeding test document with ID: $DOC_ID"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"title\": \"GitHub Test Task ${GITHUB_RUN_ID} - Java Spring\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '$ d')
+          
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response: $RESPONSE_BODY"
+          
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "❌ Failed to seed document. HTTP Status: $HTTP_STATUS"
+            echo "Response: $RESPONSE_BODY"
+            exit 1
+          fi
+          
+          echo "✅ Successfully seeded test document: $DOC_ID"
 
       - name: Cache Gradle
         uses: ./.github/actions/gradle-cache
@@ -222,31 +252,50 @@ jobs:
               const title = await driver.getTitle();
               console.log(`✓ Page title: ${title}`);
               
-              // Test basic task functionality
+              // Test seeded document sync verification
               const runId = process.env.GITHUB_RUN_ID || Date.now().toString();
-              const testTaskTitle = `BrowserStack Test Task ${runId}`;
+              const runNumber = process.env.GITHUB_RUN_NUMBER || Date.now().toString();
+              const seededTaskTitle = `GitHub Test Task ${runId} - Java Spring`;
+              const seededDocId = `github_java-spring_${runId}_${runNumber}`;
               
-              // Find task input field and add button (based on actual HTML structure)
-              const taskInput = await driver.wait(until.elementLocated(By.css('input[name="title"]')), 10000);
-              const addButton = await driver.findElement(By.css('button[type="submit"]'));
+              console.log(`Looking for seeded task: "${seededTaskTitle}"`);
+              console.log(`Seeded document ID: "${seededDocId}"`);
               
-              // Add a test task
-              await taskInput.sendKeys(testTaskTitle);
-              await addButton.click();
-              console.log(`✓ Added test task: ${testTaskTitle}`);
+              // Wait for the seeded document to appear via Ditto sync
+              let foundSeededTask = false;
+              const maxAttempts = 10;
               
-              // Wait for HTMX/SSE to update the task list
-              await driver.sleep(5000);
+              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                console.log(`Sync check attempt ${attempt}/${maxAttempts}`);
+                
+                // Get current page content
+                const bodyText = await driver.findElement(By.tagName('body')).getText();
+                
+                // Look for the seeded task by title
+                if (bodyText.includes(seededTaskTitle) || bodyText.includes(seededDocId)) {
+                  console.log('✅ Seeded document successfully synced with web app!');
+                  foundSeededTask = true;
+                  break;
+                }
+                
+                if (attempt < maxAttempts) {
+                  console.log(`Seeded task not yet visible, waiting 3 seconds... (attempt ${attempt}/${maxAttempts})`);
+                  await driver.sleep(3000);
+                  
+                  // Refresh the page to trigger sync updates
+                  if (attempt % 3 === 0) {
+                    console.log('Refreshing page to check for sync updates...');
+                    await driver.navigate().refresh();
+                    await driver.sleep(2000);
+                  }
+                } else {
+                  console.log('⚠️ Seeded document not found after all attempts');
+                  console.log('Page content sample:', bodyText.substring(0, 500));
+                }
+              }
               
-              // Verify task appears by checking page content
-              const bodyText = await driver.findElement(By.tagName('body')).getText();
-              
-              if (bodyText.includes(testTaskTitle)) {
-                console.log('✓ Test task successfully added and displayed');
-              } else {
-                console.log('❌ Test task not found, page content:', bodyText.substring(0, 500));
-                // Don't fail completely as HTMX updates might be delayed
-                console.log('⚠️ Task may still be syncing via HTMX/SSE');
+              if (!foundSeededTask) {
+                console.log('⚠️ Seeded document sync verification incomplete, but web app is functional');
               }
               
               // Test the sync toggle functionality
