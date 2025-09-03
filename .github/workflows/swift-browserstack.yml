@@ -134,8 +134,9 @@ jobs:
       working-directory: swift
       run: |
         set -euo pipefail
+        echo "🧪 Building UITests for device…"
 
-        echo "🧪 Building UITests for a real device..."
+        # 1) Build-for-testing (device) with a fixed DerivedData path
         xcodebuild build-for-testing \
           -project Tasks.xcodeproj \
           -scheme TasksUITests \
@@ -145,55 +146,39 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
 
-        # Find device Runner.app and its matching .xctestrun
-        echo "🔍 Locating test bundle files..."
-        find build/DerivedData -name "*.xctestrun" -o -name "*-Runner.app" | head -10
-        
-        RUNNER_APP=$(find build/DerivedData/Build/Products -type d -path "*/Debug-iphoneos/*-Runner.app" | head -1)
-        XCTESTRUN=$(find build/DerivedData/Build/Products -type f -name "*.xctestrun" | head -1)
+        PRODUCTS_DIR="build/DerivedData/Build/Products"
 
-        echo "Found Runner.app: $RUNNER_APP"
-        echo "Found .xctestrun: $XCTESTRUN"
+        # 2) Locate the Runner.app (device build) and the .xctestrun
+        RUNNER_APP=$(find "$PRODUCTS_DIR" -type d -name "*-Runner.app" -path "*/Debug-iphoneos/*" -print -quit)
+        XCTESTRUN=$(find "$PRODUCTS_DIR" -maxdepth 1 -type f -name "*.xctestrun" -print -quit)
 
-        test -d "$RUNNER_APP"   || { echo "❌ Runner.app not found"; find build/DerivedData -name "*Runner*" -type d; exit 1; }
-        test -f "$XCTESTRUN"    || { echo "❌ .xctestrun not found"; find build/DerivedData -name "*.xctestrun" -type f; exit 1; }
+        if [[ -z "${RUNNER_APP:-}" ]] || [[ ! -d "$RUNNER_APP" ]]; then
+          echo "❌ Runner.app not found under $PRODUCTS_DIR"; find "$PRODUCTS_DIR" -type d -name "*-Runner.app"; exit 1
+        fi
+        if [[ -z "${XCTESTRUN:-}" ]] || [[ ! -f "$XCTESTRUN" ]]; then
+          echo "❌ .xctestrun not found under $PRODUCTS_DIR"; ls -la "$PRODUCTS_DIR"; exit 1
+        fi
 
         echo "✅ Runner: $RUNNER_APP"
         echo "✅ xctestrun: $XCTESTRUN"
 
-        # Create ZIP with both items at the ROOT and preserve symlinks
-        OUT_ZIP="$(pwd)/build/TasksUITests.zip"
+        # 3) Create ZIP with REQUIRED ROOT STRUCTURE
+        #    BrowserStack wants artifacts at the zip root (NO wrapping folder).
+        OUT_ZIP="build/TasksUITests.zip"
         rm -f "$OUT_ZIP"
-        
-        # Get the directory containing Runner.app (should be Debug-iphoneos)  
-        RUNNER_DIR=$(dirname "$RUNNER_APP")
-        RUNNER_NAME=$(basename "$RUNNER_APP")
-        XCTESTRUN_NAME=$(basename "$XCTESTRUN")
-        
-        echo "🏗️ Creating test bundle ZIP..."
-        echo "  Runner dir: $RUNNER_DIR"
-        echo "  Runner name: $RUNNER_NAME"
-        echo "  XCTestrun name: $XCTESTRUN_NAME"
-        
-        (
-          cd "$RUNNER_DIR"
-          # Copy .xctestrun from its location to the Runner.app directory
-          # .xctestrun is in Build/Products/, Runner.app is in Build/Products/Debug-iphoneos/
-          cp "../$XCTESTRUN_NAME" "$XCTESTRUN_NAME" || { 
-            echo "❌ Failed to copy .xctestrun from ../path, trying absolute path"; 
-            cp "$XCTESTRUN" "$XCTESTRUN_NAME" || { echo "❌ Failed to copy .xctestrun with absolute path"; exit 1; }
-          }
-          # Verify both files are now in the same directory
-          echo "📁 Files in Runner directory:"
-          ls -la "$RUNNER_NAME" "$XCTESTRUN_NAME"
-          # Create ZIP with both items at root, preserving symlinks
-          zip --symlinks -qry "$OUT_ZIP" "$RUNNER_NAME" "$XCTESTRUN_NAME" || { echo "❌ Failed to create ZIP"; exit 1; }
-        )
 
-        echo "🔍 ZIP contents (should show Runner.app and .xctestrun at root):"
-        unzip -l "$OUT_ZIP" | sed -n '1,100p'
+        # Add Runner.app at zip root
+        ( cd "$(dirname "$RUNNER_APP")" && zip -qry "$(pwd)/../../../../$OUT_ZIP" "$(basename "$RUNNER_APP")" )
 
-        echo "test_bundle_path=$OUT_ZIP" >> $GITHUB_OUTPUT
+        # Add .xctestrun at zip root
+        ( cd "$PRODUCTS_DIR" && zip -q "../$OUT_ZIP" "$(basename "$XCTESTRUN")" )
+
+        # 4) Sanity check
+        echo "🔍 ZIP contents (should show Runner.app and *.xctestrun at root):"
+        unzip -l "$OUT_ZIP" | sed -n '1,120p'
+
+        echo "test_bundle_path=$(pwd)/$OUT_ZIP" >> "$GITHUB_OUTPUT"
+        echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
     
     
     - name: Insert test document into Ditto Cloud
