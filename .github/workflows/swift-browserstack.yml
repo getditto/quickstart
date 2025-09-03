@@ -177,8 +177,15 @@ jobs:
         
         (
           cd "$RUNNER_DIR"
-          # Copy .xctestrun to the same directory as Runner.app
-          cp "$XCTESTRUN" "$XCTESTRUN_NAME" || { echo "❌ Failed to copy .xctestrun"; exit 1; }
+          # Copy .xctestrun from its location to the Runner.app directory
+          # .xctestrun is in Build/Products/, Runner.app is in Build/Products/Debug-iphoneos/
+          cp "../$XCTESTRUN_NAME" "$XCTESTRUN_NAME" || { 
+            echo "❌ Failed to copy .xctestrun from ../path, trying absolute path"; 
+            cp "$XCTESTRUN" "$XCTESTRUN_NAME" || { echo "❌ Failed to copy .xctestrun with absolute path"; exit 1; }
+          }
+          # Verify both files are now in the same directory
+          echo "📁 Files in Runner directory:"
+          ls -la "$RUNNER_NAME" "$XCTESTRUN_NAME"
           # Create ZIP with both items at root, preserving symlinks
           zip --symlinks -qry "$OUT_ZIP" "$RUNNER_NAME" "$XCTESTRUN_NAME" || { echo "❌ Failed to create ZIP"; exit 1; }
         )
