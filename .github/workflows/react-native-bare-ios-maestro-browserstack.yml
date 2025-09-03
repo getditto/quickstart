@@ -99,10 +99,10 @@ jobs:
           # BrowserStack requires proper device .ipa files (Payload-style) for Maestro
           cd ios
           
-          # 1) Archive for device (unsigned)
+          # 1) Archive for device with Release configuration (bundles JS, no Metro dependency)
           xcodebuild -workspace DittoReactNativeSampleApp.xcworkspace \
             -scheme DittoReactNativeSampleApp \
-            -configuration Debug \
+            -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath build/DittoReactNativeSampleApp.xcarchive \
             clean archive \
