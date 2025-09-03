@@ -5,10 +5,13 @@ on:
     branches: [ main ]
     paths: 
       - 'android-kotlin/**'
+      - '.github/workflows/android-kotlin-ci.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'android-kotlin/**'
+      - '.github/workflows/android-kotlin-ci.yml'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,7 +43,7 @@ jobs:
         restore-keys: |
           gradle-${{ runner.os }}-
     
-    - name: Create .env file
+    - name: Create test .env file
       run: |
         echo "DITTO_APP_ID=test" > .env
         echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
@@ -51,8 +54,8 @@ jobs:
       working-directory: android-kotlin/QuickStartTasks
       run: ./gradlew lint
 
-  build-android:
-    name: Build Android (ubuntu-latest)
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 30
@@ -69,24 +72,274 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
     
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+    
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
-          android-kotlin/QuickStartTasks/.gradle
-        key: gradle-${{ runner.os }}-${{ hashFiles('android-kotlin/QuickStartTasks/gradle/wrapper/gradle-wrapper.properties', 'android-kotlin/QuickStartTasks/**/*.gradle*', 'android-kotlin/QuickStartTasks/gradle/libs.versions.toml') }}
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
-          gradle-${{ runner.os }}-
+          ${{ runner.os }}-gradle-
     
-    - name: Create .env file
-      run: |
-        echo "DITTO_APP_ID=test" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
-        echo "DITTO_AUTH_URL=test" >> .env
-        echo "DITTO_WEBSOCKET_URL=test" >> .env
-    
-    - name: Build Android
+    - name: Build APKs
       working-directory: android-kotlin/QuickStartTasks
-      run: ./gradlew build
+      env:
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+      run: ./gradlew assembleDebug assembleDebugAndroidTest
+    
+    - name: Run unit tests
+      working-directory: android-kotlin/QuickStartTasks
+      env:
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+      run: ./gradlew test
+    
+    - name: Upload APK artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apks-${{ github.run_number }}
+        path: |
+          android-kotlin/QuickStartTasks/app/build/outputs/apk/debug/app-debug.apk
+          android-kotlin/QuickStartTasks/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+        retention-days: 1
+    
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports-${{ github.run_number }}
+        path: android-kotlin/QuickStartTasks/app/build/reports/
+        retention-days: 1
+  
+  browserstack-test:
+    name: BrowserStack Device Testing
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Seed test document to Ditto Cloud
+      run: |
+        DOC_ID="github_test_android_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        echo "Creating test document with ID: ${DOC_ID}"
+        
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"GitHub Test Task Android ${GITHUB_RUN_ID}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | head -n-1)
+        
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Test document created: ${DOC_ID}"
+          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+        else
+          echo "❌ Document creation failed (HTTP $HTTP_CODE): $BODY"
+          exit 1
+        fi
+    
+    - name: Download APK artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: android-apks-${{ github.run_number }}
+        path: apks/
+    
+    - name: Upload APKs to BrowserStack
+      id: upload
+      run: |
+        CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+        
+        # Upload main APK
+        APP_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
+          -F "file=@apks/app-debug.apk" \
+          -F "custom_id=ditto-android-kotlin-app-${GITHUB_RUN_NUMBER}")
+        
+        APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
+        
+        if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+          echo "❌ Main APK upload failed: $APP_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
+        # Upload test APK
+        TEST_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
+          -F "file=@apks/app-debug-androidTest.apk" \
+          -F "custom_id=ditto-android-kotlin-test-${GITHUB_RUN_NUMBER}")
+        
+        TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
+        
+        if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+          echo "❌ Test APK upload failed: $TEST_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
+        echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+        echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
+        echo "✓ APKs uploaded successfully"
+    
+    - name: Execute tests on BrowserStack
+      id: test
+      run: |
+        BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"app\": \"${{ steps.upload.outputs.app_url }}\",
+            \"testSuite\": \"${{ steps.upload.outputs.test_url }}\",
+            \"devices\": [
+              \"Google Pixel 8-14.0\",
+              \"Samsung Galaxy S23-13.0\",
+              \"Google Pixel 6-12.0\"
+            ],
+            \"project\": \"Ditto Android Kotlin Integration\",
+            \"buildName\": \"Build #${{ github.run_number }} - CI Test\",
+            \"buildTag\": \"${{ github.ref_name }}\",
+            \"deviceLogs\": true,
+            \"video\": true,
+            \"networkLogs\": true,
+            \"autoGrantPermissions\": true,
+            \"testFilter\": {
+              \"class\": [\"live.ditto.quickstart.tasks.SimpleIntegrationTest\"]
+            },
+            \"env\": {
+              \"GITHUB_TEST_DOC_ID\": \"${{ env.GITHUB_TEST_DOC_ID }}\"
+            }
+          }")
+        
+        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "❌ Failed to create BrowserStack build"
+          echo "$BUILD_RESPONSE" | jq .
+          exit 1
+        fi
+        
+        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+        echo "✓ BrowserStack build started: $BUILD_ID"
+    
+    - name: Wait for BrowserStack tests
+      run: |
+        BUILD_ID="${{ steps.test.outputs.build_id }}"
+        MAX_WAIT_TIME=900
+        CHECK_INTERVAL=30
+        ELAPSED=0
+        
+        echo "⏳ Waiting for tests to complete (max ${MAX_WAIT_TIME}s)..."
+        
+        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+          
+          BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
+          
+          if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
+            echo "⚠️ Error getting build status, retrying..."
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+            continue
+          fi
+          
+          echo "📱 Build status: $BUILD_STATUS (${ELAPSED}s elapsed)"
+          
+          if [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "done" ]; then
+            echo "✅ Build completed with status: $BUILD_STATUS"
+            break
+          fi
+          
+          sleep $CHECK_INTERVAL
+          ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+        done
+        
+        if [ $ELAPSED -ge $MAX_WAIT_TIME ]; then
+          echo "⏰ Tests timed out after ${MAX_WAIT_TIME} seconds"
+          exit 1
+        fi
+        
+        # Get final results and check status
+        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+        
+        BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+        if [ "$BUILD_STATUS" != "passed" ]; then
+          echo "❌ Tests failed with status: $BUILD_STATUS"
+          echo "$FINAL_RESULT" | jq -r '.devices[]? | select(.sessions[]?.status != "passed") | "❌ Failed on: " + .device'
+          exit 1
+        else
+          echo "🎉 All BrowserStack tests passed!"
+        fi
+    
+    - name: Generate BrowserStack report
+      if: always()
+      run: |
+        BUILD_ID="${{ steps.test.outputs.build_id }}"
+        
+        echo "# 📱 BrowserStack Test Report" > browserstack-report.md
+        echo "" >> browserstack-report.md
+        echo "**GitHub Run:** [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> browserstack-report.md
+        echo "**Test Document:** \`${{ env.GITHUB_TEST_DOC_ID }}\`" >> browserstack-report.md
+        
+        if [ "$BUILD_ID" != "null" ] && [ -n "$BUILD_ID" ]; then
+          echo "**BrowserStack Build:** [$BUILD_ID](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> browserstack-report.md
+          
+          RESULTS=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+          
+          echo "" >> browserstack-report.md
+          echo "## 📱 Device Results" >> browserstack-report.md
+          echo "$RESULTS" | jq -r '.devices[]? | "- **" + .device + ":** " + (.sessions[]?.status // "unknown")' >> browserstack-report.md
+        fi
+    
+    - name: Upload BrowserStack artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: browserstack-report-${{ github.run_number }}
+        path: browserstack-report.md
+        retention-days: 7
+    
+    - name: Comment PR with BrowserStack results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let reportContent = '# 📱 BrowserStack Test Report\n\n❌ Failed to generate report.';
+          try {
+            reportContent = fs.readFileSync('browserstack-report.md', 'utf8');
+          } catch (error) {
+            console.log('Could not read report file:', error.message);
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: reportContent
+          });
