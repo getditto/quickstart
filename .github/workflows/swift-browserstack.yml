@@ -134,49 +134,47 @@ jobs:
       working-directory: swift
       run: |
         set -euo pipefail
-        echo "🧪 Building UITests for device…"
 
-        # We are already in `swift/` via working-directory
-        DERIVED="build/DerivedData"
-        PRODUCTS_DIR="$DERIVED/Build/Products"
-        OUT_DIR="$(pwd)/build"
-        OUT_ZIP="$OUT_DIR/TasksUITests.zip"
-
-        # 1) Build-for-testing for real device
+        echo "🧪 build-for-testing (device)…"
         xcodebuild build-for-testing \
           -project Tasks.xcodeproj \
           -scheme TasksUITests \
           -configuration Debug \
           -destination 'generic/platform=iOS' \
-          -derivedDataPath "$DERIVED" \
+          -derivedDataPath build/DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
 
-        # 2) Locate Runner.app produced for device
-        RUNNER_APP="$(find "$PRODUCTS_DIR" -type d -name "*-Runner.app" -path "*/Debug-iphoneos/*" -print -quit)"
+        PRODUCTS_DIR="build/DerivedData/Build/Products"
 
-        if [[ -z "${RUNNER_APP:-}" || ! -d "$RUNNER_APP" ]]; then
-          echo "❌ Runner.app not found under $PRODUCTS_DIR"
-          find "$PRODUCTS_DIR" -type d -name "*-Runner.app" -path "*/Debug-iphoneos/*" || true
-          exit 1
-        fi
-        echo "✅ Runner: $RUNNER_APP"
+        echo "🔎 locating Runner.app and .xctestrun…"
+        RUNNER_APP=$(find "$PRODUCTS_DIR/Debug-iphoneos" -type d -name "*-Runner.app" -print -quit)
+        XCTESTRUN=$(find "$PRODUCTS_DIR" -maxdepth 1 -type f -name "*.xctestrun" -print -quit)
 
-        # 3) Zip ONLY the Runner.app at the ROOT of the zip (per BrowserStack docs)
+        test -d "${RUNNER_APP:-}" || { echo "❌ Runner.app not found"; find "$PRODUCTS_DIR" -name "*-Runner.app"; exit 1; }
+        test -f "${XCTESTRUN:-}" || { echo "❌ .xctestrun not found"; ls -la "$PRODUCTS_DIR"; exit 1; }
+
+        echo "✅ Runner:    $RUNNER_APP"
+        echo "✅ xctestrun: $XCTESTRUN"
+
+        # --- Stage at repo-root/build/bs_xcuitest_root and zip from there ---
+        OUT_DIR="$PWD/../build"                 # repo-root/build
+        STAGE="$OUT_DIR/bs_xcuitest_root"       # staging dir (will be wiped)
+        OUT_ZIP="$OUT_DIR/TasksUITests.zip"     # final zip path (absolute)
+
+        rm -rf "$STAGE" && mkdir -p "$STAGE"
         mkdir -p "$OUT_DIR"
-        rm -f "$OUT_ZIP"
-        (
-          cd "$(dirname "$RUNNER_APP")"
-          # --symlinks recommended by BrowserStack docs
-          zip --symlinks -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")"
-        )
+        cp -R "$RUNNER_APP" "$STAGE/"
+        cp "$XCTESTRUN" "$STAGE/"
 
-        # 4) Sanity check
-        echo "🔍 ZIP contents (Runner.app must be at root):"
+        echo "📦 zipping (Runner.app + .xctestrun at ZIP root)…"
+        ( cd "$STAGE" && zip -qry "$OUT_ZIP" . )
+
+        echo "🔍 zip contents:"
         unzip -l "$OUT_ZIP" | sed -n '1,120p'
 
         echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
-        echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
+        echo "✅ test-suite ready: $OUT_ZIP"
     
     
     - name: Insert test document into Ditto Cloud
