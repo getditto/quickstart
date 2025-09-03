@@ -1,21 +1,21 @@
 package com.example.dittotasks
 
-import androidx.test.ext.junit.rules.ActivityScenarioRule
+import android.content.Intent
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.containsString
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Before
 import androidx.test.espresso.action.ViewActions.*
 import androidx.test.espresso.IdlingRegistry
-import androidx.test.espresso.IdlingResource
 import androidx.test.espresso.idling.CountingIdlingResource
 import org.junit.After
+import org.junit.Assert.assertEquals
 
 /**
  * UI tests for the Ditto Tasks application using Espresso framework.
@@ -24,32 +24,43 @@ import org.junit.After
 @RunWith(AndroidJUnit4::class)
 class TasksUITest {
     
-    @get:Rule
-    val activityScenarioRule = ActivityScenarioRule(MainActivity::class.java)
-    
-    // Idling resource to wait for async operations
+    // Idling resource to wait for async operations  
     private val idlingResource = CountingIdlingResource("TaskSync")
+    private lateinit var mainActivity: MainActivity
     
     @Before
     fun setUp() {
-        // Ensure activity is fully launched before proceeding
-        activityScenarioRule.scenario.onActivity { activity ->
-            // Activity is now ready
-        }
         IdlingRegistry.getInstance().register(idlingResource)
-        // Wait for UI to settle and app to initialize
-        Thread.sleep(5000) // Increased wait time for Ditto initialization
+        
+        // Launch activity manually with proper intent and longer timeout
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val intent = Intent(instrumentation.targetContext, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        
+        // Use try-catch to handle the activity launch timeout more gracefully
+        try {
+            mainActivity = instrumentation.startActivitySync(intent) as MainActivity
+            // Wait for UI to settle and Ditto to initialize
+            Thread.sleep(10000) // Extended wait for Ditto SDK initialization
+        } catch (e: RuntimeException) {
+            println("❌ Activity launch timed out, likely due to Ditto initialization: ${e.message}")
+            throw e
+        }
     }
     
     @After
     fun tearDown() {
         IdlingRegistry.getInstance().unregister(idlingResource)
+        if (::mainActivity.isInitialized) {
+            mainActivity.finish()
+        }
     }
     
     @Test
     fun testAppLaunchesSuccessfully() {
-        // Wait a bit more for activity to fully initialize
-        Thread.sleep(2000)
+        // Activity should already be launched by setUp()
+        println("✓ Activity launched successfully: ${mainActivity.javaClass.simpleName}")
         
         try {
             // Verify the main elements are displayed
@@ -71,6 +82,7 @@ class TasksUITest {
             
         } catch (e: Exception) {
             println("❌ Test failed: ${e.message}")
+            e.printStackTrace()
             throw e
         }
     }
@@ -147,6 +159,14 @@ class TasksUITest {
             println("⚠ Add task flow test failed: ${e.message}")
             // Don't fail the test since the main sync test is more important
         }
+    }
+    
+    @Test 
+    fun testBasicAppContext() {
+        // Simple test that verifies app context without UI interaction
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        assertEquals("com.example.dittotasks", context.packageName)
+        println("✓ App context verified: ${context.packageName}")
     }
     
     @Test
