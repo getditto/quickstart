@@ -113,35 +113,74 @@ def test_ditto_app():
                 if found_any_test_doc:
                     print("✅ Document sync appears to be working (found test docs from previous runs)")
                 else:
-                    print("⚠️  Document sync verification inconclusive - continuing with basic UI tests")
+                    print("⚠️  No test documents found - this could indicate sync issues or API problems")
+                    
+                # Report on sync verification results
+                print(f"🔍 Sync verification summary:")
+                print(f"   - Expected: {expected_test_doc_pattern}")
+                print(f"   - Found current: {'✅ Yes' if found_sync_document else '❌ No'}")  
+                print(f"   - Found previous: {'✅ Yes' if found_any_test_doc else '❌ No'}")
+                print(f"   - Total texts: {len(static_texts)}")
+                
+                # If we can see tasks on the screen, sync is working at some level
+                has_tasks = any('Task' in text_element.text for text_element in static_texts 
+                               if hasattr(text_element, 'text') and text_element.text)
+                print(f"   - Has tasks visible: {'✅ Yes' if has_tasks else '❌ No'}")
             
         except Exception as e:
             print(f"⚠️  Document sync verification failed: {e}")
             print("⚠️  Continuing with basic UI interaction test...")
         
-        # Test 3: Basic UI interaction
-        print("🧪 Test 3: Testing basic UI interaction...")
+        # Test 3: Add new task and verify it appears
+        print("🧪 Test 3: Testing task creation and real-time sync...")
+        new_task_text = f"BrowserStack Test {github_run_number} - {int(time.time())}"
+        
         try:
             # Look for text fields (task input)  
             text_fields = driver.find_elements('class name', 'XCUIElementTypeTextField')
             if text_fields:
                 print(f"✅ Found {len(text_fields)} text field(s)")
                 text_fields[0].click()
-                text_fields[0].send_keys("BrowserStack Appium Test Task")
-                print("✅ Successfully entered text in task field")
-            
-            # Look for buttons
-            buttons = driver.find_elements('class name', 'XCUIElementTypeButton')
-            if buttons:
-                print(f"✅ Found {len(buttons)} button(s)")
-                # Try clicking the first available button
+                text_fields[0].clear()
+                text_fields[0].send_keys(new_task_text)
+                print(f"✅ Entered new task: {new_task_text}")
+                
+                # Try to submit the task
+                buttons = driver.find_elements('class name', 'XCUIElementTypeButton')
+                submitted = False
                 for button in buttons:
-                    if button.is_enabled():
-                        button.click()
-                        print("✅ Successfully clicked button")
-                        break
+                    try:
+                        if button.is_enabled() and button.text in ['Add', '+', 'New Task', '']:
+                            button.click()
+                            print("✅ Submitted new task")
+                            submitted = True
+                            break
+                    except:
+                        continue
+                
+                if submitted:
+                    time.sleep(3)  # Wait for task to appear
+                    # Verify the task appears in the list
+                    updated_texts = driver.find_elements('class name', 'XCUIElementTypeStaticText')
+                    task_found = False
+                    for text_element in updated_texts:
+                        try:
+                            if text_element.text and new_task_text in text_element.text:
+                                print(f"✅ New task appeared in UI: {text_element.text}")
+                                task_found = True
+                                break
+                        except:
+                            continue
+                    
+                    if not task_found:
+                        print(f"⚠️  New task '{new_task_text}' not found in updated UI")
+                else:
+                    print("⚠️  Could not find submit button for new task")
+            else:
+                print("⚠️  No text fields found for task input")
+                
         except Exception as e:
-            print(f"⚠️  UI interaction test completed with note: {e}")
+            print(f"⚠️  Task creation test completed with note: {e}")
             # Don't fail the test for UI variations
         
         # Test 4: App stability test
