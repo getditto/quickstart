@@ -35,41 +35,83 @@ class TasksUITest {
     }
     
     private fun dismissPermissionDialogsIfPresent() {
-        // Wait a moment for permissions dialog to appear
-        device.waitForIdle(2000)
+        // Wait for dialog to appear
+        device.waitForIdle(3000)
         
-        // Try to find and dismiss common permission dialog buttons
-        val permissionButtons = listOf(
-            "Allow", "ALLOW", "Allow all the time", "Allow only while using the app",
-            "While using the app", "Grant", "OK", "Accept", "Continue"
-        )
-        
-        for (buttonText in permissionButtons) {
-            val button = device.findObject(UiSelector().text(buttonText).clickable(true))
-            if (button.exists()) {
-                println("Found permission button: $buttonText")
-                button.click()
-                device.waitForIdle(1000)
-                break
+        // More aggressive approach - try multiple rounds of dismissal
+        repeat(3) { attempt ->
+            println("Dialog dismissal attempt ${attempt + 1}")
+            
+            // Location permission dialog buttons (from screenshot)
+            val locationButtons = listOf(
+                "WHILE USING THE APP",
+                "ONLY THIS TIME", 
+                "Allow only while using the app",
+                "While using the app"
+            )
+            
+            // Try location-specific buttons first
+            for (buttonText in locationButtons) {
+                val button = device.findObject(UiSelector().text(buttonText).clickable(true))
+                if (button.exists()) {
+                    println("Found location permission button: $buttonText")
+                    button.click()
+                    device.waitForIdle(2000)
+                    return // Exit after successful click
+                }
             }
+            
+            // General permission buttons
+            val permissionButtons = listOf(
+                "Allow", "ALLOW", "Allow all the time",
+                "Grant", "OK", "Accept", "Continue", "YES"
+            )
+            
+            for (buttonText in permissionButtons) {
+                val button = device.findObject(UiSelector().text(buttonText).clickable(true))
+                if (button.exists()) {
+                    println("Found permission button: $buttonText")
+                    button.click()
+                    device.waitForIdle(2000)
+                    return // Exit after successful click
+                }
+            }
+            
+            // Try resource IDs
+            val resourceIds = listOf(
+                "com.android.permissioncontroller:id/permission_allow_button",
+                "com.android.permissioncontroller:id/permission_allow_foreground_only_button",
+                "com.android.packageinstaller:id/permission_allow_button",
+                "android:id/button1",
+                "android:id/button2"
+            )
+            
+            for (resourceId in resourceIds) {
+                val button = device.findObject(UiSelector().resourceId(resourceId))
+                if (button.exists()) {
+                    println("Found permission button by resource ID: $resourceId")
+                    button.click()
+                    device.waitForIdle(2000)
+                    return // Exit after successful click
+                }
+            }
+            
+            // Try tapping common dialog positions as fallback
+            if (attempt == 2) { // Last attempt
+                try {
+                    // Tap where "WHILE USING THE APP" typically appears
+                    device.click(device.displayWidth / 2, device.displayHeight * 2 / 3)
+                    device.waitForIdle(1000)
+                    println("Attempted tap dismiss at common dialog position")
+                } catch (e: Exception) {
+                    println("Tap dismiss failed: ${e.message}")
+                }
+            }
+            
+            device.waitForIdle(1000)
         }
         
-        // Also try to find buttons by resource ID patterns
-        val resourceIds = listOf(
-            "com.android.permissioncontroller:id/permission_allow_button",
-            "com.android.packageinstaller:id/permission_allow_button",
-            "android:id/button1"
-        )
-        
-        for (resourceId in resourceIds) {
-            val button = device.findObject(UiSelector().resourceId(resourceId))
-            if (button.exists()) {
-                println("Found permission button by resource ID: $resourceId")
-                button.click()
-                device.waitForIdle(1000)
-                break
-            }
-        }
+        println("Dialog dismissal attempts completed")
     }
     
     @Test
