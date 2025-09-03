@@ -154,7 +154,7 @@ jobs:
           # Create ZIP for BrowserStack (they expect ZIP format for test bundles)
           TEST_DIR=$(dirname "$TEST_BUNDLE_PATH")
           (cd "$TEST_DIR" && zip -r ../TasksUITests.zip .)
-          TEST_ZIP_PATH="$TEST_DIR/../TasksUITests.zip"
+          TEST_ZIP_PATH="$(pwd)/$TEST_DIR/../TasksUITests.zip"
           
           echo "test_bundle_path=$TEST_ZIP_PATH" >> $GITHUB_OUTPUT
           echo "✅ XCUITest bundle packaged: $TEST_ZIP_PATH"
