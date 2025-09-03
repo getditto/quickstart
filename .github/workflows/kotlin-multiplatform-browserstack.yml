@@ -33,13 +33,12 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
     
     # Create .env file with HTTP API compatible credentials to ensure sync works
-    - name: Create .env file with HTTP API environment for sync consistency
+    - name: Create .env file
       run: |
-        echo "🔧 Creating .env with HTTP API compatible credentials for sync consistency"
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_API_KEY }}" >> .env
-        echo "DITTO_AUTH_URL=https://${{ secrets.DITTO_API_URL }}" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://${{ secrets.DITTO_API_URL }}" >> .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
         echo "✅ Mobile app will use same Ditto environment as HTTP API for sync verification"
     
     - name: Insert test document into Ditto Cloud
@@ -206,13 +205,12 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
     
     # Create .env file with HTTP API compatible credentials to ensure sync works
-    - name: Create .env file with HTTP API environment for sync consistency
+    - name: Create .env file
       run: |
-        echo "🔧 Creating .env with HTTP API compatible credentials for sync consistency"
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_API_KEY }}" >> .env
-        echo "DITTO_AUTH_URL=https://${{ secrets.DITTO_API_URL }}" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://${{ secrets.DITTO_API_URL }}" >> .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
         echo "✅ Mobile app will use same Ditto environment as HTTP API for sync verification"
     
     - name: Insert test document into Ditto Cloud
