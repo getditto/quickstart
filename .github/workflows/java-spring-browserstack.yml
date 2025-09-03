@@ -109,30 +109,22 @@ jobs:
 
       - name: Start BrowserStack Local tunnel
         run: |
-          # Start BrowserStack Local tunnel in background
-          nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --force-local --verbose 3 &
-          BROWSERSTACK_LOCAL_PID=$!
-          echo "BROWSERSTACK_LOCAL_PID=$BROWSERSTACK_LOCAL_PID" >> $GITHUB_ENV
+          # Start BrowserStack Local tunnel as daemon (following JS reference implementation)
+          echo "Starting BrowserStack Local tunnel..."
+          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon start
           
-          # Wait for tunnel to establish (increase wait time)
+          # Wait for tunnel to establish
           echo "Waiting for BrowserStack Local tunnel to connect..."
-          sleep 20
+          sleep 15
           
-          # Verify tunnel connection with retries
-          for i in {1..10}; do
-            if curl -s --connect-timeout 5 http://bs-local.com:45691/check > /dev/null; then
-              echo "✓ BrowserStack Local tunnel established"
-              break
-            elif [ $i -eq 10 ]; then
-              echo "❌ Failed to establish BrowserStack Local tunnel"
-              # Show any potential error logs
-              ps aux | grep BrowserStackLocal || true
-              exit 1
-            else
-              echo "Waiting for tunnel... (attempt $i/10)"
-              sleep 5
-            fi
-          done
+          # Check tunnel status
+          echo "Verifying tunnel connection..."
+          if ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --status; then
+            echo "✓ BrowserStack Local tunnel is running"
+          else
+            echo "❌ BrowserStack Local tunnel status check failed"
+            exit 1
+          fi
 
       - name: Execute BrowserStack Web Tests
         id: test
@@ -291,14 +283,9 @@ jobs:
       - name: Stop BrowserStack Local tunnel
         if: always()
         run: |
-          if [ ! -z "$BROWSERSTACK_LOCAL_PID" ]; then
-            echo "Stopping BrowserStack Local tunnel (PID: $BROWSERSTACK_LOCAL_PID)"
-            kill $BROWSERSTACK_LOCAL_PID || true
-            sleep 2
-          else
-            echo "No BrowserStack Local PID found, attempting alternative cleanup..."
-            pkill -f BrowserStackLocal || true
-          fi
+          echo "Stopping BrowserStack Local tunnel..."
+          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
+          sleep 2
 
       - name: Generate test report
         if: always()
