@@ -133,46 +133,34 @@ jobs:
       id: build_test_bundle
       working-directory: swift
       run: |
+        set -euo pipefail
         echo "🧪 Building XCUITest bundle for BrowserStack..."
         
-        # Build test bundle for real device
+        # Build the UI tests for device so Runner.app is created
         xcodebuild build-for-testing \
           -project Tasks.xcodeproj \
-          -scheme Tasks \
+          -scheme TasksUITests \
           -configuration Debug \
           -destination 'generic/platform=iOS' \
           -derivedDataPath build/DerivedData \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
-        
-        # Debug: See what actually gets built
-        echo "🔍 Investigating what gets built..."
-        find build/DerivedData -name "*.app" -type d | head -10
-        find build/DerivedData -name "*Test*" -type d | head -10
-        find build/DerivedData -name "*.xctestrun" -type f | head -5
-        
-        # Try to find any test-related files
-        TEST_BUNDLE_PATH=$(find build/DerivedData -name "*.xctestrun" | head -1)
-        if [ -f "$TEST_BUNDLE_PATH" ]; then
-          echo "✅ Found test bundle: $TEST_BUNDLE_PATH"
-          
-          # Create ZIP for BrowserStack (simpler approach)
-          TEST_DIR=$(dirname "$TEST_BUNDLE_PATH")
-          (cd "$TEST_DIR" && zip -r ../TasksTests.zip .)
-          TEST_ZIP_PATH="$(pwd)/$TEST_DIR/../TasksTests.zip"
-          
-          echo "test_bundle_path=$TEST_ZIP_PATH" >> $GITHUB_OUTPUT
-          echo "✅ Test bundle ZIP created: $TEST_ZIP_PATH"
-          ls -la "$TEST_ZIP_PATH"
-        else
-          echo "❌ No test bundles found - skipping BrowserStack testing"
-          echo "This might be expected if the project doesn't have UI test targets"
-          
-          # Set empty test bundle path so upload step can handle it gracefully
-          echo "test_bundle_path=" >> $GITHUB_OUTPUT
-          exit 0
+
+        RUNNER_DIR=$(find build/DerivedData/Build/Products/Debug-iphoneos -maxdepth 1 -name "*UITests-Runner.app" -type d | head -1)
+        if [ -z "$RUNNER_DIR" ]; then
+          echo "❌ XCUITest Runner app not found"
+          echo "🔍 Debug: Available apps in Debug-iphoneos:"
+          find build/DerivedData/Build/Products/Debug-iphoneos -name "*.app" -type d 2>/dev/null || echo "No .app directories found"
+          exit 1
         fi
+
+        ( cd "$(dirname "$RUNNER_DIR")" && zip -qry ../../../../TasksUITests.zip "$(basename "$RUNNER_DIR")" )
+        TEST_ZIP_PATH="$(pwd)/build/TasksUITests.zip"
+
+        echo "test_bundle_path=$TEST_ZIP_PATH" >> $GITHUB_OUTPUT
+        echo "✅ XCUITest bundle ZIP created: $TEST_ZIP_PATH"
+        ls -la "$TEST_ZIP_PATH"
     
     
     - name: Insert test document into Ditto Cloud
