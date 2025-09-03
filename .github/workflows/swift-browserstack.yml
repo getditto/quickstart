@@ -137,16 +137,15 @@ jobs:
         if [ -d "$XCTEST_BUNDLE_PATH" ]; then
           echo "✅ Found XCUITest bundle: $XCTEST_BUNDLE_PATH"
           
-          # Create XCUITest .ipa for BrowserStack (they need it zipped like Android APK)
-          mkdir -p build/TestPayload
-          cp -R "$XCTEST_BUNDLE_PATH" build/TestPayload/
-          (cd build && zip -qry TasksUITests.ipa TestPayload && rm -rf TestPayload)
+          # Create ZIP of test bundle (NOT IPA - BrowserStack expects ZIP for test suite)
+          XCTEST_DIR="$XCTEST_BUNDLE_PATH"
+          (cd "$(dirname "$XCTEST_DIR")" && zip -qry "$GITHUB_WORKSPACE/swift/build/TasksUITests.zip" "$(basename "$XCTEST_DIR")")
           
-          if [ -f "build/TasksUITests.ipa" ]; then
-            echo "✅ XCUITest bundle packaged: $(pwd)/build/TasksUITests.ipa"
-            echo "test_bundle_ipa=$(pwd)/build/TasksUITests.ipa" >> $GITHUB_OUTPUT
+          if [ -f "build/TasksUITests.zip" ]; then
+            echo "✅ XCUITest bundle packaged: $(pwd)/build/TasksUITests.zip"
+            echo "test_bundle_zip=$(pwd)/build/TasksUITests.zip" >> $GITHUB_OUTPUT
           else
-            echo "❌ Failed to create XCUITest bundle package"
+            echo "❌ Failed to create XCUITest bundle ZIP"
             exit 1
           fi
         else
@@ -161,7 +160,7 @@ jobs:
         echo "📤 Uploading app and XCUITest bundle to BrowserStack (like Kotlin uploads app + test APKs)..."
         
         APP_IPA="${{ steps.build_ios.outputs.ipa_file_path }}"
-        TEST_IPA="${{ steps.build_test.outputs.test_bundle_ipa }}"
+        TEST_ZIP="${{ steps.build_test.outputs.test_bundle_zip }}"
         CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         
         # 1. Upload AUT (app .ipa) - following Kotlin pattern
@@ -180,11 +179,11 @@ jobs:
           exit 1
         fi
         
-        # 2. Upload XCUITest bundle (test suite) - following Kotlin pattern  
-        echo "🧪 Uploading XCUITest bundle..."
+        # 2. Upload XCUITest bundle (test suite) - ZIP format as BrowserStack expects
+        echo "🧪 Uploading XCUITest bundle ZIP..."
         TEST_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "$CREDS" \
           -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
-          -F "file=@$TEST_IPA" \
+          -F "file=@$TEST_ZIP" \
           -F "custom_id=ditto-swift-tests")
         
         echo "Test upload response: $TEST_UPLOAD_RESPONSE"
