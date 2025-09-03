@@ -93,73 +93,41 @@ def test_ditto_cloud_sync(driver, device_name):
     # Enable Ditto sync toggle (critical for KMP apps)
     print("🔄 Activating Ditto sync toggle on iOS...")
     try:
-        # Look for sync toggle switch - KMP uses XCUIElementTypeSwitch in TopBar
-        sync_toggle_selectors = [
-            # Primary: XCUITest Switch component (most likely) 
-            "//XCUIElementTypeSwitch",
-            
-            # Secondary: Look for 'Sync' text then find nearby switch
-            "//*[contains(@name, 'Sync')]/following-sibling::XCUIElementTypeSwitch",
-            "//*[contains(@name, 'Sync')]/preceding-sibling::XCUIElementTypeSwitch",
-            "//*[contains(@label, 'Sync')]/../*[@type='XCUIElementTypeSwitch']",
-            
-            # Fallback: Label/name based and other toggle types
-            "//*[contains(@name, 'Sync')]",
-            "//*[contains(@label, 'Sync')]", 
-            "//*[contains(@name, 'sync')]",
-            "//*[contains(@label, 'sync')]",
-            "//XCUIElementTypeToggle"
-        ]
+        # Simple approach: find ALL switches and click any that are OFF
+        switches = driver.find_elements(AppiumBy.XPATH, "//XCUIElementTypeSwitch")
+        print(f"📱 Found {len(switches)} switches on screen")
         
-        toggle_found = False
-        print(f"🔍 Testing {len(sync_toggle_selectors)} sync toggle selectors...")
-        
-        for i, selector in enumerate(sync_toggle_selectors, 1):
+        toggle_activated = False
+        for i, switch in enumerate(switches):
             try:
-                print(f"  {i:2d}. Trying: {selector}")
-                toggle_elements = driver.find_elements(AppiumBy.XPATH, selector)
-                print(f"      Found {len(toggle_elements)} elements")
+                value = switch.get_attribute("value")
+                print(f"  Switch {i+1}: value={value}")
                 
-                for j, toggle in enumerate(toggle_elements):
-                    try:
-                        # Check if toggle is OFF (needs to be turned ON) 
-                        value = toggle.get_attribute("value")
-                        element_name = toggle.get_attribute("name") or "[no name]"
-                        print(f"      Element {j+1}: value='{value}', name='{element_name}'")
-                        
-                        if value == "0":
-                            print(f"📍 Found OFF sync toggle, activating...")
-                            toggle.click()
-                            time.sleep(2)
-                            # Verify toggle state changed
-                            new_state = toggle.get_attribute("value")
-                            print(f"✅ Sync toggle activated! New state: {new_state}")
-                            toggle_found = True
-                            break
-                        elif value == "1":
-                            print("✅ Sync toggle already ON")
-                            toggle_found = True
-                            break
-                    except Exception as e:
-                        print(f"      Element {j+1} error: {str(e)}")
-                        continue
-                        
-                if toggle_found:
-                    break
+                if value == "0":
+                    print(f"📍 Clicking switch {i+1} (OFF -> ON)")
+                    switch.click()
+                    time.sleep(1)
+                    new_state = switch.get_attribute("value")
+                    print(f"✅ Switch {i+1} now: {new_state}")
+                    toggle_activated = True
                     
             except Exception as e:
-                print(f"      Selector failed: {str(e)}")
+                print(f"  Switch {i+1} error: {str(e)}")
                 continue
         
-        if not toggle_found:
-            print("⚠️ Could not find sync toggle - continuing anyway...")
+        if toggle_activated:
+            print("✅ Sync toggle activated successfully!")
+        elif len(switches) == 0:
+            print("⚠️ No switches found on screen")
+        else:
+            print("⚠️ All switches already ON or unable to toggle")
             
     except Exception as e:
-        print(f"⚠️ Sync toggle activation failed: {str(e)} - continuing...")
+        print(f"⚠️ Sync toggle activation failed: {str(e)}")
     
-    # Wait for Ditto to initialize on iOS
-    print("🔄 Allowing time for Ditto SDK initialization on iOS...")
-    time.sleep(15)  # Give iOS Ditto more time to initialize
+    # Wait for Ditto to initialize after toggle activation
+    print("🔄 Allowing time for Ditto SDK initialization and sync startup on iOS...")
+    time.sleep(20)  # Give more time for iOS sync to start after toggle
     
     # Test for Ditto Cloud document sync
     github_doc_id = os.environ.get('GITHUB_TEST_DOC_ID')
