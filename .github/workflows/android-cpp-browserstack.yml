@@ -133,7 +133,7 @@ jobs:
                 \"Google Pixel 6-12.0\",
                 \"OnePlus 9-11.0\"
               ],
-              \"projectName\": \"Ditto Quickstart - Android C++\",
+              \"project\": \"Ditto Quickstart - Android C++\",
               \"buildName\": \"Build #${{ github.run_number }}\",
               \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,

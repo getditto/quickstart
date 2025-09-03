@@ -77,9 +77,12 @@ jobs:
       - name: Start Spring Boot Application
         working-directory: java-spring
         run: |
-          # Start the Spring Boot application in background
+          # Start the Spring Boot application in background with proper binding
           echo "Starting Spring Boot application..."
-          nohup java -jar build/libs/spring-quickstart-java-0.0.1-SNAPSHOT.jar --server.port=8080 --spring.profiles.active=ci-test > application.log 2>&1 &
+          nohup java -jar build/libs/spring-quickstart-java-0.0.1-SNAPSHOT.jar \
+            --server.port=8080 \
+            --server.address=0.0.0.0 \
+            --spring.profiles.active=ci-test > application.log 2>&1 &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
           
@@ -109,15 +112,44 @@ jobs:
 
       - name: Start BrowserStack Local tunnel
         run: |
-          # Start BrowserStack Local tunnel as daemon (following JS reference implementation)
+          # Start BrowserStack Local tunnel with proper logging and force-local
           echo "Starting BrowserStack Local tunnel..."
-          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon start
+          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --force-local > bsl.log 2>&1 &
+          BSL_PID=$!
+          echo "BSL_PID=$BSL_PID" >> $GITHUB_ENV
           
-          # Wait for tunnel to establish
+          # Wait for tunnel to be fully established by checking logs
           echo "Waiting for BrowserStack Local tunnel to connect..."
-          sleep 15
+          MAX_WAIT=120  # 2 minutes max wait
+          ELAPSED=0
           
-          echo "✓ BrowserStack Local tunnel started successfully"
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if grep -q "You can now access your local server(s)" bsl.log 2>/dev/null; then
+              echo "✓ BrowserStack Local tunnel is ready!"
+              break
+            elif grep -q "Press Ctrl-C to exit" bsl.log 2>/dev/null; then
+              echo "✓ BrowserStack Local tunnel established (alternative success pattern)"
+              break
+            elif ! kill -0 $BSL_PID 2>/dev/null; then
+              echo "❌ BrowserStack Local process died unexpectedly"
+              cat bsl.log
+              exit 1
+            else
+              echo "Tunnel connecting... (elapsed: ${ELAPSED}s)"
+              sleep 5
+              ELAPSED=$((ELAPSED + 5))
+            fi
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "❌ Tunnel failed to establish within $MAX_WAIT seconds"
+            echo "=== BrowserStack Local Log ==="
+            cat bsl.log
+            exit 1
+          fi
+          
+          echo "=== BrowserStack Local Status ==="
+          cat bsl.log
 
       - name: Execute BrowserStack Web Tests
         id: test
@@ -277,8 +309,17 @@ jobs:
         if: always()
         run: |
           echo "Stopping BrowserStack Local tunnel..."
+          if [ ! -z "$BSL_PID" ]; then
+            echo "Killing BrowserStack Local process (PID: $BSL_PID)"
+            kill $BSL_PID || true
+            sleep 2
+          fi
+          
+          # Also try daemon stop as fallback
           ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
-          sleep 2
+          
+          echo "=== Final BrowserStack Local Log ==="
+          cat bsl.log || true
 
       - name: Generate test report
         if: always()

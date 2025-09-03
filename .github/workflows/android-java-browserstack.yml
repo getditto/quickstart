@@ -130,7 +130,7 @@ jobs:
                 \"OnePlus 9-11.0\",
                 \"Samsung Galaxy S22-12.0\"
               ],
-              \"projectName\": \"Ditto Quickstart - Android Java\",
+              \"project\": \"Ditto Quickstart - Android Java\",
               \"buildName\": \"Build #${{ github.run_number }}\",
               \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,
@@ -155,11 +155,20 @@ jobs:
           echo "BrowserStack API Response:"
           echo "$BUILD_RESPONSE"
           
+          # Enhanced error checking
+          if ! echo "$BUILD_RESPONSE" | jq . > /dev/null 2>&1; then
+            echo "Error: Invalid JSON response from BrowserStack API"
+            echo "Raw response: $BUILD_RESPONSE"
+            exit 1
+          fi
+          
           BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
           
           if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
             echo "Error: Failed to create BrowserStack build"
-            echo "Response: $BUILD_RESPONSE"
+            MESSAGE=$(echo "$BUILD_RESPONSE" | jq -r .message // "Unknown error")
+            echo "Error message: $MESSAGE"
+            echo "Full response: $BUILD_RESPONSE"
             exit 1
           fi
           
