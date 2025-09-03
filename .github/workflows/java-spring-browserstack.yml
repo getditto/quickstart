@@ -138,7 +138,7 @@ jobs:
             'os': 'Windows',
             'osVersion': '10',
             'resolution': '1920x1080',
-            'project': 'Ditto Java Spring',
+            'project': 'Ditto Quickstart - Java Spring Web',
             'build': 'Build #' + process.env.GITHUB_RUN_NUMBER,
             'name': 'Java Spring Integration Test',
             'browserstack.debug': true,
