@@ -64,7 +64,7 @@ jobs:
               \"args\": {
                 \"newTask\": {
                   \"_id\": \"${DOC_ID}\",
-                  \"title\": \"GitHub Expo iOS Test Task ${GITHUB_RUN_ID}\",
+                  \"title\": \"GitHub Expo Test Task ${GITHUB_RUN_ID}\",
                   \"done\": false,
                   \"deleted\": false
                 }
