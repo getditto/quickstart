@@ -140,12 +140,12 @@ jobs:
         # Clean build to avoid any cached issues 
         xcodebuild clean \
           -project Tasks.xcodeproj \
-          -scheme TasksUITests
+          -scheme Tasks
           
-        # Use the TasksUITests scheme which exists and builds both app and test targets
+        # Use the Tasks scheme which properly builds both app and TasksUITests targets
         xcodebuild build-for-testing \
           -project Tasks.xcodeproj \
-          -scheme TasksUITests \
+          -scheme Tasks \
           -configuration Debug \
           -destination 'generic/platform=iOS' \
           CODE_SIGNING_ALLOWED=NO \
