@@ -179,7 +179,7 @@ tasks.register("runIntegrationTest", Exec::class) {
     commandLine = listOf(
         "./gradlew", 
         "connectedDebugAndroidTest",
-        "-Pandroid.testInstrumentationRunnerArguments.class=live.ditto.quickstart.tasks.TasksSyncIntegrationTest"
+        "-Pandroid.testInstrumentationRunnerArguments.class=live.ditto.quickstart.tasks.SimpleIntegrationTest"
     )
     
     doFirst {
