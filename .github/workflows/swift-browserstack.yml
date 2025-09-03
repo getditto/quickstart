@@ -148,12 +148,33 @@ jobs:
         echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
         echo "✅ iOS .ipa uploaded successfully: $APP_URL"
     
-    - name: Execute iOS App on BrowserStack Real Devices
+    - name: Setup Python for BrowserStack Tests
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install BrowserStack Test Dependencies
+      working-directory: swift/BrowserStackTests
+      run: |
+        echo "📦 Installing Python dependencies for automated testing..."
+        pip install -r requirements.txt
+        echo "✅ Dependencies installed: Appium, Selenium"
+    
+    - name: Execute Automated Tests on BrowserStack Real Devices
       id: test
+      working-directory: swift/BrowserStackTests
+      env:
+        BROWSERSTACK_APP_URL: ${{ steps.upload.outputs.app_url }}
+        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
       run: |
         APP_URL="${{ steps.upload.outputs.app_url }}"
         
-        echo "🚀 Starting BrowserStack tests on real iOS devices..."
+        echo "🚀 Running automated Ditto sync tests on real iOS devices..."
         echo "App URL: $APP_URL"
         
         # Validate app upload was successful
@@ -162,29 +183,30 @@ jobs:
           exit 1
         fi
         
-        # Validate that the app was successfully uploaded to BrowserStack
-        APP_INFO_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          "https://api-cloud.browserstack.com/app-automate/recent_apps")
+        echo "🧪 Starting comprehensive Ditto Swift testing suite..."
+        echo "📱 Testing devices: iPhone 15 Pro, iPhone 14"
+        echo "🔄 Tests: App Launch, Ditto Init, Task Operations, Stability"
         
-        echo "BrowserStack app info response:"
-        echo "$APP_INFO_RESPONSE"
+        # Run the automated test suite
+        python3 ditto_sync_test.py
         
-        # Validate BrowserStack API response - fail if we get HTML or errors
-        if echo "$APP_INFO_RESPONSE" | grep -q "<html>"; then
-          echo "❌ BrowserStack API returned HTML error (likely 404 or auth failure)"
-          echo "Response: $APP_INFO_RESPONSE"
-          exit 1
-        elif echo "$APP_INFO_RESPONSE" | grep -q "error"; then
-          echo "❌ BrowserStack API returned error"
-          echo "Response: $APP_INFO_RESPONSE"
-          exit 1
-        elif echo "$APP_INFO_RESPONSE" | grep -q "app_url"; then
-          echo "✅ BrowserStack iOS app successfully uploaded and verified"
-          echo "✅ App ready for real device testing on: iPhone 15 Pro, iPhone 14, iPhone 13, iPad Pro"
-          echo "🔗 App can be tested manually at BrowserStack dashboard"
+        # Check if test results file was created
+        if [ -f "browserstack_test_results.json" ]; then
+          echo "📊 Test results summary:"
+          cat browserstack_test_results.json | jq '.[] | {device: .device, success: .success, tests: .results.passed + .results.failed}'
+          
+          # Check if any tests failed
+          FAILED_TESTS=$(cat browserstack_test_results.json | jq '.[] | select(.success == false) | .device')
+          if [ -n "$FAILED_TESTS" ]; then
+            echo "❌ Some devices failed testing:"
+            echo "$FAILED_TESTS"
+            exit 1
+          else
+            echo "✅ All BrowserStack real device tests passed!"
+            echo "🎯 Swift iOS app successfully tested Ditto sync functionality"
+          fi
         else
-          echo "❌ Unexpected BrowserStack API response"
-          echo "Response: $APP_INFO_RESPONSE"
+          echo "❌ Test results file not found - tests may have failed to run"
           exit 1
         fi
 
@@ -197,25 +219,31 @@ jobs:
     steps:
     - name: Report BrowserStack Test Results
       run: |
-        echo "## 📱 BrowserStack Real Device Testing Results - Swift iOS"
+        echo "## 📱 BrowserStack Automated Testing Results - Swift iOS"
         echo ""
-        echo "### iOS Testing"
+        echo "### Automated Ditto Sync Testing"
         echo "Status: ${{ needs.ios-browserstack.result }}"
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
-          echo "✅ Swift iOS app successfully tested on BrowserStack real devices:"
-          echo "   - iPhone 15 Pro (iOS 17)"
-          echo "   - iPhone 14 (iOS 16)"  
-          echo "   - iPhone 13 (iOS 15)"
-          echo "   - iPad Pro (iOS 17)"
+          echo "✅ Swift iOS app successfully passed automated Ditto testing on BrowserStack real devices:"
+          echo "   - iPhone 15 Pro (iOS 17) - App Launch, Ditto Init, Task Ops, Stability"
+          echo "   - iPhone 14 (iOS 16) - App Launch, Ditto Init, Task Ops, Stability"
+          echo ""
+          echo "🧪 Automated tests verified:"
+          echo "   ✓ App launches without crashes"
+          echo "   ✓ Ditto SDK initializes correctly"
+          echo "   ✓ Task CRUD operations function"
+          echo "   ✓ App remains stable during extended use"
+          echo "   ✓ Real device functionality confirmed"
         else
-          echo "❌ Swift iOS BrowserStack testing failed"
+          echo "❌ Swift iOS automated BrowserStack testing failed"
         fi
         
         echo ""
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
-          echo "🎉 Swift iOS BrowserStack testing completed successfully!"
-          echo "🔗 Check BrowserStack dashboard for detailed test results and videos"
+          echo "🎉 Swift iOS automated BrowserStack testing completed successfully!"
+          echo "🤖 Real device testing validated Ditto sync functionality"
+          echo "🔗 Check BrowserStack dashboard for session recordings and detailed logs"
         else
-          echo "⚠️ Swift iOS BrowserStack tests encountered issues"
+          echo "⚠️ Swift iOS automated BrowserStack tests encountered issues"
           exit 1
         fi
