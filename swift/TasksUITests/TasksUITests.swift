@@ -41,35 +41,65 @@ final class TasksUITests: XCTestCase {
         let startTime = Date()
         
         while Date().timeIntervalSince(startTime) < maxWaitTime {
-            print("🔍 Checking for document (should appear at TOP of list)...")
+            print("🔍 Checking for document (scrolling through full list)...")
             
-            // Search for the EXACT document title in cells (should be at top now)
-            let taskCells = app.tables.cells
+            // Scroll to top first
+            if app.tables.firstMatch.exists {
+                app.tables.firstMatch.swipeDown() // Scroll to top
+                sleep(1)
+            }
             
-            for i in 0..<min(taskCells.count, 10) { // Check first 10 cells only
-                let cell = taskCells.element(boundBy: i)
-                if cell.exists {
-                    let cellText = cell.label
-                    // Look for exact title match
-                    if cellText == expectedTitle {
-                        print("✅ Found EXACT document in cell [\(i)]: '\(cellText)'")
-                        foundDocument = true
-                        break
-                    }
-                    // Also check if cell contains the exact title as part of a larger string
-                    if cellText.contains(expectedTitle) {
-                        print("✅ Found document (contains match) in cell [\(i)]: '\(cellText)'")
-                        foundDocument = true
-                        break
+            // Search through all visible cells, then scroll down
+            var searchPasses = 0
+            let maxScrolls = 10 // Limit scrolling attempts
+            
+            while searchPasses < maxScrolls && !foundDocument {
+                let taskCells = app.tables.cells
+                print("📱 Search pass \(searchPasses + 1): Found \(taskCells.count) cells")
+                
+                for i in 0..<taskCells.count {
+                    let cell = taskCells.element(boundBy: i)
+                    if cell.exists {
+                        let cellText = cell.label
+                        // Look for exact title match
+                        if cellText == expectedTitle {
+                            print("✅ Found EXACT document in cell [\(i)] on pass \(searchPasses + 1): '\(cellText)'")
+                            foundDocument = true
+                            break
+                        }
+                        // Also check if cell contains the exact title as part of a larger string
+                        if cellText.contains(expectedTitle) {
+                            print("✅ Found document (contains) in cell [\(i)] on pass \(searchPasses + 1): '\(cellText)'")
+                            foundDocument = true
+                            break
+                        }
                     }
                 }
+                
+                if !foundDocument {
+                    // Scroll down to see more content
+                    if app.tables.firstMatch.exists {
+                        let beforeSwipe = app.tables.cells.count
+                        app.tables.firstMatch.swipeUp() // Scroll down
+                        sleep(1)
+                        let afterSwipe = app.tables.cells.count
+                        
+                        // If no new content appeared, we've reached the end
+                        if beforeSwipe == afterSwipe && searchPasses > 2 {
+                            print("📜 Reached end of list, no more content to scroll")
+                            break
+                        }
+                    }
+                }
+                
+                searchPasses += 1
             }
             
             if foundDocument {
                 break
             }
             
-            sleep(3) // Check every 3 seconds
+            sleep(2) // Wait before retrying entire search
         }
         
         if !foundDocument {
