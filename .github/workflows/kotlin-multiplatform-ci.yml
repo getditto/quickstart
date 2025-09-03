@@ -34,10 +34,10 @@ jobs:
     
     - name: Create .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
     - name: Run linting
       working-directory: kotlin-multiplatform
@@ -66,10 +66,10 @@ jobs:
     
     - name: Create .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
     - name: Build Android
       working-directory: kotlin-multiplatform
@@ -100,10 +100,10 @@ jobs:
     
     - name: Create .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
     - name: Build iOS Framework
       working-directory: kotlin-multiplatform
@@ -136,10 +136,10 @@ jobs:
     
     - name: Create .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
     - name: Build Desktop
       working-directory: kotlin-multiplatform
@@ -166,10 +166,10 @@ jobs:
     
     - name: Create .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
     - name: Run integration test
       working-directory: kotlin-multiplatform

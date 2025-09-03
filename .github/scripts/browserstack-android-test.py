@@ -127,44 +127,12 @@ def test_ditto_cloud_sync(driver, device_name):
         print(f"❌ Android app launch verification failed: {str(e)}")
         return False
     
-    # Enable Ditto sync toggle (critical for KMP apps)
-    print("🔄 Activating Ditto sync toggle...")
-    try:
-        # Simple approach: find ALL switches and click any that are OFF
-        switches = driver.find_elements(AppiumBy.XPATH, "//android.widget.Switch")
-        print(f"📱 Found {len(switches)} switches on screen")
-        
-        toggle_activated = False
-        for i, switch in enumerate(switches):
-            try:
-                is_checked = switch.get_attribute("checked")
-                print(f"  Switch {i+1}: checked={is_checked}")
-                
-                if is_checked == "false":
-                    print(f"📍 Clicking switch {i+1} (OFF -> ON)")
-                    switch.click()
-                    time.sleep(1)
-                    new_state = switch.get_attribute("checked") 
-                    print(f"✅ Switch {i+1} now: {new_state}")
-                    toggle_activated = True
-                    
-            except Exception as e:
-                print(f"  Switch {i+1} error: {str(e)}")
-                continue
-        
-        if toggle_activated:
-            print("✅ Sync toggle activated successfully!")
-        elif len(switches) == 0:
-            print("⚠️ No switches found on screen")
-        else:
-            print("⚠️ All switches already ON or unable to toggle")
-            
-    except Exception as e:
-        print(f"⚠️ Sync toggle activation failed: {str(e)}")
+    # Sync is now enabled by default in KMP app - no toggle needed!
+    print("✅ Sync is enabled by default in KMP app - ready for testing!")
     
-    # Wait for Ditto to initialize after toggle activation
+    # Wait for Ditto to initialize (sync starts automatically)
     print("🔄 Allowing time for Ditto SDK initialization and sync startup...")
-    time.sleep(15)  # Give more time for sync to start after toggle
+    time.sleep(15)  # Give time for sync to start
     
     # Test for Ditto Cloud document sync
     github_doc_id = os.environ.get('GITHUB_TEST_DOC_ID')
