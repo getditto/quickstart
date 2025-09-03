@@ -33,7 +33,7 @@ class TasksUITest {
             
             // Look for the seeded task document (inserted via ditto-test-document-insert action)
             // This verifies that the HTTP API seeded document syncs with the mobile app
-            val seedTaskText = "github_android-cpp_"
+            val seedTaskText = "github_android-kotlin_"
             
             composeTestRule.waitUntil(timeoutMillis = 10000) {
                 // Look for any text content that might contain our seeded document
