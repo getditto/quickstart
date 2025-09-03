@@ -72,7 +72,48 @@ def test_ditto_cloud_sync(driver, device_name):
     
     # Wait for app to launch and initialize
     print("⏳ Waiting for Android app to initialize...")
-    time.sleep(15)  # Give app time to start
+    time.sleep(10)  # Give app time to start
+    
+    # Handle permissions dialog first (critical!)
+    print("🔐 Handling permissions dialog...")
+    try:
+        # Look for permission dialog buttons - common Android patterns
+        permission_buttons = [
+            "//*[contains(@text, 'Allow')]",
+            "//*[contains(@text, 'ALLOW')]", 
+            "//*[contains(@text, 'Grant')]",
+            "//*[contains(@text, 'OK')]",
+            "//*[contains(@text, 'Accept')]",
+            "//*[contains(@text, 'Permit')]",
+            "//android.widget.Button[contains(@text, 'Allow')]",
+            "//android.widget.Button[@resource-id='com.android.permissioncontroller:id/permission_allow_button']"
+        ]
+        
+        permission_handled = False
+        for button_xpath in permission_buttons:
+            try:
+                permission_buttons_found = driver.find_elements(AppiumBy.XPATH, button_xpath)
+                if permission_buttons_found:
+                    print(f"📍 Found {len(permission_buttons_found)} permission buttons with: {button_xpath}")
+                    for btn in permission_buttons_found:
+                        btn.click()
+                        time.sleep(1)
+                        print("✅ Clicked permission button")
+                        permission_handled = True
+                    break
+            except:
+                continue
+                
+        if permission_handled:
+            print("✅ Permissions handled, waiting for UI to settle...")
+            time.sleep(3)
+        else:
+            print("ℹ️ No permission dialogs found (already granted or not needed)")
+            
+    except Exception as e:
+        print(f"⚠️ Permission handling failed: {str(e)} - continuing...")
+    
+    time.sleep(5)  # Additional time for app to fully load after permissions
     
     # Check if app launched successfully
     try:

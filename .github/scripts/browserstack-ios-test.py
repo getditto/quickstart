@@ -76,7 +76,47 @@ def test_ditto_cloud_sync(driver, device_name):
     
     # Wait for iOS app to launch and initialize
     print("⏳ Waiting for iOS app to initialize...")
-    time.sleep(20)  # iOS apps may take longer to start
+    time.sleep(10)  # Give iOS app time to start
+    
+    # Handle permissions dialog first (critical!)
+    print("🔐 Handling iOS permissions dialog...")
+    try:
+        # Look for iOS permission dialog buttons
+        permission_buttons = [
+            "//*[contains(@name, 'Allow')]",
+            "//*[contains(@label, 'Allow')]",
+            "//*[contains(@name, 'OK')]", 
+            "//*[contains(@label, 'OK')]",
+            "//XCUIElementTypeButton[contains(@name, 'Allow')]",
+            "//XCUIElementTypeButton[contains(@label, 'Allow')]",
+            "//XCUIElementTypeButton[contains(@name, 'OK')]"
+        ]
+        
+        permission_handled = False
+        for button_xpath in permission_buttons:
+            try:
+                permission_buttons_found = driver.find_elements(AppiumBy.XPATH, button_xpath)
+                if permission_buttons_found:
+                    print(f"📍 Found {len(permission_buttons_found)} permission buttons with: {button_xpath}")
+                    for btn in permission_buttons_found:
+                        btn.click()
+                        time.sleep(1)
+                        print("✅ Clicked iOS permission button")
+                        permission_handled = True
+                    break
+            except:
+                continue
+                
+        if permission_handled:
+            print("✅ iOS permissions handled, waiting for UI to settle...")
+            time.sleep(3)
+        else:
+            print("ℹ️ No iOS permission dialogs found (already granted or not needed)")
+            
+    except Exception as e:
+        print(f"⚠️ iOS permission handling failed: {str(e)} - continuing...")
+    
+    time.sleep(10)  # Additional time for app to fully load after permissions
     
     # Check if app launched successfully
     try:
