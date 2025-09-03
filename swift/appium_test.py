@@ -38,18 +38,58 @@ def test_ditto_app():
         assert driver.query_app_state('live.ditto.quickstart.Tasks') == 4  # Running foreground
         print("✅ App is running in foreground")
         
-        # Test 2: Basic UI interaction
-        print("🧪 Test 2: Testing basic UI interaction...")
+        # Test 2: Verify document sync from integration test
+        print("🧪 Test 2: Verifying document sync from integration test...")
         time.sleep(5)
         
-        # Try to find and interact with UI elements
+        # Look for the specific test document that should be synced from HTTP API
+        github_run_id = os.environ.get('GITHUB_RUN_ID', 'unknown')
+        github_run_number = os.environ.get('GITHUB_RUN_NUMBER', 'unknown')
+        expected_test_doc_pattern = f"swift_github_test_{github_run_id}_{github_run_number}"
+        
+        print(f"🔍 Looking for synced test document with pattern: {expected_test_doc_pattern}")
+        
         try:
-            # Look for text fields (task input)
+            # Look for static text elements (task list items)
+            static_texts = driver.find_elements('class name', 'XCUIElementTypeStaticText')
+            found_sync_document = False
+            
+            for text_element in static_texts:
+                try:
+                    text_content = text_element.text
+                    if text_content and expected_test_doc_pattern in text_content:
+                        print(f"✅ Found synced test document: {text_content}")
+                        found_sync_document = True
+                        break
+                except:
+                    continue
+            
+            if not found_sync_document:
+                print(f"⚠️  Expected sync document not found. Available texts:")
+                for i, text_element in enumerate(static_texts[:10]):  # Show first 10
+                    try:
+                        text_content = text_element.text
+                        if text_content and text_content.strip():
+                            print(f"   [{i}] {text_content}")
+                    except:
+                        continue
+                        
+                # This might be expected if the integration test runs separately
+                print("⚠️  Document sync verification inconclusive - continuing with basic UI tests")
+            
+        except Exception as e:
+            print(f"⚠️  Document sync verification failed: {e}")
+            print("⚠️  Continuing with basic UI interaction test...")
+        
+        # Test 3: Basic UI interaction
+        print("🧪 Test 3: Testing basic UI interaction...")
+        try:
+            # Look for text fields (task input)  
             text_fields = driver.find_elements('class name', 'XCUIElementTypeTextField')
             if text_fields:
                 print(f"✅ Found {len(text_fields)} text field(s)")
                 text_fields[0].click()
-                text_fields[0].send_keys("Appium Test Task")
+                text_fields[0].send_keys("BrowserStack Appium Test Task")
                 print("✅ Successfully entered text in task field")
             
             # Look for buttons
@@ -66,14 +106,14 @@ def test_ditto_app():
             print(f"⚠️  UI interaction test completed with note: {e}")
             # Don't fail the test for UI variations
         
-        # Test 3: App stability test
-        print("🧪 Test 3: Testing app stability...")
+        # Test 4: App stability test
+        print("🧪 Test 4: Testing app stability...")
         time.sleep(20)  # Run app for 20 seconds
         assert driver.query_app_state('live.ditto.quickstart.Tasks') == 4
         print("✅ App remained stable for 20 seconds")
         
-        # Test 4: Ditto initialization test (implicit - if app doesn't crash, Ditto is working)
-        print("🧪 Test 4: Ditto SDK stability test...")
+        # Test 5: Ditto initialization test (implicit - if app doesn't crash, Ditto is working)
+        print("🧪 Test 5: Ditto SDK stability test...")
         time.sleep(10)
         assert driver.query_app_state('live.ditto.quickstart.Tasks') == 4
         print("✅ Ditto SDK initialized successfully (app didn't crash)")

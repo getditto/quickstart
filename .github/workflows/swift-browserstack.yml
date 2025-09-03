@@ -126,6 +126,19 @@ jobs:
         pip install -r requirements.txt
         echo "✅ Appium dependencies installed"
     
+    - name: Run Integration Test to Insert Test Document
+      working-directory: swift
+      run: |
+        echo "🧪 Running integration test to insert document for BrowserStack verification..."
+        
+        xcodebuild test \
+          -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
+          -testPlan DittoIntegrationTests
+        
+        echo "✅ Integration test completed - test document should be in Ditto cloud"
+    
     - name: Upload App to BrowserStack
       id: upload
       run: |
@@ -159,6 +172,7 @@ jobs:
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_APP_URL: ${{ steps.upload.outputs.app_url }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
       run: |
         echo "🚀 Running Appium tests on BrowserStack real devices..."
         
