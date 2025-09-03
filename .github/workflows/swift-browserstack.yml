@@ -187,8 +187,8 @@ jobs:
     
     - name: Insert test document into Ditto Cloud
       run: |
-        # Use GitHub run ID to create deterministic document ID (like JavaScript workflow)
-        DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        # Use GitHub run ID to create deterministic document ID that sorts FIRST
+        DOC_ID="000_github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         
         echo "📝 Inserting test document with ID: ${DOC_ID}"
         

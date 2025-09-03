@@ -25,10 +25,10 @@ final class TasksUITests: XCTestCase {
         print("⏳ Waiting for initial sync...")
         sleep(5)
         
-        // Look for GitHub test document using exact same env vars as workflow
+        // Look for GitHub test document using exact same env vars as workflow  
         let githubRunId = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
         let githubRunNumber = ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
-        let expectedDocId = "github_test_\(githubRunId)_\(githubRunNumber)"
+        let expectedDocId = "000_github_test_\(githubRunId)_\(githubRunNumber)"
         let expectedTitle = "GitHub Test Task \(githubRunId)"
         
         print("🔍 Looking for EXACT document:")
@@ -41,28 +41,24 @@ final class TasksUITests: XCTestCase {
         let startTime = Date()
         
         while Date().timeIntervalSince(startTime) < maxWaitTime {
-            // Scroll up to ensure we see all content  
-            if app.tables.firstMatch.exists {
-                app.tables.firstMatch.swipeDown() // Scroll to top
-                sleep(1)
-            }
+            print("🔍 Checking for document (should appear at TOP of list)...")
             
-            // Search for the EXACT document title in cells
+            // Search for the EXACT document title in cells (should be at top now)
             let taskCells = app.tables.cells
             
-            for i in 0..<taskCells.count {
+            for i in 0..<min(taskCells.count, 10) { // Check first 10 cells only
                 let cell = taskCells.element(boundBy: i)
                 if cell.exists {
                     let cellText = cell.label
                     // Look for exact title match
                     if cellText == expectedTitle {
-                        print("✅ Found EXACT document in cell: '\(cellText)'")
+                        print("✅ Found EXACT document in cell [\(i)]: '\(cellText)'")
                         foundDocument = true
                         break
                     }
                     // Also check if cell contains the exact title as part of a larger string
                     if cellText.contains(expectedTitle) {
-                        print("✅ Found document (partial match) in cell: '\(cellText)'")
+                        print("✅ Found document (contains match) in cell [\(i)]: '\(cellText)'")
                         foundDocument = true
                         break
                     }
@@ -73,31 +69,7 @@ final class TasksUITests: XCTestCase {
                 break
             }
             
-            // Also check static text elements for exact title
-            let staticTexts = app.staticTexts
-            for i in 0..<staticTexts.count {
-                let text = staticTexts.element(boundBy: i)
-                if text.exists {
-                    let textContent = text.label
-                    if textContent == expectedTitle || textContent.contains(expectedTitle) {
-                        print("✅ Found EXACT document in text: '\(textContent)'")
-                        foundDocument = true
-                        break
-                    }
-                }
-            }
-            
-            if foundDocument {
-                break
-            }
-            
-            // Scroll down to check for more content
-            if app.tables.firstMatch.exists {
-                app.tables.firstMatch.swipeUp() // Scroll down to see more
-                sleep(1)
-            }
-            
-            sleep(2) // Check every 2 seconds
+            sleep(3) // Check every 3 seconds
         }
         
         if !foundDocument {
