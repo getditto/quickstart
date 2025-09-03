@@ -25,16 +25,20 @@ final class TasksUITests: XCTestCase {
         print("⏳ Waiting for initial sync...")
         sleep(5)
         
-        // Look for GitHub test document (like JavaScript test does)
+        // Look for GitHub test document using exact same env vars as workflow
         let githubRunId = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
-        print("🔍 Looking for GitHub Test Task with run ID: \(githubRunId)")
+        let githubRunNumber = ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
+        let expectedDocId = "github_test_\(githubRunId)_\(githubRunNumber)"
+        let expectedTitle = "GitHub Test Task \(githubRunId)"
+        
+        print("🔍 Looking for EXACT document:")
+        print("   - Document ID: '\(expectedDocId)'")  
+        print("   - Title: '\(expectedTitle)'")
         
         // Wait for the seeded document to appear (like JavaScript wait_for_sync_document)
         var foundDocument = false
         let maxWaitTime = 30.0
         let startTime = Date()
-        
-        print("🔍 Looking for document with run ID: '\(githubRunId)' and title containing 'GitHub Test Task'")
         
         while Date().timeIntervalSince(startTime) < maxWaitTime {
             // Scroll up to ensure we see all content  
@@ -43,24 +47,24 @@ final class TasksUITests: XCTestCase {
                 sleep(1)
             }
             
-            // First pass: Look for any content with the run ID (more flexible)
-            var runIdFound = false
+            // Search for the EXACT document title in cells
             let taskCells = app.tables.cells
             
-            // Search through all visible cells
             for i in 0..<taskCells.count {
                 let cell = taskCells.element(boundBy: i)
                 if cell.exists {
                     let cellText = cell.label
-                    if cellText.contains(githubRunId) {
-                        print("🎯 Found run ID '\(githubRunId)' in cell: '\(cellText)'")
-                        runIdFound = true
-                        // Check if it's also our test task
-                        if cellText.contains("GitHub Test Task") {
-                            print("✅ Found complete synced document: \(cellText)")
-                            foundDocument = true
-                            break
-                        }
+                    // Look for exact title match
+                    if cellText == expectedTitle {
+                        print("✅ Found EXACT document in cell: '\(cellText)'")
+                        foundDocument = true
+                        break
+                    }
+                    // Also check if cell contains the exact title as part of a larger string
+                    if cellText.contains(expectedTitle) {
+                        print("✅ Found document (partial match) in cell: '\(cellText)'")
+                        foundDocument = true
+                        break
                     }
                 }
             }
@@ -69,20 +73,16 @@ final class TasksUITests: XCTestCase {
                 break
             }
             
-            // Also check static text elements for run ID
+            // Also check static text elements for exact title
             let staticTexts = app.staticTexts
             for i in 0..<staticTexts.count {
                 let text = staticTexts.element(boundBy: i)
                 if text.exists {
                     let textContent = text.label
-                    if textContent.contains(githubRunId) {
-                        print("🎯 Found run ID '\(githubRunId)' in text: '\(textContent)'")
-                        runIdFound = true
-                        if textContent.contains("GitHub Test Task") {
-                            print("✅ Found complete synced document in text: \(textContent)")
-                            foundDocument = true
-                            break
-                        }
+                    if textContent == expectedTitle || textContent.contains(expectedTitle) {
+                        print("✅ Found EXACT document in text: '\(textContent)'")
+                        foundDocument = true
+                        break
                     }
                 }
             }
@@ -97,67 +97,43 @@ final class TasksUITests: XCTestCase {
                 sleep(1)
             }
             
-            // If we found the run ID but not complete document, log it
-            if runIdFound {
-                print("📝 Found run ID but incomplete document - continuing to wait...")
-            }
-            
             sleep(2) // Check every 2 seconds
         }
         
         if !foundDocument {
-            print("❌ GitHub test document not found after \(maxWaitTime) seconds")
-            print("🔍 Expected to find:")
-            print("   - Run ID: '\(githubRunId)'")
-            print("   - Title: 'GitHub Test Task \(githubRunId)'")
-            print("   - Document ID: 'github_test_\(githubRunId)_*'")
+            print("❌ EXACT test document not found after \(maxWaitTime) seconds")
+            print("🔍 Expected EXACT document:")
+            print("   - Document ID: '\(expectedDocId)'")
+            print("   - Title: '\(expectedTitle)'")
+            print("   - GitHub Run ID: '\(githubRunId)'")  
+            print("   - GitHub Run Number: '\(githubRunNumber)'")
             
-            // Debug: show what we do have with more detail
-            print("📱 Available UI elements (first 10):")
+            // Debug: show what we do have
+            print("📱 Available task cells:")
             let allCells = app.tables.cells
-            for i in 0..<min(allCells.count, 10) {
+            for i in 0..<min(allCells.count, 15) {
                 let cell = allCells.element(boundBy: i)
                 if cell.exists && !cell.label.isEmpty {
                     let cellText = cell.label
-                    let hasRunId = cellText.contains(githubRunId)
-                    let hasGithub = cellText.lowercased().contains("github")
-                    let hasTest = cellText.lowercased().contains("test")
-                    print("   Cell [\(i)]: '\(cellText)' [runId:\(hasRunId), github:\(hasGithub), test:\(hasTest)]")
+                    let exactMatch = cellText == expectedTitle
+                    let containsTitle = cellText.contains(expectedTitle) 
+                    print("   Cell [\(i)]: '\(cellText)' [exact:\(exactMatch), contains:\(containsTitle)]")
                 }
             }
             
-            print("📝 Available static texts (first 15):")
+            print("📝 Available static texts:")
             let allTexts = app.staticTexts
-            for i in 0..<min(allTexts.count, 15) {
+            for i in 0..<min(allTexts.count, 10) {
                 let text = allTexts.element(boundBy: i)
                 if text.exists && !text.label.isEmpty && text.label.count > 2 {
                     let textContent = text.label
-                    let hasRunId = textContent.contains(githubRunId)
-                    let hasGithub = textContent.lowercased().contains("github")
-                    print("   Text [\(i)]: '\(textContent)' [runId:\(hasRunId), github:\(hasGithub)]")
+                    let exactMatch = textContent == expectedTitle
+                    let containsTitle = textContent.contains(expectedTitle)
+                    print("   Text [\(i)]: '\(textContent)' [exact:\(exactMatch), contains:\(containsTitle)]")
                 }
             }
             
-            // Also check for any text containing partial matches
-            print("🔎 Searching for partial matches...")
-            let searchTerms = [githubRunId, "GitHub", "Test", "github_test"]
-            for term in searchTerms {
-                var matchCount = 0
-                for i in 0..<allCells.count {
-                    let cell = allCells.element(boundBy: i)
-                    if cell.exists && cell.label.lowercased().contains(term.lowercased()) {
-                        matchCount += 1
-                        if matchCount <= 3 { // Show first 3 matches
-                            print("   Found '\(term)' in cell: '\(cell.label)'")
-                        }
-                    }
-                }
-                if matchCount > 0 {
-                    print("   Total cells matching '\(term)': \(matchCount)")
-                }
-            }
-            
-            XCTFail("Failed to sync test document from Ditto Cloud")
+            XCTFail("Failed to sync EXACT test document '\(expectedTitle)' from Ditto Cloud")
         }
         
         XCTAssertTrue(foundDocument, "GitHub test document should be synced from Ditto Cloud")
