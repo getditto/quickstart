@@ -25,6 +25,14 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
+    - name: Install SwiftLint
+      run: |
+        if ! command -v swiftlint &> /dev/null; then
+          echo "Installing SwiftLint..."
+          brew install swiftlint
+        fi
+        swiftlint version
+    
     - name: Create .env file
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
@@ -37,6 +45,12 @@ jobs:
       run: |
         chmod +x buildEnv.sh
         ./buildEnv.sh ../.env Tasks/
+    
+    - name: Run SwiftLint
+      working-directory: swift
+      run: |
+        echo "🔍 Running SwiftLint analysis..."
+        swiftlint lint --config .swiftlint.yml
     
     - name: Build iOS App for BrowserStack
       id: build_ios
@@ -115,29 +129,55 @@ jobs:
           exit 1
         fi
     
-    - name: Setup Python for Appium Tests
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install Appium Test Dependencies
+    - name: Build XCUITest Bundle for BrowserStack
+      id: build_test_bundle
       working-directory: swift
       run: |
-        pip install -r requirements.txt
-        echo "✅ Appium dependencies installed"
+        echo "🧪 Building XCUITest bundle for BrowserStack..."
+        
+        # Build test bundle for real device
+        xcodebuild build-for-testing \
+          -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -derivedDataPath build/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+        
+        # Find and package the test bundle
+        TEST_BUNDLE_PATH=$(find build/DerivedData -name "*.xctestrun" | head -1)
+        if [ -f "$TEST_BUNDLE_PATH" ]; then
+          echo "✅ Found XCUITest bundle: $TEST_BUNDLE_PATH"
+          
+          # Create ZIP for BrowserStack (they expect ZIP format for test bundles)
+          TEST_DIR=$(dirname "$TEST_BUNDLE_PATH")
+          (cd "$TEST_DIR" && zip -r ../TasksUITests.zip .)
+          TEST_ZIP_PATH="$TEST_DIR/../TasksUITests.zip"
+          
+          echo "test_bundle_path=$TEST_ZIP_PATH" >> $GITHUB_OUTPUT
+          echo "✅ XCUITest bundle packaged: $TEST_ZIP_PATH"
+          ls -la "$TEST_ZIP_PATH"
+        else
+          echo "❌ XCUITest bundle not found"
+          find build -name "*.xctestrun" -type f || echo "No .xctestrun files found"
+          exit 1
+        fi
     
     - name: Seed Test Document via Ditto API
+      id: seed_document
       run: |
-        echo "🌱 Seeding test document for BrowserStack verification..."
+        echo "🌱 Seeding test document for BrowserStack XCUITest verification..."
         
         # Create unique test task for this run
         TEST_TASK_TEXT="Test Task from BrowserStack #${{ github.run_number }}"
-        TEST_TASK_ID="browserstack_test_${{ github.run_number }}_$(date +%s)"
+        TEST_TASK_ID="browserstack_xcuitest_${{ github.run_number }}_$(date +%s)"
         
         echo "📝 Seeding task: $TEST_TASK_TEXT"
         echo "🆔 Task ID: $TEST_TASK_ID"
         
-        # Simple HTTP POST to Ditto (try different endpoints until one works)
+        # Simple HTTP POST to Ditto cloud
         for endpoint in "documents" "store/documents" "api/documents" "collections/tasks/documents"; do
           echo "🔗 Trying endpoint: $endpoint"
           
@@ -147,33 +187,38 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
             -d "{
               \"_id\": \"$TEST_TASK_ID\",
-              \"text\": \"$TEST_TASK_TEXT\",
-              \"isCompleted\": false
+              \"title\": \"$TEST_TASK_TEXT\",
+              \"done\": false,
+              \"deleted\": false
             }" || echo -e "\n500")
           
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           
           if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
             echo "✅ Successfully seeded document via $endpoint"
-            echo "🎯 BrowserStack should find: $TEST_TASK_TEXT"
+            echo "🎯 XCUITest should find: $TEST_TASK_TEXT"
             break
           else
             echo "⚠️ $endpoint returned $HTTP_CODE"
           fi
         done
         
+        echo "task_text=$TEST_TASK_TEXT" >> $GITHUB_OUTPUT
+        echo "task_id=$TEST_TASK_ID" >> $GITHUB_OUTPUT
         echo "✅ Document seeding attempted"
     
-    - name: Upload App to BrowserStack
+    - name: Upload App and Test Bundle to BrowserStack
       id: upload
       run: |
-        echo "📤 Uploading iOS .ipa to BrowserStack for Appium testing..."
+        echo "📤 Uploading iOS app and XCUITest bundle to BrowserStack..."
         
         IPA_FILE="${{ steps.ios_validation.outputs.ipa_file_path }}"
+        TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
         
-        # Upload to regular app-automate (not XCUITest) for Appium
+        # Upload app to XCUITest endpoint
+        echo "📱 Uploading app..."
         APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+          -X POST "https://api-cloud.browserstack.com/xcuitest/v2/app" \
           -F "file=@$IPA_FILE" \
           -F "custom_id=ditto-swift-app")
         
@@ -181,32 +226,99 @@ jobs:
         APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
         
         if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-          echo "❌ Failed to upload app .ipa"
+          echo "❌ Failed to upload app"
           echo "Response: $APP_UPLOAD_RESPONSE"
           exit 1
         fi
         
+        # Upload test bundle to XCUITest endpoint  
+        echo "🧪 Uploading test bundle..."
+        TEST_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/xcuitest/v2/test-suite" \
+          -F "file=@$TEST_BUNDLE")
+        
+        echo "Test upload response: $TEST_UPLOAD_RESPONSE"  
+        TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_url)
+        
+        if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+          echo "❌ Failed to upload test bundle"
+          echo "Response: $TEST_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
         echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
-        echo "✅ App uploaded successfully: $APP_URL"
+        echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
+        echo "✅ App and test bundle uploaded successfully"
+        echo "📱 App URL: $APP_URL"
+        echo "🧪 Test URL: $TEST_URL"
     
-    - name: Execute Appium Tests on BrowserStack Real Devices
+    - name: Execute XCUITest on BrowserStack Real Device  
       id: test
-      working-directory: swift
-      env:
-        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        BROWSERSTACK_APP_URL: ${{ steps.upload.outputs.app_url }}
-        GITHUB_RUN_NUMBER: ${{ github.run_number }}
       run: |
-        echo "🚀 Running Appium tests on BrowserStack real devices..."
+        echo "🚀 Running XCUITest on BrowserStack real device..."
         
-        python appium_test.py
+        # Run XCUITest on iPhone 15 Pro with iOS 17
+        TEST_EXECUTION_RESPONSE=$(curl --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/xcuitest/v2/build" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "app": "${{ steps.upload.outputs.app_url }}",
+            "testSuite": "${{ steps.upload.outputs.test_url }}",
+            "devices": ["iPhone 15 Pro-17"],
+            "project": "Swift",
+            "buildName": "XCUITest Run #${{ github.run_number }}",
+            "debugscreenshots": true,
+            "networkLogs": true,
+            "deviceLogs": true,
+            "video": true,
+            "env": {
+              "GITHUB_RUN_NUMBER": "${{ github.run_number }}"
+            }
+          }')
         
-        if [ $? -eq 0 ]; then
-          echo "✅ All Appium tests passed successfully!"
-          echo "🎯 Swift iOS app validated with real UI automation on BrowserStack"
+        echo "Test execution response: $TEST_EXECUTION_RESPONSE"
+        BUILD_ID=$(echo "$TEST_EXECUTION_RESPONSE" | jq -r .build_id)
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "❌ Failed to start XCUITest execution"
+          echo "Response: $TEST_EXECUTION_RESPONSE"
+          exit 1
+        fi
+        
+        echo "✅ XCUITest execution started with build ID: $BUILD_ID"
+        echo "🔗 BrowserStack build URL: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID"
+        
+        # Poll for test completion (timeout after 10 minutes)
+        echo "⏳ Waiting for XCUITest to complete..."
+        TIMEOUT=600
+        ELAPSED=0
+        POLL_INTERVAL=15
+        
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+          sleep $POLL_INTERVAL
+          ELAPSED=$((ELAPSED + POLL_INTERVAL))
+          
+          # Check build status
+          BUILD_STATUS_RESPONSE=$(curl --silent -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/xcuitest/v2/builds/$BUILD_ID")
+          
+          BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
+          echo "📊 Build status after ${ELAPSED}s: $BUILD_STATUS"
+          
+          if [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ]; then
+            break
+          fi
+        done
+        
+        # Check final results
+        if [ "$BUILD_STATUS" = "passed" ]; then
+          echo "✅ XCUITest passed successfully!"
+          echo "🎯 Ditto sync verified - seeded document found on device"
+          echo "📱 Swift iOS app validated with native XCUITest on BrowserStack"
         else
-          echo "❌ Appium tests failed"
+          echo "❌ XCUITest failed with status: $BUILD_STATUS"
+          echo "📊 Full build response:"
+          echo "$BUILD_STATUS_RESPONSE" | jq .
           exit 1
         fi
 
@@ -219,30 +331,31 @@ jobs:
     steps:
     - name: Report BrowserStack Test Results
       run: |
-        echo "## 📱 BrowserStack Appium Testing Results - Swift iOS"
+        echo "## 📱 BrowserStack XCUITest Results - Swift iOS"
         echo ""
-        echo "### iOS Appium Automated Testing"
+        echo "### iOS Native XCUITest Automated Testing"
         echo "Status: ${{ needs.ios-browserstack.result }}"
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
-          echo "✅ Swift iOS app successfully tested with Appium on BrowserStack real device:"
-          echo "   - iPhone 15 Pro (iOS 17) - Appium automation"
+          echo "✅ Swift iOS app successfully tested with XCUITest on BrowserStack real device:"
+          echo "   - iPhone 15 Pro (iOS 17) - Native XCUITest automation"
           echo ""
-          echo "🧪 Appium automation verified:"
+          echo "🧪 XCUITest automation verified:"
           echo "   ✓ App launches successfully on real device"
-          echo "   ✓ Real UI automation with Appium WebDriver"
-          echo "   ✓ Ditto SDK initialization validated (no crashes)"
-          echo "   ✓ Task operations tested with UI interactions"
+          echo "   ✓ Native iOS UI automation with XCUITest framework"
+          echo "   ✓ Ditto SDK cloud sync validated - seeded document found"
+          echo "   ✓ Document seeded via HTTP API to Ditto cloud"
+          echo "   ✓ Document synced down to device and visible in UI"
           echo "   ✓ App stability verified over extended runtime"
-          echo "   ✓ Cross-platform testing framework (like Android uses)"
+          echo "   ✓ Native iOS testing approach (idiomatic for Swift)"
         else
-          echo "❌ Swift iOS Appium testing failed on BrowserStack"
+          echo "❌ Swift iOS XCUITest testing failed on BrowserStack"
         fi
         
         echo ""
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
-          echo "🎉 Swift iOS Appium testing completed successfully!"
-          echo "🤖 Real device UI automation validated app functionality"
-          echo "🔗 Check BrowserStack dashboard for Appium session videos and logs"
+          echo "🎉 Swift iOS XCUITest testing completed successfully!"
+          echo "🤖 Native XCUITest validated Ditto cloud sync functionality"
+          echo "🔗 Check BrowserStack dashboard for XCUITest session videos and logs"
         else
           echo "⚠️ Swift iOS BrowserStack real device testing encountered issues"
           exit 1
