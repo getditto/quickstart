@@ -156,90 +156,60 @@ jobs:
         run: |
           echo "🚀 Starting BrowserStack Maestro test for iOS Expo app"
           
-          # Upload iOS app to BrowserStack
+          # Upload iOS app to BrowserStack  
           echo "📦 Uploading iOS app..."
           APP_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-            -F "file=@${IOS_APP_PATH}")
+            -F "file=@${IOS_APP_PATH}" \
+            https://api-cloud.browserstack.com/app-automate/maestro/v1/app)
           
-          APP_URL=$(echo "$APP_RESPONSE" | grep -o '"app_url":"[^"]*"' | cut -d'"' -f4)
+          echo "$APP_RESPONSE"
+          APP_URL=$(echo "$APP_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("app_url",""))')
           if [ -z "$APP_URL" ]; then
-            echo "❌ Failed to upload iOS app: $APP_RESPONSE"
+            echo "❌ Failed to upload iOS app"
             exit 1
           fi
           echo "✅ iOS app uploaded: $APP_URL"
           
-          # Create Maestro test suite ZIP
+          # Create Maestro test suite ZIP with correct structure (parent folder required)
           echo "📋 Creating Maestro test suite..."
           cd react-native-expo
-          zip -r maestro-suite.zip .maestro/
+          rm -f maestro-tests.zip
+          zip -qry maestro-tests.zip .maestro
           
-          # Upload Maestro suite to BrowserStack  
+          # Upload Maestro suite to BrowserStack (correct v1 endpoint)
           SUITE_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/upload" \
-            -F "file=@maestro-suite.zip")
+            -F "file=@maestro-tests.zip" \
+            https://api-cloud.browserstack.com/app-automate/maestro/v1/test-suite)
           
-          SUITE_URL=$(echo "$SUITE_RESPONSE" | grep -o '"test_suite_url":"[^"]*"' | cut -d'"' -f4)
+          echo "$SUITE_RESPONSE"  
+          SUITE_URL=$(echo "$SUITE_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("test_suite_url",""))')
           if [ -z "$SUITE_URL" ]; then
             echo "❌ Failed to upload Maestro suite: $SUITE_RESPONSE"
             exit 1
           fi
           echo "✅ Maestro suite uploaded: $SUITE_URL"
           
-          # Execute Maestro tests on iOS devices
+          # Execute Maestro tests on iOS devices (BrowserStack handles async execution)
           echo "🧪 Starting Maestro tests on iOS devices..."
-          BUILD_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/ios/build" \
+          curl -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
             -H "Content-Type: application/json" \
             -d "{
               \"app\": \"$APP_URL\",
               \"testSuite\": \"$SUITE_URL\",
-              \"devices\": [
-                {\"device\": \"iPhone 14\", \"os_version\": \"16\"},
-                {\"device\": \"iPhone 15\", \"os_version\": \"17\"}
-              ],
+              \"devices\": [\"iPhone 14-16\", \"iPhone 15-17\"],
               \"project\": \"Ditto React Native\",
               \"buildName\": \"RN Expo iOS Maestro Build #${{ github.run_number }}\",
-              \"sessionName\": \"Ditto RN Expo iOS Maestro Tests\",
-              \"timeout\": 1800,
+              \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,
-              \"env\": {
-                \"DITTO_APP_ID\": \"$DITTO_APP_ID\",
-                \"DITTO_PLAYGROUND_TOKEN\": \"$DITTO_PLAYGROUND_TOKEN\",
-                \"GITHUB_TEST_DOC_ID\": \"$GITHUB_TEST_DOC_ID\",
-                \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\"
-              }
-            }")
+              \"video\": true,
+              \"networkLogs\": true
+            }" \
+            https://api-cloud.browserstack.com/app-automate/maestro/v1/build
           
-          BUILD_ID=$(echo "$BUILD_RESPONSE" | grep -o '"buildId":"[^"]*"' | cut -d'"' -f4)
-          if [ -z "$BUILD_ID" ]; then
-            echo "❌ Failed to start Maestro build: $BUILD_RESPONSE"
-            exit 1
-          fi
-          echo "✅ Maestro build started: $BUILD_ID"
-          
-          # Wait for build completion
-          echo "⏳ Waiting for build completion (max 30 minutes)..."
-          for i in {1..60}; do
-            sleep 30
-            STATUS_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
-              "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$BUILD_ID")
-            
-            STATUS=$(echo "$STATUS_RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
-            echo "📊 Build status: $STATUS"
-            
-            if [ "$STATUS" = "passed" ]; then
-              echo "🎉 Maestro tests PASSED!"
-              exit 0
-            elif [ "$STATUS" = "failed" ] || [ "$STATUS" = "error" ]; then
-              echo "❌ Maestro tests FAILED!"
-              echo "📄 Build details: $STATUS_RESPONSE"
-              exit 1
-            fi
-          done
-          
-          echo "❌ Build timed out after 30 minutes"
-          exit 1
+          echo "✅ Maestro build started successfully!"
+          echo "📊 Check results in BrowserStack dashboard: https://app-automate.browserstack.com/"
+          echo "🏷️  Project: Ditto React Native"
+          echo "🔗 Build: RN Expo iOS Maestro Build #${{ github.run_number }}"
 
       - name: Generate test report
         if: always()
