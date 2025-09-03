@@ -95,8 +95,13 @@ jobs:
         run: |
           echo "Building Flutter Android APK and test APK..."
           
-          # Build both app and test APKs
+          # Build main app APK
           flutter build apk --debug
+          
+          # Build instrumentation test APK using Gradle
+          cd android
+          ./gradlew assembleDebugAndroidTest
+          cd ..
           
           # Verify both APKs were built
           APP_APK="build/app/outputs/apk/debug/app-debug.apk"
