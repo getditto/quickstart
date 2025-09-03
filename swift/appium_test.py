@@ -77,7 +77,37 @@ def test_ditto_app():
         print(f"🧪 INJECTING test task: {test_task_text}")
         
         try:
-            # Look for text input field
+            # First, find and tap the "New Task" button to open the edit modal
+            print("🔘 Looking for 'New Task' button...")
+            buttons = driver.find_elements('class name', 'XCUIElementTypeButton')
+            new_task_button_found = False
+            
+            for button in buttons:
+                try:
+                    button_text = button.text if button.text else ""
+                    if "New Task" in button_text or button_text == "New Task":
+                        print(f"✅ Found 'New Task' button: '{button_text}'")
+                        button.click()
+                        new_task_button_found = True
+                        time.sleep(3)  # Wait for modal to appear
+                        break
+                except Exception as be:
+                    continue
+                    
+            if not new_task_button_found:
+                print("❌ 'New Task' button not found")
+                # Debug: show available buttons
+                print("🔍 Available buttons:")
+                for button in buttons[:10]:
+                    try:
+                        button_text = button.text if button.text else "<no text>"
+                        print(f"   - '{button_text}'")
+                    except:
+                        continue
+                return False
+            
+            # Now look for text input field in the opened modal
+            print("🔍 Looking for text input field in edit modal...")
             text_fields = driver.find_elements('class name', 'XCUIElementTypeTextField')
             if text_fields:
                 print(f"✅ Found {len(text_fields)} text field(s) - adding test task")
@@ -86,34 +116,33 @@ def test_ditto_app():
                 text_fields[0].clear()
                 text_fields[0].send_keys(test_task_text)
                 
-                # Look for add button - try different approaches
-                added = False
-                buttons = driver.find_elements('class name', 'XCUIElementTypeButton') 
-                for button in buttons:
+                # Look for Create/Save button in the modal - try different approaches
+                saved = False
+                modal_buttons = driver.find_elements('class name', 'XCUIElementTypeButton') 
+                for button in modal_buttons:
                     try:
                         button_text = button.text if button.text else ""
                         if button.is_enabled() and (
-                            button_text in ['Add', '+', 'Add Task', 'Create'] or 
-                            button_text == "" or  # Empty text might be an add button
-                            "add" in button_text.lower()
+                            button_text in ['Create', 'Save', 'Done'] or 
+                            "create" in button_text.lower() or "save" in button_text.lower()
                         ):
-                            print(f"🔘 Trying button: '{button_text}'")
+                            print(f"🔘 Trying save button: '{button_text}'")
                             button.click()
-                            print(f"✅ Injected task via UI button: '{button_text}'")
-                            added = True
+                            print(f"✅ Task saved via button: '{button_text}'")
+                            saved = True
                             break
                     except Exception as be:
                         print(f"⚠️ Button click failed: {be}")
                         continue
                 
-                if not added:
+                if not saved:
                     # Try pressing Enter/Return key
                     print("🔘 Trying Return key...")
                     text_fields[0].send_keys('\n')
-                    added = True
-                    print("✅ Injected task via Return key")
+                    saved = True
+                    print("✅ Task saved via Return key")
                         
-                time.sleep(5)  # Wait longer for task to appear
+                time.sleep(5)  # Wait longer for modal to close and task to appear in main list
                 
             else:
                 print("❌ No text input field found - cannot inject task")
@@ -128,29 +157,55 @@ def test_ditto_app():
                         continue
                 return False
                 
-            # Now verify the task appears (like Android does)
-            static_texts = driver.find_elements('class name', 'XCUIElementTypeStaticText')
+            # Now verify the task appears in the main list (like Android does)
+            print(f"🔍 Verifying injected task appears in main task list...")
+            
+            # Look for the task in table cells or static text
             found_task = False
             
-            print(f"🔍 Verifying injected task appears among {len(static_texts)} text elements...")
-            for text_element in static_texts:
+            # Try to find in table cells first (iOS list rows)
+            table_cells = driver.find_elements('class name', 'XCUIElementTypeCell')
+            print(f"📋 Found {len(table_cells)} table cells")
+            for cell in table_cells:
                 try:
-                    text = text_element.text
-                    if text and test_task_text in text:
-                        print(f"✅ SUCCESS: Found injected task - Ditto sync working!")
+                    cell_text = cell.text
+                    if cell_text and test_task_text in cell_text:
+                        print(f"✅ SUCCESS: Found injected task in table cell - Ditto sync working!")
                         found_task = True
                         break
                 except:
                     continue
             
+            # If not in cells, try static text elements
+            if not found_task:
+                static_texts = driver.find_elements('class name', 'XCUIElementTypeStaticText')
+                print(f"📝 Found {len(static_texts)} static text elements")
+                for text_element in static_texts:
+                    try:
+                        text = text_element.text
+                        if text and test_task_text in text:
+                            print(f"✅ SUCCESS: Found injected task in static text - Ditto sync working!")
+                            found_task = True
+                            break
+                    except:
+                        continue
+            
             # If not found, show what we do have for debugging
             if not found_task:
-                print(f"❌ FAIL: Injected task '{test_task_text}' not visible in UI")
-                print("🔍 Available text elements:")
+                print(f"❌ FAIL: Injected task '{test_task_text}' not visible in main list")
+                print("🔍 Available table cells:")
+                for cell in table_cells[:5]:  # Show first 5
+                    try:
+                        text = cell.text
+                        if text and text.strip():
+                            print(f"   - '{text}'")
+                    except:
+                        continue
+                print("🔍 Available static text elements:")
                 for text_element in static_texts[:10]:  # Show first 10
                     try:
                         text = text_element.text
-                        if text and text.strip():
+                        if text and text.strip() and len(text) > 3:  # Skip short system texts
                             print(f"   - '{text}'")
                     except:
                         continue
