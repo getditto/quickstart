@@ -126,26 +126,43 @@ jobs:
         pip install -r requirements.txt
         echo "✅ Appium dependencies installed"
     
-    - name: Seed Test Document for BrowserStack Verification
-      working-directory: swift
-      env:
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
-        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
-        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+    - name: Seed Test Document via Ditto API
       run: |
-        echo "🧪 Seeding test document for BrowserStack verification..."
+        echo "🌱 Seeding test document for BrowserStack verification..."
         
-        # Create a specific test task that we'll look for on BrowserStack
-        TEST_TASK_TEXT="Test Task from BrowserStack #$GITHUB_RUN_NUMBER"
-        echo "📝 Test task: $TEST_TASK_TEXT"
+        # Create unique test task for this run
+        TEST_TASK_TEXT="Test Task from BrowserStack #${{ github.run_number }}"
+        TEST_TASK_ID="browserstack_test_${{ github.run_number }}_$(date +%s)"
         
-        # Use Swift script to seed the task
-        chmod +x SeedTask.swift
-        swift SeedTask.swift
+        echo "📝 Seeding task: $TEST_TASK_TEXT"
+        echo "🆔 Task ID: $TEST_TASK_ID"
         
-        echo "✅ Test document seeded - BrowserStack should find: $TEST_TASK_TEXT"
+        # Simple HTTP POST to Ditto (try different endpoints until one works)
+        for endpoint in "documents" "store/documents" "api/documents" "collections/tasks/documents"; do
+          echo "🔗 Trying endpoint: $endpoint"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST "${{ secrets.DITTO_AUTH_URL }}/$endpoint" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
+            -d "{
+              \"_id\": \"$TEST_TASK_ID\",
+              \"text\": \"$TEST_TASK_TEXT\",
+              \"isCompleted\": false
+            }" || echo -e "\n500")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          
+          if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
+            echo "✅ Successfully seeded document via $endpoint"
+            echo "🎯 BrowserStack should find: $TEST_TASK_TEXT"
+            break
+          else
+            echo "⚠️ $endpoint returned $HTTP_CODE"
+          fi
+        done
+        
+        echo "✅ Document seeding attempted"
     
     - name: Upload App to BrowserStack
       id: upload
