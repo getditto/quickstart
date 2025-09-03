@@ -146,11 +146,17 @@ jobs:
           CODE_SIGNING_REQUIRED=NO
 
         # Find device Runner.app and its matching .xctestrun
+        echo "🔍 Locating test bundle files..."
+        find build/DerivedData -name "*.xctestrun" -o -name "*-Runner.app" | head -10
+        
         RUNNER_APP=$(find build/DerivedData/Build/Products -type d -path "*/Debug-iphoneos/*-Runner.app" | head -1)
         XCTESTRUN=$(find build/DerivedData/Build/Products -type f -name "*.xctestrun" | head -1)
 
-        test -d "$RUNNER_APP"   || { echo "❌ Runner.app not found"; exit 1; }
-        test -f "$XCTESTRUN"    || { echo "❌ .xctestrun not found"; exit 1; }
+        echo "Found Runner.app: $RUNNER_APP"
+        echo "Found .xctestrun: $XCTESTRUN"
+
+        test -d "$RUNNER_APP"   || { echo "❌ Runner.app not found"; find build/DerivedData -name "*Runner*" -type d; exit 1; }
+        test -f "$XCTESTRUN"    || { echo "❌ .xctestrun not found"; find build/DerivedData -name "*.xctestrun" -type f; exit 1; }
 
         echo "✅ Runner: $RUNNER_APP"
         echo "✅ xctestrun: $XCTESTRUN"
@@ -158,10 +164,23 @@ jobs:
         # Create ZIP with both items at the ROOT and preserve symlinks
         OUT_ZIP="$(pwd)/build/TasksUITests.zip"
         rm -f "$OUT_ZIP"
+        
+        # Get the directory containing Runner.app (should be Debug-iphoneos)  
+        RUNNER_DIR=$(dirname "$RUNNER_APP")
+        RUNNER_NAME=$(basename "$RUNNER_APP")
+        XCTESTRUN_NAME=$(basename "$XCTESTRUN")
+        
+        echo "🏗️ Creating test bundle ZIP..."
+        echo "  Runner dir: $RUNNER_DIR"
+        echo "  Runner name: $RUNNER_NAME"
+        echo "  XCTestrun name: $XCTESTRUN_NAME"
+        
         (
-          cd "$(dirname "$RUNNER_APP")"
-          cp "$XCTESTRUN" .
-          zip --symlinks -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")" "$(basename "$XCTESTRUN")"
+          cd "$RUNNER_DIR"
+          # Copy .xctestrun to the same directory as Runner.app
+          cp "$XCTESTRUN" "$XCTESTRUN_NAME" || { echo "❌ Failed to copy .xctestrun"; exit 1; }
+          # Create ZIP with both items at root, preserving symlinks
+          zip --symlinks -qry "$OUT_ZIP" "$RUNNER_NAME" "$XCTESTRUN_NAME" || { echo "❌ Failed to create ZIP"; exit 1; }
         )
 
         echo "🔍 ZIP contents (should show Runner.app and .xctestrun at root):"
