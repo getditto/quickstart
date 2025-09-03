@@ -146,22 +146,23 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
         
-        # Find and package the test bundle
-        TEST_BUNDLE_PATH=$(find build/DerivedData -name "*.xctestrun" | head -1)
-        if [ -f "$TEST_BUNDLE_PATH" ]; then
-          echo "✅ Found XCUITest bundle: $TEST_BUNDLE_PATH"
+        # Find test app bundle and create test IPA
+        TEST_APP_PATH=$(find build/DerivedData -name "TasksUITests-Runner.app" -type d | head -1)
+        if [ -d "$TEST_APP_PATH" ]; then
+          echo "✅ Found XCUITest runner app: $TEST_APP_PATH"
           
-          # Create ZIP for BrowserStack (they expect ZIP format for test bundles)
-          TEST_DIR=$(dirname "$TEST_BUNDLE_PATH")
-          (cd "$TEST_DIR" && zip -r ../TasksUITests.zip .)
-          TEST_ZIP_PATH="$(pwd)/$TEST_DIR/../TasksUITests.zip"
+          # Create test IPA for BrowserStack (proper IPA structure with Payload directory)
+          mkdir -p build/Payload
+          cp -R "$TEST_APP_PATH" build/Payload/
+          (cd build && zip -qry TasksUITests.ipa Payload && rm -rf Payload)
           
-          echo "test_bundle_path=$TEST_ZIP_PATH" >> $GITHUB_OUTPUT
-          echo "✅ XCUITest bundle packaged: $TEST_ZIP_PATH"
-          ls -la "$TEST_ZIP_PATH"
+          TEST_IPA_PATH="$(pwd)/build/TasksUITests.ipa"
+          echo "test_bundle_path=$TEST_IPA_PATH" >> $GITHUB_OUTPUT
+          echo "✅ XCUITest IPA created: $TEST_IPA_PATH"
+          ls -la "$TEST_IPA_PATH"
         else
-          echo "❌ XCUITest bundle not found"
-          find build -name "*.xctestrun" -type f || echo "No .xctestrun files found"
+          echo "❌ XCUITest runner app not found"
+          find build -name "*UITests*.app" -type d || echo "No UI test apps found"
           exit 1
         fi
     
