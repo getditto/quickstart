@@ -100,6 +100,20 @@ jobs:
             fi
           done
 
+      - name: Install BrowserStack Local
+        run: |
+          # Download and setup BrowserStack Local binary
+          wget -q "https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip"
+          unzip -q BrowserStackLocal-linux-x64.zip
+          chmod +x BrowserStackLocal
+
+      - name: Start BrowserStack Local tunnel
+        run: |
+          # Start BrowserStack Local tunnel as daemon
+          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon start --force-local
+          sleep 10
+          echo "✓ BrowserStack Local tunnel established"
+
       - name: Execute BrowserStack Web Tests
         id: test
         env:
@@ -123,7 +137,8 @@ jobs:
             'build': 'Build #' + process.env.GITHUB_RUN_NUMBER,
             'name': 'Java Spring Integration Test',
             'browserstack.debug': true,
-            'browserstack.console': 'info'
+            'browserstack.console': 'info',
+            'browserstack.local': 'true'
           };
           
           async function runTest() {
@@ -133,11 +148,11 @@ jobs:
               .build();
           
             try {
-              console.log('🌐 Starting BrowserStack web test...');
+              console.log('🌐 Starting BrowserStack web test with Local tunnel...');
               
-              // Navigate to the Spring Boot application
+              // Navigate to the Spring Boot application via Local tunnel
               await driver.get('http://localhost:8080');
-              console.log('✓ Navigated to application');
+              console.log('✓ Navigated to application via BrowserStack Local');
               
               // Wait for page to load and verify title
               await driver.wait(until.titleContains('Ditto'), 10000);
@@ -252,6 +267,13 @@ jobs:
             kill $APP_PID || true
             sleep 2
           fi
+
+      - name: Stop BrowserStack Local tunnel
+        if: always()
+        run: |
+          echo "Stopping BrowserStack Local tunnel..."
+          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
+          sleep 2
 
       - name: Generate test report
         if: always()
