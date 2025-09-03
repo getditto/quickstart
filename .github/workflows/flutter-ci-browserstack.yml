@@ -142,12 +142,20 @@ jobs:
           
           # 1. Upload app using Flutter integration tests endpoint
           echo "Uploading app APK to BrowserStack Flutter API..."
-          APP_JSON=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          APP_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -F "file=@$APP_APK" \
             https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app)
           
-          APP_URL=$(echo "$APP_JSON" | jq -r .app_url)
-          echo "App URL: $APP_URL"
+          echo "Raw APP_JSON response: $APP_JSON"
+          
+          if echo "$APP_JSON" | jq . > /dev/null 2>&1; then
+            APP_URL=$(echo "$APP_JSON" | jq -r .app_url)
+            echo "App URL: $APP_URL"
+          else
+            echo "❌ Invalid JSON response from app upload API"
+            echo "Response: $APP_JSON"
+            exit 1
+          fi
           
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "❌ Failed to upload app"
@@ -157,12 +165,20 @@ jobs:
           
           # 2. Upload compiled test APK (not source ZIP)
           echo "Uploading test APK to BrowserStack..."
-          TEST_JSON=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          TEST_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -F "file=@$TEST_APK" \
             https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/test-suite)
           
-          TEST_URL=$(echo "$TEST_JSON" | jq -r .test_suite_url)
-          echo "Test suite URL: $TEST_URL"
+          echo "Raw TEST_JSON response: $TEST_JSON"
+          
+          if echo "$TEST_JSON" | jq . > /dev/null 2>&1; then
+            TEST_URL=$(echo "$TEST_JSON" | jq -r .test_suite_url)
+            echo "Test suite URL: $TEST_URL"
+          else
+            echo "❌ Invalid JSON response from test suite upload API"
+            echo "Response: $TEST_JSON"
+            exit 1
+          fi
           
           if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
             echo "❌ Failed to upload test suite"
@@ -366,12 +382,20 @@ jobs:
           
           # 1. Upload app using Flutter integration tests endpoint for iOS
           echo "Uploading iOS app to BrowserStack Flutter API..."
-          APP_JSON=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          APP_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -F "file=@$IPA_FILE" \
             https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/app)
           
-          APP_URL=$(echo "$APP_JSON" | jq -r .app_url)
-          echo "App URL: $APP_URL"
+          echo "Raw iOS APP_JSON response: $APP_JSON"
+          
+          if echo "$APP_JSON" | jq . > /dev/null 2>&1; then
+            APP_URL=$(echo "$APP_JSON" | jq -r .app_url)
+            echo "App URL: $APP_URL"
+          else
+            echo "❌ Invalid JSON response from iOS app upload API"
+            echo "Response: $APP_JSON"
+            exit 1
+          fi
           
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "❌ Failed to upload iOS app"
@@ -381,12 +405,20 @@ jobs:
           
           # 2. Upload test package
           echo "Uploading test package to BrowserStack..."
-          TEST_JSON=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          TEST_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -F "file=@$TEST_PACKAGE" \
             https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/test-package)
           
-          TEST_URL=$(echo "$TEST_JSON" | jq -r .test_package_url)
-          echo "Test package URL: $TEST_URL"
+          echo "Raw iOS TEST_JSON response: $TEST_JSON"
+          
+          if echo "$TEST_JSON" | jq . > /dev/null 2>&1; then
+            TEST_URL=$(echo "$TEST_JSON" | jq -r .test_package_url)
+            echo "Test package URL: $TEST_URL"
+          else
+            echo "❌ Invalid JSON response from test package upload API"
+            echo "Response: $TEST_JSON"
+            exit 1
+          fi
           
           if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
             echo "❌ Failed to upload test package"
