@@ -89,40 +89,61 @@ def test_ditto_cloud_sync(driver, device_name):
     # Enable Ditto sync toggle (critical for KMP apps)
     print("🔄 Activating Ditto sync toggle...")
     try:
-        # Look for sync toggle switch - KMP uses Toggle/Switch components
+        # Look for sync toggle switch - KMP uses Material Switch in TopBar
         sync_toggle_selectors = [
+            # Primary: Material Design Switch component (most likely)
             "//android.widget.Switch",
-            "//*[contains(@text, 'Sync')]",
+            
+            # Secondary: Look for 'Sync' text then find nearby switch  
+            "//*[contains(@text, 'Sync')]/following-sibling::android.widget.Switch",
+            "//*[contains(@text, 'Sync')]/preceding-sibling::android.widget.Switch", 
+            "//*[contains(@text, 'Sync')]/../*[@class='android.widget.Switch']",
+            
+            # Fallback: Content description and other toggleable elements
             "//*[contains(@content-desc, 'Sync')]",
-            "//*[contains(@text, 'sync')]",
+            "//*[contains(@content-desc, 'sync')]", 
             "//android.widget.ToggleButton",
-            "//*[@class='android.widget.Switch']"
+            "//*[@checkable='true']"
         ]
         
         toggle_found = False
-        for selector in sync_toggle_selectors:
+        print(f"🔍 Testing {len(sync_toggle_selectors)} sync toggle selectors...")
+        
+        for i, selector in enumerate(sync_toggle_selectors, 1):
             try:
+                print(f"  {i:2d}. Trying: {selector}")
                 toggle_elements = driver.find_elements(AppiumBy.XPATH, selector)
-                for toggle in toggle_elements:
+                print(f"      Found {len(toggle_elements)} elements")
+                
+                for j, toggle in enumerate(toggle_elements):
                     try:
                         # Check if toggle is OFF (needs to be turned ON)
                         is_checked = toggle.get_attribute("checked")
+                        element_text = toggle.get_attribute("text") or "[no text]"
+                        print(f"      Element {j+1}: checked='{is_checked}', text='{element_text}'")
+                        
                         if is_checked == "false":
                             print(f"📍 Found OFF sync toggle, activating...")
                             toggle.click()
                             time.sleep(2)
-                            print("✅ Sync toggle activated!")
+                            # Verify toggle state changed
+                            new_state = toggle.get_attribute("checked")
+                            print(f"✅ Sync toggle activated! New state: {new_state}")
                             toggle_found = True
                             break
                         elif is_checked == "true":
                             print("✅ Sync toggle already ON")
                             toggle_found = True
                             break
-                    except:
+                    except Exception as e:
+                        print(f"      Element {j+1} error: {str(e)}")
                         continue
+                        
                 if toggle_found:
                     break
-            except:
+                    
+            except Exception as e:
+                print(f"      Selector failed: {str(e)}")
                 continue
         
         if not toggle_found:
@@ -200,7 +221,7 @@ def run_android_test(device_config):
     # BrowserStack specific capabilities
     options.set_capability('browserstack.user', os.environ['BROWSERSTACK_USERNAME'])
     options.set_capability('browserstack.key', os.environ['BROWSERSTACK_ACCESS_KEY'])
-    options.set_capability('project', 'Ditto Android Kotlin')
+    options.set_capability('project', 'Ditto KMP Android')
     options.set_capability('build', f"Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}")
     options.set_capability('name', f"Ditto Android Kotlin Test - {device_name}")
     options.set_capability('browserstack.debug', 'true')

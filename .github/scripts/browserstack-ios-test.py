@@ -93,9 +93,17 @@ def test_ditto_cloud_sync(driver, device_name):
     # Enable Ditto sync toggle (critical for KMP apps)
     print("🔄 Activating Ditto sync toggle on iOS...")
     try:
-        # Look for sync toggle switch - iOS uses Switch components
+        # Look for sync toggle switch - KMP uses XCUIElementTypeSwitch in TopBar
         sync_toggle_selectors = [
+            # Primary: XCUITest Switch component (most likely) 
             "//XCUIElementTypeSwitch",
+            
+            # Secondary: Look for 'Sync' text then find nearby switch
+            "//*[contains(@name, 'Sync')]/following-sibling::XCUIElementTypeSwitch",
+            "//*[contains(@name, 'Sync')]/preceding-sibling::XCUIElementTypeSwitch",
+            "//*[contains(@label, 'Sync')]/../*[@type='XCUIElementTypeSwitch']",
+            
+            # Fallback: Label/name based and other toggle types
             "//*[contains(@name, 'Sync')]",
             "//*[contains(@label, 'Sync')]", 
             "//*[contains(@name, 'sync')]",
@@ -104,29 +112,43 @@ def test_ditto_cloud_sync(driver, device_name):
         ]
         
         toggle_found = False
-        for selector in sync_toggle_selectors:
+        print(f"🔍 Testing {len(sync_toggle_selectors)} sync toggle selectors...")
+        
+        for i, selector in enumerate(sync_toggle_selectors, 1):
             try:
+                print(f"  {i:2d}. Trying: {selector}")
                 toggle_elements = driver.find_elements(AppiumBy.XPATH, selector)
-                for toggle in toggle_elements:
+                print(f"      Found {len(toggle_elements)} elements")
+                
+                for j, toggle in enumerate(toggle_elements):
                     try:
                         # Check if toggle is OFF (needs to be turned ON) 
                         value = toggle.get_attribute("value")
+                        element_name = toggle.get_attribute("name") or "[no name]"
+                        print(f"      Element {j+1}: value='{value}', name='{element_name}'")
+                        
                         if value == "0":
                             print(f"📍 Found OFF sync toggle, activating...")
                             toggle.click()
                             time.sleep(2)
-                            print("✅ Sync toggle activated!")
+                            # Verify toggle state changed
+                            new_state = toggle.get_attribute("value")
+                            print(f"✅ Sync toggle activated! New state: {new_state}")
                             toggle_found = True
                             break
                         elif value == "1":
                             print("✅ Sync toggle already ON")
                             toggle_found = True
                             break
-                    except:
+                    except Exception as e:
+                        print(f"      Element {j+1} error: {str(e)}")
                         continue
+                        
                 if toggle_found:
                     break
-            except:
+                    
+            except Exception as e:
+                print(f"      Selector failed: {str(e)}")
                 continue
         
         if not toggle_found:
@@ -205,7 +227,7 @@ def run_ios_test(device_config):
     # BrowserStack specific capabilities
     options.set_capability('browserstack.user', os.environ['BROWSERSTACK_USERNAME'])
     options.set_capability('browserstack.key', os.environ['BROWSERSTACK_ACCESS_KEY'])
-    options.set_capability('project', 'Ditto iOS Swift')
+    options.set_capability('project', 'Ditto KMP iOS')
     options.set_capability('build', f"Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}")
     options.set_capability('name', f"Ditto iOS Swift Test - {device_name}")
     options.set_capability('browserstack.debug', 'true')
