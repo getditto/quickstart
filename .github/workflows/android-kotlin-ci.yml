@@ -1,0 +1,92 @@
+name: Android Kotlin CI
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'android-kotlin/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'android-kotlin/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          android-kotlin/QuickStartTasks/.gradle
+        key: gradle-${{ runner.os }}-${{ hashFiles('android-kotlin/QuickStartTasks/gradle/wrapper/gradle-wrapper.properties', 'android-kotlin/QuickStartTasks/**/*.gradle*', 'android-kotlin/QuickStartTasks/gradle/libs.versions.toml') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+    
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=test" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
+        echo "DITTO_AUTH_URL=test" >> .env
+        echo "DITTO_WEBSOCKET_URL=test" >> .env
+    
+    - name: Run Android linting
+      working-directory: android-kotlin/QuickStartTasks
+      run: ./gradlew lint
+
+  build-android:
+    name: Build Android (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 30
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          android-kotlin/QuickStartTasks/.gradle
+        key: gradle-${{ runner.os }}-${{ hashFiles('android-kotlin/QuickStartTasks/gradle/wrapper/gradle-wrapper.properties', 'android-kotlin/QuickStartTasks/**/*.gradle*', 'android-kotlin/QuickStartTasks/gradle/libs.versions.toml') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-
+    
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=test" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
+        echo "DITTO_AUTH_URL=test" >> .env
+        echo "DITTO_WEBSOCKET_URL=test" >> .env
+    
+    - name: Build Android
+      working-directory: android-kotlin/QuickStartTasks
+      run: ./gradlew build

@@ -70,6 +70,10 @@ androidComponents {
 android {
     namespace = "live.ditto.quickstart.tasks"
     compileSdk = 35
+    
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
 
     defaultConfig {
         applicationId = "live.ditto.quickstart.tasks"
