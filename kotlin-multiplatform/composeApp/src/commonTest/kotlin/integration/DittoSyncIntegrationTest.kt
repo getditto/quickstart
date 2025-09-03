@@ -190,14 +190,16 @@ class DittoSyncIntegrationTest {
             
             // Insert task via DQL (simulating UI add action)
             val insertQuery = "INSERT INTO tasks DOCUMENTS (:task)"
-            val insertResult = dittoManager.executeDql(insertQuery, mapOf(
-                "task" to mapOf(
-                    "_id" to testTaskId,
-                    "title" to testTaskTitle,
-                    "done" to false,
-                    "deleted" to false
-                )
+            val taskData = DittoCborSerializable.Dictionary(mapOf(
+                Utf8String("_id") to Utf8String(testTaskId),
+                Utf8String("title") to Utf8String(testTaskTitle),
+                Utf8String("done") to DittoCborSerializable.Boolean.create(false),
+                Utf8String("deleted") to DittoCborSerializable.Boolean.create(false)
             ))
+            val insertResult = dittoManager.executeDql(
+                insertQuery, 
+                DittoCborSerializable.Dictionary(mapOf(Utf8String("task") to taskData))
+            )
             assertNotNull(insertResult, "Should be able to insert task")
             
             // Wait for task to be persisted
