@@ -43,13 +43,9 @@ jobs:
 
       - name: Insert test document into Ditto Cloud
         run: |
-          # Use GitHub run ID to create deterministic document ID
           DOC_ID="github_test_android_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          
           echo "Creating test document with ID: ${DOC_ID}"
           
-          # Insert document using curl with Android Kotlin Task structure
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H 'Content-type: application/json' \
             -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
@@ -66,17 +62,14 @@ jobs:
             }" \
           "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
           
-          # Extract HTTP status code and response body
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n-1)
           
-          # Check if insertion was successful
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+            echo "✓ Test document created: ${DOC_ID}"
             echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
           else
-            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-            echo "Response: $BODY"
+            echo "❌ Document creation failed (HTTP $HTTP_CODE): $BODY"
             exit 1
           fi
 
@@ -90,16 +83,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build APK
+      - name: Build APKs
         working-directory: android-kotlin/QuickStartTasks
         env:
           DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
           DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
           DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
           DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-        run: |
-          ./gradlew assembleDebug assembleDebugAndroidTest
-          echo "APK built successfully"
+        run: ./gradlew assembleDebug assembleDebugAndroidTest
+
+      - name: Run Lint
+        working-directory: android-kotlin/QuickStartTasks
+        run: ./gradlew lintDebug
 
       - name: Run Unit Tests
         working-directory: android-kotlin/QuickStartTasks
@@ -116,40 +111,34 @@ jobs:
           CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
           
           # Upload main APK
-          echo "Uploading main APK..."
           APP_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
             -F "file=@android-kotlin/QuickStartTasks/app/build/outputs/apk/debug/app-debug.apk" \
             -F "custom_id=ditto-android-kotlin-app-${GITHUB_RUN_NUMBER}")
           
           APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
-          echo "App upload response: $APP_UPLOAD_RESPONSE"
           
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "❌ Failed to upload main APK"
-            echo "Response: $APP_UPLOAD_RESPONSE"
+            echo "❌ Main APK upload failed: $APP_UPLOAD_RESPONSE"
             exit 1
           fi
           
           # Upload test APK
-          echo "Uploading test APK..."
           TEST_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
             -F "file=@android-kotlin/QuickStartTasks/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
             -F "custom_id=ditto-android-kotlin-test-${GITHUB_RUN_NUMBER}")
           
           TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
-          echo "Test upload response: $TEST_UPLOAD_RESPONSE"
           
           if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
-            echo "❌ Failed to upload test APK"
-            echo "Response: $TEST_UPLOAD_RESPONSE"
+            echo "❌ Test APK upload failed: $TEST_UPLOAD_RESPONSE"
             exit 1
           fi
           
           echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
           echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
-          echo "✓ Successfully uploaded both APKs"
+          echo "✓ APKs uploaded successfully"
 
       - name: Execute tests on BrowserStack
         id: test
