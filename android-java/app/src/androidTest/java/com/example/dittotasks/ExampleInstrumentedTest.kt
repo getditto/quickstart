@@ -25,16 +25,20 @@ import org.junit.After
 class TasksUITest {
     
     @get:Rule
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+    val activityScenarioRule = ActivityScenarioRule(MainActivity::class.java)
     
     // Idling resource to wait for async operations
     private val idlingResource = CountingIdlingResource("TaskSync")
     
     @Before
     fun setUp() {
+        // Ensure activity is fully launched before proceeding
+        activityScenarioRule.scenario.onActivity { activity ->
+            // Activity is now ready
+        }
         IdlingRegistry.getInstance().register(idlingResource)
         // Wait for UI to settle and app to initialize
-        Thread.sleep(3000)
+        Thread.sleep(5000) // Increased wait time for Ditto initialization
     }
     
     @After
@@ -44,20 +48,31 @@ class TasksUITest {
     
     @Test
     fun testAppLaunchesSuccessfully() {
-        // Verify the main elements are displayed
-        onView(withId(R.id.ditto_app_id))
-            .check(matches(isDisplayed()))
-            .check(matches(withText(containsString("App ID:"))))
+        // Wait a bit more for activity to fully initialize
+        Thread.sleep(2000)
         
-        onView(withId(R.id.sync_switch))
-            .check(matches(isDisplayed()))
-            .check(matches(isChecked()))
-        
-        onView(withId(R.id.add_button))
-            .check(matches(isDisplayed()))
-        
-        onView(withId(R.id.task_list))
-            .check(matches(isDisplayed()))
+        try {
+            // Verify the main elements are displayed
+            onView(withId(R.id.ditto_app_id))
+                .check(matches(isDisplayed()))
+                .check(matches(withText(containsString("App ID:"))))
+            
+            onView(withId(R.id.sync_switch))
+                .check(matches(isDisplayed()))
+                .check(matches(isChecked()))
+            
+            onView(withId(R.id.add_button))
+                .check(matches(isDisplayed()))
+            
+            onView(withId(R.id.task_list))
+                .check(matches(isDisplayed()))
+                
+            println("✓ All UI elements found and displayed correctly")
+            
+        } catch (e: Exception) {
+            println("❌ Test failed: ${e.message}")
+            throw e
+        }
     }
     
     @Test
