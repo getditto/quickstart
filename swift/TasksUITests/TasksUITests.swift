@@ -32,7 +32,7 @@ final class TasksUITests: XCTestCase {
             let firstTextField = textFields.element(boundBy: 0)
             if firstTextField.exists && firstTextField.isHittable {
                 firstTextField.tap()
-                firstTextField.typeText("BrowserStack Test Task")
+                firstTextField.typeText("BrowserStack XCUITest Task")
                 
                 // Look for add button
                 if buttons.count > 0 {
@@ -83,7 +83,7 @@ final class TasksUITests: XCTestCase {
             let taskInput = textFields.element(boundBy: 0)
             if taskInput.exists {
                 taskInput.tap()
-                taskInput.typeText("Test Task \(Date().timeIntervalSince1970)")
+                taskInput.typeText("XCUITest Task \(Date().timeIntervalSince1970)")
                 
                 // Try to submit
                 let buttons = app.buttons
