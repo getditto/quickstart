@@ -212,10 +212,10 @@ jobs:
         IPA_FILE="${{ steps.ios_validation.outputs.ipa_file_path }}"
         TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
         
-        # Upload app to XCUITest endpoint (correct API path)
+        # Upload app to BrowserStack XCUITest v2 API
         echo "📱 Uploading app..."
         APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/xcuitest/app" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/app" \
           -F "file=@$IPA_FILE" \
           -F "custom_id=ditto-swift-app")
         
@@ -228,10 +228,10 @@ jobs:
           exit 1
         fi
         
-        # Upload test bundle to XCUITest endpoint (correct API path)
+        # Upload test bundle to XCUITest v2 API
         echo "🧪 Uploading test bundle..."
         TEST_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/xcuitest/test-suite" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
           -F "file=@$TEST_BUNDLE")
         
         echo "Test upload response: $TEST_UPLOAD_RESPONSE"  
@@ -269,24 +269,20 @@ jobs:
           exit 1
         fi
         
-        # Create XCUITest execution request (like Android Espresso)
+        # Create XCUITest execution request using v2 API
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/xcuitest/build" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
           -H "Content-Type: application/json" \
           -d "{
             \"app\": \"$APP_URL\",
             \"testSuite\": \"$TEST_URL\",
             \"devices\": [\"iPhone 15 Pro-17\"],
-            \"projectName\": \"Ditto Swift\",
+            \"project\": \"Ditto Swift\",
             \"buildName\": \"Build #${{ github.run_number }}\",
             \"buildTag\": \"${{ github.ref_name }}\",
             \"deviceLogs\": true,
             \"video\": true,
-            \"networkLogs\": true,
-            \"env\": {
-              \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
-              \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\"
-            }
+            \"networkLogs\": true
           }")
         
         echo "BrowserStack API Response:"
@@ -318,7 +314,7 @@ jobs:
         
         while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
           BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/xcuitest/builds/$BUILD_ID")
+            "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
           
           BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
           
@@ -342,7 +338,7 @@ jobs:
         
         # Get final results
         FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          "https://api-cloud.browserstack.com/xcuitest/builds/$BUILD_ID")
+          "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
         
         echo "Final build result:"
         echo "$FINAL_RESULT" | jq .
