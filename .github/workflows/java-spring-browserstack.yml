@@ -112,9 +112,9 @@ jobs:
 
       - name: Start BrowserStack Local tunnel
         run: |
-          # Start BrowserStack Local tunnel with proper logging and force-local
+          # Start BrowserStack Local tunnel with verbose logging (remove --force-local for now)
           echo "Starting BrowserStack Local tunnel..."
-          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --force-local > bsl.log 2>&1 &
+          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --verbose 3 --local-identifier "github-actions-${{ github.run_id }}" > bsl.log 2>&1 &
           BSL_PID=$!
           echo "BSL_PID=$BSL_PID" >> $GITHUB_ENV
           
@@ -151,6 +151,31 @@ jobs:
           echo "=== BrowserStack Local Status ==="
           cat bsl.log
 
+      - name: Verify tunnel and app connectivity
+        run: |
+          echo "=== Verifying connectivity before WebDriver tests ==="
+          
+          # Test that Spring Boot app is accessible locally
+          echo "Testing local app accessibility..."
+          curl -f http://localhost:8080/actuator/health || {
+            echo "❌ Local app not accessible via localhost:8080"
+            exit 1
+          }
+          echo "✓ Local app accessible via localhost:8080"
+          
+          # Test that Spring Boot app is accessible via 0.0.0.0 binding
+          echo "Testing app binding..."
+          netstat -tuln | grep :8080 || {
+            echo "❌ App not listening on port 8080"
+            netstat -tuln | grep :80
+            exit 1
+          }
+          echo "✓ App is listening on port 8080"
+          
+          # Verify BrowserStack Local tunnel status via API
+          echo "Verifying BrowserStack Local tunnel status..."
+          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --status || true
+
       - name: Execute BrowserStack Web Tests
         id: test
         env:
@@ -175,7 +200,8 @@ jobs:
             'name': 'Java Spring Integration Test',
             'browserstack.debug': true,
             'browserstack.console': 'info',
-            'browserstack.local': 'true'
+            'browserstack.local': 'true',
+            'browserstack.localIdentifier': 'github-actions-' + process.env.GITHUB_RUN_ID
           };
           
           async function runTest() {
