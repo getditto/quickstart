@@ -100,6 +100,9 @@ jobs:
           cd ios
           
           # 1) Archive for device with Release configuration (bundles JS, no Metro dependency)
+          # Set NODE_BINARY to ensure Bundle React Native script works
+          export NODE_BINARY=$(command -v node)
+          
           xcodebuild -workspace DittoReactNativeSampleApp.xcworkspace \
             -scheme DittoReactNativeSampleApp \
             -configuration Release \
