@@ -22,7 +22,8 @@ tags:
 - tapOn:
     id: "task-input"
 - inputText: "Test Task 12345"
-- tapOn: "Add Task"
+- tapOn:
+    id: "save-task-button"
 # Wait for modal to close
 - assertNotVisible: "Add Task"
 # Verify the task appears in the list
