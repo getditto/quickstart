@@ -105,7 +105,12 @@ jobs:
           wget "https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip"
           unzip BrowserStackLocal-linux-x64.zip
           chmod +x BrowserStackLocal
-          nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon start &
+
+          # Create config file with restricted permissions
+          echo "key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}" > browserstack.yml
+          chmod 600 browserstack.yml
+
+          nohup ./BrowserStackLocal --config-file ./browserstack.yml --daemon start &
           sleep 10
           echo "BrowserStack Local tunnel established"
 
