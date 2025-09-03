@@ -9,20 +9,6 @@
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
-            buildForRunning = "NO"
-            buildForProfiling = "NO"
-            buildForArchiving = "NO"
-            buildForAnalyzing = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ABCDEF012345678900000006"
-               BuildableName = "TasksUITests.xctest"
-               BlueprintName = "TasksUITests"
-               ReferencedContainer = "container:Tasks.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
             buildForRunning = "YES"
             buildForProfiling = "YES"
             buildForArchiving = "YES"
@@ -32,6 +18,20 @@
                BlueprintIdentifier = "41F869892CECF42500DC7268"
                BuildableName = "Tasks.app"
                BlueprintName = "Tasks"
+               ReferencedContainer = "container:Tasks.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "ABCDEF012345678900000006"
+               BuildableName = "TasksUITests.xctest"
+               BlueprintName = "TasksUITests"
                ReferencedContainer = "container:Tasks.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -58,6 +58,15 @@
             </BuildableReference>
          </TestableReference>
       </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "41F869892CECF42500DC7268"
+            BuildableName = "Tasks.app"
+            BlueprintName = "Tasks"
+            ReferencedContainer = "container:Tasks.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
