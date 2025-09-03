@@ -128,14 +128,23 @@ jobs:
     
     - name: Run Integration Test to Insert Test Document
       working-directory: swift
+      env:
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
       run: |
         echo "🧪 Running integration test to insert document for BrowserStack verification..."
         
-        xcodebuild test \
-          -project Tasks.xcodeproj \
-          -scheme Tasks \
-          -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
-          -testPlan DittoIntegrationTests
+        # Generate test document ID for this run
+        GITHUB_TEST_DOC_ID="swift_github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        echo "📝 Test document ID: ${GITHUB_TEST_DOC_ID}"
+        
+        # Run the integration test runner
+        chmod +x TestRunner.swift
+        swift TestRunner.swift
         
         echo "✅ Integration test completed - test document should be in Ditto cloud"
     
