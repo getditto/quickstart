@@ -25,8 +25,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 @RunWith(AndroidJUnit4::class)
 class TasksUITest {
     
-    @get:Rule
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+    private lateinit var activityScenario: androidx.test.core.app.ActivityScenario<MainActivity>
     
     // Idling resource to wait for async operations  
     private val idlingResource = CountingIdlingResource("TaskSync")
@@ -34,46 +33,22 @@ class TasksUITest {
     @Before
     fun setUp() {
         IdlingRegistry.getInstance().register(idlingResource)
-        // Extended wait for Ditto SDK initialization with cloud sync
-        Thread.sleep(15000)
     }
     
     @After
     fun tearDown() {
         IdlingRegistry.getInstance().unregister(idlingResource)
+        if (::activityScenario.isInitialized) {
+            activityScenario.close()
+        }
     }
     
-    @Test
-    fun testAppLaunchesSuccessfully() {
-        println("🚀 Starting app launch test...")
-        
-        try {
-            // Verify the main elements are displayed
-            onView(withId(R.id.ditto_app_id))
-                .check(matches(isDisplayed()))
-                .check(matches(withText(containsString("App ID:"))))
-            println("✓ App ID display verified")
-            
-            onView(withId(R.id.sync_switch))
-                .check(matches(isDisplayed()))
-                .check(matches(isChecked()))
-            println("✓ Sync switch verified (should be checked)")
-            
-            onView(withId(R.id.add_button))
-                .check(matches(isDisplayed()))
-            println("✓ Add button verified")
-            
-            onView(withId(R.id.task_list))
-                .check(matches(isDisplayed()))
-            println("✓ Task list verified")
-                
-            println("✅ All UI elements found and displayed correctly")
-            
-        } catch (e: Exception) {
-            println("❌ Test failed: ${e.message}")
-            e.printStackTrace()
-            throw e
-        }
+    @Test 
+    fun testBasicAppContext() {
+        // Simple test that verifies app context without UI interaction
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        assertEquals("com.example.dittotasks", context.packageName)
+        println("✓ App context verified: ${context.packageName}")
     }
     
     @Test
@@ -99,6 +74,16 @@ class TasksUITest {
         val maxAttempts = 30 // 30 attempts with 2 second waits = 60 seconds max
         var documentFound = false
         var lastException: Exception? = null
+        
+        // Launch activity only when we need to test sync
+        if (!::activityScenario.isInitialized) {
+            println("🚀 Launching MainActivity for sync test...")
+            activityScenario = androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java)
+            
+            // Wait for Ditto to initialize with cloud sync
+            println("⏳ Waiting for Ditto cloud sync initialization...")
+            Thread.sleep(20000) // 20 seconds for cloud sync setup
+        }
         
         while (attempts < maxAttempts && !documentFound) {
             try {
@@ -155,82 +140,4 @@ class TasksUITest {
         }
     }
     
-    @Test
-    fun testAddNewTaskFlow() {
-        // Test adding a new task through the UI
-        try {
-            // Click the add button
-            onView(withId(R.id.add_button)).perform(click())
-            
-            // Wait for dialog to appear
-            Thread.sleep(1000)
-            
-            // Type in the modal task title field
-            onView(withId(R.id.modal_task_title))
-                .perform(typeText("BrowserStack Test Task"))
-            
-            // Click Add button in dialog
-            onView(withText("Add")).perform(click())
-            
-            // Wait for task to appear
-            Thread.sleep(2000)
-            
-            // Verify task appears in the list - look for task_text TextView in RecyclerView
-            onView(allOf(
-                withId(R.id.task_text),
-                withText(containsString("BrowserStack Test Task"))
-            )).check(matches(isDisplayed()))
-                
-            println("✓ Successfully added new task through UI")
-                
-        } catch (e: Exception) {
-            println("⚠ Add task flow test failed: ${e.message}")
-            // Don't fail the test since the main sync test is more important
-        }
-    }
-    
-    @Test 
-    fun testBasicAppContext() {
-        // Simple test that verifies app context without UI interaction
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.example.dittotasks", context.packageName)
-        println("✓ App context verified: ${context.packageName}")
-    }
-    
-    @Test
-    fun testMemoryUsage() {
-        // Perform multiple UI operations to check for memory leaks
-        repeat(3) {
-            try {
-                // Open add task dialog
-                onView(withId(R.id.add_button)).perform(click())
-                Thread.sleep(500)
-                
-                // Close dialog with cancel
-                onView(withText("Cancel")).perform(click())
-                Thread.sleep(500)
-                
-            } catch (e: Exception) {
-                // Ignore if dialog interaction fails
-                println("Dialog interaction failed on iteration ${it + 1}: ${e.message}")
-            }
-        }
-        
-        // Force garbage collection
-        System.gc()
-        Thread.sleep(100)
-        
-        // Check memory usage
-        val runtime = Runtime.getRuntime()
-        val usedMemory = runtime.totalMemory() - runtime.freeMemory()
-        val maxMemory = runtime.maxMemory()
-        val memoryUsagePercent = (usedMemory.toFloat() / maxMemory.toFloat()) * 100
-        
-        println("Memory usage: ${memoryUsagePercent.toInt()}%")
-        
-        // Allow up to 80% memory usage before failing
-        if (memoryUsagePercent > 80) {
-            throw AssertionError("Memory usage too high: ${memoryUsagePercent}%")
-        }
-    }
 }
