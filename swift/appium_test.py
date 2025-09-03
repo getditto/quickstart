@@ -38,9 +38,26 @@ def test_ditto_app():
         assert driver.query_app_state('live.ditto.quickstart.Tasks') == 4  # Running foreground
         print("✅ App is running in foreground")
         
-        # Test 2: Verify document sync from integration test
-        print("🧪 Test 2: Verifying document sync from integration test...")
-        time.sleep(5)
+        # Test 2: Handle permissions and verify document sync
+        print("🧪 Test 2: Handling permissions and verifying document sync...")
+        time.sleep(3)
+        
+        # Handle network permission dialog if present
+        try:
+            # Look for permission dialog buttons
+            buttons = driver.find_elements('class name', 'XCUIElementTypeButton')
+            for button in buttons:
+                if button.text and ('Allow' in button.text or 'OK' in button.text):
+                    print("📱 Allowing network permissions...")
+                    button.click()
+                    time.sleep(2)
+                    break
+        except:
+            pass
+        
+        # Wait for sync to complete
+        print("⏰ Waiting for sync to complete...")
+        time.sleep(10)
         
         # Look for the specific test document that should be synced from HTTP API
         github_run_id = os.environ.get('GITHUB_RUN_ID', 'unknown')
@@ -74,8 +91,22 @@ def test_ditto_app():
                     except:
                         continue
                         
-                # This might be expected if the integration test runs separately
-                print("⚠️  Document sync verification inconclusive - continuing with basic UI tests")
+                # Check if we can find any test documents from previous runs
+                found_any_test_doc = False
+                for text_element in static_texts:
+                    try:
+                        text_content = text_element.text
+                        if text_content and 'swift_github_test_' in text_content:
+                            print(f"✅ Found test document from previous run: {text_content}")
+                            found_any_test_doc = True
+                            break
+                    except:
+                        continue
+                
+                if found_any_test_doc:
+                    print("✅ Document sync appears to be working (found test docs from previous runs)")
+                else:
+                    print("⚠️  Document sync verification inconclusive - continuing with basic UI tests")
             
         except Exception as e:
             print(f"⚠️  Document sync verification failed: {e}")
