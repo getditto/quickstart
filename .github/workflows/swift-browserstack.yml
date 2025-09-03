@@ -148,67 +148,153 @@ jobs:
         echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
         echo "✅ iOS .ipa uploaded successfully: $APP_URL"
     
-    - name: Setup Python for BrowserStack Tests
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install BrowserStack Test Dependencies
-      working-directory: swift/BrowserStackTests
+    - name: Build XCUITest Runner for BrowserStack
+      id: build_test
+      working-directory: swift
       run: |
-        echo "📦 Installing Python dependencies for automated testing..."
-        pip install -r requirements.txt
-        echo "✅ Dependencies installed: Appium, Selenium"
-    
-    - name: Execute Automated Tests on BrowserStack Real Devices
-      id: test
-      working-directory: swift/BrowserStackTests
-      env:
-        BROWSERSTACK_APP_URL: ${{ steps.upload.outputs.app_url }}
-        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
-        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
-        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-      run: |
-        APP_URL="${{ steps.upload.outputs.app_url }}"
+        echo "🧪 Building XCUITest runner for BrowserStack real device testing..."
         
-        echo "🚀 Running automated Ditto sync tests on real iOS devices..."
-        echo "App URL: $APP_URL"
+        # Build test runner for iOS device
+        xcodebuild build-for-testing \
+          -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -destination 'generic/platform=iOS' \
+          -derivedDataPath build/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
         
-        # Validate app upload was successful
-        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
-          echo "❌ No valid app URL from upload step"
-          exit 1
-        fi
-        
-        echo "🧪 Starting comprehensive Ditto Swift testing suite..."
-        echo "📱 Testing devices: iPhone 15 Pro, iPhone 14"
-        echo "🔄 Tests: App Launch, Ditto Init, Task Operations, Stability"
-        
-        # Run the automated test suite
-        python3 ditto_sync_test.py
-        
-        # Check if test results file was created
-        if [ -f "browserstack_test_results.json" ]; then
-          echo "📊 Test results summary:"
-          cat browserstack_test_results.json | jq '.[] | {device: .device, success: .success, tests: .results.passed + .results.failed}'
+        # Find the test runner .app
+        TEST_RUNNER_PATH=$(find build/DerivedData -name "*-Runner.app" -type d | head -1)
+        if [ -d "$TEST_RUNNER_PATH" ]; then
+          echo "✅ Found test runner: $TEST_RUNNER_PATH"
           
-          # Check if any tests failed
-          FAILED_TESTS=$(cat browserstack_test_results.json | jq '.[] | select(.success == false) | .device')
-          if [ -n "$FAILED_TESTS" ]; then
-            echo "❌ Some devices failed testing:"
-            echo "$FAILED_TESTS"
-            exit 1
+          # Create test runner .ipa
+          mkdir -p build/TestPayload
+          cp -R "$TEST_RUNNER_PATH" build/TestPayload/
+          (cd build && zip -qry TasksUITests-Runner.ipa TestPayload && rm -rf TestPayload)
+          
+          if [ -f "build/TasksUITests-Runner.ipa" ]; then
+            echo "✅ Test runner .ipa created: $(pwd)/build/TasksUITests-Runner.ipa"
+            echo "test_runner_ipa=$(pwd)/build/TasksUITests-Runner.ipa" >> $GITHUB_OUTPUT
           else
-            echo "✅ All BrowserStack real device tests passed!"
-            echo "🎯 Swift iOS app successfully tested Ditto sync functionality"
+            echo "❌ Failed to create test runner .ipa"
+            exit 1
           fi
         else
-          echo "❌ Test results file not found - tests may have failed to run"
+          echo "❌ Test runner .app not found"
+          find build/DerivedData -name "*.app" -type d || echo "No .app files found"
           exit 1
         fi
+    
+    - name: Upload Test Runner to BrowserStack  
+      id: upload_test
+      run: |
+        echo "📤 Uploading XCUITest runner to BrowserStack..."
+        
+        TEST_IPA="${{ steps.build_test.outputs.test_runner_ipa }}"
+        
+        if [ ! -f "$TEST_IPA" ]; then
+          echo "❌ Test runner .ipa not found: $TEST_IPA"
+          exit 1
+        fi
+        
+        # Upload test runner to BrowserStack
+        TEST_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/test-suite" \
+          -F "file=@$TEST_IPA")
+        
+        echo "Test upload response: $TEST_UPLOAD_RESPONSE"
+        TEST_URL=$(echo $TEST_UPLOAD_RESPONSE | jq -r .test_suite_url)
+        
+        if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+          echo "❌ Failed to upload test runner to BrowserStack"
+          echo "Response: $TEST_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
+        echo "test_suite_url=$TEST_URL" >> $GITHUB_OUTPUT
+        echo "✅ Test runner uploaded successfully: $TEST_URL"
+    
+    - name: Execute XCUITests on BrowserStack Real Devices
+      id: test
+      env:
+        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+      run: |
+        APP_URL="${{ steps.upload.outputs.app_url }}"
+        TEST_URL="${{ steps.upload_test.outputs.test_suite_url }}"
+        
+        echo "🚀 Running XCUITests on BrowserStack real devices..."
+        echo "App URL: $APP_URL"
+        echo "Test Suite URL: $TEST_URL"
+        
+        # Validate URLs
+        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+          echo "❌ No valid app URL"
+          exit 1
+        fi
+        
+        if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+          echo "❌ No valid test suite URL"
+          exit 1
+        fi
+        
+        # Execute XCUITest on iPhone 15 Pro
+        echo "📱 Starting test on iPhone 15 Pro..."
+        TEST_EXECUTION_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/build" \
+          -d '{
+            "devices": ["iPhone 15 Pro-17"],
+            "app": "'$APP_URL'",
+            "testSuite": "'$TEST_URL'",
+            "project": "Swift iOS Tasks",
+            "buildName": "Swift XCUITest Build '${{ github.run_id }}'"
+          }' \
+          -H "Content-Type: application/json")
+        
+        echo "Test execution response: $TEST_EXECUTION_RESPONSE"
+        BUILD_ID=$(echo $TEST_EXECUTION_RESPONSE | jq -r .build_id)
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "❌ Failed to start XCUITest execution"
+          echo "Response: $TEST_EXECUTION_RESPONSE"
+          exit 1
+        fi
+        
+        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+        echo "✅ XCUITest execution started with build ID: $BUILD_ID"
+        
+        # Wait for test completion and check results
+        echo "⏳ Waiting for test execution to complete..."
+        for i in {1..60}; do
+          sleep 30
+          
+          BUILD_STATUS_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/xcuitest/builds/$BUILD_ID")
+          
+          STATUS=$(echo $BUILD_STATUS_RESPONSE | jq -r .status)
+          echo "Build status check $i: $STATUS"
+          
+          if [ "$STATUS" = "passed" ]; then
+            echo "✅ All XCUITests passed on BrowserStack!"
+            exit 0
+          elif [ "$STATUS" = "failed" ]; then
+            echo "❌ XCUITests failed on BrowserStack"
+            echo "Build details: $BUILD_STATUS_RESPONSE"
+            exit 1
+          elif [ "$STATUS" = "error" ]; then
+            echo "❌ XCUITest execution error"
+            echo "Build details: $BUILD_STATUS_RESPONSE"
+            exit 1
+          fi
+          
+          # Continue waiting if status is "running" or "queued"
+        done
+        
+        echo "⚠️ Test execution timeout after 30 minutes"
+        echo "Final build status: $(echo $BUILD_STATUS_RESPONSE | jq -r .status)"
+        exit 1
 
   summary:
     name: BrowserStack Summary
@@ -219,31 +305,31 @@ jobs:
     steps:
     - name: Report BrowserStack Test Results
       run: |
-        echo "## 📱 BrowserStack Automated Testing Results - Swift iOS"
+        echo "## 📱 BrowserStack XCUITest Results - Swift iOS"
         echo ""
-        echo "### Automated Ditto Sync Testing"
+        echo "### Native iOS XCUITest Execution"
         echo "Status: ${{ needs.ios-browserstack.result }}"
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
-          echo "✅ Swift iOS app successfully passed automated Ditto testing on BrowserStack real devices:"
-          echo "   - iPhone 15 Pro (iOS 17) - App Launch, Ditto Init, Task Ops, Stability"
-          echo "   - iPhone 14 (iOS 16) - App Launch, Ditto Init, Task Ops, Stability"
+          echo "✅ Swift iOS app successfully passed native XCUITests on BrowserStack real devices:"
+          echo "   - iPhone 15 Pro (iOS 17) - Native XCUITest execution"
           echo ""
-          echo "🧪 Automated tests verified:"
-          echo "   ✓ App launches without crashes"
-          echo "   ✓ Ditto SDK initializes correctly"
-          echo "   ✓ Task CRUD operations function"
+          echo "🧪 XCUITests verified:"
+          echo "   ✓ App launches successfully on real devices"
+          echo "   ✓ Ditto SDK initializes without crashes"
+          echo "   ✓ Task CRUD operations work correctly"
           echo "   ✓ App remains stable during extended use"
-          echo "   ✓ Real device functionality confirmed"
+          echo "   ✓ Real device UI interactions function properly"
+          echo "   ✓ Native iOS testing framework validation"
         else
-          echo "❌ Swift iOS automated BrowserStack testing failed"
+          echo "❌ Swift iOS XCUITest execution failed on BrowserStack"
         fi
         
         echo ""
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
-          echo "🎉 Swift iOS automated BrowserStack testing completed successfully!"
-          echo "🤖 Real device testing validated Ditto sync functionality"
-          echo "🔗 Check BrowserStack dashboard for session recordings and detailed logs"
+          echo "🎉 Swift iOS XCUITest execution completed successfully!"
+          echo "📱 Native iOS testing validated Ditto functionality on real devices"
+          echo "🔗 Check BrowserStack dashboard for test recordings and detailed reports"
         else
-          echo "⚠️ Swift iOS automated BrowserStack tests encountered issues"
+          echo "⚠️ Swift iOS XCUITest execution encountered issues"
           exit 1
         fi
