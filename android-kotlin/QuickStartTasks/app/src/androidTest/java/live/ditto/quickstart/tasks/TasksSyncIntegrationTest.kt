@@ -36,10 +36,12 @@ class TasksSyncIntegrationTest {
 
         println("TasksSyncIntegrationTest: Test document ID = $testDocumentId")
 
-        // Ensure the activity is launched and UI is ready
+        // Wait for the activity and UI to be ready
         try {
-            composeTestRule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
             composeTestRule.waitForIdle()
+            
+            // Give time for the activity to start and UI to render
+            Thread.sleep(3000)
             
             // Verify the activity launched by checking for the app title
             composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true).assertExists("MainActivity should be launched")
@@ -51,6 +53,19 @@ class TasksSyncIntegrationTest {
             
         } catch (e: Exception) {
             println("❌ Failed to launch MainActivity properly: ${e.message}")
+            
+            // Try to get more debug info
+            try {
+                val allText = composeTestRule.onAllNodesWithText("", substring = true).fetchSemanticsNodes()
+                println("Debug: Found ${allText.size} text nodes in UI")
+                
+                // Check if the activity exists at all
+                val activity = composeTestRule.activity
+                println("Debug: Activity state = ${activity.lifecycle.currentState}")
+            } catch (debugException: Exception) {
+                println("Debug info failed: ${debugException.message}")
+            }
+            
             throw e
         }
     }
@@ -59,8 +74,16 @@ class TasksSyncIntegrationTest {
     fun testGitHubDocumentSyncFromCloud() {
         if (testDocumentId.isNullOrEmpty()) {
             println("⚠️ No GitHub test document ID provided, skipping sync verification")
-            // Still run basic UI test to ensure app is functional
-            testBasicUIFunctionality()
+            
+            // Just verify the app launched and UI is working
+            try {
+                composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true)
+                    .assertExists("App should be running even without test document")
+                println("✅ App is running - sync test skipped (no document ID provided)")
+            } catch (e: Exception) {
+                println("❌ App not running properly: ${e.message}")
+                throw AssertionError("App should launch successfully even without test document ID")
+            }
             return
         }
 

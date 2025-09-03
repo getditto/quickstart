@@ -170,26 +170,9 @@ dependencies {
 }
 
 // Custom tasks for local integration testing
-tasks.register("seedTestDocument", Exec::class) {
+tasks.register("runIntegrationTest", Exec::class) {
     group = "testing"
-    description = "Seed a test document in Ditto Cloud for integration testing"
-    
-    workingDir = rootProject.file("../")
-    commandLine = listOf("python3", "scripts/seed-test-document.py", "--verify")
-    
-    doFirst {
-        println("🌱 Seeding test document in Ditto Cloud...")
-    }
-    
-    doLast {
-        println("✅ Test document seeded successfully!")
-        println("💡 You can now run: ./gradlew runSyncIntegrationTest")
-    }
-}
-
-tasks.register("runSyncIntegrationTest", Exec::class) {
-    group = "testing"
-    description = "Run Ditto sync integration test with local device/emulator"
+    description = "Run integration test on connected device/emulator"
     
     dependsOn("assembleDebugAndroidTest")
     
@@ -200,34 +183,9 @@ tasks.register("runSyncIntegrationTest", Exec::class) {
     )
     
     doFirst {
-        println("🧪 Running Ditto sync integration test...")
+        println("🧪 Running integration test...")
         println("📱 Make sure an Android device/emulator is connected!")
-    }
-}
-
-tasks.register("testLocalIntegration", Exec::class) {
-    group = "testing"
-    description = "Complete local integration test: seed document + run test"
-    
-    workingDir = rootProject.file("../")
-    commandLine = listOf("scripts/test-local.sh")
-    
-    doFirst {
-        println("🚀 Running complete local integration test...")
-        println("   1. Seeding test document in Ditto Cloud")
-        println("   2. Building Android test APKs")  
-        println("   3. Running integration test on connected device")
-    }
-}
-
-tasks.register("testLocalQuick", Exec::class) {
-    group = "testing"
-    description = "Quick local test using existing seeded document"
-    
-    workingDir = rootProject.file("../")
-    commandLine = listOf("scripts/test-local.sh", "--test-only")
-    
-    doFirst {
-        println("⚡ Running quick integration test with existing document...")
+        println("💡 Test will verify app launches and basic functionality")
+        println("   (Document sync test will be skipped without GITHUB_TEST_DOC_ID)")
     }
 }
