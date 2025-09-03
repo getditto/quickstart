@@ -94,8 +94,7 @@ jobs:
       - name: Start web server
         working-directory: javascript-web
         run: |
-          npm install -g http-server
-          nohup http-server dist -p 3000 -c-1 --cors > server.log 2>&1 &
+          nohup npx http-server dist -p 3000 -c-1 --cors > server.log 2>&1 &
           sleep 5
           curl -f http://localhost:3000/ || (echo "Server failed to start" && cat server.log && exit 1)
           echo "Web server started on http://localhost:3000"
