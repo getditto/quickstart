@@ -90,53 +90,55 @@ jobs:
         working-directory: flutter_app
         run: flutter analyze
         
-      - name: Build Flutter Android APK
+      - name: Build Flutter Android APK and Test APK
         working-directory: flutter_app
         run: |
+          echo "Building Flutter Android APK and test APK..."
+          
+          # Build both app and test APKs
           flutter build apk --debug
-          echo "Android APK built successfully"
           
-      - name: Create Flutter test package
-        working-directory: flutter_app
-        run: |
-          echo "Creating Flutter test package ZIP for BrowserStack..."
+          # Verify both APKs were built
+          APP_APK="build/app/outputs/apk/debug/app-debug.apk"
+          TEST_APK="build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
           
-          # Create test package directory structure as per BrowserStack requirements
-          mkdir -p build/test_package
+          if [ ! -f "$APP_APK" ]; then
+            echo "❌ App APK not found at $APP_APK"
+            exit 1
+          fi
           
-          # Copy integration test files
-          cp -r integration_test build/test_package/
-          cp -r test_driver build/test_package/
+          if [ ! -f "$TEST_APK" ]; then
+            echo "❌ Test APK not found at $TEST_APK"
+            echo "Available androidTest APKs:"
+            find build/app/outputs/apk/androidTest -name "*.apk" || echo "No androidTest APKs found"
+            exit 1
+          fi
           
-          # Create the test package ZIP
-          cd build/test_package
-          zip -r ../flutter_integration_tests.zip .
-          cd ../..
-          
-          ls -la build/flutter_integration_tests.zip
-          echo "✅ Flutter test package created"
+          ls -la "$APP_APK"
+          ls -la "$TEST_APK"
+          echo "✅ Both Android APKs built successfully"
           
       - name: Upload app and run Flutter integration tests on BrowserStack
         id: browserstack-android
         run: |
           echo "Running Flutter integration tests on BrowserStack Android devices..."
-          APK_FILE="flutter_app/build/app/outputs/flutter-apk/app-debug.apk"
-          TEST_PACKAGE="flutter_app/build/flutter_integration_tests.zip"
+          APP_APK="flutter_app/build/app/outputs/apk/debug/app-debug.apk"
+          TEST_APK="flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
           
-          if [ ! -f "$APK_FILE" ]; then
-            echo "❌ Android APK not found at $APK_FILE"
+          if [ ! -f "$APP_APK" ]; then
+            echo "❌ Android APK not found at $APP_APK"
             exit 1
           fi
           
-          if [ ! -f "$TEST_PACKAGE" ]; then
-            echo "❌ Test package not found at $TEST_PACKAGE"
+          if [ ! -f "$TEST_APK" ]; then
+            echo "❌ Test APK not found at $TEST_APK"
             exit 1
           fi
           
           # 1. Upload app using Flutter integration tests endpoint
-          echo "Uploading app to BrowserStack Flutter API..."
+          echo "Uploading app APK to BrowserStack Flutter API..."
           APP_JSON=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -F "file=@$APK_FILE" \
+            -F "file=@$APP_APK" \
             https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app)
           
           APP_URL=$(echo "$APP_JSON" | jq -r .app_url)
@@ -148,17 +150,17 @@ jobs:
             exit 1
           fi
           
-          # 2. Upload test package
-          echo "Uploading test package to BrowserStack..."
+          # 2. Upload compiled test APK (not source ZIP)
+          echo "Uploading test APK to BrowserStack..."
           TEST_JSON=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -F "file=@$TEST_PACKAGE" \
-            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/test-package)
+            -F "file=@$TEST_APK" \
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/test-suite)
           
-          TEST_URL=$(echo "$TEST_JSON" | jq -r .test_package_url)
-          echo "Test package URL: $TEST_URL"
+          TEST_URL=$(echo "$TEST_JSON" | jq -r .test_suite_url)
+          echo "Test suite URL: $TEST_URL"
           
           if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
-            echo "❌ Failed to upload test package"
+            echo "❌ Failed to upload test suite"
             echo "Response: $TEST_JSON"
             exit 1
           fi
