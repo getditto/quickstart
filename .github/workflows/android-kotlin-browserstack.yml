@@ -39,22 +39,62 @@ jobs:
           ditto-auth-url: ${{ secrets.DITTO_AUTH_URL }}
           ditto-websocket-url: ${{ secrets.DITTO_WEBSOCKET_URL }}
 
-      - name: Insert test document into Ditto Cloud
-        uses: ./.github/actions/ditto-test-document-insert
-        with:
-          project-type: android-kotlin
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-
       - name: Cache Gradle
         uses: ./.github/actions/gradle-cache
 
+      # Step 1: Lint
+      - name: Lint Code
+        working-directory: android-kotlin/QuickStartTasks
+        run: |
+          ./gradlew lintDebug
+          echo "Lint completed successfully"
+
+      # Step 2: Build - APKs bundle
       - name: Build APK
         working-directory: android-kotlin/QuickStartTasks
         run: |
           ./gradlew assembleDebug assembleDebugAndroidTest
           echo "APK built successfully"
 
+      # Step 3: Seed - HTTP POST document to Ditto Cloud
+      - name: Insert test document into Ditto Cloud
+        run: |
+          # Use GitHub run ID to create deterministic document ID
+          DOC_ID="github_android-kotlin_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          # Insert document using curl with correct JSON structure
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"title\": \"GitHub Test Task ${GITHUB_RUN_ID} - Android Kotlin\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          # Extract HTTP status code and response body
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          
+          # Check if insertion was successful
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+            echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+          else
+            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+
+      # Step 4: Upload - app and tests to BrowserStack
       - name: Upload APKs to BrowserStack
         id: upload
         run: |
@@ -96,6 +136,7 @@ jobs:
           echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
           echo "Test APK uploaded successfully: $TEST_URL"
 
+      # Step 5: Test - tests wait for seeded document to appear
       - name: Execute tests on BrowserStack
         id: test
         run: |
@@ -166,6 +207,7 @@ jobs:
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "Build started with ID: $BUILD_ID"
 
+      # Step 6: Wait - poll for results
       - name: Wait for BrowserStack tests to complete
         run: |
           BUILD_ID="${{ steps.test.outputs.build_id }}"
