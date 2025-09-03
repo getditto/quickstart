@@ -23,12 +23,212 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  flutter-build:
+    name: Build Flutter Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      android-doc-id: ${{ steps.android-doc.outputs.doc-id }}
+      ios-doc-id: ${{ steps.ios-doc.outputs.doc-id }}
+      web-doc-id: ${{ steps.web-doc.outputs.doc-id }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          cache: true
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Insert test documents into Ditto Cloud
+        run: |
+          # Android test document
+          ANDROID_DOC_ID="github_test_android_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${ANDROID_DOC_ID}\",
+                  \"title\": \"Flutter Android BrowserStack Test ${GITHUB_RUN_ID}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted Android test document"
+            echo "doc-id=${ANDROID_DOC_ID}" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to insert Android document. HTTP Status: $HTTP_CODE"
+            exit 1
+          fi
+        id: android-doc
+        
+      - name: Insert iOS test document
+        run: |
+          IOS_DOC_ID="github_test_ios_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${IOS_DOC_ID}\",
+                  \"title\": \"Flutter iOS BrowserStack Test ${GITHUB_RUN_ID}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted iOS test document"
+            echo "doc-id=${IOS_DOC_ID}" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to insert iOS document. HTTP Status: $HTTP_CODE"
+            exit 1
+          fi
+        id: ios-doc
+        
+      - name: Insert Web test document
+        run: |
+          WEB_DOC_ID="github_test_web_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${WEB_DOC_ID}\",
+                  \"title\": \"Flutter Web BrowserStack Test ${GITHUB_RUN_ID}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted Web test document"
+            echo "doc-id=${WEB_DOC_ID}" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to insert Web document. HTTP Status: $HTTP_CODE"
+            exit 1
+          fi
+        id: web-doc
+        
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+          
+      - name: Get Flutter dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+        
+      - name: Run Flutter analyzer (lint)
+        working-directory: flutter_app
+        run: flutter analyze
+        
+      - name: Build all Flutter artifacts
+        working-directory: flutter_app
+        run: |
+          echo "Building all Flutter artifacts..."
+          
+          # Build Android APKs
+          echo "Building Android APKs..."
+          flutter build apk --debug
+          cd android
+          ./gradlew assembleDebugAndroidTest
+          cd ..
+          
+          # Build iOS test package for Flutter integration tests (no app needed)
+          echo "Building iOS Flutter integration test package..."
+          output="../build/ios_integration"
+          product="build/ios_integration/Build/Products"
+          
+          cd ios
+          xcodebuild \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -config Flutter/Release.xcconfig \
+            -derivedDataPath $output \
+            -sdk iphoneos \
+            build-for-testing
+          cd ..
+          
+          # Create proper iOS test package ZIP
+          cd $product
+          # Find the actual xctestrun file name
+          XCTESTRUN_FILE=$(find . -maxdepth 1 -name "*.xctestrun" | head -1 | sed 's|./||')
+          if [ -z "$XCTESTRUN_FILE" ]; then
+            echo "❌ No .xctestrun file found"
+            ls -la
+            exit 1
+          fi
+          echo "Found xctestrun file: $XCTESTRUN_FILE"
+          
+          # Create ZIP with correct structure: Release-iphoneos/ folder + .xctestrun at root
+          zip -r ios_flutter_tests.zip "Release-iphoneos" "$XCTESTRUN_FILE"
+          cd ../../..
+          
+          # Move the test package to expected location
+          mv $product/ios_flutter_tests.zip build/flutter_integration_tests.zip
+          
+          # Build Web
+          echo "Building Web..."
+          flutter build web --release
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-build-artifacts
+          path: |
+            flutter_app/build/app/outputs/apk/debug/app-debug.apk
+            flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            flutter_app/build/flutter_integration_tests.zip
+            flutter_app/build/web/
+            flutter_app/.env
+          retention-days: 1
+
   flutter-android:
     name: Flutter Android BrowserStack Testing
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: flutter-build
+    env:
+      GITHUB_TEST_DOC_ID_ANDROID: ${{ needs.flutter-build.outputs.android-doc-id }}
 
     steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-build-artifacts
+          path: flutter_app/
       - name: Checkout code
         uses: actions/checkout@v4
         
@@ -265,145 +465,81 @@ jobs:
     name: Flutter iOS BrowserStack Testing
     runs-on: macos-latest
     timeout-minutes: 60
+    needs: flutter-build
+    env:
+      GITHUB_TEST_DOC_ID_IOS: ${{ needs.flutter-build.outputs.ios-doc-id }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
-          flutter-version: '3.x'
-          cache: true
+          name: flutter-build-artifacts
+          path: flutter_app/
           
-      - name: Insert test document into Ditto Cloud for iOS
-        run: |
-          DOC_ID="github_test_ios_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H 'Content-type: application/json' \
-            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-            -d "{
-              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-              \"args\": {
-                \"newTask\": {
-                  \"_id\": \"${DOC_ID}\",
-                  \"title\": \"Flutter iOS BrowserStack Test ${GITHUB_RUN_ID}\",
-                  \"done\": false,
-                  \"deleted\": false
-                }
-              }
-            }" \
-          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Successfully inserted iOS test document with ID: ${DOC_ID}"
-            echo "GITHUB_TEST_DOC_ID_IOS=${DOC_ID}" >> $GITHUB_ENV
-          else
-            echo "❌ Failed to insert iOS document. HTTP Status: $HTTP_CODE"
-            exit 1
-          fi
-        
-      - name: Create .env file for iOS
-        run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
-          
-      - name: Get Flutter dependencies for iOS
-        working-directory: flutter_app
-        run: flutter pub get
-        
-      - name: Build Flutter iOS IPA
-        working-directory: flutter_app
-        run: |
-          # Build iOS app bundle for BrowserStack (unsigned, following Swift pattern)
-          flutter build ios --debug --no-codesign
-          
-          # Locate the built device .app (prefer Debug-iphoneos, fall back to iphoneos)
-          APP_BUNDLE_PATH=$( \
-            find build/ios/Debug-iphoneos -name "*.app" -type d 2>/dev/null | head -n1 \
-            || find build/ios/iphoneos -name "*.app" -type d 2>/dev/null | head -n1 \
-          )
-          
-          if [ -z "$APP_BUNDLE_PATH" ]; then
-            echo "❌ iOS app bundle not found in Debug-iphoneos or iphoneos"
-            find build/ios -name "*.app" -type d || true
-            exit 1
-          fi
-          
-          echo "Found iOS app bundle: $APP_BUNDLE_PATH"
-          
-          # Create IPA from app bundle (following Swift BrowserStack pattern)
-          mkdir -p build/ios/ipa/Payload
-          cp -R "$APP_BUNDLE_PATH" build/ios/ipa/Payload/
-          (cd build/ios/ipa && zip -qry flutter_quickstart.ipa Payload && rm -rf Payload)
-          
-          echo "✅ iOS IPA created successfully"
-          ls -la build/ios/ipa/flutter_quickstart.ipa
-          
-      - name: Create Flutter test package for iOS
-        working-directory: flutter_app
-        run: |
-          echo "Creating Flutter test package ZIP for iOS BrowserStack..."
-          
-          # Create test package directory structure
-          mkdir -p build/test_package
-          
-          # Copy integration test files
-          cp -r integration_test build/test_package/
-          cp -r test_driver build/test_package/
-          
-          # Create the test package ZIP
-          cd build/test_package
-          zip -r ../flutter_integration_tests.zip .
-          cd ../..
-          
-          ls -la build/flutter_integration_tests.zip
-          echo "✅ Flutter iOS test package created"
-          
-      - name: Upload app and run Flutter integration tests on BrowserStack iOS
+      - name: Run Flutter iOS integration tests on BrowserStack
         id: browserstack-ios
         run: |
-          echo "Running Flutter integration tests on BrowserStack iOS devices..."
-          IPA_FILE="flutter_app/build/ios/ipa/flutter_quickstart.ipa"
+          echo "Running Flutter iOS integration tests on BrowserStack devices..."
           TEST_PACKAGE="flutter_app/build/flutter_integration_tests.zip"
-          
-          if [ ! -f "$IPA_FILE" ]; then
-            echo "❌ iOS IPA not found at $IPA_FILE"
-            exit 1
-          fi
           
           if [ ! -f "$TEST_PACKAGE" ]; then
             echo "❌ Test package not found at $TEST_PACKAGE"
+            find flutter_app/build -name "*.zip" || echo "No ZIP files found"
             exit 1
           fi
           
-          # 1. Upload app using Flutter integration tests endpoint for iOS
-          echo "Uploading iOS app to BrowserStack Flutter API..."
-          APP_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -F "file=@$IPA_FILE" \
-            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/app)
+          echo "✅ Found test package: $TEST_PACKAGE"
+          ls -la "$TEST_PACKAGE"
           
-          echo "Raw iOS APP_JSON response: $APP_JSON"
+          # Upload ONLY test package (iOS Flutter integration tests don't upload app)
+          echo "Uploading iOS test package to BrowserStack..."
+          TEST_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -F "file=@$TEST_PACKAGE" \
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/test-package)
           
-          if echo "$APP_JSON" | jq . > /dev/null 2>&1; then
-            APP_URL=$(echo "$APP_JSON" | jq -r .app_url)
-            echo "App URL: $APP_URL"
+          echo "Raw iOS TEST_JSON response: $TEST_JSON"
+          
+          if echo "$TEST_JSON" | jq . > /dev/null 2>&1; then
+            TEST_URL=$(echo "$TEST_JSON" | jq -r .test_package_url)
+            echo "Test package URL: $TEST_URL"
           else
-            echo "❌ Invalid JSON response from iOS app upload API"
-            echo "Response: $APP_JSON"
+            echo "❌ Invalid JSON response from test package upload API"
+            echo "Response: $TEST_JSON"
             exit 1
           fi
           
-          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "❌ Failed to upload iOS app"
-            echo "Response: $APP_JSON"
+          if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+            echo "❌ Failed to upload test package"
+            echo "Response: $TEST_JSON"
             exit 1
           fi
           
-          # 2. Upload test package
+          # Start build (iOS Flutter integration tests - no app field, only testPackage)
+          echo "Starting Flutter iOS integration test build..."
+          BUILD_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+                  \"testPackage\": \"$TEST_URL\",
+                  \"devices\": [\"iPhone 15 Pro-17\", \"iPhone 14-16\"],
+                  \"project\": \"Ditto Flutter iOS\",
+                  \"buildName\": \"Build #${{ github.run_number }}\",
+                  \"buildTag\": \"${{ github.ref_name }}\",
+                  \"deviceLogs\": true,
+                  \"networkLogs\": true
+                }" \
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build)
+          
+          echo "Build response: $BUILD_JSON"
+          BUILD_ID=$(echo "$BUILD_JSON" | jq -r .build_id)
+          
+          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+            echo "❌ Failed to start iOS build"
+            echo "Response: $BUILD_JSON"
+            exit 1
+          fi
+          
+          echo "IOS_BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "✅ Flutter iOS integration tests started with build ID: $BUILD_ID"
           echo "Uploading test package to BrowserStack..."
           TEST_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -F "file=@$TEST_PACKAGE" \
