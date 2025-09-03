@@ -70,7 +70,7 @@ final class TasksUITests: XCTestCase {
         XCTAssertGreaterThan(elements.count, 3, "UI should still be responsive")
     }
 
-    func testBasicAppFunctionality() throws {
+    func testDittoSyncVerification() throws {
         let app = XCUIApplication()
         app.launch()
 
@@ -78,40 +78,91 @@ final class TasksUITests: XCTestCase {
                      "App should launch successfully")
 
         // Handle permission dialogs 
-        sleep(2)
+        sleep(3)
         handlePermissionDialogs(app: app)
 
-        // Basic functionality test - verify app UI loads and is interactive
-        print("🔍 Testing basic app functionality...")
+        // Wait for initial sync to complete
+        print("⏳ Waiting for initial sync...")
+        sleep(5)
         
-        // Check that main UI elements exist
-        let navigationTitle = app.staticTexts["Ditto Tasks"]
-        XCTAssertTrue(navigationTitle.waitForExistence(timeout: 10), "App title should be visible")
+        // Look for GitHub test document (like JavaScript test does)
+        let githubRunId = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
+        print("🔍 Looking for GitHub Test Task with run ID: \(githubRunId)")
         
-        // Check for new task button
-        let newTaskButton = app.buttons.containing(NSPredicate(format: "label CONTAINS[cd] 'New Task'")).firstMatch
-        XCTAssertTrue(newTaskButton.waitForExistence(timeout: 10), "New Task button should exist")
+        // Wait for the seeded document to appear (like JavaScript wait_for_sync_document)
+        var foundDocument = false
+        let maxWaitTime = 30.0
+        let startTime = Date()
         
-        // Test basic interaction - tap new task button
-        newTaskButton.tap()
-        sleep(2)
-        
-        // Verify edit screen opens
-        let textFields = app.textFields
-        XCTAssertGreaterThan(textFields.count, 0, "Edit screen should have text field")
-        
-        // Cancel back to main screen
-        let cancelButton = app.buttons["Cancel"]
-        if cancelButton.exists {
-            cancelButton.tap()
+        while Date().timeIntervalSince(startTime) < maxWaitTime {
+            // Look for table cells containing the GitHub run ID
+            let taskCells = app.tables.cells
+            for i in 0..<taskCells.count {
+                let cell = taskCells.element(boundBy: i)
+                if cell.exists {
+                    let cellText = cell.label
+                    if cellText.contains(githubRunId) && cellText.contains("GitHub Test Task") {
+                        print("✅ Found synced document: \(cellText)")
+                        foundDocument = true
+                        break
+                    }
+                }
+            }
+            
+            if foundDocument {
+                break
+            }
+            
+            // Also check static text elements
+            let staticTexts = app.staticTexts
+            for i in 0..<staticTexts.count {
+                let text = staticTexts.element(boundBy: i)
+                if text.exists {
+                    let textContent = text.label
+                    if textContent.contains(githubRunId) && textContent.contains("GitHub Test Task") {
+                        print("✅ Found synced document in text: \(textContent)")
+                        foundDocument = true
+                        break
+                    }
+                }
+            }
+            
+            if foundDocument {
+                break
+            }
+            
+            sleep(1) // Check every second like JavaScript
         }
+        
+        if !foundDocument {
+            print("❌ GitHub test document not found after \(maxWaitTime) seconds")
+            // Debug: show what we do have
+            print("🔍 Available UI elements:")
+            let allCells = app.tables.cells
+            for i in 0..<min(allCells.count, 5) {
+                let cell = allCells.element(boundBy: i)
+                if cell.exists && !cell.label.isEmpty {
+                    print("   Cell: '\(cell.label)'")
+                }
+            }
+            let allTexts = app.staticTexts
+            for i in 0..<min(allTexts.count, 10) {
+                let text = allTexts.element(boundBy: i)
+                if text.exists && !text.label.isEmpty && text.label.count > 3 {
+                    print("   Text: '\(text.label)'")
+                }
+            }
+            XCTFail("Failed to sync test document from Ditto Cloud")
+        }
+        
+        XCTAssertTrue(foundDocument, "GitHub test document should be synced from Ditto Cloud")
         
         // Verify app stability
         sleep(3)
         XCTAssertTrue(app.state == .runningForeground, 
-                     "App should remain stable after basic interactions")
+                     "App should remain stable after sync verification")
         
-        print("✅ Basic app functionality test completed successfully")
+        print("✅ Ditto sync verification completed successfully")
     }
     
     private func handlePermissionDialogs(app: XCUIApplication) {
