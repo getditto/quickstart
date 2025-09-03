@@ -120,119 +120,9 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Create Appium Test Script
-      run: |
-        echo "🧪 Creating Appium test script for BrowserStack..."
-        
-        mkdir -p appium-tests
-        cat > appium-tests/test_ditto_app.py << 'EOF'
-from appium import webdriver
-from appium.options.ios import XCUITestOptions
-import time
-import sys
-import os
-
-def test_ditto_app():
-    # BrowserStack capabilities
-    options = XCUITestOptions()
-    options.platform_name = 'iOS'
-    options.device_name = 'iPhone 15 Pro'
-    options.platform_version = '17'
-    options.app = os.environ['BROWSERSTACK_APP_URL']
-    
-    # BrowserStack specific capabilities
-    options.set_capability('bstack:options', {
-        'userName': os.environ['BROWSERSTACK_USERNAME'],
-        'accessKey': os.environ['BROWSERSTACK_ACCESS_KEY'],
-        'projectName': 'Ditto Swift App',
-        'buildName': f"Build #{os.environ.get('GITHUB_RUN_NUMBER', 'local')}",
-        'sessionName': 'Ditto Swift App Test',
-        'debug': True,
-        'networkLogs': True,
-        'deviceLogs': True,
-        'video': True
-    })
-    
-    driver = None
-    try:
-        print("🚀 Starting Appium test session...")
-        driver = webdriver.Remote('https://hub-cloud.browserstack.com/wd/hub', options=options)
-        
-        print("✅ App launched successfully")
-        time.sleep(10)  # Let app initialize
-        
-        # Test 1: Verify app is running
-        print("🧪 Test 1: Verifying app state...")
-        assert driver.query_app_state('live.ditto.Tasks') == 4  # Running foreground
-        print("✅ App is running in foreground")
-        
-        # Test 2: Basic UI interaction
-        print("🧪 Test 2: Testing basic UI interaction...")
-        time.sleep(5)
-        
-        # Try to find and interact with UI elements
-        try:
-            # Look for text fields (task input)
-            text_fields = driver.find_elements('class name', 'XCUIElementTypeTextField')
-            if text_fields:
-                print(f"✅ Found {len(text_fields)} text field(s)")
-                text_fields[0].click()
-                text_fields[0].send_keys("Appium Test Task")
-                print("✅ Successfully entered text in task field")
-            
-            # Look for buttons
-            buttons = driver.find_elements('class name', 'XCUIElementTypeButton')
-            if buttons:
-                print(f"✅ Found {len(buttons)} button(s)")
-                # Try clicking the first available button
-                for button in buttons:
-                    if button.is_enabled():
-                        button.click()
-                        print("✅ Successfully clicked button")
-                        break
-        except Exception as e:
-            print(f"⚠️  UI interaction test completed with note: {e}")
-            # Don't fail the test for UI variations
-        
-        # Test 3: App stability test
-        print("🧪 Test 3: Testing app stability...")
-        time.sleep(20)  # Run app for 20 seconds
-        assert driver.query_app_state('live.ditto.Tasks') == 4
-        print("✅ App remained stable for 20 seconds")
-        
-        # Test 4: Ditto initialization test (implicit - if app doesn't crash, Ditto is working)
-        print("🧪 Test 4: Ditto SDK stability test...")
-        time.sleep(10)
-        assert driver.query_app_state('live.ditto.Tasks') == 4
-        print("✅ Ditto SDK initialized successfully (app didn't crash)")
-        
-        print("🎉 All tests passed successfully!")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-        return False
-        
-    finally:
-        if driver:
-            driver.quit()
-            print("🔚 Test session ended")
-
-if __name__ == "__main__":
-    success = test_ditto_app()
-    sys.exit(0 if success else 1)
-EOF
-        
-        cat > appium-tests/requirements.txt << 'EOF'
-Appium-Python-Client==3.1.0
-selenium==4.15.2
-EOF
-        
-        echo "✅ Appium test script created"
-    
     - name: Install Appium Test Dependencies
+      working-directory: swift
       run: |
-        cd appium-tests
         pip install -r requirements.txt
         echo "✅ Appium dependencies installed"
     
@@ -263,6 +153,7 @@ EOF
     
     - name: Execute Appium Tests on BrowserStack Real Devices
       id: test
+      working-directory: swift
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
@@ -271,8 +162,7 @@ EOF
       run: |
         echo "🚀 Running Appium tests on BrowserStack real devices..."
         
-        cd appium-tests
-        python test_ditto_app.py
+        python appium_test.py
         
         if [ $? -eq 0 ]; then
           echo "✅ All Appium tests passed successfully!"
