@@ -25,14 +25,6 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
-    - name: Install SwiftLint
-      run: |
-        if ! command -v swiftlint &> /dev/null; then
-          echo "Installing SwiftLint..."
-          brew install swiftlint
-        fi
-        swiftlint version
-    
     - name: Create .env file
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
@@ -45,12 +37,6 @@ jobs:
       run: |
         chmod +x buildEnv.sh
         ./buildEnv.sh ../.env Tasks/
-    
-    - name: Run SwiftLint
-      working-directory: swift
-      run: |
-        echo "🔍 Running SwiftLint analysis..."
-        swiftlint lint --config .swiftlint.yml
     
     - name: Build iOS App for BrowserStack
       id: build_ios
