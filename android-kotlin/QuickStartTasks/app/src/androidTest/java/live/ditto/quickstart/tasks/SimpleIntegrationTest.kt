@@ -69,6 +69,21 @@ class SimpleIntegrationTest {
         println("✅ App context verified: ${context.packageName}")
     }
     
+
+    @Test
+    fun testBrowserStackFailureDetection() {
+        // This test should ALWAYS FAIL on BrowserStack to verify it can detect failures
+        println("🚫 Testing BrowserStack failure detection...")
+        
+        // Visual pause for BrowserStack video recording
+        println("👁️ VISUAL PAUSE for BrowserStack: You can see this test running...")
+        Thread.sleep(3000)
+        
+        // This assertion should always fail
+        println("🎯 About to trigger intentional failure for BrowserStack verification...")
+        throw AssertionError("INTENTIONAL BROWSERSTACK FAILURE: This verifies BrowserStack can detect test failures!")
+    }
+
     @Test
     fun testGitHubTestDocumentSyncs() {
         // Test GitHub document sync using our seeding approach (but with working pattern)
@@ -97,6 +112,10 @@ class SimpleIntegrationTest {
         // Give Ditto time to initialize and sync
         println("⏳ Waiting for Ditto cloud sync initialization...")
         Thread.sleep(20000) // 20 seconds for cloud sync setup
+        
+        // Visual pause for manual verification
+        println("👁️ VISUAL PAUSE: You can now check the app manually for 3 seconds...")
+        Thread.sleep(3000)
         
         while (attempts < maxAttempts && !documentFound) {
             attempts++
