@@ -215,10 +215,10 @@ jobs:
         IPA_FILE="${{ steps.ios_validation.outputs.ipa_file_path }}"
         TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
         
-        # Upload app to XCUITest endpoint
+        # Upload app to XCUITest endpoint (correct API path)
         echo "📱 Uploading app..."
         APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/xcuitest/v2/app" \
+          -X POST "https://api-cloud.browserstack.com/xcuitest/app" \
           -F "file=@$IPA_FILE" \
           -F "custom_id=ditto-swift-app")
         
@@ -231,10 +231,10 @@ jobs:
           exit 1
         fi
         
-        # Upload test bundle to XCUITest endpoint  
+        # Upload test bundle to XCUITest endpoint (correct API path)
         echo "🧪 Uploading test bundle..."
         TEST_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/xcuitest/v2/test-suite" \
+          -X POST "https://api-cloud.browserstack.com/xcuitest/test-suite" \
           -F "file=@$TEST_BUNDLE")
         
         echo "Test upload response: $TEST_UPLOAD_RESPONSE"  
@@ -257,9 +257,9 @@ jobs:
       run: |
         echo "🚀 Running XCUITest on BrowserStack real device..."
         
-        # Run XCUITest on iPhone 15 Pro with iOS 17
+        # Run XCUITest on iPhone 15 Pro with iOS 17 (correct API path)
         TEST_EXECUTION_RESPONSE=$(curl --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/xcuitest/v2/build" \
+          -X POST "https://api-cloud.browserstack.com/xcuitest/build" \
           -H "Content-Type: application/json" \
           -d '{
             "app": "${{ steps.upload.outputs.app_url }}",
@@ -298,9 +298,9 @@ jobs:
           sleep $POLL_INTERVAL
           ELAPSED=$((ELAPSED + POLL_INTERVAL))
           
-          # Check build status
+          # Check build status (correct API path)
           BUILD_STATUS_RESPONSE=$(curl --silent -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/xcuitest/v2/builds/$BUILD_ID")
+            "https://api-cloud.browserstack.com/xcuitest/builds/$BUILD_ID")
           
           BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
           echo "📊 Build status after ${ELAPSED}s: $BUILD_STATUS"
