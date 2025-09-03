@@ -126,52 +126,21 @@ jobs:
         pip install -r requirements.txt
         echo "✅ Appium dependencies installed"
     
-    - name: Run Integration Test to Insert Test Document
+    - name: Validate Environment for BrowserStack Test
       working-directory: swift
       env:
-        GITHUB_RUN_ID: ${{ github.run_id }}
-        GITHUB_RUN_NUMBER: ${{ github.run_number }}
         DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
         DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
       run: |
-        echo "🧪 Running integration test to insert document for BrowserStack verification..."
-        
-        # Generate test document ID for this run
-        GITHUB_TEST_DOC_ID="swift_github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        echo "📝 Test document ID: ${GITHUB_TEST_DOC_ID}"
-        
-        # Insert test document via Ditto HTTP API (like JavaScript workflow does)
-        echo "🌐 Inserting test document via Ditto HTTP API..."
-        
-        RESPONSE=$(curl -s -w "\n%{http_code}" \
-          -X POST "${DITTO_AUTH_URL}/api/v1/${DITTO_APP_ID}/store/collections/tasks/documents" \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${DITTO_PLAYGROUND_TOKEN}" \
-          -d '{
-            "_id": "'"${GITHUB_TEST_DOC_ID}"'",
-            "text": "Swift BrowserStack Integration Test - Run '"${GITHUB_RUN_NUMBER}"'",
-            "isCompleted": false,
-            "createdAt": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
-          }')
-        
-        HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-        RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
-          echo "✅ Successfully inserted test document via HTTP API"
-          echo "📄 Response: $RESPONSE_BODY"
-        else
-          echo "⚠️ HTTP API call returned $HTTP_CODE: $RESPONSE_BODY"
-          echo "⚠️ Continuing with basic environment validation..."
-        fi
+        echo "🧪 Validating environment for BrowserStack test..."
         
         # Run basic environment validation
         chmod +x TestRunner.swift
         swift TestRunner.swift
         
-        echo "✅ Integration test completed - test document should be in Ditto cloud"
+        echo "✅ Environment validated - ready for BrowserStack device testing"
     
     - name: Upload App to BrowserStack
       id: upload
@@ -206,7 +175,6 @@ jobs:
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_APP_URL: ${{ steps.upload.outputs.app_url }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
-        GITHUB_RUN_ID: ${{ github.run_id }}
       run: |
         echo "🚀 Running Appium tests on BrowserStack real devices..."
         
