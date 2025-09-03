@@ -136,16 +136,28 @@ jobs:
         set -euo pipefail
 
         echo "🧪 build-for-testing (device)…"
+        
+        # Clean build to avoid any cached issues with .xctestrun
+        xcodebuild clean \
+          -project Tasks.xcodeproj \
+          -scheme TasksUITests
+          
         xcodebuild build-for-testing \
           -project Tasks.xcodeproj \
           -scheme TasksUITests \
           -configuration Debug \
           -destination 'generic/platform=iOS' \
-          -derivedDataPath build/DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
 
-        PRODUCTS_DIR="build/DerivedData/Build/Products"
+        # Let xcodebuild use default DerivedData to ensure .xctestrun has correct paths
+        PRODUCTS_DIR=$(find ~/Library/Developer/Xcode/DerivedData -name "Build" -path "*/Tasks-*/Build" -type d | head -1)/Products
+        
+        if [ ! -d "$PRODUCTS_DIR" ]; then
+          echo "❌ Could not find Products directory in DerivedData"
+          find ~/Library/Developer/Xcode/DerivedData -name "*Tasks*" -type d | head -5
+          exit 1
+        fi
 
         echo "🔎 locating Runner.app and .xctestrun…"
         RUNNER_APP=$(find "$PRODUCTS_DIR/Debug-iphoneos" -type d -name "*-Runner.app" -print -quit)
@@ -156,6 +168,12 @@ jobs:
 
         echo "✅ Runner:    $RUNNER_APP"
         echo "✅ xctestrun: $XCTESTRUN"
+        
+        # Debug: inspect .xctestrun file structure
+        echo "🔍 Debugging .xctestrun contents:"
+        ls -la "$XCTESTRUN"
+        echo "First 20 lines of .xctestrun file:"
+        head -20 "$XCTESTRUN" | cat -v
 
         # --- Stage at repo-root/build/bs_xcuitest_root and zip from there ---
         OUT_DIR="$PWD/../build"                 # repo-root/build
