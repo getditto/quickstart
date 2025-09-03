@@ -174,9 +174,9 @@ jobs:
         OUT_ZIP="$OUT_DIR/TasksUITests.zip"
         rm -f "$OUT_ZIP"
 
-        echo "📦 Creating $OUT_ZIP with root: [$(basename "$RUNNER_APP"), $(basename "$XCTESTRUN")]"
+        echo "📦 Creating $OUT_ZIP with root: [$(basename "$RUNNER_APP")]"
+        echo "ℹ️  BrowserStack error requested removing .xctestrun file - trying Runner.app only"
         ( cd "$(dirname "$RUNNER_APP")" && zip -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")" )
-        ( cd "$(dirname "$XCTESTRUN")" && zip -q  "$OUT_ZIP" "$(basename "$XCTESTRUN")" )
 
         echo "🔍 ZIP contents:"
         unzip -l "$OUT_ZIP" | sed -n '1,120p'
