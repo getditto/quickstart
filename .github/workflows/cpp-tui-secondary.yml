@@ -1,4 +1,4 @@
-name: C++ TUI BrowserStack
+name: C++ TUI Secondary CI
 on:
   pull_request:
     branches: [main]
@@ -14,8 +14,8 @@ env:
   DITTO_SDK_VERSION: "4.12.0"
 
 jobs:
-  browserstack-test:
-    name: BrowserStack Test C++ TUI
+  secondary-test:
+    name: Secondary C++ TUI Testing
     runs-on: ubuntu-latest
     
     steps:
@@ -31,7 +31,7 @@ jobs:
       
       - name: Insert test document into Ditto Cloud
         run: |
-          DOC_ID="cpp_browserstack_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          DOC_ID="cpp_secondary_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H 'Content-type: application/json' \
@@ -41,7 +41,7 @@ jobs:
               \"args\": {
                 \"newTask\": {
                   \"_id\": \"${DOC_ID}\",
-                  \"title\": \"C++ BrowserStack Test Task ${GITHUB_RUN_ID}\",
+                  \"title\": \"C++ Secondary Test Task ${GITHUB_RUN_ID}\",
                   \"done\": false,
                   \"deleted\": false
                 }
@@ -52,18 +52,33 @@ jobs:
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Successfully inserted BrowserStack test document: ${DOC_ID}"
-            echo "BROWSERSTACK_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+            echo "✓ Successfully inserted secondary test document: ${DOC_ID}"
+            echo "SECONDARY_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
           else
-            echo "❌ Failed to insert BrowserStack test document"
+            echo "❌ Failed to insert secondary test document"
             exit 1
           fi
       
-      - name: Install dependencies and setup real Ditto SDK
-        working-directory: cpp-tui/taskscpp
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake clang build-essential
+          sudo apt-get install -y cmake clang clang-format build-essential
+      
+      - name: Run linter
+        working-directory: cpp-tui/taskscpp
+        run: |
+          echo "🎨 Running clang-format check..."
+          make format
+          # Check if files were modified
+          if ! git diff --exit-code; then
+            echo "❌ Code style issues found. Run 'make format' to fix."
+            exit 1
+          fi
+          echo "✅ Code style check passed"
+
+      - name: Download and setup Ditto C++ SDK
+        working-directory: cpp-tui/taskscpp
+        run: |
           
           echo "📥 Downloading real Ditto C++ SDK v${{ env.DITTO_SDK_VERSION }}..."
           curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/${{ env.DITTO_SDK_VERSION }}/dist/Ditto.tar.gz
@@ -77,14 +92,14 @@ jobs:
           # Build with real SDK
           make build
           
-          echo "✅ C++ TUI app built with real Ditto SDK for BrowserStack testing"
+          echo "✅ C++ TUI app built with real Ditto SDK for secondary testing"
       
-      - name: Test sync with BrowserStack document  
+      - name: Run integration tests
         working-directory: cpp-tui/taskscpp
         env:
-          BROWSERSTACK_TEST_DOC_ID: ${{ env.BROWSERSTACK_TEST_DOC_ID }}
+          SECONDARY_TEST_DOC_ID: ${{ env.SECONDARY_TEST_DOC_ID }}
         run: |
-          echo "🧪 Testing sync with BrowserStack document: ${BROWSERSTACK_TEST_DOC_ID}"
+          echo "🧪 Running integration tests with document: ${SECONDARY_TEST_DOC_ID}"
           echo "🌐 This will connect to REAL Ditto Cloud and verify document syncs"
           
           # Build and run integration test with REAL Ditto SDK
@@ -97,4 +112,4 @@ jobs:
           # Run test that will verify the document syncs via real Ditto SDK
           ./build/integration_test
           
-          echo "✅ BrowserStack sync test with REAL Ditto SDK completed successfully"
+          echo "✅ Secondary integration tests completed successfully"
