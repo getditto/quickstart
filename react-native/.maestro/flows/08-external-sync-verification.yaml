@@ -14,7 +14,7 @@ tags:
     commands:
       - tapOn: "Allow"
 - assertVisible: 
-    text: "Ditto Tasks C++"
+    text: "Ditto Tasks"
 # Wait for initial Ditto sync from cloud (up to 30 seconds)
 - repeat:
     times: 30
@@ -22,8 +22,8 @@ tags:
       - wait: 1000
       - runFlow:
           when:
-            visible: "GitHub Test Task"
+            visible: "GitHub Bare RN Test Task"
           commands:
             # Found the GitHub test document that synced from Ditto Cloud
-            - assertVisible: "GitHub Test Task"
+            - assertVisible: "GitHub Bare RN Test Task"
             - stop # Exit successfully

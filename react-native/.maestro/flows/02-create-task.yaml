@@ -13,7 +13,7 @@ tags:
     commands:
       - tapOn: "Allow"
 - assertVisible: 
-    text: "Ditto Tasks C++"
+    text: "Ditto Tasks"
 # Tap the floating action button to create a new task
 - tapOn: "New Task"
 - assertVisible: "Add Task"
