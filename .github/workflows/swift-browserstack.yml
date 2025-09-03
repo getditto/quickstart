@@ -137,14 +137,15 @@ jobs:
 
         echo "🧪 build-for-testing (device)…"
         
-        # Clean build to avoid any cached issues with .xctestrun
+        # Clean build to avoid any cached issues 
         xcodebuild clean \
           -project Tasks.xcodeproj \
-          -scheme TasksUITests
+          -scheme Tasks
           
+        # Use the existing Tasks scheme which should build TasksUITests target
         xcodebuild build-for-testing \
           -project Tasks.xcodeproj \
-          -scheme TasksUITests \
+          -scheme Tasks \
           -configuration Debug \
           -destination 'generic/platform=iOS' \
           CODE_SIGNING_ALLOWED=NO \
