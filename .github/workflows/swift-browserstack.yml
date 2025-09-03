@@ -133,61 +133,41 @@ jobs:
       id: build_test_bundle
       working-directory: swift
       run: |
-        echo "🔍 Checking for XCUITest configuration..."
-        
-        # Check if TasksUITests scheme exists
-        if xcodebuild -list -project Tasks.xcodeproj | grep -q "TasksUITests"; then
-          echo "✅ Found TasksUITests scheme - building UI test bundle"
-          
-          set -euo pipefail
-          
-          # Build UITests for device (creates Runner.app + .xctestrun under DerivedData)
-          echo "🧪 Building UITests for real device..."
-          xcodebuild build-for-testing \
-            -project Tasks.xcodeproj \
-            -scheme TasksUITests \
-            -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+        set -euo pipefail
 
-          # Find Runner.app (device build) and .xctestrun
-          echo "🔍 Finding Runner.app and .xctestrun files..."
-          RUNNER_APP=$(find build/DerivedData -type d -name "*-Runner.app" -path "*/Build/Products/*-iphoneos/*" | head -1)
-          XCTESTRUN=$(find build/DerivedData -type f -name "*.xctestrun" | head -1)
+        echo "🧪 Building UITests for a real device..."
+        xcodebuild build-for-testing \
+          -project Tasks.xcodeproj \
+          -scheme TasksUITests \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -derivedDataPath build/DerivedData \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO
 
-          test -d "$RUNNER_APP" && echo "✅ Runner: $RUNNER_APP" || { echo "❌ Runner.app not found"; exit 1; }
-          test -f "$XCTESTRUN" && echo "✅ xctestrun: $XCTESTRUN" || { echo "❌ .xctestrun not found"; exit 1; }
+        # Find device Runner.app and its matching .xctestrun
+        RUNNER_APP=$(find build/DerivedData/Build/Products -type d -path "*/Debug-iphoneos/*-Runner.app" | head -1)
+        XCTESTRUN=$(find build/DerivedData/Build/Products -type f -name "*.xctestrun" | head -1)
 
-          # Package with both items at the root of the zip (critical for BrowserStack!)
-          echo "📦 Creating properly structured test bundle ZIP..."
-          WORK=build/UITestBundle
-          mkdir -p "$WORK"
-          cp -R "$RUNNER_APP" "$WORK/"
-          cp "$XCTESTRUN" "$WORK/"
-          (cd "$WORK" && zip -qry ../TasksUITests.zip .)
-          TEST_ZIP="$(pwd)/build/TasksUITests.zip"
-          
-          # Sanity check ZIP structure - show first 100 lines as per your fix
-          echo "🔍 ZIP contents (BrowserStack requires Runner.app + .xctestrun at root):"
-          unzip -l "$TEST_ZIP" | sed -n '1,100p'
+        test -d "$RUNNER_APP"   || { echo "❌ Runner.app not found"; exit 1; }
+        test -f "$XCTESTRUN"    || { echo "❌ .xctestrun not found"; exit 1; }
 
-          echo "test_bundle_path=$TEST_ZIP" >> $GITHUB_OUTPUT
-          echo "✅ XCUITest bundle ZIP created with proper structure: $TEST_ZIP"
-          ls -la "$TEST_ZIP"
-        else
-          echo "⚠️ No TasksUITests scheme found in project - UI test files exist but not configured as Xcode target"
-          echo "📱 Will upload app for manual BrowserStack testing instead of automated XCUITest"
-          echo "💡 To enable automated testing, add TasksUITests as a proper Xcode scheme/target"
-          
-          # List available schemes for reference
-          echo "🔍 Available schemes in project:"
-          xcodebuild -list -project Tasks.xcodeproj | grep -A 10 "Schemes:"
-          
-          # Set empty test bundle path for graceful handling
-          echo "test_bundle_path=" >> $GITHUB_OUTPUT
-        fi
+        echo "✅ Runner: $RUNNER_APP"
+        echo "✅ xctestrun: $XCTESTRUN"
+
+        # Create ZIP with both items at the ROOT and preserve symlinks
+        OUT_ZIP="$(pwd)/build/TasksUITests.zip"
+        rm -f "$OUT_ZIP"
+        (
+          cd "$(dirname "$RUNNER_APP")"
+          cp "$XCTESTRUN" .
+          zip --symlinks -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")" "$(basename "$XCTESTRUN")"
+        )
+
+        echo "🔍 ZIP contents (should show Runner.app and .xctestrun at root):"
+        unzip -l "$OUT_ZIP" | sed -n '1,100p'
+
+        echo "test_bundle_path=$OUT_ZIP" >> $GITHUB_OUTPUT
     
     
     - name: Insert test document into Ditto Cloud
@@ -236,32 +216,18 @@ jobs:
         IPA_FILE="${{ steps.ios_validation.outputs.ipa_file_path }}"
         TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
         
-        # Check if we have test bundle to upload
-        if [ -z "$TEST_BUNDLE" ] || [ ! -f "$TEST_BUNDLE" ]; then
-          echo "⚠️ No test bundle available - will only upload app for manual testing"
-          echo "📱 This is normal if the project doesn't have UI test targets configured"
-          
-          # Upload only app for manual testing on BrowserStack
-          echo "📱 Uploading app for manual testing..."
-          APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-            -F "file=@$IPA_FILE" \
-            -F "custom_id=ditto-swift-app")
-          
-          echo "App upload response: $APP_UPLOAD_RESPONSE"
-          APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
-          
-          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "❌ Failed to upload app"
-            echo "Response: $APP_UPLOAD_RESPONSE"
-            exit 1
-          fi
-          
-          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
-          echo "test_url=" >> $GITHUB_OUTPUT
-          echo "✅ App uploaded successfully for manual testing: $APP_URL"
-          echo "🔗 Access app in BrowserStack Live/Automate dashboard"
-          exit 0
+        echo "📱 App file: $IPA_FILE"
+        echo "🧪 Test bundle: $TEST_BUNDLE"
+        
+        # Validate both files exist
+        if [ ! -f "$IPA_FILE" ]; then
+          echo "❌ IPA file not found: $IPA_FILE"
+          exit 1
+        fi
+        
+        if [ ! -f "$TEST_BUNDLE" ]; then
+          echo "❌ Test bundle not found: $TEST_BUNDLE"
+          exit 1
         fi
         
         # Upload app to BrowserStack XCUITest v2 API
@@ -284,16 +250,28 @@ jobs:
         echo "🧪 Uploading test bundle..."
         echo "Debug: Test bundle path: $TEST_BUNDLE"
         ls -la "$TEST_BUNDLE" || echo "Test bundle file not found!"
-        TEST_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -F "file=@$TEST_BUNDLE" \
-          https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite)
         
-        echo "Test upload response: $TEST_UPLOAD_RESPONSE"  
-        TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_url)
+        # Upload with better error handling to see 422 details
+        TEST_UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
+          -F "file=@$TEST_BUNDLE")
+
+        HTTP_CODE=$(echo "$TEST_UPLOAD_RESPONSE" | tail -n1)
+        BODY=$(echo "$TEST_UPLOAD_RESPONSE" | sed '$d')
+
+        echo "Test upload HTTP $HTTP_CODE"
+        echo "Response body: $BODY"
+
+        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+          echo "❌ Upload failed"; exit 1
+        fi
+
+        # Prefer test_suite_url, fallback to test_url
+        TEST_URL=$(echo "$BODY" | jq -r '.test_suite_url // .test_url // empty')
         
-        if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
-          echo "❌ Failed to upload test bundle"
-          echo "Response: $TEST_UPLOAD_RESPONSE"
+        if [ -z "$TEST_URL" ]; then
+          echo "❌ Failed to upload test bundle - no test suite URL in response"
+          echo "Response: $BODY"
           exit 1
         fi
         
