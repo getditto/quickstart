@@ -1,21 +1,21 @@
 #
-# .github/workflows/android-java-browserstack.yml
+# .github/workflows/android-java-ci.yml
 # Workflow for building and testing android-java on BrowserStack physical devices
 #
 ---
-name: android-java-browserstack
+name: android-java-ci
 
 on:
   pull_request:
     branches: [main]
     paths:
       - 'android-java/**'
-      - '.github/workflows/android-java-browserstack.yml'
+      - '.github/workflows/android-java-ci.yml'
   push:
     branches: [main]
     paths:
       - 'android-java/**'
-      - '.github/workflows/android-java-browserstack.yml'
+      - '.github/workflows/android-java-ci.yml'
   workflow_dispatch:  # Allow manual trigger
 
 concurrency:
@@ -62,11 +62,9 @@ jobs:
 
       - name: Insert test document into Ditto Cloud
         run: |
-          # Use GitHub run ID to create deterministic document ID
           DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
           
-          # Insert document using curl with correct JSON structure for android-java
+          # Insert test document using Ditto API
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H 'Content-type: application/json' \
             -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
@@ -81,18 +79,16 @@ jobs:
                 }
               }
             }" \
-          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+            "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
           
-          # Extract HTTP status code and response body
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n-1)
           
-          # Check if insertion was successful
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+            echo "✓ Test document inserted successfully: ${DOC_ID}"
             echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
           else
-            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+            echo "❌ Failed to insert test document (HTTP ${HTTP_CODE})"
             echo "Response: $BODY"
             exit 1
           fi
@@ -116,39 +112,39 @@ jobs:
         run: |
           CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
           
-          # 1. Upload AUT (app-debug.apk)
-          APP_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
+          # Upload app APK
+          echo "📱 Uploading app APK to BrowserStack..."
+          APP_RESPONSE=$(curl -u "$CREDS" \
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
             -F "file=@android-java/app/build/outputs/apk/debug/app-debug.apk" \
             -F "custom_id=ditto-android-java-app")
           
-          APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
+          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
           echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
-          echo "App upload response: $APP_UPLOAD_RESPONSE"
           
-          # Validate app upload
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "Error: Failed to upload app APK"
-            echo "Response: $APP_UPLOAD_RESPONSE"
+            echo "❌ Failed to upload app APK"
+            echo "Response: $APP_RESPONSE"
             exit 1
           fi
+          echo "✅ App APK uploaded: $APP_URL"
           
-          # 2. Upload Espresso test-suite (app-debug-androidTest.apk)
-          TEST_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
+          # Upload test APK  
+          echo "🧪 Uploading test APK to BrowserStack..."
+          TEST_RESPONSE=$(curl -u "$CREDS" \
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
             -F "file=@android-java/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
             -F "custom_id=ditto-android-java-test")
           
-          TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
+          TEST_URL=$(echo "$TEST_RESPONSE" | jq -r .test_suite_url)
           echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
-          echo "Test upload response: $TEST_UPLOAD_RESPONSE"
           
-          # Validate test upload
           if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
-            echo "Error: Failed to upload test APK"
-            echo "Response: $TEST_UPLOAD_RESPONSE"
+            echo "❌ Failed to upload test APK"
+            echo "Response: $TEST_RESPONSE"
             exit 1
           fi
+          echo "✅ Test APK uploaded: $TEST_URL"
 
       - name: Execute tests on BrowserStack
         id: test
@@ -214,36 +210,34 @@ jobs:
         run: |
           BUILD_ID="${{ steps.test.outputs.build_id }}"
           
-          # Validate BUILD_ID before proceeding
           if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-            echo "Error: No valid BUILD_ID available. Skipping test monitoring."
+            echo "❌ No valid BUILD_ID available"
             exit 1
           fi
           
-          MAX_WAIT_TIME=1800  # 30 minutes
+          MAX_WAIT_TIME=1200  # 20 minutes (reduced from 30)
           CHECK_INTERVAL=30   # Check every 30 seconds
           ELAPSED=0
           
+          echo "⏳ Waiting for test execution to complete..."
           while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-            BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
             
-            BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
+            STATUS=$(echo "$RESPONSE" | jq -r .status)
             
-            # Check for API errors
-            if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
-              echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+            if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
+              echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
               sleep $CHECK_INTERVAL
               ELAPSED=$((ELAPSED + CHECK_INTERVAL))
               continue
             fi
             
-            echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
-            echo "Full response: $BUILD_STATUS_RESPONSE"
+            echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
             
-            # Check for completion states - BrowserStack uses different status values
-            if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
-              echo "Build completed with status: $BUILD_STATUS"
+            # Check for completion
+            if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
+              echo "✅ Build completed with status: $STATUS"
               break
             fi
             
@@ -255,30 +249,26 @@ jobs:
           FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
           
-          echo "Final build result:"
+          echo "📋 Final results:"
           echo "$FINAL_RESULT" | jq .
           
-          # Check if we got valid results
+          # Validate and check results
           if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
-            # Check if the overall build passed
             BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
             if [ "$BUILD_STATUS" != "passed" ]; then
-              echo "Build failed with status: $BUILD_STATUS"
+              echo "❌ Tests failed with status: $BUILD_STATUS"
               
-              # Check each device for failures
-              FAILED_TESTS=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
-              
-              if [ -n "$FAILED_TESTS" ]; then
-                echo "Tests failed on devices: $FAILED_TESTS"
+              FAILED_DEVICES=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+              if [ -n "$FAILED_DEVICES" ]; then
+                echo "Failed on devices: $FAILED_DEVICES"
               fi
-              
               exit 1
             else
-              echo "All tests passed successfully!"
+              echo "🎉 All tests passed successfully!"
             fi
           else
-            echo "Warning: Could not parse final results"
-            echo "Raw response: $FINAL_RESULT"
+            echo "⚠️  Could not parse final results"
+            exit 1
           fi
 
       - name: Generate test report
@@ -313,7 +303,7 @@ jobs:
             
             echo "" >> test-report.md
             echo "## Sync Verification" >> test-report.md
-            echo "- GitHub Test Document ID: ${GITHUB_TEST_DOC_ID:-Not generated}" >> test-report.md
+            echo "- GitHub Test Document ID: ${{ env.GITHUB_TEST_DOC_ID }}" >> test-report.md
           fi
 
       - name: Upload test artifacts
