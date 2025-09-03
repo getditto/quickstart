@@ -91,14 +91,18 @@ class TasksUITest {
             return
         }
         
+        testDocumentSyncVerification(githubTestDocId)
+    }
+    
+    private fun testDocumentSyncVerification(docId: String) {
         // Extract the run ID from the document ID (format: github_test_RUNID_RUNNUMBER) 
-        val runId = githubTestDocId.split("_").getOrNull(2) ?: githubTestDocId
+        val runId = docId.split("_").getOrNull(2) ?: docId
         println("🎯 Looking for GitHub Test Task with Run ID: $runId")
-        println("📄 Full document ID: $githubTestDocId")
+        println("📄 Full document ID: $docId")
         
         // Wait longer for sync to complete from Ditto Cloud
         var attempts = 0
-        val maxAttempts = 30 // 30 attempts with 2 second waits = 60 seconds max
+        val maxAttempts = 10 // Reduced to 10 attempts for faster failure when using fake ID
         var documentFound = false
         var lastException: Exception? = null
         
@@ -130,8 +134,8 @@ class TasksUITest {
                 attempts++
                 println("🔄 Attempt $attempts/$maxAttempts: GitHub test document not found yet, waiting 2s...")
                 
-                // Every 10 attempts, log what we can see in the task list
-                if (attempts % 10 == 0) {
+                // Every 5 attempts, log what we can see in the task list
+                if (attempts % 5 == 0) {
                     try {
                         // Try to count how many tasks are visible
                         onView(withId(R.id.task_list)).check(matches(isDisplayed()))
@@ -150,7 +154,7 @@ class TasksUITest {
                 ❌ FAILED: GitHub test document did not sync within ${maxAttempts * 2} seconds
                 
                 Expected to find:
-                - Document ID: $githubTestDocId
+                - Document ID: $docId
                 - Text containing: "GitHub Test Task" AND "$runId"
                 - In RecyclerView item with id: task_text
                 
@@ -159,6 +163,7 @@ class TasksUITest {
                 2. App not connecting to Ditto Cloud (check DITTO_ENABLE_CLOUD_SYNC = true)
                 3. Network connectivity issues
                 4. Ditto sync taking longer than expected
+                5. App failed to launch properly (false positive test)
                 
                 Last error: ${lastException?.message}
             """.trimIndent()
