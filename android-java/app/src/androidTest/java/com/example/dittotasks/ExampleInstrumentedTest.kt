@@ -85,13 +85,15 @@ class TasksUITest {
         // Get the GitHub test document ID from environment variable
         val githubTestDocId = System.getenv("GITHUB_TEST_DOC_ID")
         
-        if (githubTestDocId == null) {
-            println("⚠️  No GITHUB_TEST_DOC_ID environment variable found - skipping sync test")
-            println("   This is expected when running locally (only works in CI)")
-            return
+        val docIdToTest = if (githubTestDocId != null) {
+            println("🔍 CI Mode: Using seeded document ID from environment")
+            githubTestDocId
+        } else {
+            println("🔍 Local Mode: Using fake document ID - test will fail to prove it works")
+            "github_test_LOCAL_FAKE_12345"
         }
         
-        testDocumentSyncVerification(githubTestDocId)
+        testDocumentSyncVerification(docIdToTest)
     }
     
     private fun testDocumentSyncVerification(docId: String) {
@@ -102,7 +104,7 @@ class TasksUITest {
         
         // Wait longer for sync to complete from Ditto Cloud
         var attempts = 0
-        val maxAttempts = 10 // Reduced to 10 attempts for faster failure when using fake ID
+        val maxAttempts = if (docId.contains("fake")) 3 else 30 // Faster failure for fake IDs
         var documentFound = false
         var lastException: Exception? = null
         
@@ -127,6 +129,8 @@ class TasksUITest {
                 )).check(matches(isDisplayed()))
                 
                 println("✅ SUCCESS: Found synced GitHub test document with run ID: $runId")
+                println("🎉 Waiting 2 seconds to visually confirm document sync...")
+                Thread.sleep(2000) // Visual pause to confirm sync worked
                 documentFound = true
                 
             } catch (e: Exception) {
