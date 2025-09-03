@@ -38,12 +38,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Create .env file
-        run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+      # Note: We don't create .env file in CI for security reasons
+      # Environment variables are passed directly to the build process
 
       - name: Insert test document into Ditto Cloud
         run: |
@@ -96,12 +92,22 @@ jobs:
 
       - name: Build APK
         working-directory: android-kotlin/QuickStartTasks
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+          DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
         run: |
           ./gradlew assembleDebug assembleDebugAndroidTest
           echo "APK built successfully"
 
       - name: Run Unit Tests
         working-directory: android-kotlin/QuickStartTasks
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+          DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
         run: ./gradlew test
 
       - name: Upload APKs to BrowserStack

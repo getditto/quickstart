@@ -36,11 +36,23 @@ class TasksSyncIntegrationTest {
 
         println("TasksSyncIntegrationTest: Test document ID = $testDocumentId")
 
-        // Wait for the UI to settle and initial sync
-        composeTestRule.waitForIdle()
-        
-        // Give additional time for Ditto to establish connection and sync
-        Thread.sleep(5000)
+        // Ensure the activity is launched and UI is ready
+        try {
+            composeTestRule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+            composeTestRule.waitForIdle()
+            
+            // Verify the activity launched by checking for the app title
+            composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true).assertExists("MainActivity should be launched")
+            
+            println("✅ MainActivity launched successfully")
+            
+            // Give additional time for Ditto to establish connection and sync
+            Thread.sleep(5000)
+            
+        } catch (e: Exception) {
+            println("❌ Failed to launch MainActivity properly: ${e.message}")
+            throw e
+        }
     }
 
     @Test
@@ -171,84 +183,118 @@ class TasksSyncIntegrationTest {
     fun testBasicUIFunctionality() {
         println("🧪 Testing basic UI functionality...")
 
-        // Verify key UI elements are present and functional
-        composeTestRule.onNodeWithText("Ditto Tasks").assertExists("App title should be visible")
-        composeTestRule.onNodeWithText("New Task").assertExists("New Task button should be visible")
-
-        // Test navigation to add task screen
         try {
-            composeTestRule.onNodeWithText("New Task").performClick()
+            // First verify the app launched correctly
             composeTestRule.waitForIdle()
+            
+            // Verify key UI elements are present and functional
+            composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true)
+                .assertExists("App title should be visible")
+            composeTestRule.onNodeWithText("New Task", useUnmergedTree = true)
+                .assertExists("New Task button should be visible")
 
-            // Should navigate to edit screen - look for input field or save button
-            Thread.sleep(2000) // Give time for navigation
+            // Test navigation to add task screen
+            try {
+                composeTestRule.onNodeWithText("New Task").performClick()
+                composeTestRule.waitForIdle()
 
-            // Look for common edit screen elements
-            val hasInputField = try {
-                composeTestRule.onNodeWithText("Task Title", ignoreCase = true, substring = true).assertExists()
-                true
-            } catch (e: Exception) {
-                try {
-                    composeTestRule.onNode(hasSetTextAction()).assertExists()
+                // Should navigate to edit screen - look for input field or save button
+                Thread.sleep(2000) // Give time for navigation
+
+                // Look for common edit screen elements
+                val hasInputField = try {
+                    composeTestRule.onNodeWithText("Task Title", ignoreCase = true, substring = true).assertExists()
                     true
-                } catch (e2: Exception) {
-                    false
+                } catch (e: Exception) {
+                    try {
+                        composeTestRule.onNode(hasSetTextAction()).assertExists()
+                        true
+                    } catch (e2: Exception) {
+                        false
+                    }
                 }
+
+                if (hasInputField) {
+                    println("✅ Successfully navigated to task creation screen")
+                } else {
+                    println("⚠️ Navigation to task creation screen may not have worked as expected")
+                }
+
+            } catch (e: Exception) {
+                println("⚠️ Could not test task creation navigation: ${e.message}")
             }
 
-            if (hasInputField) {
-                println("✅ Successfully navigated to task creation screen")
-            } else {
-                println("⚠️ Navigation to task creation screen may not have worked as expected")
-            }
-
+            println("✅ Basic UI functionality test completed")
+            
         } catch (e: Exception) {
-            println("⚠️ Could not test task creation navigation: ${e.message}")
+            println("❌ Basic UI functionality test failed: ${e.message}")
+            throw e
         }
-
-        println("✅ Basic UI functionality test completed")
     }
 
     @Test
     fun testAppStability() {
         println("🧪 Testing app stability...")
         
-        // Perform multiple operations to ensure app doesn't crash
-        repeat(3) { iteration ->
+        try {
+            // First verify the app is actually running
+            composeTestRule.waitForIdle()
+            
+            // Check if the main UI is visible
             try {
-                println("  Stability test iteration ${iteration + 1}")
-                
-                // Wait for UI to settle
-                composeTestRule.waitForIdle()
-                
-                // Try to interact with UI elements
-                val clickableNodes = composeTestRule.onAllNodes(hasClickAction())
-                    .fetchSemanticsNodes()
-                
-                if (clickableNodes.isNotEmpty()) {
-                    // Click the first clickable element (likely the New Task button)
-                    composeTestRule.onAllNodes(hasClickAction())[0].performClick()
-                    composeTestRule.waitForIdle()
-                    Thread.sleep(1000)
-                }
-                
-                // Go back if we're not on main screen
-                try {
-                    // Look for back navigation or try to get back to main screen
-                    composeTestRule.onNodeWithContentDescription("Navigate up").performClick()
-                    Thread.sleep(500)
-                } catch (e: Exception) {
-                    // Might already be on main screen or different navigation pattern
-                }
-                
+                composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true)
+                    .assertExists("Main screen should be visible for stability test")
             } catch (e: Exception) {
-                println("    Warning in iteration ${iteration + 1}: ${e.message}")
+                println("❌ App doesn't appear to be running properly: ${e.message}")
+                throw AssertionError("Cannot run stability test - app UI not found")
             }
-        }
+            
+            // Perform multiple operations to ensure app doesn't crash
+            repeat(3) { iteration ->
+                try {
+                    println("  Stability test iteration ${iteration + 1}")
+                    
+                    // Wait for UI to settle
+                    composeTestRule.waitForIdle()
+                    
+                    // Try to interact with UI elements safely
+                    try {
+                        val clickableNodes = composeTestRule.onAllNodes(hasClickAction())
+                            .fetchSemanticsNodes()
+                        
+                        if (clickableNodes.isNotEmpty()) {
+                            // Click the first clickable element (likely the New Task button)
+                            composeTestRule.onAllNodes(hasClickAction())[0].performClick()
+                            composeTestRule.waitForIdle()
+                            Thread.sleep(1000)
+                        }
+                    } catch (e: Exception) {
+                        println("    Could not interact with clickable elements: ${e.message}")
+                    }
+                    
+                    // Go back if we're not on main screen
+                    try {
+                        // Look for back navigation or try to get back to main screen
+                        composeTestRule.onNodeWithContentDescription("Navigate up").performClick()
+                        Thread.sleep(500)
+                    } catch (e: Exception) {
+                        // Might already be on main screen or different navigation pattern
+                    }
+                    
+                } catch (e: Exception) {
+                    println("    Warning in iteration ${iteration + 1}: ${e.message}")
+                }
+            }
 
-        // Final check that we can still see the main screen
-        composeTestRule.onNodeWithText("Ditto Tasks").assertExists("App should still be functional after stress test")
-        
-        println("✅ App stability test completed successfully")
+            // Final check that we can still see the main screen
+            composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true)
+                .assertExists("App should still be functional after stress test")
+            
+            println("✅ App stability test completed successfully")
+            
+        } catch (e: Exception) {
+            println("❌ Stability test failed: ${e.message}")
+            throw e
+        }
     }
 }

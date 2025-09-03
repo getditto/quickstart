@@ -9,14 +9,28 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
-// Load properties from the .env file at the repository root
+// Load properties from .env file (local development) or environment variables (CI)
 fun loadEnvProperties(): Properties {
-    val envFile = rootProject.file("../../.env")
     val properties = Properties()
+    val envFile = rootProject.file("../../.env")
+    
+    // Try to load from .env file first (local development)
     if (envFile.exists()) {
+        println("Loading environment from .env file: ${envFile.path}")
         FileInputStream(envFile).use { properties.load(it) }
     } else {
-        throw FileNotFoundException(".env file not found at: ${envFile.path}")
+        println("No .env file found, using environment variables (CI mode)")
+        // Fall back to system environment variables (CI/CD)
+        val requiredEnvVars = listOf("DITTO_APP_ID", "DITTO_PLAYGROUND_TOKEN", "DITTO_AUTH_URL", "DITTO_WEBSOCKET_URL")
+        
+        for (envVar in requiredEnvVars) {
+            val value = System.getenv(envVar)
+            if (value != null) {
+                properties[envVar] = value
+            } else {
+                throw RuntimeException("Required environment variable $envVar not found")
+            }
+        }
     }
     return properties
 }
@@ -153,4 +167,67 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+}
+
+// Custom tasks for local integration testing
+tasks.register("seedTestDocument", Exec::class) {
+    group = "testing"
+    description = "Seed a test document in Ditto Cloud for integration testing"
+    
+    workingDir = rootProject.file("../")
+    commandLine = listOf("python3", "scripts/seed-test-document.py", "--verify")
+    
+    doFirst {
+        println("🌱 Seeding test document in Ditto Cloud...")
+    }
+    
+    doLast {
+        println("✅ Test document seeded successfully!")
+        println("💡 You can now run: ./gradlew runSyncIntegrationTest")
+    }
+}
+
+tasks.register("runSyncIntegrationTest", Exec::class) {
+    group = "testing"
+    description = "Run Ditto sync integration test with local device/emulator"
+    
+    dependsOn("assembleDebugAndroidTest")
+    
+    commandLine = listOf(
+        "./gradlew", 
+        "connectedDebugAndroidTest",
+        "-Pandroid.testInstrumentationRunnerArguments.class=live.ditto.quickstart.tasks.TasksSyncIntegrationTest"
+    )
+    
+    doFirst {
+        println("🧪 Running Ditto sync integration test...")
+        println("📱 Make sure an Android device/emulator is connected!")
+    }
+}
+
+tasks.register("testLocalIntegration", Exec::class) {
+    group = "testing"
+    description = "Complete local integration test: seed document + run test"
+    
+    workingDir = rootProject.file("../")
+    commandLine = listOf("scripts/test-local.sh")
+    
+    doFirst {
+        println("🚀 Running complete local integration test...")
+        println("   1. Seeding test document in Ditto Cloud")
+        println("   2. Building Android test APKs")  
+        println("   3. Running integration test on connected device")
+    }
+}
+
+tasks.register("testLocalQuick", Exec::class) {
+    group = "testing"
+    description = "Quick local test using existing seeded document"
+    
+    workingDir = rootProject.file("../")
+    commandLine = listOf("scripts/test-local.sh", "--test-only")
+    
+    doFirst {
+        println("⚡ Running quick integration test with existing document...")
+    }
 }
