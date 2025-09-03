@@ -47,7 +47,7 @@ public class MainActivity extends ComponentActivity {
     private String DITTO_WEBSOCKET_URL = BuildConfig.DITTO_WEBSOCKET_URL;
 
     // This is required to be set to false to use the correct URLs
-    private Boolean DITTO_ENABLE_CLOUD_SYNC = false;
+    private Boolean DITTO_ENABLE_CLOUD_SYNC = true;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
