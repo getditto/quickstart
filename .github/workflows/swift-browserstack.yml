@@ -126,21 +126,26 @@ jobs:
         pip install -r requirements.txt
         echo "✅ Appium dependencies installed"
     
-    - name: Validate Environment for BrowserStack Test
+    - name: Seed Test Document for BrowserStack Verification
       working-directory: swift
       env:
         DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
         DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
       run: |
-        echo "🧪 Validating environment for BrowserStack test..."
+        echo "🧪 Seeding test document for BrowserStack verification..."
         
-        # Run basic environment validation
-        chmod +x TestRunner.swift
-        swift TestRunner.swift
+        # Create a specific test task that we'll look for on BrowserStack
+        TEST_TASK_TEXT="Test Task from BrowserStack #$GITHUB_RUN_NUMBER"
+        echo "📝 Test task: $TEST_TASK_TEXT"
         
-        echo "✅ Environment validated - ready for BrowserStack device testing"
+        # Use Swift script to seed the task
+        chmod +x SeedTask.swift
+        swift SeedTask.swift
+        
+        echo "✅ Test document seeded - BrowserStack should find: $TEST_TASK_TEXT"
     
     - name: Upload App to BrowserStack
       id: upload

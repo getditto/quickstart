@@ -50,24 +50,35 @@ def test_ditto_app():
             
         time.sleep(8)  # Wait for app to settle and sync
         
-        # Simple test: Just verify we can see tasks (proves sync is working)
-        static_texts = driver.find_elements('class name', 'XCUIElementTypeStaticText')
+        # Look for our specific seeded test document
+        run_number = os.environ.get('GITHUB_RUN_NUMBER', 'unknown')
+        expected_task = f"Test Task from BrowserStack #{run_number}"
         
-        tasks_found = 0
+        print(f"🔍 Looking for seeded test document: {expected_task}")
+        
+        static_texts = driver.find_elements('class name', 'XCUIElementTypeStaticText')
+        found_seeded_task = False
+        
+        print(f"📱 Checking {len(static_texts)} UI elements...")
+        
         for text_element in static_texts:
             try:
                 text = text_element.text
-                if text and 'Task' in text and text not in ['Ditto Tasks', 'New Task']:
-                    tasks_found += 1
-                    print(f"✅ Found task: {text}")
+                if text:
+                    print(f"   Found: {text}")
+                    if expected_task in text:
+                        print(f"✅ SUCCESS: Found our seeded test document!")
+                        found_seeded_task = True
+                        break
             except:
                 continue
         
-        if tasks_found > 0:
-            print(f"✅ SUCCESS: Found {tasks_found} synced tasks on device - Ditto sync is working!")
+        if found_seeded_task:
+            print(f"✅ PASS: Ditto sync working - found seeded document on real device!")
             return True
         else:
-            print("❌ No tasks found on device - sync may not be working")
+            print(f"❌ FAIL: Expected document '{expected_task}' not found on device")
+            print("⚠️  This indicates Ditto sync is not working properly")
             return False
         
     except Exception as e:
