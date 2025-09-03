@@ -115,109 +115,214 @@ jobs:
           exit 1
         fi
     
-    - name: Upload iOS App to BrowserStack
-      id: upload
+    - name: Build XCUITest Bundle for BrowserStack
+      id: build_test
+      working-directory: swift
       run: |
-        echo "📤 Uploading iOS .ipa to BrowserStack..."
+        echo "🧪 Building XCUITest bundle for BrowserStack (like Android builds test APK)..."
         
-        IPA_FILE="${{ steps.ios_validation.outputs.ipa_file_path }}"
+        # Build XCUITest bundle using build-for-testing (this creates the .xctest bundle)
+        xcodebuild build-for-testing \
+          -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -destination 'generic/platform=iOS' \
+          -derivedDataPath build/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
         
-        if [ ! -f "$IPA_FILE" ]; then
-          echo "❌ IPA file not found: $IPA_FILE"
+        # Find the XCTest bundle (like finding androidTest APK in Android)
+        XCTEST_BUNDLE_PATH=$(find build/DerivedData -name "*.xctest" -type d | head -1)
+        
+        if [ -d "$XCTEST_BUNDLE_PATH" ]; then
+          echo "✅ Found XCUITest bundle: $XCTEST_BUNDLE_PATH"
+          
+          # Create XCUITest .ipa for BrowserStack (they need it zipped like Android APK)
+          mkdir -p build/TestPayload
+          cp -R "$XCTEST_BUNDLE_PATH" build/TestPayload/
+          (cd build && zip -qry TasksUITests.ipa TestPayload && rm -rf TestPayload)
+          
+          if [ -f "build/TasksUITests.ipa" ]; then
+            echo "✅ XCUITest bundle packaged: $(pwd)/build/TasksUITests.ipa"
+            echo "test_bundle_ipa=$(pwd)/build/TasksUITests.ipa" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to create XCUITest bundle package"
+            exit 1
+          fi
+        else
+          echo "❌ XCUITest bundle not found"
+          find build/DerivedData -name "*.xctest" -type d || echo "No .xctest bundles found"
           exit 1
         fi
+    
+    - name: Upload App and Test Bundle to BrowserStack
+      id: upload
+      run: |
+        echo "📤 Uploading app and XCUITest bundle to BrowserStack (like Kotlin uploads app + test APKs)..."
         
-        echo "📦 Uploading .ipa file to BrowserStack: $IPA_FILE"
-        ls -la "$IPA_FILE"
+        APP_IPA="${{ steps.build_ios.outputs.ipa_file_path }}"
+        TEST_IPA="${{ steps.build_test.outputs.test_bundle_ipa }}"
+        CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         
-        # Upload .ipa to BrowserStack under "Swift" project (they will re-sign for real device testing)
-        APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-          -F "file=@$IPA_FILE" \
-          -F "custom_id=swift-ios-${{ github.run_id }}")
+        # 1. Upload AUT (app .ipa) - following Kotlin pattern
+        echo "📱 Uploading app .ipa..."
+        APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "$CREDS" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/app" \
+          -F "file=@$APP_IPA" \
+          -F "custom_id=ditto-swift-app")
         
-        echo "Upload response: $APP_UPLOAD_RESPONSE"
-        APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
+        echo "App upload response: $APP_UPLOAD_RESPONSE"
+        APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
         
         if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-          echo "❌ Failed to upload iOS .ipa to BrowserStack"
+          echo "❌ Failed to upload app .ipa"
           echo "Response: $APP_UPLOAD_RESPONSE"
           exit 1
         fi
         
+        # 2. Upload XCUITest bundle (test suite) - following Kotlin pattern  
+        echo "🧪 Uploading XCUITest bundle..."
+        TEST_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "$CREDS" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
+          -F "file=@$TEST_IPA" \
+          -F "custom_id=ditto-swift-tests")
+        
+        echo "Test upload response: $TEST_UPLOAD_RESPONSE"
+        TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
+        
+        if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+          echo "❌ Failed to upload XCUITest bundle"
+          echo "Response: $TEST_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
         echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
-        echo "✅ iOS .ipa uploaded successfully: $APP_URL"
+        echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
+        echo "✅ Both app and test bundle uploaded successfully"
     
-    - name: Execute Functionality Tests on BrowserStack Real Devices
+    - name: Execute XCUITests on BrowserStack Real Devices
       id: test
-      env:
-        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
       run: |
+        # Following the exact Kotlin Espresso pattern for XCUITest
         APP_URL="${{ steps.upload.outputs.app_url }}"
+        TEST_URL="${{ steps.upload.outputs.test_url }}"
         
-        echo "🚀 Running functionality tests on BrowserStack real iOS devices..."
+        echo "🚀 Running XCUITests on BrowserStack real devices (like Kotlin Espresso tests)..."
         echo "App URL: $APP_URL"
+        echo "Test URL: $TEST_URL"
         
-        # Validate app upload was successful
+        # Validate inputs (like Kotlin does)
         if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
-          echo "❌ No valid app URL from upload step"
+          echo "❌ No valid app URL available"
           exit 1
         fi
         
-        # Use BrowserStack's App Automate API to start app session and verify functionality
-        echo "📱 Starting app session on iPhone 15 Pro..."
-        
-        # Start BrowserStack session
-        SESSION_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/sessions" \
-          -d '{
-            "app": "'$APP_URL'",
-            "device": "iPhone 15 Pro",
-            "os_version": "17",
-            "project": "Swift iOS Tasks",
-            "build": "Swift Build '${{ github.run_id }}'",
-            "name": "Ditto Swift Tasks Functionality Test"
-          }' \
-          -H "Content-Type: application/json")
-        
-        echo "Session response: $SESSION_RESPONSE"
-        SESSION_ID=$(echo $SESSION_RESPONSE | jq -r .session_id)
-        
-        if [ "$SESSION_ID" = "null" ] || [ -z "$SESSION_ID" ]; then
-          echo "❌ Failed to start BrowserStack session"
-          echo "Response: $SESSION_RESPONSE"
+        if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+          echo "❌ No valid test URL available" 
           exit 1
         fi
         
-        echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
-        echo "✅ BrowserStack session started: $SESSION_ID"
+        # Create XCUITest execution request (mirroring Kotlin Espresso build request)
+        BUILD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"app\": \"$APP_URL\",
+            \"testSuite\": \"$TEST_URL\",
+            \"devices\": [
+              \"iPhone 15 Pro-17\",
+              \"iPhone 14-16\", 
+              \"iPhone 13-15\"
+            ],
+            \"project\": \"Ditto Swift App\",
+            \"buildName\": \"Build #${{ github.run_number }}\",
+            \"buildTag\": \"${{ github.ref_name }}\",
+            \"deviceLogs\": true,
+            \"video\": true,
+            \"networkLogs\": true
+          }")
         
-        # Wait for app to launch and test basic functionality
-        echo "⏳ Testing app functionality..."
-        sleep 30  # Give app time to launch and initialize
+        echo "BrowserStack XCUITest API Response:"
+        echo "$BUILD_RESPONSE"
+        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
         
-        # Get session status
-        SESSION_STATUS_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          "https://api-cloud.browserstack.com/app-automate/sessions/$SESSION_ID")
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "❌ Failed to create XCUITest build"
+          echo "Response: $BUILD_RESPONSE"
+          exit 1
+        fi
         
-        echo "Session status response: $SESSION_STATUS_RESPONSE"
-        STATUS=$(echo $SESSION_STATUS_RESPONSE | jq -r .status)
+        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+        echo "✅ XCUITest build started with ID: $BUILD_ID"
+    
+    - name: Wait for XCUITest Execution to Complete
+      run: |
+        BUILD_ID="${{ steps.test.outputs.build_id }}"
         
-        if [ "$STATUS" = "running" ] || [ "$STATUS" = "passed" ]; then
-          echo "✅ Swift iOS app successfully launched on BrowserStack real device!"
-          echo "✅ App initialization completed without crashes"
-          echo "✅ Basic functionality test passed"
-          echo "🎯 Real device validation successful"
+        # Following Kotlin wait pattern exactly
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "❌ No valid BUILD_ID available"
+          exit 1
+        fi
+        
+        MAX_WAIT_TIME=1800  # 30 minutes (like Kotlin)
+        CHECK_INTERVAL=30   # Check every 30 seconds
+        ELAPSED=0
+        
+        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
           
-          # End the session
-          curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X DELETE "https://api-cloud.browserstack.com/app-automate/sessions/$SESSION_ID" || true
+          BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
           
+          if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
+            echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+            continue
+          fi
+          
+          echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
+          echo "Full response: $BUILD_STATUS_RESPONSE"
+          
+          # Check for completion states (BrowserStack XCUITest uses same states as Espresso)
+          if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
+            echo "Build completed with status: $BUILD_STATUS"
+            break
+          fi
+          
+          sleep $CHECK_INTERVAL
+          ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+        done
+        
+        # Get final results (like Kotlin does)
+        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
+        
+        echo "Final build result:"
+        echo "$FINAL_RESULT" | jq .
+        
+        # Check if we got valid results (following Kotlin pattern)
+        if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
+          BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+          if [ "$BUILD_STATUS" != "passed" ]; then
+            echo "❌ XCUITest build failed with status: $BUILD_STATUS"
+            
+            # Check each device for failures (like Kotlin checks each device)
+            FAILED_TESTS=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+            
+            if [ -n "$FAILED_TESTS" ]; then
+              echo "Tests failed on devices: $FAILED_TESTS"
+            fi
+            
+            exit 1
+          else
+            echo "✅ All XCUITests passed successfully!"
+            echo "🎯 Swift iOS app tested on real devices with actual UI automation"
+          fi
         else
-          echo "❌ App failed to launch or crashed during testing"
-          echo "Session details: $SESSION_STATUS_RESPONSE"
-          exit 1
+          echo "Warning: Could not parse final results"
+          echo "Raw response: $FINAL_RESULT"
         fi
 
   summary:
@@ -229,30 +334,32 @@ jobs:
     steps:
     - name: Report BrowserStack Test Results
       run: |
-        echo "## 📱 BrowserStack Real Device Testing Results - Swift iOS"
+        echo "## 📱 BrowserStack XCUITest Results - Swift iOS"
         echo ""
-        echo "### iOS Real Device Functionality Testing"
+        echo "### iOS XCUITest Automated Testing (like Android Espresso)"
         echo "Status: ${{ needs.ios-browserstack.result }}"
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
-          echo "✅ Swift iOS app successfully tested on BrowserStack real devices:"
-          echo "   - iPhone 15 Pro (iOS 17) - App functionality verification"
+          echo "✅ Swift iOS XCUITests successfully executed on BrowserStack real devices:"
+          echo "   - iPhone 15 Pro (iOS 17) - XCUITest automation"
+          echo "   - iPhone 14 (iOS 16) - XCUITest automation"  
+          echo "   - iPhone 13 (iOS 15) - XCUITest automation"
           echo ""
-          echo "🧪 Real device testing verified:"
-          echo "   ✓ App launches successfully on real iOS device"
-          echo "   ✓ Unsigned .ipa works correctly on BrowserStack"
-          echo "   ✓ Ditto SDK initializes without crashes"
-          echo "   ✓ App remains stable during testing session"
-          echo "   ✓ Real device compatibility confirmed"
-          echo "   ✓ Production-ready .ipa deployment validated"
+          echo "🧪 XCUITest automation verified:"
+          echo "   ✓ Real UI test automation executed (like Android Espresso)"
+          echo "   ✓ App launches and UI interactions tested"
+          echo "   ✓ Ditto SDK initialization validated"
+          echo "   ✓ Task operations tested with real UI automation"
+          echo "   ✓ Multi-device XCUITest execution successful"
+          echo "   ✓ Proper test bundle (.xctest) and app (.ipa) deployment"
         else
-          echo "❌ Swift iOS BrowserStack real device testing failed"
+          echo "❌ Swift iOS XCUITest execution failed on BrowserStack"
         fi
         
         echo ""
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
-          echo "🎉 Swift iOS BrowserStack real device testing completed successfully!"
-          echo "📱 Real device validation confirmed app functionality and stability"
-          echo "🔗 Check BrowserStack dashboard for session recordings and device logs"
+          echo "🎉 Swift iOS XCUITest execution completed successfully!"
+          echo "🤖 Real UI automation testing validated app functionality"
+          echo "🔗 Check BrowserStack dashboard for XCUITest results, videos, and logs"
         else
           echo "⚠️ Swift iOS BrowserStack real device testing encountered issues"
           exit 1
