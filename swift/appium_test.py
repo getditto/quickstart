@@ -42,22 +42,29 @@ def test_ditto_app():
         print("🧪 Test 2: Handling permissions and verifying document sync...")
         time.sleep(3)
         
-        # Handle network permission dialog if present
-        try:
-            # Look for permission dialog buttons
-            buttons = driver.find_elements('class name', 'XCUIElementTypeButton')
-            for button in buttons:
-                if button.text and ('Allow' in button.text or 'OK' in button.text):
-                    print("📱 Allowing network permissions...")
-                    button.click()
-                    time.sleep(2)
-                    break
-        except:
-            pass
+        # Handle permission dialogs (network and bluetooth)
+        for i in range(3):  # Try up to 3 times for multiple dialogs
+            try:
+                buttons = driver.find_elements('class name', 'XCUIElementTypeButton')
+                permission_handled = False
+                for button in buttons:
+                    if button.text and ('Allow' in button.text or 'OK' in button.text or 'Continue' in button.text):
+                        print(f"📱 Handling permission dialog: {button.text}")
+                        button.click()
+                        time.sleep(3)
+                        permission_handled = True
+                        break
+                
+                if not permission_handled:
+                    break  # No more permission dialogs
+                    
+            except Exception as e:
+                print(f"⚠️  Permission handling attempt {i+1} failed: {e}")
+                break
         
-        # Wait for sync to complete
+        # Wait for sync to complete and app to settle
         print("⏰ Waiting for sync to complete...")
-        time.sleep(10)
+        time.sleep(15)  # Increased wait time for sync
         
         # Look for the specific test document that should be synced from HTTP API
         github_run_id = os.environ.get('GITHUB_RUN_ID', 'unknown')
@@ -82,12 +89,12 @@ def test_ditto_app():
                     continue
             
             if not found_sync_document:
-                print(f"⚠️  Expected sync document not found. Available texts:")
-                for i, text_element in enumerate(static_texts[:10]):  # Show first 10
+                print(f"⚠️  Expected sync document not found. Available texts (total: {len(static_texts)}):")
+                for i, text_element in enumerate(static_texts[:15]):  # Show first 15
                     try:
                         text_content = text_element.text
                         if text_content and text_content.strip():
-                            print(f"   [{i}] {text_content}")
+                            print(f"   [{i}] '{text_content}'")
                     except:
                         continue
                         

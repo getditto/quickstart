@@ -142,7 +142,35 @@ jobs:
         GITHUB_TEST_DOC_ID="swift_github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         echo "📝 Test document ID: ${GITHUB_TEST_DOC_ID}"
         
-        # Run the integration test runner
+        # Insert test document via Ditto HTTP API (like JavaScript workflow does)
+        echo "🌐 Inserting test document via Ditto HTTP API..."
+        
+        RESPONSE=$(curl -s -w "\n%{http_code}" \
+          -X POST "${DITTO_AUTH_URL}/api/v1/apps/${DITTO_APP_ID}/documents" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${DITTO_PLAYGROUND_TOKEN}" \
+          -d '{
+            "collection": "tasks",
+            "document": {
+              "_id": "'"${GITHUB_TEST_DOC_ID}"'",
+              "text": "Swift BrowserStack Integration Test - Run '"${GITHUB_RUN_NUMBER}"'",
+              "isCompleted": false,
+              "createdAt": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
+            }
+          }')
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+        RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
+        
+        if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
+          echo "✅ Successfully inserted test document via HTTP API"
+          echo "📄 Response: $RESPONSE_BODY"
+        else
+          echo "⚠️ HTTP API call returned $HTTP_CODE: $RESPONSE_BODY"
+          echo "⚠️ Continuing with basic environment validation..."
+        fi
+        
+        # Run basic environment validation
         chmod +x TestRunner.swift
         swift TestRunner.swift
         
