@@ -86,6 +86,51 @@ def test_ditto_cloud_sync(driver, device_name):
         print(f"❌ Android app launch verification failed: {str(e)}")
         return False
     
+    # Enable Ditto sync toggle (critical for KMP apps)
+    print("🔄 Activating Ditto sync toggle...")
+    try:
+        # Look for sync toggle switch - KMP uses Toggle/Switch components
+        sync_toggle_selectors = [
+            "//android.widget.Switch",
+            "//*[contains(@text, 'Sync')]",
+            "//*[contains(@content-desc, 'Sync')]",
+            "//*[contains(@text, 'sync')]",
+            "//android.widget.ToggleButton",
+            "//*[@class='android.widget.Switch']"
+        ]
+        
+        toggle_found = False
+        for selector in sync_toggle_selectors:
+            try:
+                toggle_elements = driver.find_elements(AppiumBy.XPATH, selector)
+                for toggle in toggle_elements:
+                    try:
+                        # Check if toggle is OFF (needs to be turned ON)
+                        is_checked = toggle.get_attribute("checked")
+                        if is_checked == "false":
+                            print(f"📍 Found OFF sync toggle, activating...")
+                            toggle.click()
+                            time.sleep(2)
+                            print("✅ Sync toggle activated!")
+                            toggle_found = True
+                            break
+                        elif is_checked == "true":
+                            print("✅ Sync toggle already ON")
+                            toggle_found = True
+                            break
+                    except:
+                        continue
+                if toggle_found:
+                    break
+            except:
+                continue
+        
+        if not toggle_found:
+            print("⚠️ Could not find sync toggle - continuing anyway...")
+            
+    except Exception as e:
+        print(f"⚠️ Sync toggle activation failed: {str(e)} - continuing...")
+    
     # Wait for Ditto to initialize
     print("🔄 Allowing time for Ditto SDK initialization...")
     time.sleep(10)  # Give Ditto time to initialize
@@ -155,9 +200,9 @@ def run_android_test(device_config):
     # BrowserStack specific capabilities
     options.set_capability('browserstack.user', os.environ['BROWSERSTACK_USERNAME'])
     options.set_capability('browserstack.key', os.environ['BROWSERSTACK_ACCESS_KEY'])
-    options.set_capability('project', 'Ditto KMP Android')
-    options.set_capability('build', f"KMP Android Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}")
-    options.set_capability('name', f"Ditto Android Functionality Test - {device_name}")
+    options.set_capability('project', 'Ditto Android Kotlin')
+    options.set_capability('build', f"Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}")
+    options.set_capability('name', f"Ditto Android Kotlin Test - {device_name}")
     options.set_capability('browserstack.debug', 'true')
     options.set_capability('browserstack.video', 'true')
     options.set_capability('browserstack.networkLogs', 'true')

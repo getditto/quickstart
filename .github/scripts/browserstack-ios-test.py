@@ -90,6 +90,51 @@ def test_ditto_cloud_sync(driver, device_name):
         print(f"❌ iOS app launch verification failed: {str(e)}")
         return False
     
+    # Enable Ditto sync toggle (critical for KMP apps)
+    print("🔄 Activating Ditto sync toggle on iOS...")
+    try:
+        # Look for sync toggle switch - iOS uses Switch components
+        sync_toggle_selectors = [
+            "//XCUIElementTypeSwitch",
+            "//*[contains(@name, 'Sync')]",
+            "//*[contains(@label, 'Sync')]", 
+            "//*[contains(@name, 'sync')]",
+            "//*[contains(@label, 'sync')]",
+            "//XCUIElementTypeToggle"
+        ]
+        
+        toggle_found = False
+        for selector in sync_toggle_selectors:
+            try:
+                toggle_elements = driver.find_elements(AppiumBy.XPATH, selector)
+                for toggle in toggle_elements:
+                    try:
+                        # Check if toggle is OFF (needs to be turned ON) 
+                        value = toggle.get_attribute("value")
+                        if value == "0":
+                            print(f"📍 Found OFF sync toggle, activating...")
+                            toggle.click()
+                            time.sleep(2)
+                            print("✅ Sync toggle activated!")
+                            toggle_found = True
+                            break
+                        elif value == "1":
+                            print("✅ Sync toggle already ON")
+                            toggle_found = True
+                            break
+                    except:
+                        continue
+                if toggle_found:
+                    break
+            except:
+                continue
+        
+        if not toggle_found:
+            print("⚠️ Could not find sync toggle - continuing anyway...")
+            
+    except Exception as e:
+        print(f"⚠️ Sync toggle activation failed: {str(e)} - continuing...")
+    
     # Wait for Ditto to initialize on iOS
     print("🔄 Allowing time for Ditto SDK initialization on iOS...")
     time.sleep(15)  # Give iOS Ditto more time to initialize
@@ -160,9 +205,9 @@ def run_ios_test(device_config):
     # BrowserStack specific capabilities
     options.set_capability('browserstack.user', os.environ['BROWSERSTACK_USERNAME'])
     options.set_capability('browserstack.key', os.environ['BROWSERSTACK_ACCESS_KEY'])
-    options.set_capability('project', 'Ditto KMP iOS')
-    options.set_capability('build', f"KMP iOS Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}")
-    options.set_capability('name', f"Ditto iOS Functionality Test - {device_name}")
+    options.set_capability('project', 'Ditto iOS Swift')
+    options.set_capability('build', f"Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}")
+    options.set_capability('name', f"Ditto iOS Swift Test - {device_name}")
     options.set_capability('browserstack.debug', 'true')
     options.set_capability('browserstack.video', 'true')
     options.set_capability('browserstack.networkLogs', 'true')
