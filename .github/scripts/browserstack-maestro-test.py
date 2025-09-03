@@ -280,7 +280,7 @@ def main():
                 # Fallback to expected IPA export location
                 app_path = os.path.join(app_dir, 'ios', 'build', 'ipa', 'reactnativeexpo.ipa')
         else:
-            app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
+            app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk')
     else:  # bare
         app_dir = os.path.join(PROJECT_ROOT, 'react-native')
         maestro_dir = os.path.join(app_dir, '.maestro')
@@ -293,7 +293,7 @@ def main():
                 # Fallback to expected IPA export location for bare RN
                 app_path = os.path.join(app_dir, 'ios', 'build', 'ipa', 'DittoReactNativeSampleApp.ipa')
         else:
-            app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
+            app_path = os.path.join(app_dir, 'android', 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk')
     
     maestro_config_path = os.path.join(maestro_dir, 'config.yaml')
     maestro_flows_dir = os.path.join(maestro_dir, 'flows')
