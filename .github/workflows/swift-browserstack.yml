@@ -160,7 +160,7 @@ jobs:
           }')
         
         HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-        RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
+        RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
         
         if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
           echo "✅ Successfully inserted test document via HTTP API"
