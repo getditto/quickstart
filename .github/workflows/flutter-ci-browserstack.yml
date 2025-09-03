@@ -119,7 +119,7 @@ jobs:
         # Use BrowserStack's official Flutter integration approach with Appium Flutter driver
         # Install required dependencies
         flutter pub add dev:webdriver
-        pip3 install Appium-Python-Client
+        pip3 install --break-system-packages Appium-Python-Client
         
         # Create Flutter-BrowserStack integration test using Appium Flutter driver
         cat > browserstack_flutter_test.py << 'PYTHON_FLUTTER_TEST'
@@ -464,7 +464,7 @@ jobs:
         # Use BrowserStack's official Flutter integration approach with Appium Flutter driver for iOS
         # Install required dependencies
         flutter pub add dev:webdriver
-        pip3 install Appium-Python-Client
+        pip3 install --break-system-packages Appium-Python-Client
         
         # Create Flutter-BrowserStack integration test using Appium Flutter driver for iOS
         cat > browserstack_flutter_ios_test.py << 'PYTHON_FLUTTER_IOS_TEST'
