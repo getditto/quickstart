@@ -101,6 +101,9 @@ jobs:
           cd ios
           
           # 1) Archive for device with Release configuration (bundles JS, no Metro dependency)
+          # Set NODE_BINARY to ensure Bundle React Native script works
+          export NODE_BINARY=$(command -v node)
+          
           xcodebuild -workspace reactnativeexpo.xcworkspace \
             -scheme reactnativeexpo \
             -configuration Release \
@@ -117,8 +120,6 @@ jobs:
           ( cd "$IPA_DIR" && zip -r "${APP_NAME}-unsigned.ipa" Payload )
           
           echo "✅ Successfully created unsigned device IPA for BrowserStack"
-        env:
-          EXPO_USE_METRO: 1
 
       - name: Verify iOS IPA exists
         run: |
