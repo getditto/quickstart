@@ -35,7 +35,7 @@ def test_ditto_app():
         
         # Test 1: Verify app is running
         print("🧪 Test 1: Verifying app state...")
-        assert driver.query_app_state('live.ditto.Tasks') == 4  # Running foreground
+        assert driver.query_app_state('live.ditto.quickstart.Tasks') == 4  # Running foreground
         print("✅ App is running in foreground")
         
         # Test 2: Basic UI interaction
@@ -69,13 +69,13 @@ def test_ditto_app():
         # Test 3: App stability test
         print("🧪 Test 3: Testing app stability...")
         time.sleep(20)  # Run app for 20 seconds
-        assert driver.query_app_state('live.ditto.Tasks') == 4
+        assert driver.query_app_state('live.ditto.quickstart.Tasks') == 4
         print("✅ App remained stable for 20 seconds")
         
         # Test 4: Ditto initialization test (implicit - if app doesn't crash, Ditto is working)
         print("🧪 Test 4: Ditto SDK stability test...")
         time.sleep(10)
-        assert driver.query_app_state('live.ditto.Tasks') == 4
+        assert driver.query_app_state('live.ditto.quickstart.Tasks') == 4
         print("✅ Ditto SDK initialized successfully (app didn't crash)")
         
         print("🎉 All tests passed successfully!")
