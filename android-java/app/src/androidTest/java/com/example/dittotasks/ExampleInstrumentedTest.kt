@@ -76,8 +76,10 @@ class TasksUITest {
         
         while (attempts < maxAttempts && !documentFound) {
             try {
-                // Look for a view containing the GitHub test task with our run ID
+                // Look for a TextView with id task_text containing the GitHub test task with our run ID
+                // This looks within the RecyclerView items for the actual task text
                 onView(allOf(
+                    withId(R.id.task_text),
                     withText(containsString("GitHub Test Task")),
                     withText(containsString(runId))
                 )).check(matches(isDisplayed()))
@@ -118,9 +120,11 @@ class TasksUITest {
             // Wait for task to appear
             Thread.sleep(2000)
             
-            // Verify task appears in the list
-            onView(withText(containsString("BrowserStack Test Task")))
-                .check(matches(isDisplayed()))
+            // Verify task appears in the list - look for task_text TextView in RecyclerView
+            onView(allOf(
+                withId(R.id.task_text),
+                withText(containsString("BrowserStack Test Task"))
+            )).check(matches(isDisplayed()))
                 
             println("✓ Successfully added new task through UI")
                 
