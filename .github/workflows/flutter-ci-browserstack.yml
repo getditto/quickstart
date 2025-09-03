@@ -167,7 +167,7 @@ jobs:
           echo "Uploading test APK to BrowserStack..."
           TEST_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -F "file=@$TEST_APK" \
-            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/test-suite)
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/test-suite)
           
           echo "Raw TEST_JSON response: $TEST_JSON"
           
@@ -201,7 +201,7 @@ jobs:
                   \"video\": true, 
                   \"networkLogs\": true
                 }" \
-            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build)
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds)
           
           echo "Build response: $BUILD_JSON"
           BUILD_ID=$(echo "$BUILD_JSON" | jq -r .build_id)
@@ -407,7 +407,7 @@ jobs:
           echo "Uploading test package to BrowserStack..."
           TEST_JSON=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -F "file=@$TEST_PACKAGE" \
-            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/test-package)
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/test-package)
           
           echo "Raw iOS TEST_JSON response: $TEST_JSON"
           
@@ -441,7 +441,7 @@ jobs:
                   \"video\": true, 
                   \"networkLogs\": true
                 }" \
-            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build)
+            https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds)
           
           echo "Build response: $BUILD_JSON"
           BUILD_ID=$(echo "$BUILD_JSON" | jq -r .build_id)
