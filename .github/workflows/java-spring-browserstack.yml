@@ -109,10 +109,30 @@ jobs:
 
       - name: Start BrowserStack Local tunnel
         run: |
-          # Start BrowserStack Local tunnel as daemon
-          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon start --force-local
-          sleep 10
-          echo "✓ BrowserStack Local tunnel established"
+          # Start BrowserStack Local tunnel in background
+          nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --force-local --verbose 3 &
+          BROWSERSTACK_LOCAL_PID=$!
+          echo "BROWSERSTACK_LOCAL_PID=$BROWSERSTACK_LOCAL_PID" >> $GITHUB_ENV
+          
+          # Wait for tunnel to establish (increase wait time)
+          echo "Waiting for BrowserStack Local tunnel to connect..."
+          sleep 20
+          
+          # Verify tunnel connection with retries
+          for i in {1..10}; do
+            if curl -s --connect-timeout 5 http://bs-local.com:45691/check > /dev/null; then
+              echo "✓ BrowserStack Local tunnel established"
+              break
+            elif [ $i -eq 10 ]; then
+              echo "❌ Failed to establish BrowserStack Local tunnel"
+              # Show any potential error logs
+              ps aux | grep BrowserStackLocal || true
+              exit 1
+            else
+              echo "Waiting for tunnel... (attempt $i/10)"
+              sleep 5
+            fi
+          done
 
       - name: Execute BrowserStack Web Tests
         id: test
@@ -271,9 +291,14 @@ jobs:
       - name: Stop BrowserStack Local tunnel
         if: always()
         run: |
-          echo "Stopping BrowserStack Local tunnel..."
-          ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
-          sleep 2
+          if [ ! -z "$BROWSERSTACK_LOCAL_PID" ]; then
+            echo "Stopping BrowserStack Local tunnel (PID: $BROWSERSTACK_LOCAL_PID)"
+            kill $BROWSERSTACK_LOCAL_PID || true
+            sleep 2
+          else
+            echo "No BrowserStack Local PID found, attempting alternative cleanup..."
+            pkill -f BrowserStackLocal || true
+          fi
 
       - name: Generate test report
         if: always()
