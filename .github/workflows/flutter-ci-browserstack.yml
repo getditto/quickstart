@@ -110,7 +110,8 @@ jobs:
           APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
             -F "file=@$APK_FILE" \
-            -F "custom_id=flutter-android-${{ github.run_id }}")
+            -F "custom_id=flutter-android-${{ github.run_id }}" \
+            -F "project_name=Ditto Flutter Android")
           
           echo "Upload response: $APP_UPLOAD_RESPONSE"
           APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
@@ -191,11 +192,15 @@ jobs:
           # Build iOS app bundle for BrowserStack (unsigned, following Swift pattern)
           flutter build ios --debug --no-codesign
           
-          # Locate the built app bundle
-          APP_BUNDLE_PATH=$(find build/ios/Debug-iphonesimulator -name "*.app" -type d | head -n1)
+          # Locate the built device .app (prefer Debug-iphoneos, fall back to iphoneos)
+          APP_BUNDLE_PATH=$( \
+            find build/ios/Debug-iphoneos -name "*.app" -type d 2>/dev/null | head -n1 \
+            || find build/ios/iphoneos -name "*.app" -type d 2>/dev/null | head -n1 \
+          )
+          
           if [ -z "$APP_BUNDLE_PATH" ]; then
-            echo "❌ iOS app bundle not found"
-            find build/ios -name "*.app" -type d || echo "No APP files found"
+            echo "❌ iOS app bundle not found in Debug-iphoneos or iphoneos"
+            find build/ios -name "*.app" -type d || true
             exit 1
           fi
           
@@ -223,7 +228,8 @@ jobs:
           APP_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
             -F "file=@$IPA_FILE" \
-            -F "custom_id=flutter-ios-${{ github.run_id }}")
+            -F "custom_id=flutter-ios-${{ github.run_id }}" \
+            -F "project_name=Ditto Flutter iOS")
           
           echo "Upload response: $APP_UPLOAD_RESPONSE"
           APP_URL=$(echo $APP_UPLOAD_RESPONSE | jq -r .app_url)
