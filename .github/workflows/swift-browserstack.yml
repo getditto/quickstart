@@ -136,48 +136,46 @@ jobs:
         set -euo pipefail
         echo "🧪 Building UITests for device…"
 
-        # 1) Build-for-testing (device) with a fixed DerivedData path
+        # We are already in `swift/` via working-directory
+        DERIVED="build/DerivedData"
+        PRODUCTS_DIR="$DERIVED/Build/Products"
+        OUT_DIR="$(pwd)/build"
+        OUT_ZIP="$OUT_DIR/TasksUITests.zip"
+
+        # 1) Build-for-testing for real device
         xcodebuild build-for-testing \
           -project Tasks.xcodeproj \
           -scheme TasksUITests \
           -configuration Debug \
           -destination 'generic/platform=iOS' \
-          -derivedDataPath build/DerivedData \
+          -derivedDataPath "$DERIVED" \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
 
-        PRODUCTS_DIR="build/DerivedData/Build/Products"
+        # 2) Locate Runner.app produced for device
+        RUNNER_APP="$(find "$PRODUCTS_DIR" -type d -name "*-Runner.app" -path "*/Debug-iphoneos/*" -print -quit)"
 
-        # 2) Locate the Runner.app (device build) and the .xctestrun
-        RUNNER_APP=$(find "$PRODUCTS_DIR" -type d -name "*-Runner.app" -path "*/Debug-iphoneos/*" -print -quit)
-        XCTESTRUN=$(find "$PRODUCTS_DIR" -maxdepth 1 -type f -name "*.xctestrun" -print -quit)
-
-        if [[ -z "${RUNNER_APP:-}" ]] || [[ ! -d "$RUNNER_APP" ]]; then
-          echo "❌ Runner.app not found under $PRODUCTS_DIR"; find "$PRODUCTS_DIR" -type d -name "*-Runner.app"; exit 1
+        if [[ -z "${RUNNER_APP:-}" || ! -d "$RUNNER_APP" ]]; then
+          echo "❌ Runner.app not found under $PRODUCTS_DIR"
+          find "$PRODUCTS_DIR" -type d -name "*-Runner.app" -path "*/Debug-iphoneos/*" || true
+          exit 1
         fi
-        if [[ -z "${XCTESTRUN:-}" ]] || [[ ! -f "$XCTESTRUN" ]]; then
-          echo "❌ .xctestrun not found under $PRODUCTS_DIR"; ls -la "$PRODUCTS_DIR"; exit 1
-        fi
-
         echo "✅ Runner: $RUNNER_APP"
-        echo "✅ xctestrun: $XCTESTRUN"
 
-        # 3) Create ZIP with REQUIRED ROOT STRUCTURE
-        #    BrowserStack wants artifacts at the zip root (NO wrapping folder).
-        OUT_ZIP="build/TasksUITests.zip"
+        # 3) Zip ONLY the Runner.app at the ROOT of the zip (per BrowserStack docs)
+        mkdir -p "$OUT_DIR"
         rm -f "$OUT_ZIP"
-
-        # Add Runner.app at zip root
-        ( cd "$(dirname "$RUNNER_APP")" && zip -qry "$(pwd)/../../../../$OUT_ZIP" "$(basename "$RUNNER_APP")" )
-
-        # Add .xctestrun at zip root
-        ( cd "$PRODUCTS_DIR" && zip -q "../$OUT_ZIP" "$(basename "$XCTESTRUN")" )
+        (
+          cd "$(dirname "$RUNNER_APP")"
+          # --symlinks recommended by BrowserStack docs
+          zip --symlinks -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")"
+        )
 
         # 4) Sanity check
-        echo "🔍 ZIP contents (should show Runner.app and *.xctestrun at root):"
+        echo "🔍 ZIP contents (Runner.app must be at root):"
         unzip -l "$OUT_ZIP" | sed -n '1,120p'
 
-        echo "test_bundle_path=$(pwd)/$OUT_ZIP" >> "$GITHUB_OUTPUT"
+        echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
         echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
     
     
