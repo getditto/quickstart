@@ -140,29 +140,42 @@ jobs:
           echo "✅ Found TasksUITests scheme - building UI test bundle"
           
           set -euo pipefail
-          # Build the UI tests for device so Runner.app is created
+          
+          # Build UITests for device (creates Runner.app + .xctestrun under DerivedData)
+          echo "🧪 Building UITests for real device..."
           xcodebuild build-for-testing \
             -project Tasks.xcodeproj \
             -scheme TasksUITests \
             -configuration Debug \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedData \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
 
-          RUNNER_DIR=$(find build/DerivedData/Build/Products/Debug-iphoneos -maxdepth 1 -name "*UITests-Runner.app" -type d | head -1)
-          if [ -z "$RUNNER_DIR" ]; then
-            echo "❌ XCUITest Runner app not found after build"
-            exit 1
-          fi
+          # Find Runner.app (device build) and .xctestrun
+          echo "🔍 Finding Runner.app and .xctestrun files..."
+          RUNNER_APP=$(find build/DerivedData -type d -name "*-Runner.app" -path "*/Build/Products/*-iphoneos/*" | head -1)
+          XCTESTRUN=$(find build/DerivedData -type f -name "*.xctestrun" | head -1)
 
-          ( cd "$(dirname "$RUNNER_DIR")" && zip -qry ../../../../TasksUITests.zip "$(basename "$RUNNER_DIR")" )
-          TEST_ZIP_PATH="$(pwd)/build/TasksUITests.zip"
+          test -d "$RUNNER_APP" && echo "✅ Runner: $RUNNER_APP" || { echo "❌ Runner.app not found"; exit 1; }
+          test -f "$XCTESTRUN" && echo "✅ xctestrun: $XCTESTRUN" || { echo "❌ .xctestrun not found"; exit 1; }
 
-          echo "test_bundle_path=$TEST_ZIP_PATH" >> $GITHUB_OUTPUT
-          echo "✅ XCUITest bundle ZIP created: $TEST_ZIP_PATH"
-          ls -la "$TEST_ZIP_PATH"
+          # Package with both items at the root of the zip (critical for BrowserStack!)
+          echo "📦 Creating properly structured test bundle ZIP..."
+          WORK=build/UITestBundle
+          mkdir -p "$WORK"
+          cp -R "$RUNNER_APP" "$WORK/"
+          cp "$XCTESTRUN" "$WORK/"
+          (cd "$WORK" && zip -qry ../TasksUITests.zip .)
+          TEST_ZIP="$(pwd)/build/TasksUITests.zip"
+          
+          # Sanity check ZIP structure
+          echo "🔍 ZIP contents (BrowserStack requires Runner.app + .xctestrun at root):"
+          unzip -l "$TEST_ZIP" | sed -n '1,20p'
+
+          echo "test_bundle_path=$TEST_ZIP" >> $GITHUB_OUTPUT
+          echo "✅ XCUITest bundle ZIP created with proper structure: $TEST_ZIP"
+          ls -la "$TEST_ZIP"
         else
           echo "⚠️ No TasksUITests scheme found in project - UI test files exist but not configured as Xcode target"
           echo "📱 Will upload app for manual BrowserStack testing instead of automated XCUITest"
