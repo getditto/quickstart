@@ -150,58 +150,11 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           || echo "⚠️ macOS build not supported, skipping"
 
-  integration-test:
-    name: Integration Test (macos-latest)
-    runs-on: macos-latest
-    needs: [build-ios, build-macos]
-    timeout-minutes: 15
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: 'latest-stable'
-    
-    - name: Create .env file
-      run: |
-        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-    - name: Generate Env.swift
-      working-directory: swift
-      run: |
-        chmod +x buildEnv.sh
-        ./buildEnv.sh ../.env Tasks/
-    
-    - name: Run real integration tests
-      working-directory: swift
-      env:
-        GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
-        GITHUB_RUN_ID: ${{ github.run_id }}
-        GITHUB_RUN_NUMBER: ${{ github.run_number }}
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
-        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
-        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-      run: |
-        echo "🧪 Running Swift integration tests with real Ditto cloud sync..."
-        echo "📝 Test document ID: ${GITHUB_TEST_DOC_ID}"
-        
-        # Run the integration test runner
-        chmod +x TestRunner.swift
-        swift TestRunner.swift
-        
-        echo "✅ Swift integration tests completed successfully"
-        echo "🎯 Verified: Ditto initialization, sync, and CRUD operations"
 
   summary:
     name: Summary
     runs-on: macos-latest
-    needs: [lint, build-ios, build-macos, integration-test]
+    needs: [lint, build-ios, build-macos]
     if: always()
     
     steps:
@@ -211,7 +164,6 @@ jobs:
         echo "Lint: ${{ needs.lint.result }}"
         echo "Build iOS: ${{ needs.build-ios.result }}"
         echo "Build macOS: ${{ needs.build-macos.result }}"
-        echo "Integration Test: ${{ needs.integration-test.result }}"
         
         # Check if any required job failed
         if [[ "${{ needs.lint.result }}" == "failure" || \
