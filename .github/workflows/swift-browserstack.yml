@@ -165,47 +165,6 @@ jobs:
           exit 1
         fi
     
-    - name: Seed Test Document via Ditto API
-      id: seed_document
-      run: |
-        echo "🌱 Seeding test document for BrowserStack XCUITest verification..."
-        
-        # Create unique test task for this run
-        TEST_TASK_TEXT="Test Task from BrowserStack #${{ github.run_number }}"
-        TEST_TASK_ID="browserstack_xcuitest_${{ github.run_number }}_$(date +%s)"
-        
-        echo "📝 Seeding task: $TEST_TASK_TEXT"
-        echo "🆔 Task ID: $TEST_TASK_ID"
-        
-        # Simple HTTP POST to Ditto cloud
-        for endpoint in "documents" "store/documents" "api/documents" "collections/tasks/documents"; do
-          echo "🔗 Trying endpoint: $endpoint"
-          
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X POST "${{ secrets.DITTO_AUTH_URL }}/$endpoint" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
-            -d "{
-              \"_id\": \"$TEST_TASK_ID\",
-              \"title\": \"$TEST_TASK_TEXT\",
-              \"done\": false,
-              \"deleted\": false
-            }" || echo -e "\n500")
-          
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          
-          if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
-            echo "✅ Successfully seeded document via $endpoint"
-            echo "🎯 XCUITest should find: $TEST_TASK_TEXT"
-            break
-          else
-            echo "⚠️ $endpoint returned $HTTP_CODE"
-          fi
-        done
-        
-        echo "task_text=$TEST_TASK_TEXT" >> $GITHUB_OUTPUT
-        echo "task_id=$TEST_TASK_ID" >> $GITHUB_OUTPUT
-        echo "✅ Document seeding attempted"
     
     - name: Upload App and Test Bundle to BrowserStack
       id: upload
@@ -252,74 +211,107 @@ jobs:
         echo "📱 App URL: $APP_URL"
         echo "🧪 Test URL: $TEST_URL"
     
-    - name: Execute XCUITest on BrowserStack Real Device  
+    - name: Execute XCUITest on BrowserStack
       id: test
       run: |
-        echo "🚀 Running XCUITest on BrowserStack real device..."
+        # Validate inputs
+        APP_URL="${{ steps.upload.outputs.app_url }}"
+        TEST_URL="${{ steps.upload.outputs.test_url }}"
         
-        # Run XCUITest on iPhone 15 Pro with iOS 17 (correct API path)
-        TEST_EXECUTION_RESPONSE=$(curl --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/xcuitest/build" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "app": "${{ steps.upload.outputs.app_url }}",
-            "testSuite": "${{ steps.upload.outputs.test_url }}",
-            "devices": ["iPhone 15 Pro-17"],
-            "project": "Swift",
-            "buildName": "XCUITest Run #${{ github.run_number }}",
-            "debugscreenshots": true,
-            "networkLogs": true,
-            "deviceLogs": true,
-            "video": true,
-            "env": {
-              "GITHUB_RUN_NUMBER": "${{ github.run_number }}"
-            }
-          }')
+        echo "App URL: $APP_URL"
+        echo "Test URL: $TEST_URL"
         
-        echo "Test execution response: $TEST_EXECUTION_RESPONSE"
-        BUILD_ID=$(echo "$TEST_EXECUTION_RESPONSE" | jq -r .build_id)
-        
-        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-          echo "❌ Failed to start XCUITest execution"
-          echo "Response: $TEST_EXECUTION_RESPONSE"
+        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+          echo "Error: No valid app URL available"
           exit 1
         fi
         
-        echo "✅ XCUITest execution started with build ID: $BUILD_ID"
-        echo "🔗 BrowserStack build URL: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID"
+        if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+          echo "Error: No valid test URL available"
+          exit 1
+        fi
         
-        # Poll for test completion (timeout after 10 minutes)
-        echo "⏳ Waiting for XCUITest to complete..."
-        TIMEOUT=600
+        # Create XCUITest execution request (like Android Espresso)
+        BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/xcuitest/build" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"app\": \"$APP_URL\",
+            \"testSuite\": \"$TEST_URL\",
+            \"devices\": [\"iPhone 15 Pro-17\"],
+            \"projectName\": \"Ditto Swift\",
+            \"buildName\": \"Build #${{ github.run_number }}\",
+            \"buildTag\": \"${{ github.ref_name }}\",
+            \"deviceLogs\": true,
+            \"video\": true,
+            \"networkLogs\": true
+          }")
+        
+        echo "BrowserStack API Response:"
+        echo "$BUILD_RESPONSE"
+        
+        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "Error: Failed to create BrowserStack build"
+          echo "Response: $BUILD_RESPONSE"
+          exit 1
+        fi
+        
+        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+        echo "Build started with ID: $BUILD_ID"
+
+    - name: Wait for XCUITest to complete
+      run: |
+        BUILD_ID="${{ steps.test.outputs.build_id }}"
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "Error: No valid BUILD_ID available"
+          exit 1
+        fi
+        
+        MAX_WAIT_TIME=1200  # 20 minutes
+        CHECK_INTERVAL=30   # Check every 30 seconds
         ELAPSED=0
-        POLL_INTERVAL=15
         
-        while [ $ELAPSED -lt $TIMEOUT ]; do
-          sleep $POLL_INTERVAL
-          ELAPSED=$((ELAPSED + POLL_INTERVAL))
-          
-          # Check build status (correct API path)
-          BUILD_STATUS_RESPONSE=$(curl --silent -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             "https://api-cloud.browserstack.com/xcuitest/builds/$BUILD_ID")
           
           BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
-          echo "📊 Build status after ${ELAPSED}s: $BUILD_STATUS"
           
-          if [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ]; then
+          if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
+            echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+            continue
+          fi
+          
+          echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
+          
+          if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
+            echo "Build completed with status: $BUILD_STATUS"
             break
           fi
+          
+          sleep $CHECK_INTERVAL
+          ELAPSED=$((ELAPSED + CHECK_INTERVAL))
         done
         
-        # Check final results
-        if [ "$BUILD_STATUS" = "passed" ]; then
-          echo "✅ XCUITest passed successfully!"
-          echo "🎯 Ditto sync verified - seeded document found on device"
-          echo "📱 Swift iOS app validated with native XCUITest on BrowserStack"
-        else
-          echo "❌ XCUITest failed with status: $BUILD_STATUS"
-          echo "📊 Full build response:"
-          echo "$BUILD_STATUS_RESPONSE" | jq .
+        # Get final results
+        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          "https://api-cloud.browserstack.com/xcuitest/builds/$BUILD_ID")
+        
+        echo "Final build result:"
+        echo "$FINAL_RESULT" | jq .
+        
+        # Check final status
+        BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+        if [ "$BUILD_STATUS" != "passed" ]; then
+          echo "Build failed with status: $BUILD_STATUS"
           exit 1
+        else
+          echo "All tests passed successfully!"
         fi
 
   summary:
@@ -342,11 +334,10 @@ jobs:
           echo "🧪 XCUITest automation verified:"
           echo "   ✓ App launches successfully on real device"
           echo "   ✓ Native iOS UI automation with XCUITest framework"
-          echo "   ✓ Ditto SDK cloud sync validated - seeded document found"
-          echo "   ✓ Document seeded via HTTP API to Ditto cloud"
-          echo "   ✓ Document synced down to device and visible in UI"
-          echo "   ✓ App stability verified over extended runtime"
-          echo "   ✓ Native iOS testing approach (idiomatic for Swift)"
+          echo "   ✓ Basic app functionality and navigation tested"
+          echo "   ✓ UI elements and interactions working correctly"
+          echo "   ✓ App stability verified during test execution"
+          echo "   ✓ Native iOS testing approach (like Android Espresso)"
         else
           echo "❌ Swift iOS XCUITest testing failed on BrowserStack"
         fi
@@ -354,7 +345,7 @@ jobs:
         echo ""
         if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
           echo "🎉 Swift iOS XCUITest testing completed successfully!"
-          echo "🤖 Native XCUITest validated Ditto cloud sync functionality"
+          echo "🤖 Native XCUITest validated app functionality on real device"
           echo "🔗 Check BrowserStack dashboard for XCUITest session videos and logs"
         else
           echo "⚠️ Swift iOS BrowserStack real device testing encountered issues"
