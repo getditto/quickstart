@@ -179,7 +179,9 @@ jobs:
               \"video\": true,
               \"networkLogs\": true,
               \"autoGrantPermissions\": true,
-              \"class\": \"live.ditto.quickstart.tasks.SimpleIntegrationTest\",
+              \"testFilter\": {
+                \"class\": [\"live.ditto.quickstart.tasks.SimpleIntegrationTest\"]
+              },
               \"env\": {
                 \"GITHUB_TEST_DOC_ID\": \"${{ env.GITHUB_TEST_DOC_ID }}\"
               }
