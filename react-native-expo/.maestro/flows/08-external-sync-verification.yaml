@@ -19,11 +19,9 @@ tags:
 - repeat:
     times: 30
     commands:
-      - wait: 1000
       - runFlow:
           when:
             visible: "GitHub Expo Test Task"
           commands:
             # Found the GitHub test document that synced from Ditto Cloud
             - assertVisible: "GitHub Expo Test Task"
-            - stop # Exit successfully
