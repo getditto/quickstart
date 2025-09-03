@@ -169,9 +169,9 @@ jobs:
           (cd "$WORK" && zip -qry ../TasksUITests.zip .)
           TEST_ZIP="$(pwd)/build/TasksUITests.zip"
           
-          # Sanity check ZIP structure
+          # Sanity check ZIP structure - show first 100 lines as per your fix
           echo "🔍 ZIP contents (BrowserStack requires Runner.app + .xctestrun at root):"
-          unzip -l "$TEST_ZIP" | sed -n '1,20p'
+          unzip -l "$TEST_ZIP" | sed -n '1,100p'
 
           echo "test_bundle_path=$TEST_ZIP" >> $GITHUB_OUTPUT
           echo "✅ XCUITest bundle ZIP created with proper structure: $TEST_ZIP"
@@ -280,13 +280,13 @@ jobs:
           exit 1
         fi
         
-        # Upload test bundle to XCUITest v2 API
+        # Upload test bundle to XCUITest v2 API  
         echo "🧪 Uploading test bundle..."
         echo "Debug: Test bundle path: $TEST_BUNDLE"
         ls -la "$TEST_BUNDLE" || echo "Test bundle file not found!"
-        TEST_UPLOAD_RESPONSE=$(curl --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
-          -F "file=@$TEST_BUNDLE")
+        TEST_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -F "file=@$TEST_BUNDLE" \
+          https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite)
         
         echo "Test upload response: $TEST_UPLOAD_RESPONSE"  
         TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_url)
