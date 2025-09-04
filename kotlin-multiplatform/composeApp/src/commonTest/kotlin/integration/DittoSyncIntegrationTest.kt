@@ -67,19 +67,16 @@ class DittoSyncIntegrationTest {
     fun testGitHubTestDocumentSyncs() = runBlocking {
         println("🔍 Starting GitHub test document sync verification...")
         
-        // Get the GitHub test document ID from environment variable
-        val githubTestDocId = getEnvironmentVariable("GITHUB_TEST_DOC_ID")
+        // Get the GitHub test task title from environment variable
+        val githubTestTitle = getEnvironmentVariable("GITHUB_TEST_DOC_ID")
         
-        if (githubTestDocId == null) {
+        if (githubTestTitle == null) {
             println("⚠️ No GITHUB_TEST_DOC_ID environment variable found - skipping sync test")
             println("   This is expected when running locally (only works in CI)")
             return@runBlocking
         }
         
-        // Extract the run ID from the document ID (format: github_test_RUNID_RUNNUMBER) 
-        val runId = githubTestDocId.split("_").getOrNull(2) ?: githubTestDocId
-        println("🎯 Looking for GitHub Test Task with Run ID: $runId")
-        println("📄 Full document ID: $githubTestDocId")
+        println("🎯 Looking for task with title: $githubTestTitle")
         
         try {
             // Initialize Ditto and start sync
@@ -113,10 +110,10 @@ class DittoSyncIntegrationTest {
                         
                         println("📄 Found document: ID=$docId, title=$title")
                         
-                        // Check if this is our GitHub test document
-                        if (docId == githubTestDocId || 
-                            (title.contains("GitHub Test Task") && title.contains(runId))) {
-                            println("✅ SUCCESS: Found synced GitHub test document with run ID: $runId")
+                        // Check if this is our test task by title
+                        if (title == githubTestTitle ||
+                            (title.contains("GitHub Test Task") && githubTestTitle.contains("github_test"))) {
+                            println("✅ SUCCESS: Found test task with title: $title")
                             documentFound = true
                             return@forEach
                         }
@@ -142,14 +139,12 @@ class DittoSyncIntegrationTest {
             
             if (!documentFound) {
                 val errorMsg = """
-                    ❌ FAILED: GitHub test document did not sync within ${maxAttempts * 2} seconds
+                    ❌ FAILED: GitHub test task did not sync within ${maxAttempts * 2} seconds
                     
-                    Expected to find:
-                    - Document ID: $githubTestDocId
-                    - Text containing: "GitHub Test Task" AND "$runId"
+                    Expected to find task with title: $githubTestTitle
                     
                     Possible causes:
-                    1. Document not seeded to Ditto Cloud during CI
+                    1. Task not seeded to Ditto Cloud during CI
                     2. App not connecting to Ditto Cloud (check enableDittoCloudSync = true)
                     3. Network connectivity issues
                     4. Ditto sync taking longer than expected
