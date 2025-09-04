@@ -1,92 +1,593 @@
-#
-# .github/workflows/swift-ci.yml
-#
----
-name: Swift CI
+name: Swift
 
 on:
   pull_request:
-    branches:
-      - main
-      - 'sdk-*'
+    branches: [main, 'sdk-*']
+    paths:
+      - 'swift/**'
   push:
-    branches:
-      - main
-      - 'sdk-*'
+    branches: [main, 'sdk-*']
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-swift:
-    name: Build Swift (macos-latest)
+  lint:
+    name: Lint
     runs-on: macos-latest
-
+    timeout-minutes: 10
+    
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+    
+    - name: Create .env file (test credentials for linting)
+      run: |
+        echo "DITTO_APP_ID=test_app_id" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
+        echo "DITTO_AUTH_URL=https://test.com" >> .env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+    
+    - name: Generate Env.swift (test)
+      working-directory: swift
+      run: |
+        chmod +x buildEnv.sh
+        ./buildEnv.sh ../.env Tasks/
+    
+    - name: Install SwiftLint
+      run: |
+        if ! command -v swiftlint &> /dev/null; then
+          echo "Installing SwiftLint..."
+          brew install swiftlint
+        fi
+        swiftlint version
+    
+    - name: Run SwiftLint
+      working-directory: swift
+      run: |
+        echo "🔍 Running SwiftLint analysis..."
+        swiftlint lint --config .swiftlint.yml
 
-      - name: Select Xcode
-        run: |
-          # Use the latest stable Xcode version
-          sudo xcode-select -s /Applications/Xcode.app
-          xcodebuild -version
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    needs: lint
+    timeout-minutes: 20
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+    
+    - name: Create .env file (production credentials)
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
+    - name: Generate Env.swift (production)
+      working-directory: swift
+      run: |
+        chmod +x buildEnv.sh
+        ./buildEnv.sh ../.env Tasks/
+    
+    - name: Resolve Package Dependencies
+      working-directory: swift
+      run: |
+        echo "📦 Resolving Swift Package dependencies..."
+        xcodebuild -resolvePackageDependencies \
+          -project Tasks.xcodeproj \
+          -scheme Tasks
 
-      - name: Create .env file
-        run: |
-          echo "DITTO_APP_ID=test_app_id" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=test_playground_token" >> .env
-          echo "DITTO_AUTH_URL=https://auth.example.com" >> .env
-          echo "DITTO_WEBSOCKET_URL=wss://websocket.example.com" >> .env
+    - name: Build macOS App
+      working-directory: swift
+      run: |
+        echo "🍎 Building macOS app..."
+        xcodebuild build \
+          -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -configuration Debug \
+          -destination 'platform=macOS' \
+          -allowProvisioningUpdates \
+          SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
 
-      - name: Generate Env.swift
-        working-directory: swift
-        run: |
-          chmod +x buildEnv.sh
-          ./buildEnv.sh ../.env tasks/
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: lint
+    timeout-minutes: 20
+    outputs:
+      ios-build-success: ${{ steps.build-status.outputs.success }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+    
+    - name: Create .env file (production credentials)
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
+    - name: Generate Env.swift (production)
+      working-directory: swift
+      run: |
+        chmod +x buildEnv.sh
+        ./buildEnv.sh ../.env Tasks/
+    
+    - name: Resolve Package Dependencies
+      working-directory: swift
+      run: |
+        echo "📦 Resolving Swift Package dependencies..."
+        xcodebuild -resolvePackageDependencies \
+          -project Tasks.xcodeproj \
+          -scheme Tasks
 
-      - name: Resolve Swift Package Dependencies
-        working-directory: swift
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project Tasks.xcodeproj \
-            -scheme Tasks
+    - name: Build iOS Simulator
+      working-directory: swift
+      run: |
+        echo "🔨 Building iOS app for simulator..."
+        xcodebuild build \
+          -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -configuration Debug \
+          -sdk iphonesimulator \
+          -destination 'generic/platform=iOS Simulator' \
+          -allowProvisioningUpdates \
+          SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          ONLY_ACTIVE_ARCH=NO
 
-      - name: Build Swift Project
-        working-directory: swift
-        run: |
-          # First, let's check available platforms
-          xcodebuild -showsdks || true
+    - name: Build iOS Device Archive and IPA (for BrowserStack)
+      working-directory: swift
+      run: |
+        echo "🍎 Building iOS device .ipa for BrowserStack..."
+        
+        # Build and archive iOS app for real device
+        xcodebuild -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -archivePath build/Tasks.xcarchive \
+          archive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+        
+        echo "📦 Creating unsigned .ipa for BrowserStack..."
+        
+        # Find the .app bundle from the archive
+        APP_BUNDLE_PATH=$(find build/Tasks.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d | head -1)
+        
+        if [ -d "$APP_BUNDLE_PATH" ]; then
+          echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
           
-          # Build for iOS simulator
-          xcodebuild build \
-            -project Tasks.xcodeproj \
-            -scheme Tasks \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -allowProvisioningUpdates \
-            SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            ONLY_ACTIVE_ARCH=NO
+          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
+          mkdir -p build/Payload
+          cp -R "$APP_BUNDLE_PATH" build/Payload/
+          (cd build && zip -qry Tasks-unsigned.ipa Payload && rm -rf Payload)
+          
+          if [ -f "build/Tasks-unsigned.ipa" ]; then
+            echo "✅ Unsigned .ipa created successfully"
+            ls -la build/Tasks-unsigned.ipa
+          else
+            echo "❌ Failed to create .ipa file"
+            exit 1
+          fi
+        else
+          echo "❌ iOS app bundle not found in archive"
+          exit 1
+        fi
 
-      - name: Build for macOS
-        working-directory: swift
-        run: |
-          xcodebuild build \
-            -project Tasks.xcodeproj \
-            -scheme Tasks \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            -allowProvisioningUpdates \
-            SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+    - name: Upload iOS IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-ipa-${{ github.run_id }}
+        path: swift/build/Tasks-unsigned.ipa
+        retention-days: 1
+    
+    - name: Set build status
+      id: build-status
+      run: |
+        echo "success=true" >> $GITHUB_OUTPUT
 
-      - name: Run Swift Tests (if available)
-        working-directory: swift
-        run: |
-          echo "Skipping tests for now due to simulator configuration issues"
-          # Tests can be re-enabled once the simulator configuration is resolved
+  browserstack:
+    name: BrowserStack iOS Testing
+    runs-on: macos-latest
+    needs: [build-ios]
+    if: needs.build-ios.outputs.ios-build-success == 'true'
+    timeout-minutes: 60
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+    
+    - name: Create .env file (production credentials for BrowserStack API)
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
+    - name: Generate Env.swift (production for XCUITest build)
+      working-directory: swift
+      run: |
+        chmod +x buildEnv.sh
+        ./buildEnv.sh ../.env Tasks/
+    
+    - name: Download iOS IPA Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ios-ipa-${{ github.run_id }}
+        path: ./
+    
+    - name: Build XCUITest Bundle for BrowserStack
+      id: build_test_bundle
+      working-directory: swift
+      run: |
+        set -euo pipefail
+
+        echo "🧪 build-for-testing (device) with GitHub run info injected..."
+        DERIVED="$PWD/build/DerivedData"
+        PRODUCTS_DIR="$DERIVED/Build/Products"
+
+        # Inject GitHub run info as build settings for the test
+        xcodebuild build-for-testing \
+          -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -derivedDataPath "$DERIVED" \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          GITHUB_RUN_ID=${{ github.run_id }} \
+          GITHUB_RUN_NUMBER=${{ github.run_number }}
+
+        echo "🔍 Looking for Runner.app (device) and .xctestrun…"
+        # Runner.app must come from Debug-iphoneos (device), not simulator
+        RUNNER_APP=$(find "$PRODUCTS_DIR" -type d -path "*/Debug-iphoneos/*-Runner.app" -print -quit || true)
+        XCTESTRUN=$(find "$PRODUCTS_DIR" -maxdepth 1 -type f -name "*.xctestrun" -print -quit || true)
+
+        if [[ -z "${RUNNER_APP:-}" || ! -d "$RUNNER_APP" ]]; then
+          echo "❌ Runner.app not found under $PRODUCTS_DIR"
+          find "$PRODUCTS_DIR" -type d -name "*-Runner.app" || true
+          exit 1
+        fi
+
+        if [[ -z "${XCTESTRUN:-}" || ! -f "$XCTESTRUN" ]]; then
+          echo "❌ .xctestrun not found at $PRODUCTS_DIR root"
+          ls -la "$PRODUCTS_DIR" || true
+          exit 1
+        fi
+
+        echo "✅ Runner: $RUNNER_APP"
+        echo "✅ xctestrun: $XCTESTRUN"
+
+        # Create ZIP with BOTH files at ZIP ROOT (exactly as BrowserStack expects)
+        OUT_DIR="$PWD/../build"
+        mkdir -p "$OUT_DIR"
+        OUT_ZIP="$OUT_DIR/TasksUITests.zip"
+        rm -f "$OUT_ZIP"
+
+        echo "📦 Creating $OUT_ZIP with root: [$(basename "$RUNNER_APP")]"
+        echo "ℹ️  BrowserStack error requested removing .xctestrun file - trying Runner.app only"
+        ( cd "$(dirname "$RUNNER_APP")" && zip -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")" )
+
+        echo "🔍 ZIP contents:"
+        unzip -l "$OUT_ZIP" | sed -n '1,120p'
+
+        echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
+        echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
+    
+    - name: Insert test document into Ditto Cloud
+      run: |
+        # Create a unique GitHub test document with inverted timestamp to appear at top
+        TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+        DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        
+        echo "📝 Inserting GitHub test document (inverted timestamp for top position)"
+        echo "📝 ID: '${DOC_ID}'"
+        echo "📝 Title: '${DOC_TITLE}'"
+        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
+        
+        # Insert document using Ditto API v4 (same as JavaScript)
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"${DOC_TITLE}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "✓ Document title: ${DOC_TITLE}"
+          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+          echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
+
+    - name: Upload App and Test Bundle to BrowserStack
+      id: upload
+      run: |
+        echo "📤 Uploading iOS app and XCUITest bundle to BrowserStack..."
+        
+        IPA_FILE="$(pwd)/Tasks-unsigned.ipa"
+        TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
+        
+        echo "📱 App file: $IPA_FILE"
+        echo "🧪 Test bundle: $TEST_BUNDLE"
+        
+        # Validate both files exist
+        if [ ! -f "$IPA_FILE" ]; then
+          echo "❌ IPA file not found: $IPA_FILE"
+          exit 1
+        fi
+        
+        if [ ! -f "$TEST_BUNDLE" ]; then
+          echo "❌ Test bundle not found: $TEST_BUNDLE"
+          exit 1
+        fi
+        
+        # Upload app to BrowserStack XCUITest v2 API
+        echo "📱 Uploading app..."
+        APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/app" \
+          -F "file=@$IPA_FILE" \
+          -F "custom_id=ditto-swift-app")
+        
+        echo "App upload response: $APP_UPLOAD_RESPONSE"
+        APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
+        
+        if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+          echo "❌ Failed to upload app"
+          echo "Response: $APP_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
+        # Upload test bundle to XCUITest v2 API  
+        echo "🧪 Uploading test bundle..."
+        echo "Debug: Test bundle path: $TEST_BUNDLE"
+        ls -la "$TEST_BUNDLE" || echo "Test bundle file not found!"
+        
+        # Upload with better error handling to see 422 details
+        TEST_UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
+          -F "file=@$TEST_BUNDLE")
+
+        HTTP_CODE=$(echo "$TEST_UPLOAD_RESPONSE" | tail -n1)
+        BODY=$(echo "$TEST_UPLOAD_RESPONSE" | sed '$d')
+
+        echo "Test upload HTTP $HTTP_CODE"
+        echo "Response body: $BODY"
+
+        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+          echo "❌ Upload failed"; exit 1
+        fi
+
+        # Prefer test_suite_url, fallback to test_url
+        TEST_URL=$(echo "$BODY" | jq -r '.test_suite_url // .test_url // empty')
+        
+        if [ -z "$TEST_URL" ]; then
+          echo "❌ Failed to upload test bundle - no test suite URL in response"
+          echo "Response: $BODY"
+          exit 1
+        fi
+        
+        echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+        echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
+        echo "✅ App and test bundle uploaded successfully"
+        echo "📱 App URL: $APP_URL"
+        echo "🧪 Test URL: $TEST_URL"
+    
+    - name: Execute XCUITest on BrowserStack
+      id: test
+      run: |
+        # Validate inputs
+        APP_URL="${{ steps.upload.outputs.app_url }}"
+        TEST_URL="${{ steps.upload.outputs.test_url }}"
+        
+        echo "App URL: $APP_URL"
+        echo "Test URL: $TEST_URL"
+        
+        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+          echo "Error: No valid app URL available"
+          exit 1
+        fi
+        
+        if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+          echo "⚠️ No test bundle available - skipping automated testing"
+          echo "📱 App is available for manual testing in BrowserStack dashboard"
+          echo "build_id=" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # Create XCUITest execution request using v2 API with setEnvVariables
+        BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"app\": \"$APP_URL\",
+            \"testSuite\": \"$TEST_URL\",
+            \"devices\": [\"iPhone 15 Pro-17\"],
+            \"project\": \"Ditto Swift\",
+            \"buildName\": \"Build #${{ github.run_number }}\",
+            \"buildTag\": \"${{ github.ref_name }}\",
+            \"deviceLogs\": true,
+            \"video\": true,
+            \"networkLogs\": true,
+            \"setEnvVariables\": {
+              \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
+              \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\",
+              \"GITHUB_TEST_DOC_TITLE\": \"${{ env.GITHUB_TEST_DOC_TITLE }}\"
+            }
+          }")
+        
+        echo "BrowserStack API Response:"
+        echo "$BUILD_RESPONSE"
+        
+        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "Error: Failed to create BrowserStack build"
+          echo "Response: $BUILD_RESPONSE"
+          exit 1
+        fi
+        
+        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+        echo "Build started with ID: $BUILD_ID"
+
+    - name: Wait for XCUITest to complete
+      run: |
+        BUILD_ID="${{ steps.test.outputs.build_id }}"
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "⚠️ No BUILD_ID available - automated testing was skipped"
+          echo "📱 App upload completed for manual testing"
+          exit 0
+        fi
+        
+        MAX_WAIT_TIME=900  # 15 minutes
+        CHECK_INTERVAL=30   # Check every 30 seconds
+        ELAPSED=0
+        
+        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
+          
+          BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
+          
+          if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
+            echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+            continue
+          fi
+          
+          echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
+          
+          if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
+            echo "Build completed with status: $BUILD_STATUS"
+            break
+          fi
+          
+          sleep $CHECK_INTERVAL
+          ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+        done
+        
+        # Get final results
+        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
+        
+        echo "Final build result:"
+        echo "$FINAL_RESULT" | jq .
+        
+        # Check final status
+        BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+        if [ "$BUILD_STATUS" != "passed" ]; then
+          echo "Build failed with status: $BUILD_STATUS"
+          exit 1
+        else
+          echo "All tests passed successfully!"
+        fi
+
+  summary:
+    name: Summary
+    runs-on: macos-latest
+    needs: [lint, build-macos, build-ios, browserstack]
+    if: always()
+    
+    steps:
+    - name: Report Results
+      run: |
+        echo "## 📱 Swift Build and Test Results"
+        echo ""
+        echo "### Job Results:"
+        echo "- **Lint**: ${{ needs.lint.result }}"
+        echo "- **Build macOS**: ${{ needs.build-macos.result }}"
+        echo "- **Build iOS**: ${{ needs.build-ios.result }}"
+        echo "- **BrowserStack Test**: ${{ needs.browserstack.result }}"
+        echo ""
+        
+        # Check results
+        if [[ "${{ needs.lint.result }}" != "success" ]]; then
+          echo "❌ **Linting failed** - Code quality issues found"
+        fi
+        
+        if [[ "${{ needs.build-macos.result }}" != "success" ]]; then
+          echo "⚠️ **macOS build failed** - Platform compatibility issues"
+        fi
+        
+        if [[ "${{ needs.build-ios.result }}" != "success" ]]; then
+          echo "❌ **iOS build failed** - BrowserStack testing was skipped"
+        elif [[ "${{ needs.browserstack.result }}" == "success" ]]; then
+          echo "✅ **Full pipeline success!**"
+          echo "   - ✅ Linting passed"
+          echo "   - ✅ macOS build succeeded"
+          echo "   - ✅ iOS build succeeded"
+          echo "   - ✅ BrowserStack real device testing passed"
+          echo "   - ✅ End-to-end GitHub Actions → Ditto Cloud → BrowserStack sync validated"
+          echo "   - 🚀 **Efficient parallel builds**: macOS & iOS built simultaneously"
+        elif [[ "${{ needs.browserstack.result }}" == "failure" ]]; then
+          echo "❌ **BrowserStack testing failed** - iOS builds but cloud sync may have issues"
+        elif [[ "${{ needs.browserstack.result }}" == "skipped" ]]; then
+          echo "⚠️ **BrowserStack testing skipped** - iOS build failed"
+        fi
+        
+        # Overall status
+        echo ""
+        if [[ "${{ needs.lint.result }}" == "success" && \
+              "${{ needs.build-ios.result }}" == "success" ]]; then
+          echo "🎉 **Core pipeline successful!** iOS app builds and passes quality checks."
+          if [[ "${{ needs.build-macos.result }}" == "success" ]]; then
+            echo "🍎 **macOS compatibility confirmed!** Cross-platform builds working."
+          fi
+          if [[ "${{ needs.browserstack.result }}" == "success" ]]; then
+            echo "🚀 **BrowserStack integration validated!** Real device testing works end-to-end."
+          fi
+        else
+          echo "⚠️ Core pipeline has issues - check failed jobs above."
+          exit 1
+        fi

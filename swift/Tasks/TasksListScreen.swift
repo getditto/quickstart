@@ -15,7 +15,7 @@ class TasksListScreenViewModel: ObservableObject {
 
     private let subscriptionQuery = "SELECT * from tasks"
 
-    private let observerQuery = "SELECT * FROM tasks WHERE NOT deleted"
+    private let observerQuery = "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC"
 
     init() {
         populateTasksCollection()
@@ -278,6 +278,7 @@ struct TasksListScreen: View {
                         .environmentObject(viewModel)
                 })
         }
+        .navigationViewStyle(.stack)
         .onAppear {
             // Prevent Xcode previews from syncing: non-preview simulators and real devices can sync
             let isPreview: Bool =
