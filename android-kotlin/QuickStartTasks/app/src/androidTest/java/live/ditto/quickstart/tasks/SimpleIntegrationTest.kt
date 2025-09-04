@@ -108,16 +108,32 @@ class SimpleIntegrationTest {
         val runId = testDocId.split("_").getOrNull(3) ?: testDocId
         
         try {
-            // Verify document sync with retry logic (including initial Ditto sync time)
-            val maxAttempts = 40 // Increased to account for initial sync time
+            // First ensure the app is actually launched and Ditto is working
+            println("🚀 Verifying app launch and Ditto initialization...")
+            
+            // Wait a moment for app to fully launch
+            Thread.sleep(5_000)
+            
+            // Verify the main app UI is present (not just any UI)
+            composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true)
+                .assertExists("App title 'Ditto Tasks' not found - app may not have launched properly")
+            
+            println("✅ App launched successfully, checking for document sync...")
+            
+            // Now verify document sync with retry logic
+            val maxAttempts = 35 // Reduced since we already waited 5s for app launch
             var documentFound = false
             var lastException: Exception? = null
             
-            // Start checking immediately, but allow more attempts to account for sync time
             repeat(maxAttempts) { attempt ->
                 if (documentFound) return@repeat
                 
                 try {
+                    // First verify we're still in the correct app context
+                    composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true)
+                        .assertExists("Lost app context during test")
+                    
+                    // Then check for the specific test document in the task list
                     composeTestRule.onNodeWithText(
                         "GitHub Test Task", 
                         substring = true, 
@@ -130,7 +146,7 @@ class SimpleIntegrationTest {
                         useUnmergedTree = true
                     ).assertExists()
                     
-                    println("✅ Document found after ${attempt + 1} attempts (${(attempt + 1) * 2}s)")
+                    println("✅ Document found in Ditto app after ${attempt + 1} attempts (${5 + (attempt + 1) * 2}s total)")
                     println("👁️ VISUAL PAUSE: Document visible for 3 seconds for BrowserStack verification...")
                     Thread.sleep(3_000) // Allow visual verification in BrowserStack video
                     documentFound = true
@@ -138,9 +154,9 @@ class SimpleIntegrationTest {
                 } catch (e: Exception) {
                     lastException = e
                     if (attempt == 0) {
-                        println("⏳ Document not found immediately, waiting for Ditto sync...")
+                        println("⏳ Document not found in app UI, waiting for Ditto sync...")
                     } else if (attempt % 10 == 0) {
-                        println("🔄 Still waiting... attempt ${attempt + 1}/$maxAttempts")
+                        println("🔄 Still waiting for document in Ditto app... attempt ${attempt + 1}/$maxAttempts")
                     }
                     
                     if (attempt < maxAttempts - 1) {
