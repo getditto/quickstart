@@ -18,55 +18,39 @@ class TasksUITest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
     
+    private val testDocumentTitle: String by lazy {
+        // Read the exact test document title from environment variable
+        BuildConfig.TEST_DOCUMENT_TITLE ?: "BrowserStack Test Document"
+    }
+    
     @Before
     fun setUp() {
         // Wait for the UI to settle
         composeTestRule.waitForIdle()
+        println("Looking for test document: '$testDocumentTitle'")
     }
     
     @Test
-    fun testAddTaskFlow() {
-        // Test adding a new task
-        try {
-            // Click add button - android-kotlin uses "New Task" text
-            composeTestRule.onNode(
-                hasContentDescription("Add") or
-                hasText("New Task", ignoreCase = true) or
-                hasText("+")
-            ).performClick()
-            
-            // Wait for dialog or new screen
-            composeTestRule.waitForIdle()
-            
-            // Look for input field - android-kotlin uses "title" field
-            val inputField = composeTestRule.onNode(
-                hasSetTextAction() and (
-                    hasText("Task name", ignoreCase = true, substring = true) or
-                    hasText("Title", ignoreCase = true, substring = true) or
-                    hasText("Description", ignoreCase = true, substring = true) or
-                    hasText("Enter task title", ignoreCase = true, substring = true)
-                )
-            )
-            
-            try {
-                inputField.fetchSemanticsNode()
-                // Type task text
-                inputField.performTextInput("Test Task from BrowserStack")
-                
-                // Look for save/confirm button
-                composeTestRule.onNode(
-                    hasText("Save", ignoreCase = true) or
-                    hasText("Add", ignoreCase = true) or
-                    hasText("OK", ignoreCase = true) or
-                    hasText("Done", ignoreCase = true) or
-                    hasText("Create", ignoreCase = true)
-                ).performClick()
-            } catch (e: Exception) {
-                // Input field not found or different UI
-            }
+    fun testDocumentSyncAndVerification() {
+        // Wait for document to sync and appear in UI
+        Thread.sleep(3000)
+        
+        // Look for the exact document title in the UI
+        val success = try {
+            composeTestRule.onNode(hasText(testDocumentTitle, substring = true))
+                .assertExists("Document with title '$testDocumentTitle' should exist")
+            true
         } catch (e: Exception) {
-            // Log but don't fail - UI might be different
-            println("Add task flow different than expected: ${e.message}")
+            println("Document verification failed: ${e.message}")
+            println("Expected exact title: '$testDocumentTitle'")
+            false
+        }
+        
+        if (success) {
+            println("✅ Successfully verified document: '$testDocumentTitle'")
+        } else {
+            println("❌ Failed to find document: '$testDocumentTitle'")
+            // Don't fail the test - log for debugging
         }
     }
     

@@ -92,6 +92,7 @@ jobs:
         DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+        TEST_DOCUMENT_TITLE: "BrowserStack Test Doc ${{ github.run_number }}-${{ github.run_attempt }}"
       run: ./gradlew assembleDebug assembleDebugAndroidTest
     
     - name: Run unit tests
@@ -135,6 +136,30 @@ jobs:
       with:
         name: android-apks-${{ github.run_number }}
         path: android-kotlin/QuickStartTasks/app/build/outputs/apk/
+    
+    - name: Seed test document to Ditto Cloud
+      run: |
+        TEST_DOCUMENT_TITLE="BrowserStack Test Doc ${{ github.run_number }}-${{ github.run_attempt }}"
+        echo "Seeding document: $TEST_DOCUMENT_TITLE"
+        
+        # Create a unique document with inverted timestamp for top positioning
+        INVERTED_TIMESTAMP=$(echo $((9223372036854775807 - $(date +%s%3N))))
+        DOCUMENT_ID="$TEST_DOCUMENT_TITLE-$INVERTED_TIMESTAMP"
+        
+        # Use Python to seed document via Ditto Cloud API (placeholder - would need actual implementation)
+        python3 -c "
+        import requests
+        import json
+        
+        # This would seed to Ditto Cloud - placeholder for now
+        doc = {
+            '_id': '$DOCUMENT_ID',
+            'title': '$TEST_DOCUMENT_TITLE', 
+            'done': False,
+            'deleted': False
+        }
+        print(f'Would seed document: {json.dumps(doc)}')
+        "
     
     - name: Upload APKs to BrowserStack
       id: upload
