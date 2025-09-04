@@ -9,12 +9,20 @@ final class TasksUITests: XCTestCase {
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30),
                       "App should launch successfully")
 
-        // Get seeded GitHub identifiers
-        let githubRunId = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
-        let githubRunNumber = ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
+        // Get seeded GitHub identifiers from launch arguments or environment
+        let args = ProcessInfo.processInfo.arguments
+        let githubRunId = getArgumentValue(args: args, key: "-GITHUB_RUN_ID") ?? 
+                          ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
+        let githubRunNumber = getArgumentValue(args: args, key: "-GITHUB_RUN_NUMBER") ??
+                              ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
+
+        print("🔍 GitHub Run Info:")
+        print("  Launch args: \(args)")
+        print("  GITHUB_RUN_ID: '\(githubRunId)'")  
+        print("  GITHUB_RUN_NUMBER: '\(githubRunNumber)'")
 
         guard !githubRunId.isEmpty, !githubRunNumber.isEmpty else {
-            XCTFail("Missing GITHUB_RUN_ID or GITHUB_RUN_NUMBER")
+            XCTFail("Missing GITHUB_RUN_ID or GITHUB_RUN_NUMBER - expected for BrowserStack validation")
             return
         }
 
@@ -46,5 +54,12 @@ final class TasksUITests: XCTestCase {
         }
 
         XCTAssertTrue(found, "GitHub-seeded document '\(expectedTitle)' not found")
+    }
+    
+    private func getArgumentValue(args: [String], key: String) -> String? {
+        guard let index = args.firstIndex(of: key), index + 1 < args.count else {
+            return nil
+        }
+        return args[index + 1]
     }
 }

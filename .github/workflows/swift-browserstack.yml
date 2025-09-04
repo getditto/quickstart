@@ -121,10 +121,11 @@ jobs:
       run: |
         set -euo pipefail
 
-        echo "🧪 build-for-testing (device) with fixed DerivedData path…"
+        echo "🧪 build-for-testing (device) with GitHub run info injected..."
         DERIVED="$PWD/build/DerivedData"
         PRODUCTS_DIR="$DERIVED/Build/Products"
 
+        # Inject GitHub run info as build settings for the test
         xcodebuild build-for-testing \
           -project Tasks.xcodeproj \
           -scheme Tasks \
@@ -132,7 +133,9 @@ jobs:
           -destination 'generic/platform=iOS' \
           -derivedDataPath "$DERIVED" \
           CODE_SIGNING_ALLOWED=NO \
-          CODE_SIGNING_REQUIRED=NO
+          CODE_SIGNING_REQUIRED=NO \
+          GITHUB_RUN_ID=${{ github.run_id }} \
+          GITHUB_RUN_NUMBER=${{ github.run_number }}
 
         echo "🔍 Looking for Runner.app (device) and .xctestrun…"
         # Runner.app must come from Debug-iphoneos (device), not simulator
@@ -320,10 +323,12 @@ jobs:
             \"deviceLogs\": true,
             \"video\": true,
             \"networkLogs\": true,
-            \"env\": {
-              \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
-              \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\"
-            }
+            \"launchArguments\": [
+              \"-GITHUB_RUN_ID\",
+              \"${{ github.run_id }}\",
+              \"-GITHUB_RUN_NUMBER\", 
+              \"${{ github.run_number }}\"
+            ]
           }")
         
         echo "BrowserStack API Response:"
