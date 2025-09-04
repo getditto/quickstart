@@ -131,8 +131,10 @@ class SimpleIntegrationTest {
                     ).assertExists()
                     
                     println("✅ Document found after ${attempt + 1} attempts (${(attempt + 1) * 2}s)")
+                    println("👁️ VISUAL PAUSE: Document visible for 3 seconds for BrowserStack verification...")
+                    Thread.sleep(3_000) // Allow visual verification in BrowserStack video
                     documentFound = true
-                    return@repeat // Exit immediately when found
+                    return@repeat // Exit after visual pause
                 } catch (e: Exception) {
                     lastException = e
                     if (attempt == 0) {
