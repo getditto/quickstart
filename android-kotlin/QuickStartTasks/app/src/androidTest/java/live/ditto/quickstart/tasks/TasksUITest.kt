@@ -35,22 +35,26 @@ class TasksUITest {
         // Wait for document to sync and appear in UI
         Thread.sleep(3000)
         
-        // Look for the exact document title in the UI
-        val success = try {
+        // Look for the exact document title in the UI - this should fail the test if not found
+        try {
             composeTestRule.onNode(hasText(testDocumentTitle, substring = true))
                 .assertExists("Document with title '$testDocumentTitle' should exist")
-            true
-        } catch (e: Exception) {
-            println("Document verification failed: ${e.message}")
-            println("Expected exact title: '$testDocumentTitle'")
-            false
-        }
-        
-        if (success) {
             println("✅ Successfully verified document: '$testDocumentTitle'")
-        } else {
+        } catch (e: Exception) {
             println("❌ Failed to find document: '$testDocumentTitle'")
-            // Don't fail the test - log for debugging
+            println("Error: ${e.message}")
+            
+            // Print all visible text for debugging
+            try {
+                val allNodes = composeTestRule.onAllNodes(hasText("", substring = true))
+                println("All visible text nodes:")
+                // This will help debug what's actually visible in the UI
+            } catch (debugE: Exception) {
+                println("Could not enumerate visible text nodes")
+            }
+            
+            // Re-throw to fail the test
+            throw AssertionError("Expected document '$testDocumentTitle' not found in UI", e)
         }
     }
     
