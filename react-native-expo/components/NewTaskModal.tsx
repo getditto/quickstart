@@ -23,10 +23,24 @@ const NewTaskModal: React.FC<Props> = ({ onSubmit, onClose, ...props }) => {
     <Modal animationType="slide" {...props}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>New Task</Text>
-          <TextInput style={styles.input} value={input} onChangeText={setInput} />
-          <Button title="Submit" onPress={submit} />
-          <Button title="Close" onPress={onClose} />
+          <Text style={styles.modalTitle}>Add Task</Text>
+          <TextInput 
+            testID="task-input"
+            style={styles.input} 
+            value={input} 
+            onChangeText={setInput} 
+            placeholder="Enter task title"
+          />
+          <Button 
+            title="Add Task" 
+            testID="save-task-button"
+            onPress={submit} 
+          />
+          <Button 
+            title="Close" 
+            testID="close-modal-button"
+            onPress={onClose} 
+          />
         </View>
       </View>
     </Modal>

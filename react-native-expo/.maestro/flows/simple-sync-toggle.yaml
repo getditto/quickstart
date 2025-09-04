@@ -1,0 +1,28 @@
+appId: com.anonymous.reactnativeexpo
+tags:
+  - "sync"
+  - "simple"
+---
+# Test: Simple Sync Toggle Test
+# This flow tests the sync toggle without requiring Ditto credentials
+
+- launchApp:
+    appId: com.anonymous.reactnativeexpo
+
+- runFlow:
+    when:
+      visible: "Permission"
+    commands:
+      - tapOn: "Allow"
+
+- assertVisible: 
+    text: "Ditto Tasks"
+
+# Look for the sync toggle (it should be visible regardless of credentials)
+- assertVisible:
+    text: "Sync Enabled"
+
+# Try to tap the toggle
+- tapOn: "Sync Enabled"
+
+- waitForAnimationToEnd

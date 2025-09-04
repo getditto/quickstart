@@ -167,7 +167,7 @@ const App = () => {
 
       taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
-      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted', response => {
+      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted ORDER BY _id ASC', response => {
         const fetchedTasks: Task[] = response.items.map(doc => ({
           id: doc.value._id,
           title: doc.value.title as string,
