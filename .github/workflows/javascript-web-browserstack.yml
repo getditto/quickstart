@@ -2,12 +2,16 @@ name: javascript-web-browserstack
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - 'sdk-*'
     paths:
       - 'javascript-web/**'
       - '.github/workflows/javascript-web-browserstack.yml'
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'sdk-*'
     paths:
       - 'javascript-web/**'
       - '.github/workflows/javascript-web-browserstack.yml'
