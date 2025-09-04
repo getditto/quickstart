@@ -154,7 +154,7 @@ jobs:
         working-directory: flutter_app
         run: flutter analyze
         
-      - name: Build all Flutter artifacts
+      - name: Build Android and Web Flutter artifacts
         working-directory: flutter_app
         run: |
           echo "Building all Flutter artifacts..."
@@ -165,39 +165,6 @@ jobs:
           cd android
           ./gradlew assembleDebugAndroidTest
           cd ..
-          
-          # Build iOS test package for Flutter integration tests (no app needed)
-          echo "Building iOS Flutter integration test package..."
-          output="../build/ios_integration"
-          product="build/ios_integration/Build/Products"
-          
-          cd ios
-          xcodebuild \
-            -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -config Flutter/Release.xcconfig \
-            -derivedDataPath $output \
-            -sdk iphoneos \
-            build-for-testing
-          cd ..
-          
-          # Create proper iOS test package ZIP
-          cd $product
-          # Find the actual xctestrun file name
-          XCTESTRUN_FILE=$(find . -maxdepth 1 -name "*.xctestrun" | head -1 | sed 's|./||')
-          if [ -z "$XCTESTRUN_FILE" ]; then
-            echo "❌ No .xctestrun file found"
-            ls -la
-            exit 1
-          fi
-          echo "Found xctestrun file: $XCTESTRUN_FILE"
-          
-          # Create ZIP with correct structure: Release-iphoneos/ folder + .xctestrun at root
-          zip -r ios_flutter_tests.zip "Release-iphoneos" "$XCTESTRUN_FILE"
-          cd ../../..
-          
-          # Move the test package to expected location
-          mv $product/ios_flutter_tests.zip build/flutter_integration_tests.zip
           
           # Build Web
           echo "Building Web..."
@@ -210,7 +177,6 @@ jobs:
           path: |
             flutter_app/build/app/outputs/apk/debug/app-debug.apk
             flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-            flutter_app/build/flutter_integration_tests.zip
             flutter_app/build/web/
             flutter_app/.env
           retention-days: 1
@@ -465,16 +431,92 @@ jobs:
     name: Flutter iOS BrowserStack Testing
     runs-on: macos-latest
     timeout-minutes: 60
-    needs: flutter-build
     env:
-      GITHUB_TEST_DOC_ID_IOS: ${{ needs.flutter-build.outputs.ios-doc-id }}
+      GITHUB_TEST_DOC_ID_IOS: "github_test_ios_${{ github.run_id }}_${{ github.run_number }}"
 
     steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          name: flutter-build-artifacts
-          path: flutter_app/
+          flutter-version: 3.x
+          channel: stable
+          cache: true
+          
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+          
+      - name: Insert iOS test document
+        run: |
+          IOS_DOC_ID="${{ env.GITHUB_TEST_DOC_ID_IOS }}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${IOS_DOC_ID}\",
+                  \"title\": \"Flutter iOS BrowserStack Test ${GITHUB_RUN_ID}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted iOS test document"
+          else
+            echo "❌ Failed to insert iOS document. HTTP Status: $HTTP_CODE"
+            exit 1
+          fi
+          
+      - name: Get Flutter dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+          
+      - name: Build iOS Flutter integration test package
+        working-directory: flutter_app
+        run: |
+          echo "Building iOS Flutter integration test package..."
+          output="../build/ios_integration"
+          product="build/ios_integration/Build/Products"
+          
+          cd ios
+          xcodebuild \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -config Flutter/Release.xcconfig \
+            -derivedDataPath $output \
+            -sdk iphoneos \
+            build-for-testing
+          cd ..
+          
+          # Create proper iOS test package ZIP
+          cd $product
+          # Find the actual xctestrun file name
+          XCTESTRUN_FILE=$(find . -maxdepth 1 -name "*.xctestrun" | head -1 | sed 's|./||')
+          if [ -z "$XCTESTRUN_FILE" ]; then
+            echo "❌ No .xctestrun file found"
+            ls -la
+            exit 1
+          fi
+          echo "Found xctestrun file: $XCTESTRUN_FILE"
+          
+          # Create ZIP with correct structure: Release-iphoneos/ folder + .xctestrun at root
+          zip -r ios_flutter_tests.zip "Release-iphoneos" "$XCTESTRUN_FILE"
+          cd ../../..
+          
+          # Move the test package to expected location
+          mv $product/ios_flutter_tests.zip build/flutter_integration_tests.zip
           
       - name: Run Flutter iOS integration tests on BrowserStack
         id: browserstack-ios
