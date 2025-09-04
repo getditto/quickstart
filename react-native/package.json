@@ -5,19 +5,24 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
+    "windows": "npx @react-native-community/cli run-windows",
     "macos": "react-native run-macos",
     "build:android": "react-native build-android --extra-params \"--no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a\"",
     "build:ios": "react-native build-ios --mode Debug",
+    "build:windows": "react-native run-windows --release --no-deploy --no-launch",
     "build:macos": "react-native build-macos --mode Debug",
     "lint": "eslint .",
     "start": "react-native start",
-    "clean": "rm -rf node_modules && yarn install && cd ios && rm -rf Podfile.lock && rm -rf Pods && pod install && cd .."
+    "clean": "rm -rf node_modules && yarn install && cd ios && rm -rf Podfile.lock && rm -rf Pods && pod install && cd ..",
+    "clean:windows": "cd windows && rd /s /q packages Build x64 && cd .."
   },
   "dependencies": {
-    "@dittolive/ditto": "4.12.0",
+    "@dittolive/ditto": "file:C:/Users/teoc0/Projects/ditto/sdks/js/dist/ditto-package13.tgz",
     "react": "19.0.0",
     "react-native": "0.79.1",
-    "react-native-bouncy-checkbox": "^4.1.2"
+    "react-native-bouncy-checkbox": "^4.1.2",
+    "react-native-windows": "0.79.3",
+    "react-native-macos": "^0.78.4"
   },
   "resolutions": {
     "image-size": "1.2.1"
@@ -29,16 +34,17 @@
     "@react-native-community/cli": "19.0.0",
     "@react-native-community/cli-platform-android": "19.0.0",
     "@react-native-community/cli-platform-ios": "19.0.0",
-    "react-native-macos": "^0.78.4",
     "@react-native/babel-preset": "0.79.1",
     "@react-native/eslint-config": "0.79.1",
     "@react-native/metro-config": "0.79.1",
     "@react-native/typescript-config": "0.79.1",
+    "@rnx-kit/jest-preset": "^0.1.17",
     "@types/jest": "^29.5.13",
     "@types/react": "^19.0.0",
     "@types/react-test-renderer": "^19.0.0",
     "eslint": "^8.19.0",
     "jest": "^29.6.3",
+    "metro-config": "^0.82.5",
     "prettier": "2.8.8",
     "react-native-dotenv": "^3.4.11",
     "react-test-renderer": "19.0.0",
@@ -46,5 +52,12 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "react-native-windows": {
+    "init-windows": {
+      "name": "DittoReactNativeSampleApp",
+      "namespace": "DittoReactNativeSampleApp",
+      "template": "cpp-app"
+    }
   }
 }

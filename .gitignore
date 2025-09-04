@@ -33,3 +33,6 @@ bazel-*
 build-cmake
 node_modules/
 .dart_tool/
+
+# Claude settings
+**/.claude/settings.local.json
