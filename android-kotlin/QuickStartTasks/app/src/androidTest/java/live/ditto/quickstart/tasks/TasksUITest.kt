@@ -19,8 +19,8 @@ class TasksUITest {
     val composeTestRule = createAndroidComposeRule<MainActivity>()
     
     private val testDocumentTitle: String by lazy {
-        // Read the exact test document title from environment variable
-        BuildConfig.TEST_DOCUMENT_TITLE ?: "BrowserStack Test Document"
+        // Read the exact test document title from BrowserStack environment variable (like Swift)
+        System.getenv("GITHUB_TEST_DOC_TITLE") ?: "BrowserStack Test Document"
     }
     
     @Before

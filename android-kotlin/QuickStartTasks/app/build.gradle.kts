@@ -38,8 +38,7 @@ androidComponents {
             "DITTO_APP_ID" to "Ditto application ID",
             "DITTO_PLAYGROUND_TOKEN" to "Ditto playground token",
             "DITTO_AUTH_URL" to "Ditto authentication URL",
-            "DITTO_WEBSOCKET_URL" to "Ditto websocket URL",
-            "TEST_DOCUMENT_TITLE" to "Test document title for BrowserStack verification"
+            "DITTO_WEBSOCKET_URL" to "Ditto websocket URL"
         )
         
         buildConfigFields.forEach { (key, description) ->
