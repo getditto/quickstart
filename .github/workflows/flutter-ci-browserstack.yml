@@ -521,10 +521,28 @@ jobs:
           
           # Create ZIP with correct structure: Release-iphoneos/ folder + .xctestrun at root
           zip -r ios_flutter_tests.zip "Release-iphoneos" "$XCTESTRUN_FILE"
-          cd ../../..
+          echo "✓ Created ios_flutter_tests.zip"
+          ls -la ios_flutter_tests.zip
           
-          # Move the test package to expected location
-          mv $product/ios_flutter_tests.zip build/flutter_integration_tests.zip
+          # Move back to flutter_app directory and move test package
+          cd ../../..  # This should put us back in flutter_app/
+          pwd
+          echo "Moving from: $(pwd)/$product/ios_flutter_tests.zip"
+          echo "Moving to: $(pwd)/build/flutter_integration_tests.zip"
+          
+          # Ensure build directory exists
+          mkdir -p build
+          
+          # Move the test package
+          if [ -f "$product/ios_flutter_tests.zip" ]; then
+            mv "$product/ios_flutter_tests.zip" build/flutter_integration_tests.zip
+            echo "✓ Successfully moved iOS test package"
+            ls -la build/flutter_integration_tests.zip
+          else
+            echo "❌ iOS test package not found at $product/ios_flutter_tests.zip"
+            ls -la "$product/"
+            exit 1
+          fi
           
       - name: Run Flutter iOS integration tests on BrowserStack
         id: browserstack-ios
