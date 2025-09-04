@@ -173,10 +173,12 @@ jobs:
     
     - name: Insert test document into Ditto Cloud
       run: |
-        # Create a duplicate "Clean the kitchen" document for testing
-        DOC_ID="000_test_kitchen_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        # Create a unique GitHub test document 
+        DOC_ID="000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        DOC_TITLE="000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         
-        echo "📝 Inserting 'Clean the kitchen' test document with ID: ${DOC_ID}"
+        echo "📝 Inserting unique GitHub test document with ID: ${DOC_ID}"
+        echo "📝 Title: '${DOC_TITLE}'"
         
         # Insert document using Ditto API v4 (same as JavaScript)
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -187,7 +189,7 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"title\": \"Clean the kitchen\",
+                \"title\": \"${DOC_TITLE}\",
                 \"done\": false,
                 \"deleted\": false
               }
