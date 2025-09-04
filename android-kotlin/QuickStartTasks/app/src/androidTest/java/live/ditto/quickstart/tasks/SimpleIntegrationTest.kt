@@ -105,7 +105,8 @@ class SimpleIntegrationTest {
         val testDocId = System.getenv("GITHUB_TEST_DOC_ID")
             ?: return // Skip if no test document (local runs)
         
-        val runId = testDocId.split("_").getOrNull(3) ?: testDocId
+        val testDocTitle = System.getenv("GITHUB_TEST_DOC_TITLE") ?: testDocId
+        println("🎯 Looking for test document: '$testDocTitle'")
         
         try {
             // First ensure the app is actually launched and Ditto is working
@@ -133,18 +134,12 @@ class SimpleIntegrationTest {
                     composeTestRule.onNodeWithText("Ditto Tasks", useUnmergedTree = true)
                         .assertExists("Lost app context during test")
                     
-                    // Then check for the specific test document in the task list
+                    // Then check for the specific test document title in the task list
                     composeTestRule.onNodeWithText(
-                        "GitHub Test Task", 
+                        testDocTitle, 
                         substring = true, 
                         useUnmergedTree = true
-                    ).assertExists()
-                    
-                    composeTestRule.onNodeWithText(
-                        runId, 
-                        substring = true, 
-                        useUnmergedTree = true
-                    ).assertExists()
+                    ).assertExists("Test document with title '$testDocTitle' not found in task list")
                     
                     println("✅ Document found in Ditto app after ${attempt + 1} attempts (${5 + (attempt + 1) * 2}s total)")
                     println("👁️ VISUAL PAUSE: Document visible for 3 seconds for BrowserStack verification...")
@@ -156,7 +151,7 @@ class SimpleIntegrationTest {
                     if (attempt == 0) {
                         println("⏳ Document not found in app UI, waiting for Ditto sync...")
                     } else if (attempt % 10 == 0) {
-                        println("🔄 Still waiting for document in Ditto app... attempt ${attempt + 1}/$maxAttempts")
+                        println("🔄 Still waiting for document '$testDocTitle' in Ditto app... attempt ${attempt + 1}/$maxAttempts")
                     }
                     
                     if (attempt < maxAttempts - 1) {
@@ -168,15 +163,16 @@ class SimpleIntegrationTest {
             if (!documentFound) {
                 throw AssertionError(
                     "Document sync failed after ${maxAttempts * 2}s. " +
-                    "Expected document ID: $testDocId. " +
+                    "Expected document title: '$testDocTitle' (ID: $testDocId). " +
                     "Last error: ${lastException?.message}"
                 )
             }
         } catch (e: IllegalStateException) {
             if (e.message?.contains("No compose hierarchies found") == true) {
                 println("⚠️ Cannot test document sync - no Compose hierarchies (local environment)")
-                // Just verify we have the test document ID available
+                // Just verify we have the test document available
                 assert(testDocId.isNotEmpty()) { "Test document ID should not be empty" }
+                assert(testDocTitle.isNotEmpty()) { "Test document title should not be empty" }
             } else {
                 throw e
             }
