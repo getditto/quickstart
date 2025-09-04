@@ -32,14 +32,15 @@ import live.ditto.DittoStoreObserver;
 import live.ditto.DittoSyncSubscription;
 import live.ditto.android.DefaultAndroidDittoDependencies;
 import live.ditto.transports.DittoSyncPermissions;
+import live.ditto.transports.DittoTransportConfig;
 
 public class MainActivity extends ComponentActivity {
     private TaskAdapter taskAdapter;
     private SwitchCompat syncSwitch;
 
-    private Ditto ditto;
-    private DittoSyncSubscription taskSubscription;
-    private DittoStoreObserver taskObserver;
+    Ditto ditto;
+    DittoSyncSubscription taskSubscription;
+    DittoStoreObserver taskObserver;
 
     private String DITTO_APP_ID = BuildConfig.DITTO_APP_ID;
     private String DITTO_PLAYGROUND_TOKEN = BuildConfig.DITTO_PLAYGROUND_TOKEN;
