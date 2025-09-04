@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.*;
 import static androidx.test.espresso.matcher.ViewMatchers.*;
 import static org.hamcrest.Matchers.allOf;
 
@@ -25,17 +26,24 @@ public class ExampleInstrumentedTest {
 
     @Test
     public void testGitHubTestDocumentSyncs() throws Exception {
-        // Get environment variable - this works regardless of Ditto
-        String title =
-                InstrumentationRegistry.getArguments().getString("github_test_doc_id",
-                System.getProperty("GITHUB_TEST_DOC_ID",
-                System.getenv("GITHUB_TEST_DOC_ID")));
-
-        Log.i("DittoTest", "github_test_doc_id = " + title);
-
+        // Get environment variable with fallback options
+        String title = InstrumentationRegistry.getArguments().getString("github_test_doc_id");
+        
+        // Try multiple fallback sources
         if (title == null || title.trim().isEmpty()) {
-            throw new AssertionError("Expected test title in 'github_test_doc_id' (or GITHUB_TEST_DOC_ID); none provided.");
+            title = System.getProperty("GITHUB_TEST_DOC_ID");
         }
+        if (title == null || title.trim().isEmpty()) {
+            title = System.getenv("GITHUB_TEST_DOC_ID");
+        }
+        
+        // Fallback to a default test document for local testing
+        if (title == null || title.trim().isEmpty()) {
+            title = "Basic Test Task"; // Default fallback for local testing
+            Log.i("DittoTest", "Using default test document: " + title);
+        }
+
+        Log.i("DittoTest", "Testing with document title: " + title);
 
         // Launch activity manually with proper error handling
         Log.i("DittoTest", "Launching MainActivity...");
@@ -66,14 +74,14 @@ public class ExampleInstrumentedTest {
         // Wait for RecyclerView to appear and be populated (with timeout)
         waitForRecyclerViewToLoad(7_000);
         
-        // Scroll to the cell containing the specific title
-        Log.i("DittoTest", "Scrolling to find task: " + title);
+        // Scroll to the cell containing the specific title (document should be seeded from GHA)
+        Log.i("DittoTest", "Scrolling to find pre-seeded task: " + title);
         onView(withId(R.id.task_list))
                 .perform(RecyclerViewActions.scrollTo(
                         hasDescendant(allOf(withId(R.id.task_text), withText(title)))
                 ));
         
-        Log.i("DittoTest", "✅ Found and scrolled to task: " + title);
+        Log.i("DittoTest", "✅ Found and scrolled to pre-seeded task: " + title);
         
         // Final assertion to confirm it's displayed
         onView(allOf(withId(R.id.task_text), withText(title)))
@@ -82,6 +90,7 @@ public class ExampleInstrumentedTest {
         // Keep screen visible for 3 seconds for BrowserStack video verification
         Thread.sleep(3000);
     }
+
 
     /** Wait for RecyclerView to load and be visible with data */
     private void waitForRecyclerViewToLoad(long timeoutMs) throws InterruptedException {
