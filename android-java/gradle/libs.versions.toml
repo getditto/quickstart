@@ -1,5 +1,5 @@
 [versions]
-ditto = "4.10.0"
+ditto = "4.11.1"
 agp = "8.7.3"
 constraintlayout = "2.2.0"
 kotlin = "2.0.0"
