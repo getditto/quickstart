@@ -26,15 +26,36 @@ class TasksUITest {
     
     @Before
     fun setUp() {
-        // Wait for the UI to settle
+        // Ensure the activity is launched and Compose UI is ready
         composeTestRule.waitForIdle()
+        
+        // Debug: Show what document title we're looking for and where it came from
+        val envValue = System.getenv("GITHUB_TEST_DOC_TITLE")
+        println("DEBUG: GITHUB_TEST_DOC_TITLE env var = '$envValue'")
         println("Looking for test document: '$testDocumentTitle'")
+        
+        // Give extra time for the app to fully initialize
+        Thread.sleep(2000)
     }
     
     @Test
     fun testDocumentSyncAndVerification() {
+        // Ensure Compose hierarchy is ready before testing
+        composeTestRule.waitForIdle()
+        
         // Wait for document to sync and appear in UI
-        Thread.sleep(3000)
+        Thread.sleep(5000)
+        
+        // Check if Compose UI is available before testing
+        try {
+            composeTestRule.onAllNodes(hasClickAction()).fetchSemanticsNodes()
+            println("✅ Compose UI is available")
+        } catch (e: Exception) {
+            println("❌ Compose UI not available: ${e.message}")
+            println("Attempting to wait longer for UI...")
+            Thread.sleep(10000)
+            composeTestRule.waitForIdle()
+        }
         
         // Look for the exact document title in the UI - this should fail the test if not found
         try {
@@ -47,11 +68,12 @@ class TasksUITest {
             
             // Print all visible text for debugging
             try {
-                val allNodes = composeTestRule.onAllNodes(hasText("", substring = true))
-                println("All visible text nodes:")
-                // This will help debug what's actually visible in the UI
+                println("Attempting to debug visible UI elements...")
+                composeTestRule.onAllNodes(hasAnyChild()).onFirst().assertExists()
+                println("UI hierarchy exists but document not found")
             } catch (debugE: Exception) {
-                println("Could not enumerate visible text nodes")
+                println("UI hierarchy not available: ${debugE.message}")
+                println("This suggests the app didn't launch properly or Compose isn't initialized")
             }
             
             // Re-throw to fail the test
