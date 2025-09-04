@@ -227,7 +227,7 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"title\": \"GitHub Test Task ${GITHUB_RUN_ID}\",
+                \"title\": \"000_GitHub Test Task ${GITHUB_RUN_ID}\",
                 \"done\": false,
                 \"deleted\": false
               }
@@ -365,7 +365,7 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"title\": \"GitHub Test Task ${GITHUB_RUN_ID}\",
+                \"title\": \"000_GitHub Test Task ${GITHUB_RUN_ID}\",
                 \"done\": false,
                 \"deleted\": false
               }

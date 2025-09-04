@@ -137,8 +137,29 @@ class DittoTaskRepository(
         scope.launch {
             observer
                 .map { result -> result.items.map { item -> item.toTask() } }
-                .collect {
-                    tasksMutableStateFlow.value = it
+                .collect { tasks ->
+                    // Sort tasks alphabetically by title, with prefixed tasks (000_, 001_, etc.) first
+                    val sortedTasks = tasks.sortedWith { task1, task2 ->
+                        // Check if tasks have numeric prefixes (e.g., "000_", "001_")
+                        val task1HasPrefix = task1.title.matches(Regex("^\\d{3}_.*"))
+                        val task2HasPrefix = task2.title.matches(Regex("^\\d{3}_.*"))
+                        
+                        when {
+                            // Both have prefixes: sort by prefix number
+                            task1HasPrefix && task2HasPrefix -> {
+                                val prefix1 = task1.title.substring(0, 3).toInt()
+                                val prefix2 = task2.title.substring(0, 3).toInt()
+                                prefix1.compareTo(prefix2)
+                            }
+                            // Only task1 has prefix: it comes first
+                            task1HasPrefix && !task2HasPrefix -> -1
+                            // Only task2 has prefix: it comes first
+                            !task1HasPrefix && task2HasPrefix -> 1
+                            // Neither has prefix: alphabetical by title
+                            else -> task1.title.compareTo(task2.title, ignoreCase = true)
+                        }
+                    }
+                    tasksMutableStateFlow.value = sortedTasks
                 }
         }
     }
