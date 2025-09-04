@@ -21,51 +21,59 @@ final class TasksUITests: XCTestCase {
         sleep(2)
         handlePermissionDialogs(app: app)
 
-        // Debug what the SwiftUI List actually becomes in XCUITest
-        print("🔍 Debugging SwiftUI List structure...")
+        // Look for "Clean the kitchen" in the CollectionView (SwiftUI List)
+        print("🔍 Looking for 'Clean the kitchen' in the task list (CollectionView)...")
         
-        print("📱 UI element counts:")
-        print("  Tables: \(app.tables.count)")
-        print("  CollectionViews: \(app.collectionViews.count)")
-        print("  ScrollViews: \(app.scrollViews.count)")
-        print("  Other: \(app.otherElements.count)")
+        let targetTask = "Clean the kitchen"
+        var foundTask = false
         
-        // Check each potential container type
-        if app.scrollViews.count > 0 {
-            print("\n🔍 Checking ScrollViews (SwiftUI List might be a ScrollView):")
-            let scrollView = app.scrollViews.firstMatch
-            print("  ScrollView exists: \(scrollView.exists)")
-            if scrollView.exists {
-                let texts = scrollView.staticTexts
-                print("  ScrollView has \(texts.count) static texts")
-                
-                let targetTask = "Clean the kitchen"
-                for i in 0..<min(texts.count, 10) {
-                    let text = texts.element(boundBy: i)
-                    if text.exists && !text.label.isEmpty {
-                        let label = text.label
-                        print("  [\(i)]: '\(label)'")
-                        if label == targetTask {
-                            print("✅ Found target task in ScrollView at index \(i)!")
+        let collectionView = app.collectionViews.firstMatch
+        if collectionView.exists {
+            let cells = collectionView.cells
+            print("📱 Task list has \(cells.count) cells")
+            
+            // Look through each cell for the target task
+            for i in 0..<cells.count {
+                let cell = cells.element(boundBy: i)
+                if cell.exists {
+                    // Check static texts within the cell
+                    let texts = cell.staticTexts
+                    for j in 0..<texts.count {
+                        let text = texts.element(boundBy: j)
+                        if text.exists && text.label == targetTask {
+                            print("✅ Found target task!")
+                            print("  Cell index: \(i)")
+                            print("  Text label: '\(text.label)'")
+                            foundTask = true
+                            break
+                        }
+                    }
+                    if foundTask { break }
+                }
+            }
+            
+            if !foundTask {
+                // Show what tasks are in each cell
+                print("\n📋 Tasks in the list:")
+                for i in 0..<min(cells.count, 15) {
+                    let cell = cells.element(boundBy: i)
+                    if cell.exists {
+                        let texts = cell.staticTexts
+                        for j in 0..<texts.count {
+                            let text = texts.element(boundBy: j)
+                            if text.exists && !text.label.isEmpty && text.label.count > 3 {
+                                print("  Cell[\(i)]: '\(text.label)'")
+                                break // Only show first meaningful text per cell
+                            }
                         }
                     }
                 }
             }
+        } else {
+            print("❌ No CollectionView found")
         }
         
-        if app.collectionViews.count > 0 {
-            print("\n🔍 Checking CollectionViews:")
-            let collectionView = app.collectionViews.firstMatch
-            print("  CollectionView exists: \(collectionView.exists)")
-            if collectionView.exists {
-                let cells = collectionView.cells
-                print("  CollectionView has \(cells.count) cells")
-            }
-        }
-        
-        // Just pass for now to see debug output
-        print("\n✅ Debug completed - check output above")
-        XCTAssertTrue(true, "Debug test")
+        XCTAssertTrue(foundTask, "Should find 'Clean the kitchen' in the task list")
     }
     
     private func handlePermissionDialogs(app: XCUIApplication) {
