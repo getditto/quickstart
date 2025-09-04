@@ -25,21 +25,31 @@ final class TasksUITests: XCTestCase {
         print("⏳ Waiting for initial sync...")
         sleep(5)
         
-        // Wait for documents to appear after app load and sync
-        print("⏳ Waiting up to 20 seconds for documents to load...")
+        // Wait to detect specific document: "Clean the kitchen"
+        print("⏳ Waiting up to 20 seconds to detect 'Clean the kitchen' document...")
         
+        let targetDocument = "Clean the kitchen"
         let maxWaitTime = 20.0
         let startTime = Date()
-        var documentsFound = false
+        var documentFound = false
         
         while Date().timeIntervalSince(startTime) < maxWaitTime {
             handlePermissionDialogs(app: app)
             
             if app.tables.firstMatch.exists {
-                let cellCount = app.tables.firstMatch.cells.count
-                if cellCount > 0 {
-                    print("✅ Found \(cellCount) documents")
-                    documentsFound = true
+                let cells = app.tables.firstMatch.cells
+                print("📱 Checking \(cells.count) cells...")
+                
+                for i in 0..<cells.count {
+                    let cell = cells.element(boundBy: i)
+                    if cell.exists && cell.label.contains(targetDocument) {
+                        print("✅ Found target document: '\(cell.label)'")
+                        documentFound = true
+                        break
+                    }
+                }
+                
+                if documentFound {
                     break
                 }
             }
@@ -47,11 +57,25 @@ final class TasksUITests: XCTestCase {
             sleep(1)
         }
         
-        if !documentsFound {
-            XCTFail("No documents found after 20 seconds")
+        if !documentFound {
+            print("❌ Target document '\(targetDocument)' not found after 20 seconds")
+            
+            // Show what documents we did find
+            if app.tables.firstMatch.exists {
+                let cells = app.tables.firstMatch.cells
+                print("📱 Available documents:")
+                for i in 0..<min(cells.count, 10) {
+                    let cell = cells.element(boundBy: i)
+                    if cell.exists && !cell.label.isEmpty {
+                        print("   [\(i)]: '\(cell.label)'")
+                    }
+                }
+            }
+            
+            XCTFail("Target document '\(targetDocument)' not found")
         }
         
-        XCTAssertTrue(documentsFound, "Documents should be loaded and synced")
+        XCTAssertTrue(documentFound, "Should find '\(targetDocument)' document")
         
         // Verify app stability
         sleep(3)
