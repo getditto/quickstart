@@ -90,13 +90,18 @@ jobs:
     - name: Generate test document title
       id: test_doc
       run: |
-        # Create unique test document title for this build
-        # Use very small number to appear first in ORDER BY _id ASC
-        # Format: 00000[build_number] to ensure it sorts first
-        BUILD_NUM=$(printf "%05d" ${{ github.run_number }})
-        DOC_TITLE="00000${BUILD_NUM}_android_ci_test_${{ github.run_id }}"
+        # Create a unique GitHub test document with inverted timestamp to appear at top
+        TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+        DOC_ID="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+        DOC_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+        
+        echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
         echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
-        echo "Generated test document title: $DOC_TITLE"
+        echo "📝 Generated test document (inverted timestamp for top position)"
+        echo "📝 ID: '${DOC_ID}'"
+        echo "📝 Title: '${DOC_TITLE}'"
+        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
     
     - name: Build APKs
       working-directory: android-kotlin/QuickStartTasks
