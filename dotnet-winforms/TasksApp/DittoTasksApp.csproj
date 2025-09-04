@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ditto" Version="4.11.1" />
+    <PackageReference Include="Ditto" Version="4.12.1" />
     <PackageReference Include="System.Text.Json" Version="9.0.4" />
   </ItemGroup>
 
