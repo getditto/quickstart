@@ -43,23 +43,43 @@ final class TasksUITests: XCTestCase {
             handlePermissionDialogs(app: app)
             
             // Check if we can access the task list
-            if app.tables.firstMatch.exists {
-                let taskCells = app.tables.cells
-                let cellCount = taskCells.count
-                print("✅ Task list accessible with \(cellCount) cells")
+            let tables = app.tables
+            print("📱 Found \(tables.count) tables")
+            
+            if tables.count > 0 {
+                let table = tables.firstMatch
+                print("📱 Table exists: \(table.exists)")
                 
-                if cellCount > 0 {
-                    // Show first few tasks for verification
-                    print("📱 First few tasks:")
-                    for i in 0..<min(cellCount, 5) {
+                if table.exists {
+                    let taskCells = table.cells
+                    let cellCount = taskCells.count
+                    print("📱 Table has \(cellCount) cells")
+                    
+                    // Even if count is 0, let's try to enumerate actual cells
+                    var actualCells = [String]()
+                    for i in 0..<10 {  // Check first 10 potential cells
                         let cell = taskCells.element(boundBy: i)
-                        if cell.exists && !cell.label.isEmpty {
+                        if cell.exists {
                             let cellText = cell.label
-                            print("   [\(i)]: '\(cellText)'")
+                            if !cellText.isEmpty {
+                                actualCells.append("[\(i)]: '\(cellText)'")
+                            }
                         }
                     }
-                    taskListAccessible = true
-                    break
+                    
+                    print("📱 Found \(actualCells.count) actual accessible cells:")
+                    for cellInfo in actualCells {
+                        print("   \(cellInfo)")
+                    }
+                    
+                    if actualCells.count > 0 {
+                        taskListAccessible = true
+                        break
+                    } else if cellCount > 0 {
+                        print("⚠️ Cells exist but no accessible text found")
+                        taskListAccessible = true
+                        break
+                    }
                 }
             }
             
@@ -72,11 +92,32 @@ final class TasksUITests: XCTestCase {
             
             // Debug: show what UI elements are available
             print("📱 Available UI elements:")
-            let allElements = app.descendants(matching: .any)
-            for i in 0..<min(allElements.count, 10) {
-                let element = allElements.element(boundBy: i)
-                if element.exists && !element.label.isEmpty {
-                    print("   Element [\(i)]: '\(element.label)' (\(element.elementType))")
+            
+            // Check specifically for tables
+            let tables = app.tables
+            print("🔍 Tables: \(tables.count)")
+            for i in 0..<tables.count {
+                let table = tables.element(boundBy: i)
+                print("   Table [\(i)]: exists=\(table.exists), cells=\(table.cells.count)")
+            }
+            
+            // Check for cells directly
+            let allCells = app.cells
+            print("🔍 All cells: \(allCells.count)")
+            for i in 0..<min(allCells.count, 5) {
+                let cell = allCells.element(boundBy: i)
+                if cell.exists {
+                    print("   Cell [\(i)]: '\(cell.label)'")
+                }
+            }
+            
+            // Check for static texts (task titles might be static text)
+            let staticTexts = app.staticTexts
+            print("🔍 Static texts: \(staticTexts.count)")
+            for i in 0..<min(staticTexts.count, 10) {
+                let text = staticTexts.element(boundBy: i)
+                if text.exists && !text.label.isEmpty && text.label.count > 3 {
+                    print("   Text [\(i)]: '\(text.label)'")
                 }
             }
             
