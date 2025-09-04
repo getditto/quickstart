@@ -25,40 +25,29 @@ final class TasksUITests: XCTestCase {
         print("⏳ Waiting for initial sync...")
         sleep(5)
         
-        // Wait to detect specific document: "Clean the kitchen"
-        print("⏳ Waiting up to 20 seconds to detect 'Clean the kitchen' document...")
+        // Detect specific document: "Clean the kitchen" 
+        print("🔍 Looking for 'Clean the kitchen' document...")
         
         let targetDocument = "Clean the kitchen"
-        let maxWaitTime = 20.0
-        let startTime = Date()
-        var documentFound = false
+        handlePermissionDialogs(app: app)
         
-        while Date().timeIntervalSince(startTime) < maxWaitTime {
-            handlePermissionDialogs(app: app)
+        var documentFound = false
+        if app.tables.firstMatch.exists {
+            let cells = app.tables.firstMatch.cells
+            print("📱 Checking \(cells.count) cells...")
             
-            if app.tables.firstMatch.exists {
-                let cells = app.tables.firstMatch.cells
-                print("📱 Checking \(cells.count) cells...")
-                
-                for i in 0..<cells.count {
-                    let cell = cells.element(boundBy: i)
-                    if cell.exists && cell.label.contains(targetDocument) {
-                        print("✅ Found target document: '\(cell.label)'")
-                        documentFound = true
-                        break
-                    }
-                }
-                
-                if documentFound {
+            for i in 0..<cells.count {
+                let cell = cells.element(boundBy: i)
+                if cell.exists && cell.label.contains(targetDocument) {
+                    print("✅ Found target document: '\(cell.label)'")
+                    documentFound = true
                     break
                 }
             }
-            
-            sleep(1)
         }
         
         if !documentFound {
-            print("❌ Target document '\(targetDocument)' not found after 20 seconds")
+            print("❌ Target document '\(targetDocument)' not found")
             
             // Show what documents we did find
             if app.tables.firstMatch.exists {
