@@ -32,7 +32,7 @@ public class BrowserStackIntegrationTest {
         
         System.out.println("✅ Seeded document ID found: " + githubTestDocId);
         System.out.println("🎯 This test verifies the CI seeded a document with inverted timestamp ordering");
-        assertTrue(githubTestDocId.contains("ci_spring_test"), "Seeded document should contain CI test identifier");
+        assertTrue(githubTestDocId.contains("ci_test"), "Seeded document should contain CI test identifier");
     }
 
     @Test
@@ -46,8 +46,8 @@ public class BrowserStackIntegrationTest {
         }
         
         // Verify the seeded document follows the inverted timestamp pattern
-        assertTrue(githubTestDocId.matches("\\d+_ci_spring_test_\\d+_\\d+"), 
-                   "Seeded document should match inverted timestamp pattern: timestamp_ci_spring_test_runId_runNumber");
+        assertTrue(githubTestDocId.matches("\\d+_ci_test_\\d+_\\d+"), 
+                   "Seeded document should match inverted timestamp pattern: timestamp_ci_test_runId_runNumber");
         
         System.out.println("✅ Seeded document follows proper naming pattern: " + githubTestDocId);
     }
