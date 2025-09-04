@@ -1,0 +1,82 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:generateExternalPluginSpecBuilders UP-TO-DATE
+> Task :buildSrc:extractPrecompiledScriptPluginPlugins UP-TO-DATE
+> Task :buildSrc:compilePluginsBlocks UP-TO-DATE
+> Task :buildSrc:generatePrecompiledScriptPluginAccessors UP-TO-DATE
+> Task :buildSrc:generateScriptPluginAdapters UP-TO-DATE
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+> Task :generateSecretProperties UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :resolveMainClassName UP-TO-DATE
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.3)
+
+2025-09-04T16:16:23.173+03:00  INFO 52593 --- [quickstart] [           main] c.d.e.s.q.QuickstartApplication          : Starting QuickstartApplication using Java 17.0.14 with PID 52593 (/Users/teodorc/Projects/worktrees/teodor/add-android-spring-ci/java-spring/build/classes/java/main started by teodorc in /Users/teodorc/Projects/worktrees/teodor/add-android-spring-ci/java-spring)
+2025-09-04T16:16:23.175+03:00  INFO 52593 --- [quickstart] [           main] c.d.e.s.q.QuickstartApplication          : No active profile set, falling back to 1 default profile: "default"
+2025-09-04T16:16:23.361+03:00  INFO 52593 --- [quickstart] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-04T16:16:23.367+03:00  INFO 52593 --- [quickstart] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 4 ms. Found 0 JPA repository interfaces.
+2025-09-04T16:16:23.548+03:00  INFO 52593 --- [quickstart] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-09-04T16:16:23.554+03:00  INFO 52593 --- [quickstart] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-09-04T16:16:23.554+03:00  INFO 52593 --- [quickstart] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.36]
+2025-09-04T16:16:23.574+03:00  INFO 52593 --- [quickstart] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-09-04T16:16:23.574+03:00  INFO 52593 --- [quickstart] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 385 ms
+2025-09-04T16:16:23.616+03:00  INFO 52593 --- [quickstart] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-09-04T16:16:23.668+03:00  INFO 52593 --- [quickstart] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:4d28de97-4815-4892-af0f-36b9862badea user=SA
+2025-09-04T16:16:23.668+03:00  INFO 52593 --- [quickstart] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-09-04T16:16:23.686+03:00  INFO 52593 --- [quickstart] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-04T16:16:23.699+03:00  INFO 52593 --- [quickstart] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.8.Final
+2025-09-04T16:16:23.708+03:00  INFO 52593 --- [quickstart] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-09-04T16:16:23.786+03:00  INFO 52593 --- [quickstart] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-09-04T16:16:23.809+03:00  INFO 52593 --- [quickstart] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 2.3.232
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-09-04T16:16:23.900+03:00  INFO 52593 --- [quickstart] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-09-04T16:16:23.902+03:00  INFO 52593 --- [quickstart] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+Loading native library at path: jar:file:/Users/teodorc/.gradle/caches/modules-2/files-2.1/com.ditto/ditto-binaries/5.0.0-preview.1/dfa6b3bbbd8633d7d9936e133ce4c5c4b1137cb8/ditto-binaries-5.0.0-preview.1.jar!/macos/arm64/libdittoall.dylib
+Loading native library at path: jar:file:/Users/teodorc/.gradle/caches/modules-2/files-2.1/com.ditto/ditto-binaries/5.0.0-preview.1/dfa6b3bbbd8633d7d9936e133ce4c5c4b1137cb8/ditto-binaries-5.0.0-preview.1.jar!/macos/arm64/libcomdittodittoffijvmstubs.dylib
+Loading native library at path: jar:file:/Users/teodorc/.gradle/caches/modules-2/files-2.1/com.ditto/ditto-binaries/5.0.0-preview.1/dfa6b3bbbd8633d7d9936e133ce4c5c4b1137cb8/ditto-binaries-5.0.0-preview.1.jar!/macos/arm64/libcallbacks.dylib
+2025-09-04T16:16:24.784511+03:00  INFO init_logging:init_tracing{config.service_name="ditto" tracing_format="json" rust_log="trace"}: tracing_config: initializing tracing opentelemetry_enabled=false loki_enabled=false
+2025-09-04T16:16:24.784699+03:00  INFO post_init_logging: ditto_logging: successfully initialized logging
+2025-09-04T16:16:24.784704+03:00  INFO post_init_logging: ditto_logging: installed tracing-log compatibility layer originator=tracing-config
+2025-09-04T16:16:24.792689+03:00  INFO ditto_init: ditto_auth: initializing auth client identity=OnlinePlayground { app_id: ValidatedOnlineAppId("b05202ee-ac58-497c-8b32-8ddd6eee31fc"), base_url: Url { scheme: "https", cannot_be_a_base: false, username: "", password: None, host: Some(Domain("b05202ee-ac58-497c-8b32-8ddd6eee31fc.cloud.ditto.live")), port: None, path: "/", query: None, fragment: None }, provider: "__playgroundProvider" }
+2025-09-04T16:16:24.795386+03:00  INFO ditto_init:new_auth_client{auth.kind=online_playground}: ditto_auth: peer key loaded from site info cache peer_pubkey=pkAocCgkMDo4JeqjbO-wNNqQagsXP9PU7cAm0mZyfMgUn9qyFADGA
+2025-09-04T16:16:24.796034+03:00  INFO ditto_init: ditto_core: starting Ditto... app_id=b05202ee-ac58-497c-8b32-8ddd6eee31fc local.peer_id=pkAocCgkMDo4JeqjbO-wNNqQagsXP9PU7cAm0mZyfMgUn9qyFADGA sdk.platform=Android sdk.language=JVMBased sdk.version=0.0.1-SNAPSHOT sdk.commit=5e33dcbcaa persistence_directory="build/ditto-spring-dir"
+2025-09-04T16:16:24.862+03:00  INFO 52593 --- [quickstart] [           main] c.d.e.s.quickstart.service.DittoService  : Transport config: com.ditto.java.transports.DittoTransportConfig$Builder@3b3190fd
+2025-09-04T16:16:24.914+03:00  INFO 52593 --- [quickstart] [atcher-worker-1] c.d.e.s.quickstart.service.DittoService  : Peers connected: 0
+2025-09-04T16:16:24.963+03:00  WARN 52593 --- [quickstart] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-09-04T16:16:24.971+03:00  INFO 52593 --- [quickstart] [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page template: index
+2025-09-04T16:16:25.087+03:00  INFO 52593 --- [quickstart] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2025-09-04T16:16:25.091+03:00  INFO 52593 --- [quickstart] [           main] c.d.e.s.q.QuickstartApplication          : Started QuickstartApplication in 2.05 seconds (process running for 2.156)
+2025-09-04T16:16:25.321+03:00  INFO 52593 --- [quickstart] [       Thread-5] c.d.e.s.quickstart.service.DittoService  : Peers connected: 0
+2025-09-04T16:16:30.717+03:00  INFO 52593 --- [quickstart] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-04T16:16:30.717+03:00  INFO 52593 --- [quickstart] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-09-04T16:16:30.718+03:00  INFO 52593 --- [quickstart] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2025-09-04T16:16:30.823+03:00  WARN 52593 --- [quickstart] [nio-8080-exec-1] actStandardFragmentInsertionTagProcessor : [THYMELEAF][http-nio-8080-exec-1][index] Deprecated unwrapped fragment expression "fragments/taskList :: taskListFrag(${tasks})" found in template index, line 26, col 18. Please use the complete syntax of fragment expressions instead ("~{fragments/taskList :: taskListFrag(${tasks})}"). The old, unwrapped syntax for fragment expressions will be removed in future versions of Thymeleaf.
+2025-09-04T16:16:40.323+03:00  INFO 52593 --- [quickstart] [       Thread-7] c.d.e.s.quickstart.service.DittoService  : Peers connected: 0
+2025-09-04T16:16:55.324+03:00  INFO 52593 --- [quickstart] [       Thread-7] c.d.e.s.quickstart.service.DittoService  : Peers connected: 0
+2025-09-04T16:17:10.325+03:00  INFO 52593 --- [quickstart] [       Thread-8] c.d.e.s.quickstart.service.DittoService  : Peers connected: 0
+2025-09-04T16:17:25.326+03:00  INFO 52593 --- [quickstart] [       Thread-8] c.d.e.s.quickstart.service.DittoService  : Peers connected: 0
+2025-09-04T16:17:40.329+03:00  INFO 52593 --- [quickstart] [       Thread-5] c.d.e.s.quickstart.service.DittoService  : Peers connected: 0
