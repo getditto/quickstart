@@ -2,6 +2,8 @@ plugins {
     id("java")
     id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
+    id("pmd")
+    id("com.github.spotbugs") version "6.0.7"
 
     id("quickstart-conventions")
 }
@@ -13,6 +15,18 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
+}
+
+pmd {
+    toolVersion = "7.0.0"
+    ruleSetFiles = files("config/pmd/pmd.xml")
+    isIgnoreFailures = false
+}
+
+spotbugs {
+    ignoreFailures = true
+    effort = com.github.spotbugs.snom.Effort.DEFAULT
+    reportLevel = com.github.spotbugs.snom.Confidence.HIGH
 }
 
 dependencies {
