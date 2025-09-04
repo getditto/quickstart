@@ -594,7 +594,6 @@ jobs:
                   \"project\": \"Ditto Flutter iOS\",
                   \"buildName\": \"Build #${{ github.run_number }}\",
                   \"buildTag\": \"${{ github.ref_name }}\",
-                  \"local\": true,
                   \"deviceLogs\": true,
                   \"networkLogs\": true
                 }" \
