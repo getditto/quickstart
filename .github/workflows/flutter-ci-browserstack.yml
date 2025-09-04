@@ -363,6 +363,7 @@ jobs:
                   \"project\": \"Ditto Flutter Android\",
                   \"buildName\": \"Build #${{ github.run_number }}\",
                   \"buildTag\": \"${{ github.ref_name }}\",
+                  \"local\": true,
                   \"deviceLogs\": true, 
                   \"video\": true, 
                   \"networkLogs\": true
@@ -570,6 +571,7 @@ jobs:
                   \"project\": \"Ditto Flutter iOS\",
                   \"buildName\": \"Build #${{ github.run_number }}\",
                   \"buildTag\": \"${{ github.ref_name }}\",
+                  \"local\": true,
                   \"deviceLogs\": true,
                   \"networkLogs\": true
                 }" \
@@ -619,6 +621,7 @@ jobs:
                   \"project\": \"Ditto Flutter iOS\",
                   \"buildName\": \"Build #${{ github.run_number }}\",
                   \"buildTag\": \"${{ github.ref_name }}\",
+                  \"local\": true,
                   \"deviceLogs\": true, 
                   \"video\": true, 
                   \"networkLogs\": true
