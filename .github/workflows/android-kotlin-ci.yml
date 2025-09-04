@@ -130,34 +130,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Seed test document to Ditto Cloud
-      run: |
-        CURRENT_TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - CURRENT_TIMESTAMP))
-        DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_TITLE}\",
-                \"title\": \"${DOC_TITLE}\"
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
-        else
-          exit 1
-        fi
-    
     - name: Download APK artifacts
       uses: actions/download-artifact@v4
       with:
@@ -312,53 +284,3 @@ jobs:
           echo "Warning: Could not parse final results"
           echo "Raw response: $FINAL_RESULT"
         fi
-    
-    - name: Generate BrowserStack report
-      if: always()
-      run: |
-        BUILD_ID="${{ steps.test.outputs.build_id }}"
-        
-        echo "# 📱 BrowserStack Test Report" > browserstack-report.md
-        echo "" >> browserstack-report.md
-        echo "**GitHub Run:** [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> browserstack-report.md
-        echo "**Test Document:** \`${{ env.GITHUB_TEST_DOC_ID }}\`" >> browserstack-report.md
-        
-        if [ "$BUILD_ID" != "null" ] && [ -n "$BUILD_ID" ]; then
-          echo "**BrowserStack Build:** [$BUILD_ID](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> browserstack-report.md
-          
-          RESULTS=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
-          
-          echo "" >> browserstack-report.md
-          echo "## 📱 Device Results" >> browserstack-report.md
-          echo "$RESULTS" | jq -r '.devices[]? | "- **" + .device + ":** " + (.sessions[]?.status // "unknown")' >> browserstack-report.md
-        fi
-    
-    - name: Upload BrowserStack artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: browserstack-report-${{ github.run_number }}
-        path: browserstack-report.md
-        retention-days: 7
-    
-    - name: Comment PR with BrowserStack results
-      if: github.event_name == 'pull_request' && always()
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          
-          let reportContent = '# 📱 BrowserStack Test Report\n\n❌ Failed to generate report.';
-          try {
-            reportContent = fs.readFileSync('browserstack-report.md', 'utf8');
-          } catch (error) {
-            console.log('Could not read report file:', error.message);
-          }
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: reportContent
-          });
