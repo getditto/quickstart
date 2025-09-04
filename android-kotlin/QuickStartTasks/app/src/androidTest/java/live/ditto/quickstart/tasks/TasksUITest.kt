@@ -38,7 +38,7 @@ class TasksUITest {
         
         // Look for the exact document title in the UI - this should fail the test if not found
         try {
-            composeTestRule.onNode(hasText(testDocumentTitle, substring = true))
+            composeTestRule.onNode(hasText(testDocumentTitle))
                 .assertExists("Document with title '$testDocumentTitle' should exist")
             println("✅ Successfully verified document: '$testDocumentTitle'")
         } catch (e: Exception) {
