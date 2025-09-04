@@ -65,7 +65,7 @@ class TasksUITest {
             // Print all visible text for debugging
             try {
                 println("Attempting to debug visible UI elements...")
-                composeTestRule.onAllNodes(hasAnyChild()).onFirst().assertExists()
+                composeTestRule.onAllNodes(hasClickAction()).fetchSemanticsNodes()
                 println("UI hierarchy exists but document not found")
             } catch (debugE: Exception) {
                 println("UI hierarchy not available: ${debugE.message}")
