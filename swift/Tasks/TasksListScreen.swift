@@ -15,7 +15,7 @@ class TasksListScreenViewModel: ObservableObject {
 
     private let subscriptionQuery = "SELECT * from tasks"
 
-    private let observerQuery = "SELECT * FROM tasks WHERE NOT deleted"
+    private let observerQuery = "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC"
 
     init() {
         populateTasksCollection()
