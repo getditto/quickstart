@@ -37,46 +37,57 @@ final class TasksUITests: XCTestCase {
         print("  Doc ID: '\(expectedDocId)'")
         
         var foundDocument = false
+        let maxWaitTime = 10.0
+        let startTime = Date()
         
-        let collectionView = app.collectionViews.firstMatch
-        if collectionView.exists {
-            // Handle dialogs before accessing collection view
+        // Wait up to 10 seconds for the GitHub document to appear
+        while Date().timeIntervalSince(startTime) < maxWaitTime && !foundDocument {
             handlePermissionDialogs(app: app)
             
-            let cells = collectionView.cells
-            print("📱 Task list has \(cells.count) cells")
-            
-            // Look through each cell for the GitHub document
-            for i in 0..<cells.count {
-                // Handle dialogs before each cell check
-                handlePermissionDialogs(app: app)
+            let collectionView = app.collectionViews.firstMatch
+            if collectionView.exists {
+                let cells = collectionView.cells
+                print("📱 Task list has \(cells.count) cells (checking at \(String(format: "%.1f", Date().timeIntervalSince(startTime)))s)")
                 
-                let cell = cells.element(boundBy: i)
-                if cell.exists {
-                    // Check static texts within the cell
-                    let texts = cell.staticTexts
-                    for j in 0..<texts.count {
-                        let text = texts.element(boundBy: j)
-                        if text.exists && !text.label.isEmpty {
-                            let label = text.label
-                            print("  Cell[\(i)]: '\(label)'")
-                            
-                            // Check for GitHub document (will only match if real env vars and document exists)
-                            if label.contains(expectedTitle) || label.contains(expectedDocId) {
-                                print("✅ Found GitHub document!")
-                                print("  Cell index: \(i)")
-                                print("  Text label: '\(label)'")
-                                foundDocument = true
-                                break
+                // Look through each cell for the GitHub document
+                for i in 0..<cells.count {
+                    let cell = cells.element(boundBy: i)
+                    if cell.exists {
+                        // Check static texts within the cell
+                        let texts = cell.staticTexts
+                        for j in 0..<texts.count {
+                            let text = texts.element(boundBy: j)
+                            if text.exists && !text.label.isEmpty {
+                                let label = text.label
+                                
+                                // Check for GitHub document (will only match if real env vars and document exists)
+                                if label.contains(expectedTitle) || label.contains(expectedDocId) {
+                                    print("✅ Found GitHub document!")
+                                    print("  Cell index: \(i)")
+                                    print("  Text label: '\(label)'")
+                                    print("  Found after: \(String(format: "%.1f", Date().timeIntervalSince(startTime)))s")
+                                    foundDocument = true
+                                    break
+                                }
                             }
                         }
+                        if foundDocument { break }
                     }
-                    if foundDocument { break }
                 }
             }
             
             if !foundDocument {
-                print("❌ GitHub document not found (expected for local test)")
+                sleep(1) // Wait 1 second before retrying
+            }
+        }
+            
+        if !foundDocument {
+            print("❌ GitHub document not found after 10 seconds")
+            
+            // Show what documents we did find
+            let collectionView = app.collectionViews.firstMatch
+            if collectionView.exists {
+                let cells = collectionView.cells
                 print("\n📋 Available documents:")
                 for i in 0..<min(cells.count, 10) {
                     let cell = cells.element(boundBy: i)
@@ -91,9 +102,9 @@ final class TasksUITests: XCTestCase {
                         }
                     }
                 }
+            } else {
+                print("❌ No task list found")
             }
-        } else {
-            print("❌ No task list found")
         }
         
         // Pass only if we found the GitHub document
