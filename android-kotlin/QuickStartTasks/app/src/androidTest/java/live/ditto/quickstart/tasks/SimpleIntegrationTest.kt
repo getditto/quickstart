@@ -107,15 +107,13 @@ class SimpleIntegrationTest {
         
         val runId = testDocId.split("_").getOrNull(3) ?: testDocId
         
-        // Allow time for Ditto initialization and cloud sync
-        Thread.sleep(20_000)
-        
         try {
-            // Verify document sync with retry logic
-            val maxAttempts = 30
+            // Verify document sync with retry logic (including initial Ditto sync time)
+            val maxAttempts = 40 // Increased to account for initial sync time
             var documentFound = false
             var lastException: Exception? = null
             
+            // Start checking immediately, but allow more attempts to account for sync time
             repeat(maxAttempts) { attempt ->
                 if (documentFound) return@repeat
                 
@@ -132,9 +130,17 @@ class SimpleIntegrationTest {
                         useUnmergedTree = true
                     ).assertExists()
                     
+                    println("✅ Document found after ${attempt + 1} attempts (${(attempt + 1) * 2}s)")
                     documentFound = true
+                    return@repeat // Exit immediately when found
                 } catch (e: Exception) {
                     lastException = e
+                    if (attempt == 0) {
+                        println("⏳ Document not found immediately, waiting for Ditto sync...")
+                    } else if (attempt % 10 == 0) {
+                        println("🔄 Still waiting... attempt ${attempt + 1}/$maxAttempts")
+                    }
+                    
                     if (attempt < maxAttempts - 1) {
                         Thread.sleep(2_000)
                     }
