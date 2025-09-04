@@ -217,6 +217,10 @@ jobs:
         DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         
+        # Create inverted timestamp for sorting (newest first)
+        CURRENT_TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - CURRENT_TIMESTAMP))
+        
         echo "🔧 Testing with mobile app environment: APP_ID=${{ secrets.DITTO_APP_ID }}"
         
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -227,7 +231,7 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"title\": \"000_GitHub Test Task ${GITHUB_RUN_ID}\",
+                \"title\": \"${INVERTED_TIMESTAMP}_GitHub_Test_Task_${GITHUB_RUN_ID}\",
                 \"done\": false,
                 \"deleted\": false
               }
@@ -365,7 +369,7 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"title\": \"000_GitHub Test Task ${GITHUB_RUN_ID}\",
+                \"title\": \"${INVERTED_TIMESTAMP}_GitHub_Test_Task_${GITHUB_RUN_ID}\",
                 \"done\": false,
                 \"deleted\": false
               }

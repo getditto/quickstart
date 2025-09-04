@@ -1,0 +1,163 @@
+name: javascript-web-browserstack
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'sdk-*'
+    paths:
+      - 'javascript-web/**'
+      - '.github/workflows/javascript-web-browserstack.yml'
+  push:
+    branches:
+      - main
+      - 'sdk-*'
+    paths:
+      - 'javascript-web/**'
+      - '.github/workflows/javascript-web-browserstack.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and Test on BrowserStack
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: javascript-web/package-lock.json
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Insert test document into Ditto Cloud
+        run: |
+          # Use GitHub run ID to create deterministic document ID
+          DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          # Insert document using curl with correct JSON structure
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"title\": \"GitHub Test Task ${GITHUB_RUN_ID}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          # Extract HTTP status code and response body
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          
+          # Check if insertion was successful
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+            echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+          else
+            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        working-directory: javascript-web
+        run: npm ci
+
+      - name: Run linter
+        working-directory: javascript-web
+        run: npm run lint
+
+      - name: Build application
+        working-directory: javascript-web
+        run: |
+          npm run build
+          echo "App built successfully"
+
+      - name: Start web server
+        working-directory: javascript-web
+        run: |
+          nohup npx http-server dist -p 3000 -c-1 --cors > server.log 2>&1 &
+          sleep 5
+          curl -f http://localhost:3000/ || (echo "Server failed to start" && cat server.log && exit 1)
+          echo "Web server started on http://localhost:3000"
+
+      - name: Install BrowserStack Local binary
+        run: |
+          wget "https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip"
+          unzip BrowserStackLocal-linux-x64.zip
+          chmod +x BrowserStackLocal
+
+          # Create config file with restricted permissions
+          echo "key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}" > browserstack.yml
+          chmod 600 browserstack.yml
+
+          nohup ./BrowserStackLocal --config-file ./browserstack.yml --daemon start &
+          sleep 10
+          echo "BrowserStack Local tunnel established"
+
+      - name: Make test script executable
+        run: chmod +x .github/scripts/browserstack-test.py
+
+      - name: Execute tests on BrowserStack
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
+        run: |
+          # Install Python dependencies
+          pip3 install selenium
+
+          # Run the test script
+          python3 .github/scripts/browserstack-test.py
+
+      - name: Stop BrowserStack Local tunnel
+        if: always()
+        run: ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
+          
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "# BrowserStack Web Test Report" > test-report.md
+          echo "" >> test-report.md
+          echo "## Tested Browsers" >> test-report.md
+          echo "- Chrome 120.0 (Windows 11)" >> test-report.md
+          echo "- Firefox 121.0 (Windows 11)" >> test-report.md
+          echo "" >> test-report.md
+          echo "## Sync Verification" >> test-report.md
+          echo "- GitHub Test Document ID: ${GITHUB_TEST_DOC_ID:-Not generated}" >> test-report.md
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            javascript-web/dist/
+            javascript-web/server.log
+            test-report.md
+            *screenshot*.png
+            .github/scripts/browserstack-test.py
