@@ -14,42 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  setup-env:
-    name: Setup Environment
-    runs-on: macos-latest
-    timeout-minutes: 5
-    outputs:
-      env-generated: ${{ steps.generate-env.outputs.success }}
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Create .env file (test credentials)
-      run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
-    
-    - name: Generate Env.swift
-      id: generate-env
-      working-directory: swift
-      run: |
-        chmod +x buildEnv.sh
-        ./buildEnv.sh ../.env Tasks/
-        echo "success=true" >> $GITHUB_OUTPUT
-    
-    - name: Upload Env.swift artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: env-swift-${{ github.run_id }}
-        path: swift/Tasks/Env.swift
-        retention-days: 1
-
   lint:
     name: Lint
     runs-on: macos-latest
-    needs: setup-env
     timeout-minutes: 10
     
     steps:
@@ -60,6 +27,19 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
+    - name: Create .env file (test credentials for linting)
+      run: |
+        echo "DITTO_APP_ID=test_app_id" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
+        echo "DITTO_AUTH_URL=https://test.com" >> .env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+    
+    - name: Generate Env.swift (test)
+      working-directory: swift
+      run: |
+        chmod +x buildEnv.sh
+        ./buildEnv.sh ../.env Tasks/
+    
     - name: Install SwiftLint
       run: |
         if ! command -v swiftlint &> /dev/null; then
@@ -68,26 +48,17 @@ jobs:
         fi
         swiftlint version
     
-    - name: Download Env.swift
-      uses: actions/download-artifact@v4
-      with:
-        name: env-swift-${{ github.run_id }}
-        path: swift/Tasks/
-    
     - name: Run SwiftLint
       working-directory: swift
       run: |
         echo "🔍 Running SwiftLint analysis..."
         swiftlint lint --config .swiftlint.yml
 
-  build:
-    name: Build iOS & macOS
+  build-macos:
+    name: Build macOS
     runs-on: macos-latest
-    needs: [setup-env, lint]
-    timeout-minutes: 30
-    outputs:
-      ios-build-success: ${{ steps.build-status.outputs.ios-success }}
-      macos-build-success: ${{ steps.build-status.outputs.macos-success }}
+    needs: lint
+    timeout-minutes: 20
     
     steps:
     - uses: actions/checkout@v4
@@ -97,7 +68,59 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
-    - name: Create .env file (production credentials for builds)
+    - name: Create .env file (production credentials)
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
+    - name: Generate Env.swift (production)
+      working-directory: swift
+      run: |
+        chmod +x buildEnv.sh
+        ./buildEnv.sh ../.env Tasks/
+    
+    - name: Resolve Package Dependencies
+      working-directory: swift
+      run: |
+        echo "📦 Resolving Swift Package dependencies..."
+        xcodebuild -resolvePackageDependencies \
+          -project Tasks.xcodeproj \
+          -scheme Tasks
+
+    - name: Build macOS App
+      working-directory: swift
+      run: |
+        echo "🍎 Building macOS app..."
+        xcodebuild build \
+          -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -configuration Debug \
+          -destination 'platform=macOS' \
+          -allowProvisioningUpdates \
+          SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: lint
+    timeout-minutes: 20
+    outputs:
+      ios-build-success: ${{ steps.build-status.outputs.success }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+    
+    - name: Create .env file (production credentials)
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
@@ -136,7 +159,6 @@ jobs:
           ONLY_ACTIVE_ARCH=NO
 
     - name: Build iOS Device Archive and IPA (for BrowserStack)
-      id: build-device-ipa
       working-directory: swift
       run: |
         echo "🍎 Building iOS device .ipa for BrowserStack..."
@@ -168,7 +190,6 @@ jobs:
           if [ -f "build/Tasks-unsigned.ipa" ]; then
             echo "✅ Unsigned .ipa created successfully"
             ls -la build/Tasks-unsigned.ipa
-            echo "ipa_path=$(pwd)/build/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
           else
             echo "❌ Failed to create .ipa file"
             exit 1
@@ -185,35 +206,16 @@ jobs:
         path: swift/build/Tasks-unsigned.ipa
         retention-days: 1
     
-    - name: Build macOS App
-      id: build-macos
-      working-directory: swift
-      continue-on-error: true
-      run: |
-        echo "🍎 Building macOS app..."
-        xcodebuild build \
-          -project Tasks.xcodeproj \
-          -scheme Tasks \
-          -configuration Debug \
-          -destination 'platform=macOS' \
-          -allowProvisioningUpdates \
-          SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
-        echo "macos_success=true" >> $GITHUB_OUTPUT
-    
     - name: Set build status
       id: build-status
       run: |
-        echo "ios_success=true" >> $GITHUB_OUTPUT
-        echo "macos_success=${{ steps.build-macos.outcome == 'success' }}" >> $GITHUB_OUTPUT
+        echo "success=true" >> $GITHUB_OUTPUT
 
   browserstack:
     name: BrowserStack iOS Testing
     runs-on: macos-latest
-    needs: [setup-env, lint, build]
-    if: needs.build.outputs.ios-build-success == 'true'
+    needs: [build-ios]
+    if: needs.build-ios.outputs.ios-build-success == 'true'
     timeout-minutes: 60
     
     steps:
@@ -531,7 +533,7 @@ jobs:
   summary:
     name: Summary
     runs-on: macos-latest
-    needs: [setup-env, lint, build, browserstack]
+    needs: [lint, build-macos, build-ios, browserstack]
     if: always()
     
     steps:
@@ -540,9 +542,9 @@ jobs:
         echo "## 📱 Swift Build and Test Results"
         echo ""
         echo "### Job Results:"
-        echo "- **Environment Setup**: ${{ needs.setup-env.result }}"
         echo "- **Lint**: ${{ needs.lint.result }}"
-        echo "- **Build (iOS & macOS)**: ${{ needs.build.result }}"
+        echo "- **Build macOS**: ${{ needs.build-macos.result }}"
+        echo "- **Build iOS**: ${{ needs.build-ios.result }}"
         echo "- **BrowserStack Test**: ${{ needs.browserstack.result }}"
         echo ""
         
@@ -551,16 +553,20 @@ jobs:
           echo "❌ **Linting failed** - Code quality issues found"
         fi
         
-        if [[ "${{ needs.build.result }}" != "success" ]]; then
-          echo "❌ **Build failed** - BrowserStack testing was skipped"
+        if [[ "${{ needs.build-macos.result }}" != "success" ]]; then
+          echo "⚠️ **macOS build failed** - Platform compatibility issues"
+        fi
+        
+        if [[ "${{ needs.build-ios.result }}" != "success" ]]; then
+          echo "❌ **iOS build failed** - BrowserStack testing was skipped"
         elif [[ "${{ needs.browserstack.result }}" == "success" ]]; then
           echo "✅ **Full pipeline success!**"
-          echo "   - ✅ Environment setup completed"
           echo "   - ✅ Linting passed"
-          echo "   - ✅ iOS & macOS builds succeeded"
+          echo "   - ✅ macOS build succeeded"
+          echo "   - ✅ iOS build succeeded"
           echo "   - ✅ BrowserStack real device testing passed"
           echo "   - ✅ End-to-end GitHub Actions → Ditto Cloud → BrowserStack sync validated"
-          echo "   - 🏆 **Efficient artifact reuse**: iOS built once, used for both validation and BrowserStack"
+          echo "   - 🚀 **Efficient parallel builds**: macOS & iOS built simultaneously"
         elif [[ "${{ needs.browserstack.result }}" == "failure" ]]; then
           echo "❌ **BrowserStack testing failed** - iOS builds but cloud sync may have issues"
         elif [[ "${{ needs.browserstack.result }}" == "skipped" ]]; then
@@ -570,8 +576,11 @@ jobs:
         # Overall status
         echo ""
         if [[ "${{ needs.lint.result }}" == "success" && \
-              "${{ needs.build.result }}" == "success" ]]; then
-          echo "🎉 **Core pipeline successful!** iOS & macOS apps build and pass quality checks."
+              "${{ needs.build-ios.result }}" == "success" ]]; then
+          echo "🎉 **Core pipeline successful!** iOS app builds and passes quality checks."
+          if [[ "${{ needs.build-macos.result }}" == "success" ]]; then
+            echo "🍎 **macOS compatibility confirmed!** Cross-platform builds working."
+          fi
           if [[ "${{ needs.browserstack.result }}" == "success" ]]; then
             echo "🚀 **BrowserStack integration validated!** Real device testing works end-to-end."
           fi
