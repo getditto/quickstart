@@ -14,9 +14,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  setup-test-env:
+    name: Setup Test Environment
+    runs-on: macos-latest
+    timeout-minutes: 5
+    outputs:
+      env-generated: ${{ steps.generate-env.outputs.success }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create .env file (test credentials)
+      run: |
+        echo "DITTO_APP_ID=test_app_id" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
+        echo "DITTO_AUTH_URL=https://test.com" >> .env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+    
+    - name: Generate Env.swift
+      id: generate-env
+      working-directory: swift
+      run: |
+        chmod +x buildEnv.sh
+        ./buildEnv.sh ../.env Tasks/
+        echo "success=true" >> $GITHUB_OUTPUT
+    
+    - name: Upload Env.swift artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: env-swift-test
+        path: swift/Tasks/Env.swift
+        retention-days: 1
+
   lint:
     name: Lint
     runs-on: macos-latest
+    needs: setup-test-env
     timeout-minutes: 10
     
     steps:
@@ -35,18 +68,11 @@ jobs:
         fi
         swiftlint version
     
-    - name: Create .env file (test credentials)
-      run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
-    
-    - name: Generate Env.swift
-      working-directory: swift
-      run: |
-        chmod +x buildEnv.sh
-        ./buildEnv.sh ../.env Tasks/
+    - name: Download Env.swift
+      uses: actions/download-artifact@v4
+      with:
+        name: env-swift-test
+        path: swift/Tasks/
     
     - name: Run SwiftLint
       working-directory: swift
@@ -57,7 +83,7 @@ jobs:
   build-ios:
     name: Build iOS
     runs-on: macos-latest
-    needs: lint
+    needs: [setup-test-env, lint]
     timeout-minutes: 30
     outputs:
       ios-build-success: ${{ steps.build-status.outputs.success }}
@@ -70,18 +96,11 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
-    - name: Create .env file (test credentials)
-      run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
-    
-    - name: Generate Env.swift
-      working-directory: swift
-      run: |
-        chmod +x buildEnv.sh
-        ./buildEnv.sh ../.env Tasks/
+    - name: Download Env.swift
+      uses: actions/download-artifact@v4
+      with:
+        name: env-swift-test
+        path: swift/Tasks/
     
     - name: Resolve Package Dependencies
       working-directory: swift
@@ -107,6 +126,56 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
           ONLY_ACTIVE_ARCH=NO
+
+    - name: Build iOS Device Archive and IPA (for BrowserStack)
+      id: build-device-ipa
+      working-directory: swift
+      run: |
+        echo "🍎 Building iOS device .ipa for BrowserStack..."
+        
+        # Build and archive iOS app for real device
+        xcodebuild -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -archivePath build/Tasks.xcarchive \
+          archive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+        
+        echo "📦 Creating unsigned .ipa for BrowserStack..."
+        
+        # Find the .app bundle from the archive
+        APP_BUNDLE_PATH=$(find build/Tasks.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d | head -1)
+        
+        if [ -d "$APP_BUNDLE_PATH" ]; then
+          echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
+          
+          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
+          mkdir -p build/Payload
+          cp -R "$APP_BUNDLE_PATH" build/Payload/
+          (cd build && zip -qry Tasks-unsigned.ipa Payload && rm -rf Payload)
+          
+          if [ -f "build/Tasks-unsigned.ipa" ]; then
+            echo "✅ Unsigned .ipa created successfully"
+            ls -la build/Tasks-unsigned.ipa
+            echo "ipa_file_path=$(pwd)/build/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to create .ipa file"
+            exit 1
+          fi
+        else
+          echo "❌ iOS app bundle not found in archive"
+          exit 1
+        fi
+
+    - name: Upload iOS IPA Artifact  
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-ipa-browserstack
+        path: swift/build/Tasks-unsigned.ipa
+        retention-days: 1
     
     - name: Set build status
       id: build-status
@@ -115,7 +184,7 @@ jobs:
   build-macos:
     name: Build macOS
     runs-on: macos-latest
-    needs: lint
+    needs: [setup-test-env, lint]
     timeout-minutes: 30
     
     steps:
@@ -126,18 +195,11 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
-    - name: Create .env file (test credentials)
-      run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
-    
-    - name: Generate Env.swift
-      working-directory: swift
-      run: |
-        chmod +x buildEnv.sh
-        ./buildEnv.sh ../.env Tasks/
+    - name: Download Env.swift
+      uses: actions/download-artifact@v4
+      with:
+        name: env-swift-test
+        path: swift/Tasks/
     
     - name: Build macOS App (if supported)
       working-directory: swift
@@ -158,7 +220,7 @@ jobs:
   browserstack-test:
     name: BrowserStack iOS Testing
     runs-on: macos-latest
-    needs: [lint, build-ios]
+    needs: [setup-test-env, lint, build-ios]
     if: needs.build-ios.outputs.ios-build-success == 'true'
     timeout-minutes: 60
     
@@ -183,57 +245,30 @@ jobs:
         chmod +x buildEnv.sh
         ./buildEnv.sh ../.env Tasks/
     
-    - name: Build iOS App for BrowserStack
-      id: build_ios
-      working-directory: swift
+    - name: Download iOS IPA Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ios-ipa-browserstack
+        path: ./
+    
+    - name: Verify iOS IPA
+      id: verify_ios
       run: |
-        echo "🔨 Building iOS app for BrowserStack real device testing..."
+        echo "📱 Verifying downloaded iOS .ipa for BrowserStack..."
         
-        # Resolve dependencies first
-        xcodebuild -resolvePackageDependencies \
-          -project Tasks.xcodeproj \
-          -scheme Tasks
-        
-        echo "🍎 Building iOS device .ipa for BrowserStack real device testing..."
-        
-        # Build and archive iOS app for real device (not simulator)
-        xcodebuild -project Tasks.xcodeproj \
-          -scheme Tasks \
-          -configuration Debug \
-          -destination 'generic/platform=iOS' \
-          -archivePath build/Tasks.xcarchive \
-          clean archive \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
-        
-        echo "📦 Creating unsigned .ipa for BrowserStack..."
-        
-        # Find the .app bundle from the archive
-        APP_BUNDLE_PATH=$(find build/Tasks.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d | head -1)
-        
-        if [ -d "$APP_BUNDLE_PATH" ]; then
-          echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
-          ls -la "$APP_BUNDLE_PATH"
+        if [ -f "Tasks-unsigned.ipa" ]; then
+          echo "✅ Found IPA: $(pwd)/Tasks-unsigned.ipa"
+          echo "📦 IPA file details:"
+          ls -la "Tasks-unsigned.ipa"
           
-          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
-          mkdir -p build/Payload
-          cp -R "$APP_BUNDLE_PATH" build/Payload/
-          (cd build && zip -qry Tasks-unsigned.ipa Payload && rm -rf Payload)
+          # Validate .ipa structure by checking Payload directory  
+          unzip -l "Tasks-unsigned.ipa" | head -10
           
-          # Verify IPA was created and expose absolute path for later steps
-          if [ -f "build/Tasks-unsigned.ipa" ]; then
-            echo "✅ Unsigned .ipa created successfully: $(pwd)/build/Tasks-unsigned.ipa"
-            ls -la build/Tasks-unsigned.ipa
-            echo "ipa_file_path=$(pwd)/build/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Failed to create .ipa file"
-            exit 1
-          fi
-          
+          echo "ipa_file_path=$(pwd)/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
+          echo "✅ iOS .ipa ready for BrowserStack"
         else
-          echo "❌ iOS app bundle not found in archive"
-          find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found"
+          echo "❌ IPA not found after download"
+          ls -la ./
           exit 1
         fi
     
@@ -340,7 +375,7 @@ jobs:
       run: |
         echo "📤 Uploading iOS app and XCUITest bundle to BrowserStack..."
         
-        IPA_FILE="${{ steps.build_ios.outputs.ipa_file_path }}"
+        IPA_FILE="${{ steps.verify_ios.outputs.ipa_file_path }}"
         TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
         
         echo "📱 App file: $IPA_FILE"
@@ -521,7 +556,7 @@ jobs:
   summary:
     name: Summary
     runs-on: macos-latest
-    needs: [lint, build-ios, build-macos, browserstack-test]
+    needs: [setup-test-env, lint, build-ios, build-macos, browserstack-test]
     if: always()
     
     steps:
