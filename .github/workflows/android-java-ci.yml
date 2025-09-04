@@ -65,7 +65,26 @@ jobs:
           DOC_ID="ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
           SEED_TITLE="000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
           
-          # Insert test document using Ditto API
+          # First, clean up any existing CI test documents to keep only the latest one
+          echo "🧹 Cleaning up old CI test documents..."
+          CLEANUP_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"UPDATE tasks SET deleted = true WHERE title LIKE '000_ci_test%'\",
+              \"args\": {}
+            }" \
+            "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          CLEANUP_HTTP_CODE=$(echo "$CLEANUP_RESPONSE" | tail -n1)
+          if [ "$CLEANUP_HTTP_CODE" -eq 200 ] || [ "$CLEANUP_HTTP_CODE" -eq 201 ]; then
+            echo "✓ Old CI test documents cleaned up"
+          else
+            echo "⚠️  Cleanup failed (HTTP ${CLEANUP_HTTP_CODE}) - continuing anyway"
+          fi
+          
+          # Insert new test document using Ditto API
+          echo "📄 Inserting new CI test document..."
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H 'Content-type: application/json' \
             -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
