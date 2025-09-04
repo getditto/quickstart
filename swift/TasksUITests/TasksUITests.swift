@@ -26,6 +26,18 @@ final class TasksUITests: XCTestCase {
         
         let githubRunId = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
         let githubRunNumber = ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
+        
+        print("🔍 Environment variables:")
+        print("  GITHUB_RUN_ID: '\(githubRunId)'")
+        print("  GITHUB_RUN_NUMBER: '\(githubRunNumber)'")
+        
+        // Only look for document if we have actual env vars
+        if githubRunId.isEmpty || githubRunNumber.isEmpty {
+            print("❌ No GitHub env vars - failing test as expected")
+            XCTFail("No GITHUB_RUN_ID or GITHUB_RUN_NUMBER - test should fail locally")
+            return
+        }
+        
         let expectedTitle = "GitHub Test Task \(githubRunId)"
         let expectedDocId = "000_github_test_\(githubRunId)_\(githubRunNumber)"
         
