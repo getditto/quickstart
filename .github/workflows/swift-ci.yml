@@ -340,7 +340,9 @@ jobs:
         # Check if insertion was successful
         if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
           echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "✓ Document title: ${DOC_TITLE}"
           echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+          echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
         else
           echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
           echo "Response: $BODY"
@@ -458,7 +460,8 @@ jobs:
             \"networkLogs\": true,
             \"setEnvVariables\": {
               \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
-              \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\"
+              \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\",
+              \"GITHUB_TEST_DOC_TITLE\": \"${{ env.GITHUB_TEST_DOC_TITLE }}\"
             }
           }")
         
