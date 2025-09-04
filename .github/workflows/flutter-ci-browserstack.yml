@@ -552,6 +552,15 @@ jobs:
           echo "Running Flutter iOS integration tests on BrowserStack devices..."
           TEST_PACKAGE="flutter_app/build/flutter_integration_tests.zip"
           
+          # Debug: check where the file actually is
+          echo "Looking for test package at: $TEST_PACKAGE"
+          if [ ! -f "$TEST_PACKAGE" ]; then
+            echo "Not found at expected location, checking alternatives:"
+            find flutter_app -name "flutter_integration_tests.zip" -type f || echo "No flutter_integration_tests.zip found"
+            find flutter_app -name "ios_flutter_tests.zip" -type f || echo "No ios_flutter_tests.zip found"
+            exit 1
+          fi
+          
           if [ ! -f "$TEST_PACKAGE" ]; then
             echo "❌ Test package not found at $TEST_PACKAGE"
             find flutter_app/build -name "*.zip" || echo "No ZIP files found"
