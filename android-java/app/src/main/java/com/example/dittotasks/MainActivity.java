@@ -97,10 +97,7 @@ public class MainActivity extends ComponentActivity {
 
 
     void initDitto() {
-        // Skip permission requests during testing to avoid permission dialogs
-        if (!isInstrumentationTest()) {
-            requestPermissions();
-        }
+        requestPermissions();
         try {
             DittoDependencies androidDependencies = new DefaultAndroidDittoDependencies(getApplicationContext());
             
@@ -158,15 +155,6 @@ public class MainActivity extends ComponentActivity {
         }
     }
 
-    // Check if running under instrumentation (testing)
-    private boolean isInstrumentationTest() {
-        try {
-            Class.forName("androidx.test.espresso.Espresso");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
 
     // Request permissions for Ditto
     // https://docs.ditto.live/sdk/latest/install-guides/java#requesting-permissions-at-runtime
