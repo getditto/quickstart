@@ -21,52 +21,45 @@ final class TasksUITests: XCTestCase {
         sleep(2)
         handlePermissionDialogs(app: app)
 
-        // Now look specifically for "Clean the kitchen" task
-        print("🔍 Looking for 'Clean the kitchen' task...")
+        // Look for "Clean the kitchen" in the actual list structure
+        print("🔍 Looking for 'Clean the kitchen' in the list structure...")
         
         let targetTask = "Clean the kitchen"
         var foundTask = false
         
-        // Search through all UI elements for the kitchen task
-        let allElements = app.descendants(matching: .any)
-        print("📱 Searching through \(allElements.count) elements...")
+        // First try to find it in static texts (since we know it's StaticText type)
+        print("📱 Checking static texts...")
+        let staticTexts = app.staticTexts
+        print("  Found \(staticTexts.count) static texts")
         
-        for i in 0..<allElements.count {
-            let element = allElements.element(boundBy: i)
-            if element.exists && !element.label.isEmpty {
-                let label = element.label
-                if label.contains(targetTask) {
-                    print("✅ Found target task!")
-                    print("  Element type: \(element.elementType)")
-                    print("  Full label: '\(label)'")
-                    print("  Index: \(i)")
-                    foundTask = true
-                    break
-                }
+        for i in 0..<staticTexts.count {
+            let text = staticTexts.element(boundBy: i)
+            if text.exists && text.label == targetTask {
+                print("✅ Found target task in static texts!")
+                print("  Index in static texts: \(i)")
+                print("  Full label: '\(text.label)'")
+                foundTask = true
+                break
             }
         }
         
         if !foundTask {
-            print("❌ Target task '\(targetTask)' not found")
-            
-            // Show what tasks we did find
-            print("\n📋 Available tasks (first 15):")
-            var taskCount = 0
-            for i in 0..<allElements.count {
-                let element = allElements.element(boundBy: i)
-                if element.exists && !element.label.isEmpty && element.label.count > 3 {
-                    let label = element.label
-                    // Skip obvious UI elements
-                    if !label.contains("Ditto") && !label.contains("App ID") && !label.contains("Token") {
-                        print("  [\(taskCount)]: '\(label)' (\(element.elementType))")
-                        taskCount += 1
-                        if taskCount >= 15 { break }
+            // Show what static texts we did find (likely the task list)
+            print("\n📋 Available static texts (tasks):")
+            for i in 0..<min(staticTexts.count, 25) {
+                let text = staticTexts.element(boundBy: i)
+                if text.exists && !text.label.isEmpty && text.label.count > 3 {
+                    let label = text.label
+                    // Skip UI labels
+                    if !label.contains("Ditto") && !label.contains("App ID") && !label.contains("Token") && 
+                       !label.contains("Sync") {
+                        print("  [\(i)]: '\(label)'")
                     }
                 }
             }
         }
         
-        XCTAssertTrue(foundTask, "Should find 'Clean the kitchen' task")
+        XCTAssertTrue(foundTask, "Should find 'Clean the kitchen' in static texts")
     }
     
     private func handlePermissionDialogs(app: XCUIApplication) {
