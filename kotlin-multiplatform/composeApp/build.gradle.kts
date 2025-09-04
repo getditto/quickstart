@@ -1,12 +1,14 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.gradle.process.CommandLineArgumentProvider
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.detekt)
 
     id("quickstart-conventions")
 }
@@ -61,6 +63,14 @@ kotlin {
             implementation(libs.datastore.preferences)
             implementation(libs.datastore)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
+        
+        // Add generated source directory for test config
+        commonTest {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/source/testConfig/commonTest/kotlin"))
+        }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
@@ -95,6 +105,37 @@ kotlin {
     }
 }
 
+// Generate a Kotlin file with the test document ID for iOS tests
+val generateTestConfig = tasks.register("generateTestConfig") {
+    val testDocId = System.getenv("GITHUB_TEST_DOC_ID") ?: ""
+    val outputDir = layout.buildDirectory.dir("generated/source/testConfig/commonTest/kotlin").get().asFile
+    val outputFile = File(outputDir, "TestConfig.kt")
+    
+    doLast {
+        outputDir.mkdirs()
+        outputFile.writeText("""
+            package integration
+            
+            object TestConfig {
+                const val GITHUB_TEST_DOC_ID = "$testDocId"
+            }
+        """.trimIndent())
+        
+        println("🔧 Generated TestConfig.kt with GITHUB_TEST_DOC_ID = '$testDocId'")
+    }
+    
+    outputs.file(outputFile)
+}
+
+// Make sure the test config is generated before compilation
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    dependsOn(generateTestConfig)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
+    dependsOn(generateTestConfig)
+}
+
 android {
     namespace = "com.ditto.quickstart"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -105,6 +146,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
@@ -126,9 +169,26 @@ android {
     }
 }
 
+detekt {
+    toolVersion = libs.versions.detekt.get()
+    config.setFrom(rootProject.file("detekt.yml"))
+    buildUponDefaultConfig = true
+    autoCorrect = false
+    ignoreFailures = false
+    parallel = true
+}
+
 dependencies {
     implementation(libs.androidx.material3.android)
     debugImplementation(compose.uiTooling)
+    
+    // Android instrumented test dependencies
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
 }
 
 compose.desktop {

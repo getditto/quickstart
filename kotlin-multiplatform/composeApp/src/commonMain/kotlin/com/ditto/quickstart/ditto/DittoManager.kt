@@ -45,7 +45,7 @@ class DittoManager {
                 val identity = DittoIdentity.OnlinePlayground(
                     appId = DittoSecretsConfiguration.DITTO_APP_ID,
                     token = DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-                    enableDittoCloudSync = false,
+                    enableDittoCloudSync = true,
                     customAuthUrl = DittoSecretsConfiguration.DITTO_AUTH_URL,
                 )
 
@@ -100,7 +100,18 @@ class DittoManager {
     )
 
     suspend fun startSync() {
-        getDitto()?.startSync()
+        val ditto = getDitto()
+        if (ditto == null) {
+            println("❌ DittoManager: Cannot start sync - Ditto instance is null!")
+            return
+        }
+        
+        println("🔄 DittoManager: Starting sync on Ditto instance...")
+        ditto.startSync()
+        println("✅ DittoManager: Ditto.startSync() called")
+        
+        val isActive = ditto.isSyncActive
+        println("🔍 DittoManager: Sync active status: $isActive")
     }
 
     suspend fun stopSync() {
