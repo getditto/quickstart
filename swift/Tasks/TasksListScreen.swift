@@ -278,6 +278,7 @@ struct TasksListScreen: View {
                         .environmentObject(viewModel)
                 })
         }
+        .navigationViewStyle(.stack)
         .onAppear {
             // Prevent Xcode previews from syncing: non-preview simulators and real devices can sync
             let isPreview: Bool =
