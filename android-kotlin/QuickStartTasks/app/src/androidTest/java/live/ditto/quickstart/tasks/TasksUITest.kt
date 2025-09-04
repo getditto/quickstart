@@ -20,14 +20,26 @@ class TasksUITest {
     val composeTestRule = createAndroidComposeRule<MainActivity>()
     
     private val testDocumentTitle: String by lazy {
-        // Read the exact test document title from build config (passed at build time)
-        BuildConfig.TEST_DOCUMENT_TITLE
+        // Read the exact test document title from BrowserStack instrumentationOptions
+        val args = InstrumentationRegistry.getArguments()
+        val title = args?.getString("github_test_doc_id")
+        
+        // Fallback for local testing
+        title ?: BuildConfig.TEST_DOCUMENT_TITLE ?: "BrowserStack Test Document"
     }
     
     @Before
     fun setUp() {
         // Ensure the activity is launched and Compose UI is ready
         composeTestRule.waitForIdle()
+        
+        // Debug: Show how we got the test document title
+        val args = InstrumentationRegistry.getArguments()
+        val fromInstrumentation = args?.getString("github_test_doc_id")
+        val fromBuildConfig = try { BuildConfig.TEST_DOCUMENT_TITLE } catch (e: Exception) { "N/A" }
+        
+        println("DEBUG: Instrumentation arg 'github_test_doc_id' = '$fromInstrumentation'")
+        println("DEBUG: BuildConfig.TEST_DOCUMENT_TITLE = '$fromBuildConfig'")
         println("Looking for test document: '$testDocumentTitle'")
         
         // Give extra time for the app to fully initialize
