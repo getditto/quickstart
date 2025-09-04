@@ -195,10 +195,7 @@ jobs:
               \"networkLogs\": true,
               \"autoGrantPermissions\": true,
               \"instrumentationLogs\": true,
-              \"environmentVariables\": {
-                \"GITHUB_TEST_DOC_ID\": \"${{ env.GITHUB_TEST_DOC_ID }}\"
-              },
-              \"instrumentationArgs\": {
+              \"instrumentationOptions\": {
                 \"github_test_doc_id\": \"${{ env.GITHUB_TEST_DOC_ID }}\"
               }
             }")
