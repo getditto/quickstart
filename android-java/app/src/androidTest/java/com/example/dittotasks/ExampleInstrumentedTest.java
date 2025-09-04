@@ -4,7 +4,6 @@ import android.util.Log;
 import androidx.test.espresso.NoMatchingViewException;
 import androidx.test.espresso.ViewAssertion;
 import androidx.test.espresso.assertion.ViewAssertions;
-import androidx.test.espresso.contrib.RecyclerViewActions;
 import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -17,7 +16,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.action.ViewActions.*;
 import static androidx.test.espresso.matcher.ViewMatchers.*;
 import static org.hamcrest.Matchers.allOf;
 
@@ -74,38 +72,11 @@ public class ExampleInstrumentedTest {
         // Wait for RecyclerView to appear and be populated (with timeout)
         waitForRecyclerViewToLoad(7_000);
         
-        // Scroll to the cell containing the specific title (document should be seeded from GHA)
-        Log.i("DittoTest", "Looking for pre-seeded task: " + title);
-        
-        // Try to verify the document exists (handles duplicates by checking first occurrence)
-        try {
-            onView(allOf(withId(R.id.task_text), withText(title)))
-                    .check(ViewAssertions.matches(isDisplayed()));
-            Log.i("DittoTest", "✅ Found pre-seeded task without scrolling: " + title);
-        } catch (Exception e) {
-            // If not immediately visible, try scrolling to find it
-            Log.i("DittoTest", "Task not immediately visible, scrolling to find: " + title);
-            try {
-                onView(withId(R.id.task_list))
-                        .perform(RecyclerViewActions.scrollTo(
-                                hasDescendant(allOf(withId(R.id.task_text), withText(title)))
-                        ));
-                Log.i("DittoTest", "✅ Found and scrolled to pre-seeded task: " + title);
-                
-                // Final assertion after scrolling
-                onView(allOf(withId(R.id.task_text), withText(title)))
-                        .check(ViewAssertions.matches(isDisplayed()));
-            } catch (RuntimeException scrollError) {
-                if (scrollError.getMessage() != null && scrollError.getMessage().contains("Found more than one sub-view matching")) {
-                    Log.i("DittoTest", "Multiple matches found - checking first occurrence is displayed");
-                    // When there are duplicates, just verify at least one is displayed (good enough for the test)
-                    onView(allOf(withId(R.id.task_text), withText(title)))
-                            .check(ViewAssertions.matches(isDisplayed()));
-                } else {
-                    throw scrollError; // Re-throw if it's a different error
-                }
-            }
-        }
+        // Verify the seeded document is visible at the top (no scrolling needed)
+        Log.i("DittoTest", "Looking for pre-seeded task at top: " + title);
+        onView(allOf(withId(R.id.task_text), withText(title)))
+                .check(ViewAssertions.matches(isDisplayed()));
+        Log.i("DittoTest", "✅ Found pre-seeded task at top: " + title);
         
         // Keep screen visible for 3 seconds for BrowserStack video verification
         Thread.sleep(3000);
