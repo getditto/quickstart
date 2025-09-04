@@ -139,14 +139,7 @@ jobs:
             exit 1
           fi
 
-      - name: Install Python dependencies
-        run: |
-          pip3 install requests
-
-      - name: Make test script executable
-        run: chmod +x .github/scripts/browserstack-maestro-test.py
-
-      - name: Execute Maestro tests on BrowserStack
+      - name: Execute Maestro tests on BrowserStack Android devices
         env:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
@@ -154,10 +147,90 @@ jobs:
           DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
-          APP_TYPE: "expo"
-          GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          python3 .github/scripts/browserstack-maestro-test.py
+          echo "🚀 Starting BrowserStack Maestro test for Android Expo app"
+          
+          # Upload Android APK to BrowserStack (v2 API per docs)
+          echo "📦 Uploading Android APK..."
+          APK_PATH="react-native-expo/android/app/build/outputs/apk/release/app-release.apk"
+          APP_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
+            -F "file=@${APK_PATH}" \
+            -F "custom_id=DittoRNExpoAndroid")
+          
+          echo "$APP_RESPONSE"
+          APP_URL=$(echo "$APP_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("app_url",""))')
+          if [ -z "$APP_URL" ]; then
+            echo "❌ Failed to upload Android APK"
+            exit 1
+          fi
+          echo "✅ Android APK uploaded: $APP_URL"
+          
+          # Create Maestro test suite ZIP with REQUIRED parent folder structure
+          echo "📋 Creating Maestro test suite with parent folder..."
+          cd react-native-expo
+          rm -f maestro-tests.zip
+          # Create parent folder structure required by BrowserStack
+          mkdir -p maestro-test-suite
+          cp -r .maestro/* maestro-test-suite/
+          zip -qry maestro-tests.zip maestro-test-suite
+          
+          # Upload Maestro suite to BrowserStack (v2 API per docs)
+          SUITE_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
+            -F "file=@maestro-tests.zip" \
+            -F "custom_id=DittoRNMaestroSuite")
+          
+          echo "$SUITE_RESPONSE"  
+          SUITE_URL=$(echo "$SUITE_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("test_suite_url",""))')
+          if [ -z "$SUITE_URL" ]; then
+            echo "❌ Failed to upload Maestro suite: $SUITE_RESPONSE"
+            exit 1
+          fi
+          echo "✅ Maestro suite uploaded: $SUITE_URL"
+          
+          # Execute Maestro tests on Android devices (v2 API per docs with execute parameter)
+          echo "🧪 Starting Maestro tests on Android devices..."
+          BUILD_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"app\": \"$APP_URL\",
+              \"testSuite\": \"$SUITE_URL\",
+              \"devices\": [\"Google Pixel 7-13.0\", \"Samsung Galaxy S23-13.0\", \"OnePlus 11-13.0\"],
+              \"project\": \"Ditto React Native\",
+              \"buildName\": \"RN Expo Android Maestro Build #${{ github.run_number }}\",
+              \"buildTag\": \"${{ github.ref_name }}\",
+              \"deviceLogs\": true,
+              \"video\": true,
+              \"networkLogs\": true,
+              \"execute\": [
+                \"flows/01-app-launch.yaml\",
+                \"flows/02-create-task.yaml\", 
+                \"flows/03-toggle-task.yaml\",
+                \"flows/04-edit-task.yaml\",
+                \"flows/05-delete-task.yaml\",
+                \"flows/06-sync-toggle.yaml\",
+                \"flows/07-data-persistence.yaml\",
+                \"flows/08-external-sync-verification.yaml\",
+                \"flows/09-full-workflow.yaml\"
+              ],
+              \"local\": false,
+              \"parallelSessions\": 1
+            }" \
+            https://api-cloud.browserstack.com/app-automate/maestro/v2/build)
+          
+          echo "$BUILD_RESPONSE"
+          BUILD_ID=$(echo "$BUILD_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("buildId",""))')
+          if [ -n "$BUILD_ID" ]; then
+            echo "✅ Maestro build started successfully! Build ID: $BUILD_ID"
+          else
+            echo "❌ Failed to start Maestro build: $BUILD_RESPONSE"
+          fi
+          
+          echo "✅ Maestro build started successfully!"
+          echo "📊 Check results in BrowserStack dashboard: https://app-automate.browserstack.com/"
+          echo "🏷️  Project: Ditto React Native"
+          echo "🔗 Build: RN Expo Android Maestro Build #${{ github.run_number }}"
 
       - name: Generate test report
         if: always()
