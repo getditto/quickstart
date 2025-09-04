@@ -91,9 +91,10 @@ jobs:
       id: test_doc
       run: |
         # Create unique test document title for this build
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+        # Use very small number to appear first in ORDER BY _id ASC
+        # Format: 00000[build_number] to ensure it sorts first
+        BUILD_NUM=$(printf "%05d" ${{ github.run_number }})
+        DOC_TITLE="00000${BUILD_NUM}_android_ci_test_${{ github.run_id }}"
         echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
         echo "Generated test document title: $DOC_TITLE"
     

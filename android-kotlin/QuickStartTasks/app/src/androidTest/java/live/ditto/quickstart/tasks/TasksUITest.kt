@@ -48,22 +48,42 @@ class TasksUITest {
     
     @Test
     fun testDocumentSyncAndVerification() {
-        // Ensure Compose hierarchy is ready before testing
-        composeTestRule.waitForIdle()
+        println("🚀 Starting document sync verification test")
         
-        // Wait for document to sync and appear in UI
-        Thread.sleep(5000)
+        // Wait for app to fully launch and initialize
+        var uiReady = false
+        var attempts = 0
+        val maxAttempts = 6
         
-        // Check if Compose UI is available before testing
-        try {
-            composeTestRule.onAllNodes(hasClickAction()).fetchSemanticsNodes()
-            println("✅ Compose UI is available")
-        } catch (e: Exception) {
-            println("❌ Compose UI not available: ${e.message}")
-            println("Attempting to wait longer for UI...")
-            Thread.sleep(10000)
-            composeTestRule.waitForIdle()
+        while (!uiReady && attempts < maxAttempts) {
+            attempts++
+            println("📱 Attempt $attempts/$maxAttempts: Waiting for app to launch...")
+            
+            try {
+                // Wait for the activity to launch
+                composeTestRule.waitForIdle()
+                Thread.sleep(5000)
+                
+                // Try to find any UI element to confirm app launched
+                composeTestRule.onAllNodes(hasClickAction()).fetchSemanticsNodes()
+                println("✅ App UI is available")
+                uiReady = true
+                
+            } catch (e: Exception) {
+                println("❌ App UI not ready (attempt $attempts): ${e.message}")
+                if (attempts < maxAttempts) {
+                    println("⏳ Waiting 10 more seconds for app to initialize...")
+                    Thread.sleep(10000)
+                } else {
+                    throw AssertionError("App failed to launch after $maxAttempts attempts. UI not available for testing.", e)
+                }
+            }
         }
+        
+        println("✅ App successfully launched, waiting for document sync...")
+        
+        // Additional wait for document synchronization from Ditto Cloud
+        Thread.sleep(10000)
         
         // Look for the exact document title in the UI - this should fail the test if not found
         try {
@@ -76,16 +96,28 @@ class TasksUITest {
             
             // Print all visible text for debugging
             try {
-                println("Attempting to debug visible UI elements...")
-                composeTestRule.onAllNodes(hasClickAction()).fetchSemanticsNodes()
-                println("UI hierarchy exists but document not found")
+                println("🔍 Debugging visible UI elements...")
+                val allTextNodes = composeTestRule.onAllNodes(hasText("", substring = true))
+                val nodeCount = allTextNodes.fetchSemanticsNodes().size
+                println("Found $nodeCount text nodes in UI")
+                
+                // Try to find any task-like text
+                println("🔍 Looking for any task titles in UI...")
+                try {
+                    val taskNodes = composeTestRule.onAllNodes(hasText("", substring = true))
+                    println("UI appears to be working, but expected document not found")
+                    println("Expected: '$testDocumentTitle'")
+                } catch (textE: Exception) {
+                    println("Unable to enumerate text nodes: ${textE.message}")
+                }
+                
             } catch (debugE: Exception) {
-                println("UI hierarchy not available: ${debugE.message}")
+                println("❌ UI hierarchy not available for debugging: ${debugE.message}")
                 println("This suggests the app didn't launch properly or Compose isn't initialized")
             }
             
-            // Re-throw to fail the test
-            throw AssertionError("Expected document '$testDocumentTitle' not found in UI", e)
+            // Re-throw to fail the test with more context
+            throw AssertionError("Expected document '$testDocumentTitle' not found in UI. App may not have synced with Ditto Cloud or document sync failed.", e)
         }
     }
     
