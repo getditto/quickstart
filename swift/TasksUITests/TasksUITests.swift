@@ -43,6 +43,9 @@ final class TasksUITests: XCTestCase {
         while Date().timeIntervalSince(startTime) < maxWaitTime {
             print("🔍 Checking for document (scrolling through full list)...")
             
+            // Handle any permission dialogs that may appear during search
+            handlePermissionDialogs(app: app)
+            
             // Scroll to top first
             if app.tables.firstMatch.exists {
                 app.tables.firstMatch.swipeDown() // Scroll to top
@@ -54,6 +57,9 @@ final class TasksUITests: XCTestCase {
             let maxScrolls = 10 // Limit scrolling attempts
             
             while searchPasses < maxScrolls && !foundDocument {
+                // Handle permission dialogs before each search pass
+                handlePermissionDialogs(app: app)
+                
                 let taskCells = app.tables.cells
                 print("📱 Search pass \(searchPasses + 1): Found \(taskCells.count) cells")
                 
@@ -149,24 +155,24 @@ final class TasksUITests: XCTestCase {
     }
     
     private func handlePermissionDialogs(app: XCUIApplication) {
-        // Handle potential permission dialogs
-        for i in 0..<5 {
+        // Handle potential permission dialogs aggressively
+        for i in 0..<3 {  // Reduced iterations for faster handling
             let allowButton = app.buttons["Allow"]
             let dontAllowButton = app.buttons["Don't Allow"] 
             let okButton = app.buttons["OK"]
             
             if allowButton.exists {
-                print("📱 Handling permission: Allow")
+                print("📱 Handling permission dialog \(i + 1): Allow")
                 allowButton.tap()
-                sleep(2)
+                sleep(1)  // Reduced sleep time
             } else if dontAllowButton.exists {
-                print("📱 Handling permission: Don't Allow") 
+                print("📱 Handling permission dialog \(i + 1): Don't Allow") 
                 dontAllowButton.tap()
-                sleep(2)
+                sleep(1)  // Reduced sleep time
             } else if okButton.exists {
-                print("📱 Handling permission: OK")
+                print("📱 Handling permission dialog \(i + 1): OK")
                 okButton.tap()
-                sleep(2)
+                sleep(1)  // Reduced sleep time
             } else {
                 break // No more dialogs
             }
