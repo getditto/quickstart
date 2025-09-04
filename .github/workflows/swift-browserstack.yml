@@ -176,12 +176,16 @@ jobs:
     
     - name: Insert test document into Ditto Cloud
       run: |
-        # Create a unique GitHub test document 
-        DOC_ID="000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        DOC_TITLE="000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        # Create a unique GitHub test document with inverted timestamp to appear at top
+        TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+        DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         
-        echo "📝 Inserting unique GitHub test document with ID: ${DOC_ID}"
+        echo "📝 Inserting GitHub test document (inverted timestamp for top position)"
+        echo "📝 ID: '${DOC_ID}'"
         echo "📝 Title: '${DOC_TITLE}'"
+        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
         
         # Insert document using Ditto API v4 (same as JavaScript)
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
