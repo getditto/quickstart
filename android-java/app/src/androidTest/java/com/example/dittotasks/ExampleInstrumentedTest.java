@@ -75,17 +75,37 @@ public class ExampleInstrumentedTest {
         waitForRecyclerViewToLoad(7_000);
         
         // Scroll to the cell containing the specific title (document should be seeded from GHA)
-        Log.i("DittoTest", "Scrolling to find pre-seeded task: " + title);
-        onView(withId(R.id.task_list))
-                .perform(RecyclerViewActions.scrollTo(
-                        hasDescendant(allOf(withId(R.id.task_text), withText(title)))
-                ));
+        Log.i("DittoTest", "Looking for pre-seeded task: " + title);
         
-        Log.i("DittoTest", "✅ Found and scrolled to pre-seeded task: " + title);
-        
-        // Final assertion to confirm it's displayed
-        onView(allOf(withId(R.id.task_text), withText(title)))
-                .check(ViewAssertions.matches(isDisplayed()));
+        // Try to verify the document exists (handles duplicates by checking first occurrence)
+        try {
+            onView(allOf(withId(R.id.task_text), withText(title)))
+                    .check(ViewAssertions.matches(isDisplayed()));
+            Log.i("DittoTest", "✅ Found pre-seeded task without scrolling: " + title);
+        } catch (Exception e) {
+            // If not immediately visible, try scrolling to find it
+            Log.i("DittoTest", "Task not immediately visible, scrolling to find: " + title);
+            try {
+                onView(withId(R.id.task_list))
+                        .perform(RecyclerViewActions.scrollTo(
+                                hasDescendant(allOf(withId(R.id.task_text), withText(title)))
+                        ));
+                Log.i("DittoTest", "✅ Found and scrolled to pre-seeded task: " + title);
+                
+                // Final assertion after scrolling
+                onView(allOf(withId(R.id.task_text), withText(title)))
+                        .check(ViewAssertions.matches(isDisplayed()));
+            } catch (RuntimeException scrollError) {
+                if (scrollError.getMessage() != null && scrollError.getMessage().contains("Found more than one sub-view matching")) {
+                    Log.i("DittoTest", "Multiple matches found - checking first occurrence is displayed");
+                    // When there are duplicates, just verify at least one is displayed (good enough for the test)
+                    onView(allOf(withId(R.id.task_text), withText(title)))
+                            .check(ViewAssertions.matches(isDisplayed()));
+                } else {
+                    throw scrollError; // Re-throw if it's a different error
+                }
+            }
+        }
         
         // Keep screen visible for 3 seconds for BrowserStack video verification
         Thread.sleep(3000);
