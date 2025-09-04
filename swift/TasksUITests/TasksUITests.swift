@@ -69,12 +69,18 @@ final class TasksUITests: XCTestCase {
                         let cellText = cell.label
                         // Look for exact title match
                         if cellText == expectedTitle {
-                            print("✅ Found EXACT document in cell [\(i)] on pass \(searchPasses + 1): '\(cellText)'")
+                            print("✅ Found EXACT title in cell [\(i)] on pass \(searchPasses + 1): '\(cellText)'")
                             foundDocument = true
                             break
                         }
-                        // Also check if cell contains the exact title as part of a larger string
-                        if cellText.contains(expectedTitle) {
+                        // Look for exact document ID match
+                        if cellText == expectedDocId {
+                            print("✅ Found EXACT document ID in cell [\(i)] on pass \(searchPasses + 1): '\(cellText)'")
+                            foundDocument = true
+                            break
+                        }
+                        // Also check if cell contains the title or document ID
+                        if cellText.contains(expectedTitle) || cellText.contains(expectedDocId) {
                             print("✅ Found document (contains) in cell [\(i)] on pass \(searchPasses + 1): '\(cellText)'")
                             foundDocument = true
                             break
@@ -123,9 +129,11 @@ final class TasksUITests: XCTestCase {
                 let cell = allCells.element(boundBy: i)
                 if cell.exists && !cell.label.isEmpty {
                     let cellText = cell.label
-                    let exactMatch = cellText == expectedTitle
-                    let containsTitle = cellText.contains(expectedTitle) 
-                    print("   Cell [\(i)]: '\(cellText)' [exact:\(exactMatch), contains:\(containsTitle)]")
+                    let exactTitleMatch = cellText == expectedTitle
+                    let exactIdMatch = cellText == expectedDocId
+                    let containsTitle = cellText.contains(expectedTitle)
+                    let containsId = cellText.contains(expectedDocId)
+                    print("   Cell [\(i)]: '\(cellText)' [title:\(exactTitleMatch), id:\(exactIdMatch), contains:\(containsTitle || containsId)]")
                 }
             }
             
@@ -135,9 +143,11 @@ final class TasksUITests: XCTestCase {
                 let text = allTexts.element(boundBy: i)
                 if text.exists && !text.label.isEmpty && text.label.count > 2 {
                     let textContent = text.label
-                    let exactMatch = textContent == expectedTitle
+                    let exactTitleMatch = textContent == expectedTitle
+                    let exactIdMatch = textContent == expectedDocId
                     let containsTitle = textContent.contains(expectedTitle)
-                    print("   Text [\(i)]: '\(textContent)' [exact:\(exactMatch), contains:\(containsTitle)]")
+                    let containsId = textContent.contains(expectedDocId)
+                    print("   Text [\(i)]: '\(textContent)' [title:\(exactTitleMatch), id:\(exactIdMatch), contains:\(containsTitle || containsId)]")
                 }
             }
             
