@@ -97,7 +97,10 @@ public class MainActivity extends ComponentActivity {
 
 
     void initDitto() {
-        requestPermissions();
+        // Skip permission requests during testing to avoid blocking dialogs
+        if (!isRunningInstrumentedTest()) {
+            requestPermissions();
+        }
         try {
             DittoDependencies androidDependencies = new DefaultAndroidDittoDependencies(getApplicationContext());
             
@@ -307,5 +310,19 @@ public class MainActivity extends ComponentActivity {
         modalEditTaskTitle.requestFocus();
         Objects.requireNonNull(dialog.getWindow())
                 .setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+    }
+
+    /**
+     * Detects if running under instrumentation testing.
+     * This is needed to skip permission requests that would block UI tests.
+     * BrowserStack autoGrantPermissions handles permissions during testing.
+     */
+    private boolean isRunningInstrumentedTest() {
+        try {
+            Class.forName("androidx.test.espresso.Espresso");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }
