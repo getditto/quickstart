@@ -59,7 +59,13 @@ jobs:
 
       - name: Insert test document into Ditto Cloud
         run: |
-          DOC_ID="github_spring_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          DOC_ID="ci_spring_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          
+          # Create inverted timestamp for alphabetical sorting (newest first)
+          # Use a large number (9999999999) minus current timestamp so newer = smaller = sorts first
+          CURRENT_TIMESTAMP=$(date +%s)
+          INVERTED_TIMESTAMP=$((9999999999 - CURRENT_TIMESTAMP))
+          SEED_TEXT="${INVERTED_TIMESTAMP}_ci_spring_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
           
           # Insert test document using Ditto API
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -70,7 +76,7 @@ jobs:
               \"args\": {
                 \"newTask\": {
                   \"_id\": \"${DOC_ID}\",
-                  \"text\": \"GitHub Spring Test Task ${GITHUB_RUN_ID}\",
+                  \"text\": \"${SEED_TEXT}\",
                   \"isCompleted\": false
                 }
               }
@@ -82,7 +88,9 @@ jobs:
           
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
             echo "✓ Test document inserted successfully: ${DOC_ID}"
-            echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+            echo "✓ Seed text: ${SEED_TEXT}"
+            echo "✓ Inverted timestamp: ${INVERTED_TIMESTAMP} (newer documents sort first)"
+            echo "GITHUB_TEST_DOC_ID=${SEED_TEXT}" >> $GITHUB_ENV
           else
             echo "❌ Failed to insert test document (HTTP ${HTTP_CODE})"
             echo "Response: $BODY"
