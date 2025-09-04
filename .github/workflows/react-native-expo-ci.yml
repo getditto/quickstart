@@ -2,11 +2,15 @@ name: React Native Expo CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - 'sdk-*'
     paths: 
       - 'react-native-expo/**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - 'sdk-*'
     paths:
       - 'react-native-expo/**'
 
