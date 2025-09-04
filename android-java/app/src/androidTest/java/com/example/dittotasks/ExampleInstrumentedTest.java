@@ -35,10 +35,9 @@ public class ExampleInstrumentedTest {
             title = System.getenv("GITHUB_TEST_DOC_ID");
         }
         
-        // Fallback to a default test document for local testing
+        // No fallback - fail if seed is not set
         if (title == null || title.trim().isEmpty()) {
-            title = "Basic Test Task"; // Default fallback for local testing
-            Log.i("DittoTest", "Using default test document: " + title);
+            throw new AssertionError("Expected test title in 'github_test_doc_id' (or GITHUB_TEST_DOC_ID); none provided. Must be seeded by CI.");
         }
 
         Log.i("DittoTest", "Testing with document title: " + title);
@@ -73,10 +72,28 @@ public class ExampleInstrumentedTest {
         waitForRecyclerViewToLoad(7_000);
         
         // Verify the seeded document is visible at the top (no scrolling needed)
-        Log.i("DittoTest", "Looking for pre-seeded task at top: " + title);
-        onView(allOf(withId(R.id.task_text), withText(title)))
-                .check(ViewAssertions.matches(isDisplayed()));
-        Log.i("DittoTest", "✅ Found pre-seeded task at top: " + title);
+        Log.i("DittoTest", "🔍 Searching for document with title: '" + title + "'");
+        
+        try {
+            onView(allOf(withId(R.id.task_text), withText(title)))
+                    .check(ViewAssertions.matches(isDisplayed()));
+            Log.i("DittoTest", "✅ Found document with title: '" + title + "'");
+        } catch (Exception e) {
+            Log.e("DittoTest", "❌ Document NOT found with title: '" + title + "'");
+            Log.e("DittoTest", "Error: " + e.getMessage());
+            
+            // Log what's actually visible for debugging
+            try {
+                Log.i("DittoTest", "🔍 Debugging: Checking what tasks are actually visible...");
+                onView(withId(R.id.task_list))
+                        .check(ViewAssertions.matches(isDisplayed()));
+                Log.i("DittoTest", "RecyclerView is present and displayed");
+            } catch (Exception recyclerError) {
+                Log.e("DittoTest", "RecyclerView not found or displayed: " + recyclerError.getMessage());
+            }
+            
+            throw e; // Re-throw the original exception
+        }
         
         // Keep screen visible for 3 seconds for BrowserStack video verification
         Thread.sleep(3000);
