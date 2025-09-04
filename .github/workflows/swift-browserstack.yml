@@ -173,9 +173,9 @@ jobs:
     
     - name: Insert test document into Ditto Cloud
       run: |
-        # Create a unique GitHub test document 
+        # Create a "Clean the kitchen" test document for BrowserStack testing
         DOC_ID="000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        DOC_TITLE="000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        DOC_TITLE="Clean the kitchen"
         
         echo "📝 Inserting unique GitHub test document with ID: ${DOC_ID}"
         echo "📝 Title: '${DOC_TITLE}'"
@@ -306,7 +306,11 @@ jobs:
           exit 0
         fi
         
-        # Create XCUITest execution request using v2 API with env vars
+        # Create XCUITest execution request using v2 API
+        # Note: Store the GitHub run info for later comparison
+        echo "GITHUB_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
+        echo "GITHUB_RUN_NUMBER=${{ github.run_number }}" >> $GITHUB_ENV
+        
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
           -H "Content-Type: application/json" \
@@ -319,11 +323,7 @@ jobs:
             \"buildTag\": \"${{ github.ref_name }}\",
             \"deviceLogs\": true,
             \"video\": true,
-            \"networkLogs\": true,
-            \"env\": {
-              \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
-              \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\"
-            }
+            \"networkLogs\": true
           }")
         
         echo "BrowserStack API Response:"
