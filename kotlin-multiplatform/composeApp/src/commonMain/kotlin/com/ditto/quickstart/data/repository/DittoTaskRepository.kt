@@ -138,23 +138,33 @@ class DittoTaskRepository(
             observer
                 .map { result -> result.items.map { item -> item.toTask() } }
                 .collect { tasks ->
-                    // Sort tasks alphabetically by title, with prefixed tasks (000_, 001_, etc.) first
+                    // Sort tasks with inverted timestamp prefixes first (newest first), then alphabetically
                     val sortedTasks = tasks.sortedWith { task1, task2 ->
-                        // Check if tasks have numeric prefixes (e.g., "000_", "001_")
-                        val task1HasPrefix = task1.title.matches(Regex("^\\d{3}_.*"))
-                        val task2HasPrefix = task2.title.matches(Regex("^\\d{3}_.*"))
+                        // Check if tasks have inverted timestamp prefixes (e.g., "6023227936_", or legacy "000_", "001_")
+                        val task1HasTimestampPrefix = task1.title.matches(Regex("^\\d{10}_.*")) // 10-digit inverted timestamp
+                        val task2HasTimestampPrefix = task2.title.matches(Regex("^\\d{10}_.*"))
+                        val task1HasLegacyPrefix = task1.title.matches(Regex("^\\d{3}_.*")) // 3-digit legacy prefix
+                        val task2HasLegacyPrefix = task2.title.matches(Regex("^\\d{3}_.*"))
                         
                         when {
-                            // Both have prefixes: sort by prefix number
-                            task1HasPrefix && task2HasPrefix -> {
+                            // Both have inverted timestamp prefixes: sort by prefix (smaller = newer)
+                            task1HasTimestampPrefix && task2HasTimestampPrefix -> {
+                                val prefix1 = task1.title.substringBefore("_").toLong()
+                                val prefix2 = task2.title.substringBefore("_").toLong()
+                                prefix1.compareTo(prefix2) // Ascending = newest first (smaller inverted timestamp)
+                            }
+                            // Both have legacy prefixes: sort by prefix number
+                            task1HasLegacyPrefix && task2HasLegacyPrefix -> {
                                 val prefix1 = task1.title.substring(0, 3).toInt()
                                 val prefix2 = task2.title.substring(0, 3).toInt()
                                 prefix1.compareTo(prefix2)
                             }
-                            // Only task1 has prefix: it comes first
-                            task1HasPrefix && !task2HasPrefix -> -1
-                            // Only task2 has prefix: it comes first
-                            !task1HasPrefix && task2HasPrefix -> 1
+                            // Inverted timestamp comes before legacy prefix
+                            task1HasTimestampPrefix && task2HasLegacyPrefix -> -1
+                            task1HasLegacyPrefix && task2HasTimestampPrefix -> 1
+                            // Any prefix comes before non-prefixed tasks
+                            (task1HasTimestampPrefix || task1HasLegacyPrefix) && !(task2HasTimestampPrefix || task2HasLegacyPrefix) -> -1
+                            !(task1HasTimestampPrefix || task1HasLegacyPrefix) && (task2HasTimestampPrefix || task2HasLegacyPrefix) -> 1
                             // Neither has prefix: alphabetical by title
                             else -> task1.title.compareTo(task2.title, ignoreCase = true)
                         }
