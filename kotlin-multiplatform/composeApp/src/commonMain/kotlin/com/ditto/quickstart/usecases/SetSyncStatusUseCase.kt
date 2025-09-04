@@ -23,21 +23,29 @@ class SetSyncStatusUseCase(
     }
 
     private suspend fun enableSync(): Boolean {
+        println("🔄 SetSyncStatusUseCase: Enabling sync...")
+        
         try {
             dittoManager.startSync()
+            println("✅ SetSyncStatusUseCase: dittoManager.startSync() called successfully")
         } catch (e: DittoError) {
+            println("❌ SetSyncStatusUseCase: Failed to start sync: $e")
             DittoLog.e(TAG, "Failed to start sync: $e")
             return false
         }
 
         try {
             preferenceRepository.setSync(true)
+            println("✅ SetSyncStatusUseCase: Saved sync=true to preferences")
         } catch (e: Throwable) {
+            println("❌ SetSyncStatusUseCase: Failed to save preference: $e")
             DittoLog.e(TAG, "Failed to set sync(true) preference: $e")
             return false
         }
 
-        return dittoManager.isSyncing()
+        val isSyncing = dittoManager.isSyncing()
+        println("🔍 SetSyncStatusUseCase: Final sync status: $isSyncing")
+        return isSyncing
     }
 
     private suspend fun disableSync(): Boolean {
