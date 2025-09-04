@@ -97,11 +97,18 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
-    - name: Download Env.swift
-      uses: actions/download-artifact@v4
-      with:
-        name: env-swift-${{ github.run_id }}
-        path: swift/Tasks/
+    - name: Create .env file (production credentials for builds)
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
+    - name: Generate Env.swift (production)
+      working-directory: swift
+      run: |
+        chmod +x buildEnv.sh
+        ./buildEnv.sh ../.env Tasks/
     
     - name: Resolve Package Dependencies
       working-directory: swift
@@ -217,14 +224,14 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
-    - name: Create .env file (production credentials)
+    - name: Create .env file (production credentials for BrowserStack API)
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: Generate Env.swift (production)
+    - name: Generate Env.swift (production for XCUITest build)
       working-directory: swift
       run: |
         chmod +x buildEnv.sh
