@@ -74,6 +74,18 @@ jobs:
         name: env-swift-test
         path: swift/Tasks/
     
+    - name: Verify Env.swift exists
+      run: |
+        echo "📁 Checking if Env.swift was downloaded correctly..."
+        ls -la swift/Tasks/
+        if [ -f "swift/Tasks/Env.swift" ]; then
+          echo "✅ Env.swift found"
+          head -5 swift/Tasks/Env.swift
+        else
+          echo "❌ Env.swift not found!"
+          exit 1
+        fi
+    
     - name: Run SwiftLint
       working-directory: swift
       run: |
@@ -101,6 +113,17 @@ jobs:
       with:
         name: env-swift-test
         path: swift/Tasks/
+    
+    - name: Verify Env.swift exists
+      run: |
+        echo "📁 Checking if Env.swift was downloaded correctly..."
+        ls -la swift/Tasks/
+        if [ -f "swift/Tasks/Env.swift" ]; then
+          echo "✅ Env.swift found"
+        else
+          echo "❌ Env.swift not found!"
+          exit 1
+        fi
     
     - name: Resolve Package Dependencies
       working-directory: swift
@@ -200,6 +223,17 @@ jobs:
       with:
         name: env-swift-test
         path: swift/Tasks/
+    
+    - name: Verify Env.swift exists
+      run: |
+        echo "📁 Checking if Env.swift was downloaded correctly..."
+        ls -la swift/Tasks/
+        if [ -f "swift/Tasks/Env.swift" ]; then
+          echo "✅ Env.swift found"
+        else
+          echo "❌ Env.swift not found!"
+          exit 1
+        fi
     
     - name: Build macOS App (if supported)
       working-directory: swift
