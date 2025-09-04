@@ -225,7 +225,7 @@ jobs:
         
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
           -d "{
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
@@ -237,7 +237,7 @@ jobs:
               }
             }
           }" \
-        "https://${{ secrets.DITTO_AUTH_URL }}/api/v4/store/execute")
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
         
         HTTP_CODE=$(echo "$RESPONSE" | tail -1)
         BODY=$(echo "$RESPONSE" | head -n -1 2>/dev/null || echo "$RESPONSE" | sed '$d')
@@ -363,7 +363,7 @@ jobs:
         
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
           -d "{
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
@@ -375,7 +375,7 @@ jobs:
               }
             }
           }" \
-        "https://${{ secrets.DITTO_AUTH_URL }}/api/v4/store/execute")
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
         
         HTTP_CODE=$(echo "$RESPONSE" | tail -1)
         BODY=$(echo "$RESPONSE" | head -n -1 2>/dev/null || echo "$RESPONSE" | sed '$d')
