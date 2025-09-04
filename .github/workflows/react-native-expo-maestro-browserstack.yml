@@ -217,7 +217,7 @@ jobs:
               \"local\": false,
               \"parallelSessions\": 1
             }" \
-            https://api-cloud.browserstack.com/app-automate/maestro/v2/build)
+            https://api-cloud.browserstack.com/app-automate/maestro/v1/build)
           
           echo "$BUILD_RESPONSE"
           BUILD_ID=$(echo "$BUILD_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("buildId",""))')
