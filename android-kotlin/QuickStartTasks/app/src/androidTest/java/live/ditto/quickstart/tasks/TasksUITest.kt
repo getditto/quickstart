@@ -30,13 +30,19 @@ class TasksUITest {
             ?: "Basic Test Task"
         
         try {
-            // Wait for app and Ditto initialization
+            // Wait for app initialization
             composeTestRule.waitForIdle()
             Thread.sleep(3000)
-            Thread.sleep(10000) // Ditto sync
-            composeTestRule.waitForIdle()
             
-            // Verify the document exists in the UI
+            // Wait for Ditto sync and document to appear with timeout
+            composeTestRule.waitUntil(
+                condition = {
+                    composeTestRule.onAllNodes(hasText(testDocumentTitle)).fetchSemanticsNodes().isNotEmpty()
+                },
+                timeoutMillis = 15000 // Wait up to 15 seconds for Ditto sync and document to appear
+            )
+            
+            // Final verification that document exists
             composeTestRule
                 .onNode(hasText(testDocumentTitle))
                 .assertExists("Document with title '$testDocumentTitle' should exist in the task list")
