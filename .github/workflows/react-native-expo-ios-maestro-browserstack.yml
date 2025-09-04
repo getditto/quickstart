@@ -156,11 +156,12 @@ jobs:
         run: |
           echo "🚀 Starting BrowserStack Maestro test for iOS Expo app"
           
-          # Upload iOS app to BrowserStack  
+          # Upload iOS app to BrowserStack (v2 API per docs)
           echo "📦 Uploading iOS app..."
           APP_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
             -F "file=@${IOS_APP_PATH}" \
-            https://api-cloud.browserstack.com/app-automate/maestro/v1/app)
+            -F "custom_id=DittoRNExpoIOS")
           
           echo "$APP_RESPONSE"
           APP_URL=$(echo "$APP_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("app_url",""))')
@@ -170,16 +171,20 @@ jobs:
           fi
           echo "✅ iOS app uploaded: $APP_URL"
           
-          # Create Maestro test suite ZIP with correct structure (parent folder required)
-          echo "📋 Creating Maestro test suite..."
+          # Create Maestro test suite ZIP with REQUIRED parent folder structure
+          echo "📋 Creating Maestro test suite with parent folder..."
           cd react-native-expo
           rm -f maestro-tests.zip
-          zip -qry maestro-tests.zip .maestro
+          # Create parent folder structure required by BrowserStack
+          mkdir -p maestro-test-suite
+          cp -r .maestro/* maestro-test-suite/
+          zip -qry maestro-tests.zip maestro-test-suite
           
-          # Upload Maestro suite to BrowserStack (correct v1 endpoint)
+          # Upload Maestro suite to BrowserStack (v2 API per docs)
           SUITE_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
             -F "file=@maestro-tests.zip" \
-            https://api-cloud.browserstack.com/app-automate/maestro/v1/test-suite)
+            -F "custom_id=DittoRNMaestroSuite")
           
           echo "$SUITE_RESPONSE"  
           SUITE_URL=$(echo "$SUITE_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("test_suite_url",""))')
@@ -189,9 +194,9 @@ jobs:
           fi
           echo "✅ Maestro suite uploaded: $SUITE_URL"
           
-          # Execute Maestro tests on iOS devices (BrowserStack handles async execution)
+          # Execute Maestro tests on iOS devices (v2 API per docs with execute parameter)
           echo "🧪 Starting Maestro tests on iOS devices..."
-          curl -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+          BUILD_RESPONSE=$(curl -s -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
             -H "Content-Type: application/json" \
             -d "{
               \"app\": \"$APP_URL\",
@@ -202,9 +207,30 @@ jobs:
               \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,
               \"video\": true,
-              \"networkLogs\": true
+              \"networkLogs\": true,
+              \"execute\": [
+                \"flows/01-app-launch.yaml\",
+                \"flows/02-create-task.yaml\", 
+                \"flows/03-toggle-task.yaml\",
+                \"flows/04-edit-task.yaml\",
+                \"flows/05-delete-task.yaml\",
+                \"flows/06-sync-toggle.yaml\",
+                \"flows/07-data-persistence.yaml\",
+                \"flows/08-external-sync-verification.yaml\",
+                \"flows/09-full-workflow.yaml\"
+              ],
+              \"local\": false,
+              \"parallelSessions\": 1
             }" \
-            https://api-cloud.browserstack.com/app-automate/maestro/v1/build
+            https://api-cloud.browserstack.com/app-automate/maestro/v2/build)
+          
+          echo "$BUILD_RESPONSE"
+          BUILD_ID=$(echo "$BUILD_RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("buildId",""))')
+          if [ -n "$BUILD_ID" ]; then
+            echo "✅ Maestro build started successfully! Build ID: $BUILD_ID"
+          else
+            echo "❌ Failed to start Maestro build: $BUILD_RESPONSE"
+          fi
           
           echo "✅ Maestro build started successfully!"
           echo "📊 Check results in BrowserStack dashboard: https://app-automate.browserstack.com/"
