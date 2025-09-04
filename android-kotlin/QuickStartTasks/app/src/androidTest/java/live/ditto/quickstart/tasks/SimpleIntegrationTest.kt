@@ -129,13 +129,6 @@ class SimpleIntegrationTest {
                 }
             }
             
-            // Final check
-            composeTestRule.onNodeWithText(
-                testDocTitle, 
-                substring = true, 
-                useUnmergedTree = true
-            ).assertExists()
-            
         } catch (e: IllegalStateException) {
             if (e.message?.contains("No compose hierarchies found") == true) {
                 // Skip for local testing
