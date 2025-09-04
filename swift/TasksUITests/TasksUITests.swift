@@ -22,11 +22,9 @@ final class TasksUITests: XCTestCase {
             return
         }
 
-        // Intentionally break the test by adding "abc" to see failure behavior
-        let expectedTitle = "000_ci_test_\(githubRunId)_\(githubRunNumber)abc"
+        let expectedTitle = "000_ci_test_\(githubRunId)_\(githubRunNumber)"
         
         print("🔍 Looking for document with title: '\(expectedTitle)'")
-        print("   (Intentionally broken by adding 'abc' to test failure behavior)")
 
         let maxWaitTime: TimeInterval = 10
         let start = Date()
