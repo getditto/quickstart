@@ -1,12 +1,10 @@
-name: Swift
+name: Swift BrowserStack
 
 on:
   pull_request:
-    branches: [main, 'sdk-*']
+    branches: [main]
     paths:
       - 'swift/**'
-  push:
-    branches: [main, 'sdk-*']
   workflow_dispatch:
 
 concurrency:
@@ -14,248 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  setup-test-env:
-    name: Setup Test Environment
+  ios-browserstack:
+    name: iOS BrowserStack Testing  
     runs-on: macos-latest
-    timeout-minutes: 5
-    outputs:
-      env-generated: ${{ steps.generate-env.outputs.success }}
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Create .env file (test credentials)
-      run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
-    
-    - name: Generate Env.swift
-      id: generate-env
-      working-directory: swift
-      run: |
-        chmod +x buildEnv.sh
-        ./buildEnv.sh ../.env Tasks/
-        echo "success=true" >> $GITHUB_OUTPUT
-    
-    - name: Upload Env.swift artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: env-swift-test
-        path: swift/Tasks/Env.swift
-        retention-days: 1
-
-  lint:
-    name: Lint
-    runs-on: macos-latest
-    needs: setup-test-env
-    timeout-minutes: 10
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: 'latest-stable'
-    
-    - name: Install SwiftLint
-      run: |
-        if ! command -v swiftlint &> /dev/null; then
-          echo "Installing SwiftLint..."
-          brew install swiftlint
-        fi
-        swiftlint version
-    
-    - name: Download Env.swift
-      uses: actions/download-artifact@v4
-      with:
-        name: env-swift-test
-        path: swift/Tasks/
-    
-    - name: Verify Env.swift exists
-      run: |
-        echo "📁 Checking if Env.swift was downloaded correctly..."
-        ls -la swift/Tasks/
-        if [ -f "swift/Tasks/Env.swift" ]; then
-          echo "✅ Env.swift found"
-          head -5 swift/Tasks/Env.swift
-        else
-          echo "❌ Env.swift not found!"
-          exit 1
-        fi
-    
-    - name: Run SwiftLint
-      working-directory: swift
-      run: |
-        echo "🔍 Running SwiftLint analysis..."
-        swiftlint lint --config .swiftlint.yml
-
-  build-ios:
-    name: Build iOS
-    runs-on: macos-latest
-    needs: [setup-test-env, lint]
-    timeout-minutes: 30
-    outputs:
-      ios-build-success: ${{ steps.build-status.outputs.success }}
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: 'latest-stable'
-    
-    - name: Download Env.swift
-      uses: actions/download-artifact@v4
-      with:
-        name: env-swift-test
-        path: swift/Tasks/
-    
-    - name: Verify Env.swift exists
-      run: |
-        echo "📁 Checking if Env.swift was downloaded correctly..."
-        ls -la swift/Tasks/
-        if [ -f "swift/Tasks/Env.swift" ]; then
-          echo "✅ Env.swift found"
-        else
-          echo "❌ Env.swift not found!"
-          exit 1
-        fi
-    
-    - name: Resolve Package Dependencies
-      working-directory: swift
-      run: |
-        echo "📦 Resolving Swift Package dependencies..."
-        xcodebuild -resolvePackageDependencies \
-          -project Tasks.xcodeproj \
-          -scheme Tasks
-    
-    - name: Build iOS App (Simulator)
-      working-directory: swift
-      run: |
-        echo "🔨 Building iOS app for simulator..."
-        xcodebuild build \
-          -project Tasks.xcodeproj \
-          -scheme Tasks \
-          -configuration Debug \
-          -sdk iphonesimulator \
-          -destination 'generic/platform=iOS Simulator' \
-          -allowProvisioningUpdates \
-          SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          ONLY_ACTIVE_ARCH=NO
-
-    - name: Build iOS Device Archive and IPA (for BrowserStack)
-      id: build-device-ipa
-      working-directory: swift
-      run: |
-        echo "🍎 Building iOS device .ipa for BrowserStack..."
-        
-        # Build and archive iOS app for real device
-        xcodebuild -project Tasks.xcodeproj \
-          -scheme Tasks \
-          -configuration Debug \
-          -destination 'generic/platform=iOS' \
-          -archivePath build/Tasks.xcarchive \
-          archive \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
-        
-        echo "📦 Creating unsigned .ipa for BrowserStack..."
-        
-        # Find the .app bundle from the archive
-        APP_BUNDLE_PATH=$(find build/Tasks.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d | head -1)
-        
-        if [ -d "$APP_BUNDLE_PATH" ]; then
-          echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
-          
-          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
-          mkdir -p build/Payload
-          cp -R "$APP_BUNDLE_PATH" build/Payload/
-          (cd build && zip -qry Tasks-unsigned.ipa Payload && rm -rf Payload)
-          
-          if [ -f "build/Tasks-unsigned.ipa" ]; then
-            echo "✅ Unsigned .ipa created successfully"
-            ls -la build/Tasks-unsigned.ipa
-            echo "ipa_file_path=$(pwd)/build/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Failed to create .ipa file"
-            exit 1
-          fi
-        else
-          echo "❌ iOS app bundle not found in archive"
-          exit 1
-        fi
-
-    - name: Upload iOS IPA Artifact  
-      uses: actions/upload-artifact@v4
-      with:
-        name: ios-ipa-browserstack
-        path: swift/build/Tasks-unsigned.ipa
-        retention-days: 1
-    
-    - name: Set build status
-      id: build-status
-      run: echo "success=true" >> $GITHUB_OUTPUT
-
-  build-macos:
-    name: Build macOS
-    runs-on: macos-latest
-    needs: [setup-test-env, lint]
-    timeout-minutes: 30
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: 'latest-stable'
-    
-    - name: Download Env.swift
-      uses: actions/download-artifact@v4
-      with:
-        name: env-swift-test
-        path: swift/Tasks/
-    
-    - name: Verify Env.swift exists
-      run: |
-        echo "📁 Checking if Env.swift was downloaded correctly..."
-        ls -la swift/Tasks/
-        if [ -f "swift/Tasks/Env.swift" ]; then
-          echo "✅ Env.swift found"
-        else
-          echo "❌ Env.swift not found!"
-          exit 1
-        fi
-    
-    - name: Build macOS App (if supported)
-      working-directory: swift
-      run: |
-        echo "🍎 Building macOS app..."
-        xcodebuild build \
-          -project Tasks.xcodeproj \
-          -scheme Tasks \
-          -configuration Debug \
-          -destination 'platform=macOS' \
-          -allowProvisioningUpdates \
-          SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          || echo "⚠️ macOS build not supported, skipping"
-
-  browserstack-test:
-    name: BrowserStack iOS Testing
-    runs-on: macos-latest
-    needs: [setup-test-env, lint, build-ios]
-    if: needs.build-ios.outputs.ios-build-success == 'true'
     timeout-minutes: 60
     
     steps:
@@ -266,7 +25,7 @@ jobs:
       with:
         xcode-version: 'latest-stable'
     
-    - name: Create .env file (production credentials)
+    - name: Create .env file
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
@@ -279,30 +38,80 @@ jobs:
         chmod +x buildEnv.sh
         ./buildEnv.sh ../.env Tasks/
     
-    - name: Download iOS IPA Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ios-ipa-browserstack
-        path: ./
-    
-    - name: Verify iOS IPA
-      id: verify_ios
+    - name: Build iOS App for BrowserStack
+      id: build_ios
+      working-directory: swift
       run: |
-        echo "📱 Verifying downloaded iOS .ipa for BrowserStack..."
+        echo "🔨 Building iOS app for BrowserStack real device testing..."
         
-        if [ -f "Tasks-unsigned.ipa" ]; then
-          echo "✅ Found IPA: $(pwd)/Tasks-unsigned.ipa"
+        # Resolve dependencies first
+        xcodebuild -resolvePackageDependencies \
+          -project Tasks.xcodeproj \
+          -scheme Tasks
+        
+        echo "🍎 Building iOS device .ipa for BrowserStack real device testing..."
+        
+        # Build and archive iOS app for real device (not simulator)
+        xcodebuild -project Tasks.xcodeproj \
+          -scheme Tasks \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -archivePath build/Tasks.xcarchive \
+          clean archive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+        
+        echo "📦 Creating unsigned .ipa for BrowserStack..."
+        
+        # Find the .app bundle from the archive
+        APP_BUNDLE_PATH=$(find build/Tasks.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d | head -1)
+        
+        if [ -d "$APP_BUNDLE_PATH" ]; then
+          echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
+          ls -la "$APP_BUNDLE_PATH"
+          
+          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
+          mkdir -p build/Payload
+          cp -R "$APP_BUNDLE_PATH" build/Payload/
+          (cd build && zip -qry Tasks-unsigned.ipa Payload && rm -rf Payload)
+          
+          # Verify IPA was created and expose absolute path for later steps
+          if [ -f "build/Tasks-unsigned.ipa" ]; then
+            echo "✅ Unsigned .ipa created successfully: $(pwd)/build/Tasks-unsigned.ipa"
+            ls -la build/Tasks-unsigned.ipa
+            echo "ipa_file_path=$(pwd)/build/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to create .ipa file"
+            exit 1
+          fi
+          
+        else
+          echo "❌ iOS app bundle not found in archive"
+          find build/ -name "*.app" -type d 2>/dev/null || echo "No .app bundles found"
+          exit 1
+        fi
+    
+    - name: Validate iOS IPA Build
+      id: ios_validation
+      run: |
+        echo "📱 Validating iOS .ipa build for BrowserStack deployment..."
+        
+        IPA_FILE="${{ steps.build_ios.outputs.ipa_file_path }}"
+        if [ -f "$IPA_FILE" ]; then
+          echo "✅ Found IPA: $IPA_FILE"
           echo "📦 IPA file details:"
-          ls -la "Tasks-unsigned.ipa"
+          ls -la "$IPA_FILE"
           
           # Validate .ipa structure by checking Payload directory  
-          unzip -l "Tasks-unsigned.ipa" | head -10
+          unzip -l "$IPA_FILE" | head -10
           
-          echo "ipa_file_path=$(pwd)/Tasks-unsigned.ipa" >> $GITHUB_OUTPUT
-          echo "✅ iOS .ipa ready for BrowserStack"
+          echo "ipa_file_path=$IPA_FILE" >> $GITHUB_OUTPUT
+          echo "✅ iOS .ipa validation successful"
+          echo "🎯 iOS .ipa is ready for BrowserStack real device testing"
         else
-          echo "❌ IPA not found after download"
-          ls -la ./
+          echo "❌ IPA not found at $IPA_FILE"
+          find swift -name "*.ipa" -type f || true
           exit 1
         fi
     
@@ -364,6 +173,7 @@ jobs:
         echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
         echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
     
+    
     - name: Insert test document into Ditto Cloud
       run: |
         # Create a unique GitHub test document 
@@ -409,7 +219,7 @@ jobs:
       run: |
         echo "📤 Uploading iOS app and XCUITest bundle to BrowserStack..."
         
-        IPA_FILE="${{ steps.verify_ios.outputs.ipa_file_path }}"
+        IPA_FILE="${{ steps.ios_validation.outputs.ipa_file_path }}"
         TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
         
         echo "📱 App file: $IPA_FILE"
@@ -499,7 +309,7 @@ jobs:
           exit 0
         fi
         
-        # Create XCUITest execution request using v2 API with setEnvVariables
+        # Create XCUITest execution request using v2 API with env vars
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
           -H "Content-Type: application/json" \
@@ -588,57 +398,39 @@ jobs:
         fi
 
   summary:
-    name: Summary
+    name: BrowserStack Summary
     runs-on: macos-latest
-    needs: [setup-test-env, lint, build-ios, build-macos, browserstack-test]
+    needs: [ios-browserstack]
     if: always()
     
     steps:
-    - name: Report Results
+    - name: Report BrowserStack Test Results
       run: |
-        echo "## 📱 Swift Build and Test Results"
+        echo "## 📱 BrowserStack XCUITest Results - Swift iOS"
         echo ""
-        echo "### Job Results:"
-        echo "- **Lint**: ${{ needs.lint.result }}"
-        echo "- **Build iOS**: ${{ needs.build-ios.result }}"
-        echo "- **Build macOS**: ${{ needs.build-macos.result }}"
-        echo "- **BrowserStack Test**: ${{ needs.browserstack-test.result }}"
-        echo ""
-        
-        # Check results
-        if [[ "${{ needs.lint.result }}" != "success" ]]; then
-          echo "❌ **Linting failed** - Code quality issues found"
-        fi
-        
-        if [[ "${{ needs.build-ios.result }}" != "success" ]]; then
-          echo "❌ **iOS build failed** - BrowserStack testing was skipped"
-        elif [[ "${{ needs.browserstack-test.result }}" == "success" ]]; then
-          echo "✅ **Full pipeline success!**"
-          echo "   - ✅ Linting passed"
-          echo "   - ✅ iOS build succeeded"
-          echo "   - ✅ BrowserStack real device testing passed"
-          echo "   - ✅ End-to-end GitHub Actions → Ditto Cloud → BrowserStack sync validated"
-        elif [[ "${{ needs.browserstack-test.result }}" == "failure" ]]; then
-          echo "❌ **BrowserStack testing failed** - iOS builds but cloud sync may have issues"
-        elif [[ "${{ needs.browserstack-test.result }}" == "skipped" ]]; then
-          echo "⚠️ **BrowserStack testing skipped** - iOS build failed"
-        fi
-        
-        if [[ "${{ needs.build-macos.result }}" == "success" ]]; then
-          echo "✅ macOS build succeeded"
-        elif [[ "${{ needs.build-macos.result }}" == "failure" ]]; then
-          echo "⚠️ macOS build failed (not blocking)"
-        fi
-        
-        # Overall status
-        echo ""
-        if [[ "${{ needs.lint.result }}" == "success" && \
-              "${{ needs.build-ios.result }}" == "success" ]]; then
-          echo "🎉 **Core pipeline successful!** iOS app builds and passes quality checks."
-          if [[ "${{ needs.browserstack-test.result }}" == "success" ]]; then
-            echo "🚀 **BrowserStack integration validated!** Real device testing works end-to-end."
-          fi
+        echo "### iOS Native XCUITest Automated Testing"
+        echo "Status: ${{ needs.ios-browserstack.result }}"
+        if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
+          echo "✅ Swift iOS app successfully tested with XCUITest on BrowserStack real device:"
+          echo "   - iPhone 15 Pro (iOS 17) - Native XCUITest automation"
+          echo ""
+          echo "🧪 XCUITest automation verified:"
+          echo "   ✓ App launches successfully on real device"
+          echo "   ✓ Native iOS UI automation with XCUITest framework"
+          echo "   ✓ Basic app functionality and navigation tested"
+          echo "   ✓ UI elements and interactions working correctly"
+          echo "   ✓ App stability verified during test execution"
+          echo "   ✓ Native iOS testing approach (like Android Espresso)"
         else
-          echo "⚠️ Core pipeline has issues - check failed jobs above."
+          echo "❌ Swift iOS XCUITest testing failed on BrowserStack"
+        fi
+        
+        echo ""
+        if [ "${{ needs.ios-browserstack.result }}" = "success" ]; then
+          echo "🎉 Swift iOS XCUITest testing completed successfully!"
+          echo "🤖 Native XCUITest validated app functionality on real device"
+          echo "🔗 Check BrowserStack dashboard for XCUITest session videos and logs"
+        else
+          echo "⚠️ Swift iOS BrowserStack real device testing encountered issues"
           exit 1
         fi
