@@ -31,57 +31,28 @@ public class LocalBrowserStackTest {
     public void testSpringBootDittoTasksIntegration() throws Exception {
         System.out.println("🧪 Starting Spring Boot Ditto Tasks integration test...");
         
-        // Verify we're in the correct environment (should fail locally)
-        String browserstackUsername = System.getenv("BROWSERSTACK_USERNAME");
+        // Only check for the seeded document ID from CI workflow
         String githubTestDocId = System.getenv("GITHUB_TEST_DOC_ID");
-        String dittoApiKey = System.getenv("DITTO_API_KEY");
         
-        System.out.println("🔍 Environment check:");
-        System.out.println("  - BrowserStack Username: " + (browserstackUsername != null ? "Present" : "NOT SET"));
-        System.out.println("  - GitHub Test Doc ID: " + (githubTestDocId != null ? githubTestDocId : "NOT SET"));
-        System.out.println("  - Ditto API Key: " + (dittoApiKey != null ? "Present" : "NOT SET"));
-        
-        // This test should fail locally (no environment variables) but pass in CI
-        if (browserstackUsername == null || githubTestDocId == null || dittoApiKey == null) {
-            System.out.println("❌ Missing CI environment variables - test should fail locally");
-            System.out.println("💡 In CI, this test will have proper environment and BrowserStack access");
-            throw new RuntimeException("Integration test failed locally as expected - missing CI environment");
+        if (githubTestDocId == null) {
+            System.out.println("❌ No GITHUB_TEST_DOC_ID found - test should fail locally");
+            System.out.println("💡 In CI, this test will have the seeded document ID from the workflow");
+            throw new RuntimeException("Integration test failed locally as expected - missing seeded document ID");
         }
         
-        // If we get here, we're in CI with proper environment
-        System.out.println("✅ CI environment detected - proceeding with integration test");
+        System.out.println("✅ Seeded document ID found: " + githubTestDocId);
         
-        // Test that the Spring Boot app is running
+        // Test that the Spring Boot app is running and verify seeded document
         String baseUrl = "http://localhost:" + port;
         System.out.println("🌐 Testing Spring Boot app at: " + baseUrl);
         
-        try {
-            // Make HTTP request to verify app is running
-            String response = restTemplate.getForObject(baseUrl, String.class);
-            System.out.println("📄 App response received (length: " + (response != null ? response.length() : 0) + ")");
-            
-            if (response == null || !response.contains("Ditto")) {
-                throw new RuntimeException("Spring Boot app not responding correctly");
-            }
-            
-            // Verify the seeded document logic
-            System.out.println("🔍 Testing seeded document logic:");
-            System.out.println("  - Expected seeded document text: " + githubTestDocId);
-            System.out.println("  - This document should appear FIRST due to inverted timestamp ordering");
-            
-            // Additional verification that would be done by BrowserStack
-            System.out.println("🎯 BrowserStack will verify:");
-            System.out.println("  - Document with text '" + githubTestDocId + "' appears first in task list");
-            System.out.println("  - App loads correctly in real browser (Chrome on Windows 10)");
-            System.out.println("  - Ditto sync is working properly");
-            System.out.println("  - Task list sorted alphabetically (newest CI test docs first)");
-            
-            System.out.println("🎉 Spring Boot Ditto Tasks integration test completed successfully!");
-            
-        } catch (Exception e) {
-            System.out.println("❌ Integration test failed: " + e.getMessage());
-            throw e;
+        String response = restTemplate.getForObject(baseUrl, String.class);
+        if (response == null || !response.contains("Ditto")) {
+            throw new RuntimeException("Spring Boot app not responding correctly");
         }
+        
+        System.out.println("🎉 Spring Boot Ditto Tasks integration test completed successfully!");
+        System.out.println("🎯 Seeded document '" + githubTestDocId + "' should appear first in task list");
     }
 
     @Test 
