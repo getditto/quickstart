@@ -132,7 +132,9 @@ jobs:
     
     - name: Seed test document to Ditto Cloud
       run: |
-        DOC_TITLE="000 CI Test ${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        CURRENT_TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - CURRENT_TIMESTAMP))
+        DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
@@ -141,7 +143,7 @@ jobs:
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
               \"newTask\": {
-                \"_id\": \"000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}\",
+                \"_id\": \"${DOC_TITLE}\",
                 \"title\": \"${DOC_TITLE}\"
               }
             }
