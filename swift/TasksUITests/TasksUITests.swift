@@ -21,50 +21,52 @@ final class TasksUITests: XCTestCase {
         sleep(2)
         handlePermissionDialogs(app: app)
 
-        // Debug what UI elements actually exist
-        print("🔍 Debugging what UI elements exist...")
+        // Now look specifically for "Clean the kitchen" task
+        print("🔍 Looking for 'Clean the kitchen' task...")
         
-        print("📱 App hierarchy:")
-        print("  Windows: \(app.windows.count)")
-        print("  Tables: \(app.tables.count)")
-        print("  Cells: \(app.cells.count)")
-        print("  Lists: \(app.collectionViews.count)")
-        print("  ScrollViews: \(app.scrollViews.count)")
-        print("  Static Texts: \(app.staticTexts.count)")
+        let targetTask = "Clean the kitchen"
+        var foundTask = false
         
-        // Show all UI elements
-        print("\n🔍 All UI elements:")
+        // Search through all UI elements for the kitchen task
         let allElements = app.descendants(matching: .any)
-        for i in 0..<min(allElements.count, 20) {
+        print("📱 Searching through \(allElements.count) elements...")
+        
+        for i in 0..<allElements.count {
             let element = allElements.element(boundBy: i)
-            if element.exists {
-                let elementType = element.elementType
-                let label = element.label.isEmpty ? "(no label)" : element.label
-                print("  [\(i)] \(elementType): '\(label)'")
-            }
-        }
-        
-        // Try different approaches to find content
-        if app.tables.count > 0 {
-            print("\n📱 Found tables - checking content...")
-            let table = app.tables.firstMatch
-            print("  Table exists: \(table.exists)")
-            print("  Table cells: \(table.cells.count)")
-        }
-        
-        if app.staticTexts.count > 0 {
-            print("\n📝 Found static texts:")
-            for i in 0..<min(app.staticTexts.count, 10) {
-                let text = app.staticTexts.element(boundBy: i)
-                if text.exists && !text.label.isEmpty && text.label.count > 2 {
-                    print("  [\(i)]: '\(text.label)'")
+            if element.exists && !element.label.isEmpty {
+                let label = element.label
+                if label.contains(targetTask) {
+                    print("✅ Found target task!")
+                    print("  Element type: \(element.elementType)")
+                    print("  Full label: '\(label)'")
+                    print("  Index: \(i)")
+                    foundTask = true
+                    break
                 }
             }
         }
         
-        // Just pass the test to see debug output
-        print("\n✅ Debug completed - check output above")
-        XCTAssertTrue(true, "Debug test")
+        if !foundTask {
+            print("❌ Target task '\(targetTask)' not found")
+            
+            // Show what tasks we did find
+            print("\n📋 Available tasks (first 15):")
+            var taskCount = 0
+            for i in 0..<allElements.count {
+                let element = allElements.element(boundBy: i)
+                if element.exists && !element.label.isEmpty && element.label.count > 3 {
+                    let label = element.label
+                    // Skip obvious UI elements
+                    if !label.contains("Ditto") && !label.contains("App ID") && !label.contains("Token") {
+                        print("  [\(taskCount)]: '\(label)' (\(element.elementType))")
+                        taskCount += 1
+                        if taskCount >= 15 { break }
+                    }
+                }
+            }
+        }
+        
+        XCTAssertTrue(foundTask, "Should find 'Clean the kitchen' task")
     }
     
     private func handlePermissionDialogs(app: XCUIApplication) {
