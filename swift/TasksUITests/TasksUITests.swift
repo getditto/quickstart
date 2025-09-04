@@ -32,7 +32,14 @@ final class TasksUITests: XCTestCase {
         
         print("🔍 Looking for exact document with title: '\(expectedTitle)'")
 
-        let maxWaitTime: TimeInterval = 10
+        // Make maxWaitTime configurable via environment variable for BrowserStack environments
+        let maxWaitTimeEnv = ProcessInfo.processInfo.environment["SYNC_MAX_WAIT_SECONDS"]
+        let maxWaitTime: TimeInterval = {
+            if let envValue = maxWaitTimeEnv, let parsed = TimeInterval(envValue), parsed > 0 {
+                return parsed
+            }
+            return 10
+        }()
         let start = Date()
         var found = false
 
@@ -69,8 +76,8 @@ final class TasksUITests: XCTestCase {
             }
 
             if !found {
-                print("💤 Waiting 1 second before retry...")
-                sleep(1)
+                print("💤 Waiting up to 1 second for collection view to refresh before retry...")
+                _ = app.collectionViews.firstMatch.waitForExistence(timeout: 1)
             }
         }
 
