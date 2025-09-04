@@ -12,7 +12,7 @@ on:
       - 'java-spring/**'
       - '.github/workflows/java-spring-ci.yml'
   push:
-    branches: [main]
+    branches: [main, teodor/add-android-spring-ci]
     paths:
       - 'java-spring/**'
       - '.github/workflows/java-spring-ci.yml'
