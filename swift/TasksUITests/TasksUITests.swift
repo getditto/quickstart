@@ -17,9 +17,8 @@ final class TasksUITests: XCTestCase {
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), 
                      "App should launch successfully")
 
-        // Handle any initial permission dialogs
+        // Brief wait for app to settle
         sleep(2)
-        handlePermissionDialogs(app: app)
 
         // Look for GitHub-seeded document (should fail locally, pass on BrowserStack)
         print("🔍 Looking for GitHub-seeded document in task list...")
@@ -99,28 +98,4 @@ final class TasksUITests: XCTestCase {
         XCTAssertTrue(foundDocument, "Should find GitHub-seeded document (will fail locally, pass on BrowserStack)")
     }
     
-    private func handlePermissionDialogs(app: XCUIApplication) {
-        // Handle potential permission dialogs aggressively
-        for i in 0..<3 {  // Reduced iterations for faster handling
-            let allowButton = app.buttons["Allow"]
-            let dontAllowButton = app.buttons["Don't Allow"] 
-            let okButton = app.buttons["OK"]
-            
-            if allowButton.exists {
-                print("📱 Handling permission dialog \(i + 1): Allow")
-                allowButton.tap()
-                sleep(1)  // Reduced sleep time
-            } else if dontAllowButton.exists {
-                print("📱 Handling permission dialog \(i + 1): Don't Allow") 
-                dontAllowButton.tap()
-                sleep(1)  // Reduced sleep time
-            } else if okButton.exists {
-                print("📱 Handling permission dialog \(i + 1): OK")
-                okButton.tap()
-                sleep(1)  // Reduced sleep time
-            } else {
-                break // No more dialogs
-            }
-        }
-    }
 }
