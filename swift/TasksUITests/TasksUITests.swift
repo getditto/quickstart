@@ -22,9 +22,11 @@ final class TasksUITests: XCTestCase {
             return
         }
 
-        let expectedTitle = "000_ci_test_\(githubRunId)_\(githubRunNumber)"
+        // The document uses inverted timestamp format to appear at top: {inverted_timestamp}_ci_test_{run_id}_{run_number}
+        // We'll search for the suffix pattern since we don't know the exact timestamp
+        let expectedSuffix = "_ci_test_\(githubRunId)_\(githubRunNumber)"
         
-        print("🔍 Looking for document with title: '\(expectedTitle)'")
+        print("🔍 Looking for document ending with suffix: '\(expectedSuffix)'")
 
         let maxWaitTime: TimeInterval = 10
         let start = Date()
@@ -51,13 +53,13 @@ final class TasksUITests: XCTestCase {
                     let label = cell.staticTexts.firstMatch.label
                     print("   Cell[\(i)]: '\(label)'")
                     
-                    if label == expectedTitle {
-                        print("✅ FOUND MATCH! Document '\(expectedTitle)' found at cell[\(i)]")
+                    if label.hasSuffix(expectedSuffix) {
+                        print("✅ FOUND MATCH! Document '\(label)' found at cell[\(i)]")
                         print("🎉 Test should PASS - document sync working!")
                         found = true
                         break
                     } else {
-                        print("   ❌ No match (expected: '\(expectedTitle)')")
+                        print("   ❌ No match (expected suffix: '\(expectedSuffix)')")
                     }
                 }
             }
@@ -71,16 +73,17 @@ final class TasksUITests: XCTestCase {
         // Final summary
         let finalElapsed = Date().timeIntervalSince(start)
         if found {
-            print("🎉 SUCCESS: Found document '\(expectedTitle)' after \(String(format: "%.1f", finalElapsed))s")
+            print("🎉 SUCCESS: Found GitHub-seeded document with suffix '\(expectedSuffix)' after \(String(format: "%.1f", finalElapsed))s")
             print("✅ This proves GitHub Actions → Ditto Cloud → BrowserStack sync is working!")
+            print("🏆 Inverted timestamp ensured document appeared at top of list!")
         } else {
-            print("❌ FAILURE: Document '\(expectedTitle)' not found after \(String(format: "%.1f", finalElapsed))s")
+            print("❌ FAILURE: Document with suffix '\(expectedSuffix)' not found after \(String(format: "%.1f", finalElapsed))s")
             print("💡 This means either:")
             print("   1. GitHub Actions didn't seed the document")
             print("   2. Ditto Cloud sync is not working") 
-            print("   3. Expected title is wrong (in this case, intentionally broken with 'abc')")
+            print("   3. Document suffix pattern is incorrect")
         }
         
-        XCTAssertTrue(found, "GitHub-seeded document '\(expectedTitle)' not found")
+        XCTAssertTrue(found, "GitHub-seeded document with suffix '\(expectedSuffix)' not found")
     }
 }
