@@ -188,8 +188,13 @@ jobs:
               \"video\": true,
               \"networkLogs\": true,
               \"autoGrantPermissions\": true,
+              \"instrumentationLogs\": true,
+              \"otherApps\": \"default\",
               \"environmentVariables\": {
                 \"GITHUB_TEST_DOC_ID\": \"${{ env.GITHUB_TEST_DOC_ID }}\"
+              },
+              \"instrumentationArgs\": {
+                \"github_test_doc_id\": \"${{ env.GITHUB_TEST_DOC_ID }}\"
               }
             }")
           
