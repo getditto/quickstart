@@ -21,20 +21,13 @@ final class TasksUITests: XCTestCase {
         sleep(2)
         handlePermissionDialogs(app: app)
 
-        // Look for GitHub-seeded document - should fail locally, pass on BrowserStack
-        print("🔍 Looking for GitHub-seeded document in task list...")
+        // Look for "Clean the kitchen" document - should pass both locally and on BrowserStack
+        print("🔍 Looking for 'Clean the kitchen' document in task list...")
         
-        let githubRunId = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
-        let githubRunNumber = ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
-        let expectedTitle = "GitHub Test Task \(githubRunId)"
-        let expectedDocId = "000_github_test_\(githubRunId)_\(githubRunNumber)"
+        let expectedTitle = "Clean the kitchen"
         
-        print("🔍 Environment variables:")
-        print("  GITHUB_RUN_ID: '\(githubRunId)'")
-        print("  GITHUB_RUN_NUMBER: '\(githubRunNumber)'")
         print("📋 Looking for:")
         print("  Title: '\(expectedTitle)'")
-        print("  Doc ID: '\(expectedDocId)'")
         
         var foundDocument = false
         let maxWaitTime = 10.0
@@ -60,9 +53,9 @@ final class TasksUITests: XCTestCase {
                             if text.exists && !text.label.isEmpty {
                                 let label = text.label
                                 
-                                // Check for GitHub document (will only match if real env vars and document exists)
-                                if label.contains(expectedTitle) || label.contains(expectedDocId) {
-                                    print("✅ Found GitHub document!")
+                                // Check for "Clean the kitchen" document
+                                if label == expectedTitle {
+                                    print("✅ Found 'Clean the kitchen' document!")
                                     print("  Cell index: \(i)")
                                     print("  Text label: '\(label)'")
                                     print("  Found after: \(String(format: "%.1f", Date().timeIntervalSince(startTime)))s")
@@ -82,7 +75,7 @@ final class TasksUITests: XCTestCase {
         }
             
         if !foundDocument {
-            print("❌ GitHub document not found after 10 seconds")
+            print("❌ 'Clean the kitchen' document not found after 10 seconds")
             
             // Show what documents we did find
             let collectionView = app.collectionViews.firstMatch
@@ -107,8 +100,8 @@ final class TasksUITests: XCTestCase {
             }
         }
         
-        // Pass only if we found the GitHub document
-        XCTAssertTrue(foundDocument, "Should find GitHub-seeded document")
+        // Pass only if we found the "Clean the kitchen" document
+        XCTAssertTrue(foundDocument, "Should find 'Clean the kitchen' document")
     }
     
     private func handlePermissionDialogs(app: XCUIApplication) {
