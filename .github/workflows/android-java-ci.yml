@@ -62,7 +62,8 @@ jobs:
 
       - name: Insert test document into Ditto Cloud
         run: |
-          DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          DOC_ID="ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          SEED_TITLE="000_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
           
           # Insert test document using Ditto API
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -73,7 +74,7 @@ jobs:
               \"args\": {
                 \"newTask\": {
                   \"_id\": \"${DOC_ID}\",
-                  \"title\": \"GitHub Test Task ${GITHUB_RUN_ID}\",
+                  \"title\": \"${SEED_TITLE}\",
                   \"done\": false,
                   \"deleted\": false
                 }
@@ -86,7 +87,8 @@ jobs:
           
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
             echo "✓ Test document inserted successfully: ${DOC_ID}"
-            echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+            echo "✓ Seed title: ${SEED_TITLE}"
+            echo "GITHUB_TEST_DOC_ID=${SEED_TITLE}" >> $GITHUB_ENV
           else
             echo "❌ Failed to insert test document (HTTP ${HTTP_CODE})"
             echo "Response: $BODY"

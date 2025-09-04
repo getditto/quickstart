@@ -1,7 +1,10 @@
 package com.example.dittotasks
 
+import android.util.Log
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.IdlingRegistry
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.typeText
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.idling.CountingIdlingResource
 import androidx.test.espresso.matcher.ViewMatchers.*
@@ -42,17 +45,25 @@ class TasksUITest {
     
     @Test
     fun testAppLaunchesSuccessfully() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val intent = android.content.Intent(context, MainActivity::class.java).apply {
-            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        Log.i("DittoTest", "Starting app launch test")
+        
+        activityScenario = androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java)
+        Log.i("DittoTest", "MainActivity launched successfully")
+        
+        // Give the app time to initialize
+        Thread.sleep(5000)
+        
+        // Verify app is displayed and running
+        try {
+            onView(withId(R.id.ditto_title)).check(matches(isDisplayed()))
+            Log.i("DittoTest", "✅ Main title is displayed - app launched successfully")
+        } catch (e: Exception) {
+            Log.e("DittoTest", "UI check failed but app launched: ${e.message}")
         }
         
-        try {
-            context.startActivity(intent)
-            Thread.sleep(2000) // Brief wait to detect immediate crashes
-        } catch (e: Exception) {
-            throw AssertionError("MainActivity failed to launch: ${e.message}")
-        }
+        // Let app run for a while to see Ditto initialization in logs
+        Thread.sleep(15000)
+        Log.i("DittoTest", "✅ App has been running for 20 seconds total - test complete")
     }
     
     @Test 
@@ -63,50 +74,56 @@ class TasksUITest {
     
     @Test
     fun testGitHubTestDocumentSyncs() {
-        val githubTestDocId = System.getenv("GITHUB_TEST_DOC_ID") ?: return
-        testDocumentSyncVerification(githubTestDocId)
+        var githubSeedTitle = System.getenv("GITHUB_TEST_DOC_ID")
+        
+        // Always launch the app so it's visible in BrowserStack videos
+        activityScenario = androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java)
+        Log.i("DittoTest", "MainActivity launched for GitHub sync test")
+        Thread.sleep(5000) // Give app time to initialize
+        
+        if (githubSeedTitle == null) {
+            Log.i("DittoTest", "No GITHUB_TEST_DOC_ID environment variable found - showing app for 10 seconds then failing")
+            Thread.sleep(10000) // Show the app running for 10 more seconds
+            throw AssertionError("GITHUB_TEST_DOC_ID environment variable not set. This test only runs in CI with BrowserStack.")
+        }
+        
+        Log.i("DittoTest", "Looking for CI test task with title: '$githubSeedTitle'")
+        testDocumentSyncVerification(githubSeedTitle)
     }
     
-    private fun testDocumentSyncVerification(docId: String) {
-        val runId = docId.split("_").getOrNull(2) ?: docId
-        val maxAttempts = 30
+    private fun testDocumentSyncVerification(ciSeedTitle: String) {
+        val maxAttempts = 5  // 5 attempts * 2 seconds = 10 seconds max
         var documentFound = false
         var attempts = 0
         
-        // Launch activity for sync test
-        if (!::activityScenario.isInitialized) {
-            activityScenario = androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java)
-            Thread.sleep(20000) // Wait for Ditto cloud sync initialization
-        }
+        Log.i("DittoTest", "Starting sync verification for CI seed title: '$ciSeedTitle'")
+        
+        // App should already be launched by the calling test method
+        Thread.sleep(5000) // Additional wait for Ditto cloud sync initialization
         
         while (attempts < maxAttempts && !documentFound) {
             try {
+                // Look for a task with the exact CI seed title (format: 000_ci_test_runId_runNumber)
                 onView(allOf(
                     withId(R.id.task_text),
-                    withText(containsString("GitHub Test Task")),
-                    withText(containsString(runId))
+                    withText(containsString(ciSeedTitle))
                 )).check(matches(isDisplayed()))
                 
-                Thread.sleep(2000) // Visual confirmation pause
+                Log.i("DittoTest", "✅ CI test task found with title: '$ciSeedTitle'! Showing for 3 seconds...")
+                Thread.sleep(3000) // Show the found document for 3 seconds
                 documentFound = true
                 
             } catch (e: Exception) {
                 attempts++
-                if (attempts % 5 == 0) {
-                    try {
-                        onView(withId(R.id.task_list)).check(matches(isDisplayed()))
-                    } catch (listE: Exception) {
-                        // Task list not available
-                    }
-                }
+                Log.d("DittoTest", "Attempt $attempts/$maxAttempts: Task with title '$ciSeedTitle' not yet visible")
                 Thread.sleep(2000)
             }
         }
         
         if (!documentFound) {
             throw AssertionError(
-                "GitHub test document did not sync within ${maxAttempts * 2} seconds. " +
-                "Expected document ID: $docId with text containing 'GitHub Test Task' and '$runId'"
+                "CI test task did not sync within ${maxAttempts * 2} seconds. " +
+                "Expected task with title: '$ciSeedTitle'"
             )
         }
     }

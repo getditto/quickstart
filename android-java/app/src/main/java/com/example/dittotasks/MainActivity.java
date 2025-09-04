@@ -127,7 +127,7 @@ public class MainActivity extends ComponentActivity {
 
             // register observer for live query
             // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-            taskObserver = ditto.store.registerObserver("SELECT * FROM tasks WHERE deleted=false ORDER BY _id", null, result -> {
+            taskObserver = ditto.store.registerObserver("SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC", null, result -> {
                 var tasks = result.getItems().stream().map(Task::fromQueryItem).collect(Collectors.toCollection(ArrayList::new));
                 runOnUiThread(() -> {
                     taskAdapter.setTasks(new ArrayList<>(tasks));
