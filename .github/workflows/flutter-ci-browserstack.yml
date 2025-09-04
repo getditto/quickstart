@@ -482,6 +482,10 @@ jobs:
       - name: Get Flutter dependencies
         working-directory: flutter_app
         run: flutter pub get
+        
+      - name: Install iOS dependencies
+        working-directory: flutter_app/ios
+        run: pod install
           
       - name: Build iOS Flutter integration test package
         working-directory: flutter_app
