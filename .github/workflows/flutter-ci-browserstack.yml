@@ -533,14 +533,16 @@ jobs:
           # Ensure build directory exists
           mkdir -p build
           
-          # Move the test package
-          if [ -f "$product/ios_flutter_tests.zip" ]; then
-            mv "$product/ios_flutter_tests.zip" build/flutter_integration_tests.zip
+          # Move the test package (adjust path since we're now in flutter_app/)
+          SOURCE_ZIP="ios_integration/Build/Products/ios_flutter_tests.zip"
+          if [ -f "$SOURCE_ZIP" ]; then
+            mv "$SOURCE_ZIP" build/flutter_integration_tests.zip
             echo "✓ Successfully moved iOS test package"
             ls -la build/flutter_integration_tests.zip
           else
-            echo "❌ iOS test package not found at $product/ios_flutter_tests.zip"
-            ls -la "$product/"
+            echo "❌ iOS test package not found at $SOURCE_ZIP"
+            echo "Contents of ios_integration/Build/Products/:"
+            ls -la ios_integration/Build/Products/ || echo "Directory doesn't exist"
             exit 1
           fi
           
