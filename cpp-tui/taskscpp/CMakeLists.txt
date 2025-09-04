@@ -77,3 +77,29 @@ endif()
 
 # Add dependency on cxxopts library
 target_include_directories(taskscpp PRIVATE third_party/cxxopts/include)
+
+# Enable testing
+option(BUILD_TESTS "Build tests" ON)
+
+if(BUILD_TESTS)
+  enable_testing()
+
+  # Integration tests
+  add_executable(integration_test
+    tests/integration_test.cpp
+    src/task.cpp
+    src/tasks_peer.cpp
+    src/tasks_log.cpp
+  )
+  target_include_directories(integration_test PRIVATE src sdk third_party/cxxopts/include)
+  target_link_libraries(integration_test PRIVATE ${CMAKE_SOURCE_DIR}/sdk/libditto.a)
+  add_dependencies(integration_test env_h)
+  add_test(NAME IntegrationTests COMMAND integration_test)
+  
+  # Custom test target
+  add_custom_target(run_tests
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    DEPENDS integration_test
+    COMMENT "Running integration tests"
+  )
+endif()

@@ -8,10 +8,12 @@ After you have completed the [common prerequisites] you will need the following:
 - CMake 3.10 or later
 - Make
 
-Download and unpack the C++ Ditto SDK for your platform by following the
-instructions in the [Ditto C++ Install Guide](https://docs.ditto.live/install-guides/cpp).
-Then, copy the `Ditto.h` and `libditto.a` files from the SDK into the `sdk/`
-subdirectory of this project.
+The build system will automatically download the Ditto C++ SDK for your platform
+when you run `make build`. No manual SDK installation is required!
+
+Alternatively, you can manually download and unpack the C++ Ditto SDK by following the
+instructions in the [Ditto C++ Install Guide](https://docs.ditto.live/install-guides/cpp)
+and copying the `Ditto.h` and `libditto.a` files into the `sdk/` subdirectory.
 
 ## Documentation
 
@@ -27,7 +29,9 @@ Assuming you have the prerequisites installed, you can build and run the app by 
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
 2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
-3. In a shell, navigate to the `quickstart/cpp-tui/taskscpp` directory and run the command `make build` to build the C++ application.
+3. In a shell, navigate to the `quickstart/cpp-tui/taskscpp` directory and run the command `make build` to automatically download the Ditto SDK and build the C++ application.
+
+The build system will detect your platform (Linux/macOS) and architecture (x86_64/arm64) and download the appropriate Ditto C++ SDK version automatically.
 
 ## Running the Application
 
