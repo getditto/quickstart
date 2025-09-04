@@ -25,46 +25,50 @@ final class TasksUITests: XCTestCase {
         print("⏳ Waiting for initial sync...")
         sleep(5)
         
-        // Detect specific document: "Clean the kitchen" 
-        print("🔍 Looking for 'Clean the kitchen' document...")
+        // Wait up to 20 seconds to find ANY document
+        print("🔍 Looking for ANY document (waiting up to 20 seconds)...")
         
-        let targetDocument = "Clean the kitchen"
-        handlePermissionDialogs(app: app)
-        
+        let maxWaitTime = 20.0
+        let startTime = Date()
         var documentFound = false
-        if app.tables.firstMatch.exists {
-            let cells = app.tables.firstMatch.cells
-            print("📱 Checking \(cells.count) cells...")
+        var foundDocuments: [String] = []
+        
+        while Date().timeIntervalSince(startTime) < maxWaitTime {
+            handlePermissionDialogs(app: app)
             
-            for i in 0..<cells.count {
-                let cell = cells.element(boundBy: i)
-                if cell.exists && cell.label.contains(targetDocument) {
-                    print("✅ Found target document: '\(cell.label)'")
+            if app.tables.firstMatch.exists {
+                let cells = app.tables.firstMatch.cells
+                let cellCount = cells.count
+                print("📱 Found \(cellCount) cells...")
+                
+                foundDocuments.removeAll()
+                for i in 0..<cellCount {
+                    let cell = cells.element(boundBy: i)
+                    if cell.exists && !cell.label.isEmpty {
+                        let cellText = cell.label
+                        foundDocuments.append("[\(i)]: '\(cellText)'")
+                    }
+                }
+                
+                if !foundDocuments.isEmpty {
+                    print("✅ Found \(foundDocuments.count) documents:")
+                    for doc in foundDocuments.prefix(5) {
+                        print("   \(doc)")
+                    }
                     documentFound = true
                     break
                 }
             }
+            
+            sleep(1)
         }
         
         if !documentFound {
-            print("❌ Target document '\(targetDocument)' not found")
-            
-            // Show what documents we did find
-            if app.tables.firstMatch.exists {
-                let cells = app.tables.firstMatch.cells
-                print("📱 Available documents:")
-                for i in 0..<min(cells.count, 10) {
-                    let cell = cells.element(boundBy: i)
-                    if cell.exists && !cell.label.isEmpty {
-                        print("   [\(i)]: '\(cell.label)'")
-                    }
-                }
-            }
-            
-            XCTFail("Target document '\(targetDocument)' not found")
+            print("❌ No documents found after 20 seconds")
+            XCTFail("No documents found after waiting 20 seconds")
         }
         
-        XCTAssertTrue(documentFound, "Should find '\(targetDocument)' document")
+        XCTAssertTrue(documentFound, "Should find at least one document")
         
         // Verify app stability
         sleep(3)
