@@ -34,7 +34,7 @@ androidComponents {
             "DITTO_APP_ID",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_APP_ID"]}\"",
+                "${prop["DITTO_APP_ID"]}",
                 "Ditto application ID"
             )
         )
@@ -42,7 +42,7 @@ androidComponents {
             "DITTO_PLAYGROUND_TOKEN",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
+                "${prop["DITTO_PLAYGROUND_TOKEN"]}",
                 "Ditto online playground authentication token"
             )
         )
@@ -51,7 +51,7 @@ androidComponents {
             "DITTO_AUTH_URL",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_AUTH_URL"]}\"",
+                "${prop["DITTO_AUTH_URL"]}",
                 "Ditto Auth URL"
             )
         )
@@ -60,7 +60,7 @@ androidComponents {
             "DITTO_WEBSOCKET_URL",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_WEBSOCKET_URL"]}\"",
+                "${prop["DITTO_WEBSOCKET_URL"]}",
                 "Ditto Websocket URL"
             )
         )
