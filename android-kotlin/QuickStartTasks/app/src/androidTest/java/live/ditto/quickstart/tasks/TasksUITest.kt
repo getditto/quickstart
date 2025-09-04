@@ -30,16 +30,13 @@ class TasksUITest {
             ?: "Basic Test Task"
         
         try {
-            // Wait for app initialization
+            // Wait for app initialization and Ditto sync with intelligent polling
             composeTestRule.waitForIdle()
-            Thread.sleep(3000)
-            
-            // Wait for Ditto sync and document to appear with timeout
             composeTestRule.waitUntil(
                 condition = {
                     composeTestRule.onAllNodes(hasText(testDocumentTitle)).fetchSemanticsNodes().isNotEmpty()
                 },
-                timeoutMillis = 15000 // Wait up to 15 seconds for Ditto sync and document to appear
+                timeoutMillis = 18000 // Wait up to 18 seconds for app init and Ditto sync
             )
             
             // Final verification that document exists
