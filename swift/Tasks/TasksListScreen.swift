@@ -38,22 +38,22 @@ class TasksListScreenViewModel: ObservableObject {
         storeObserver?.cancel()
         storeObserver = nil
 
-        if ditto.isSyncActive {
-            DittoManager.shared.ditto.stopSync()
+        if ditto.sync.isActive {
+            DittoManager.shared.ditto.sync.stop()
         }
     }
 
     func setSyncEnabled(_ newValue: Bool) throws {
-        if !ditto.isSyncActive && newValue {
+        if !ditto.sync.isActive && newValue {
             try startSync()
-        } else if ditto.isSyncActive && !newValue {
+        } else if ditto.sync.isActive && !newValue {
             stopSync()
         }
     }
 
     private func startSync() throws {
         do {
-            try ditto.startSync()
+            try ditto.sync.start()
 
             // Register a subscription, which determines what data syncs to this peer
             // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
@@ -70,7 +70,7 @@ class TasksListScreenViewModel: ObservableObject {
         subscription?.cancel()
         subscription = nil
 
-        ditto.stopSync()
+        ditto.sync.stop()
     }
 
     func toggleComplete(task: TaskModel) {
