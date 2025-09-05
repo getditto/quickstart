@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4170A8552CED346F00043F5A /* DittoObjC in Frameworks */ = {isa = PBXBuildFile; productRef = 4170A8542CED346F00043F5A /* DittoObjC */; };
 		4170A8572CED346F00043F5A /* DittoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 4170A8562CED346F00043F5A /* DittoSwift */; };
 /* End PBXBuildFile section */
 
@@ -42,7 +41,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4170A8552CED346F00043F5A /* DittoObjC in Frameworks */,
 				4170A8572CED346F00043F5A /* DittoSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -88,7 +86,6 @@
 			);
 			name = Tasks;
 			packageProductDependencies = (
-				4170A8542CED346F00043F5A /* DittoObjC */,
 				4170A8562CED346F00043F5A /* DittoSwift */,
 			);
 			productName = Tasks;
@@ -413,18 +410,13 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/getditto/DittoSwiftPackage";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.11.0;
+				kind = exactVersion;
+				version = "5.0.0-experimental.kb-inline-objc-into-swift-sdk.5";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		4170A8542CED346F00043F5A /* DittoObjC */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4170A8532CED346F00043F5A /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */;
-			productName = DittoObjC;
-		};
 		4170A8562CED346F00043F5A /* DittoSwift */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4170A8532CED346F00043F5A /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */;
