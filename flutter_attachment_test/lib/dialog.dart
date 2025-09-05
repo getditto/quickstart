@@ -12,6 +12,32 @@ Future<Task?> showAddTaskDialog(BuildContext context,
       builder: (context) => _Dialog(task, ditto),
     );
 
+Future<void> showErrorDialog(BuildContext context, String title, String message) =>
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => AlertDialog(
+        icon: const Icon(
+          Icons.error_outline,
+          color: Colors.red,
+          size: 48,
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+    );
+
 class _Dialog extends StatefulWidget {
   final Task? taskToEdit;
   final Ditto? ditto;
@@ -57,13 +83,19 @@ class _DialogState extends State<_Dialog> {
           ElevatedButton(
             child: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
             onPressed: () async {
-              final task = Task(
-                title: _name.text,
-                done: _done,
-                deleted: false,
-                image: (await _createAttachment())?.toJson(),
-              );
-              Navigator.of(context).pop(task);
+              try {
+                final image = (await _createAttachment())?.toJson();
+                final task = Task(
+                    title: _name.text,
+                    done: _done,
+                    deleted: false,
+                    image: image,
+                  );
+                  Navigator.of(context).pop(task);
+              } catch (_) {
+                showErrorDialog(context, "Error", "Failed to create task with attachment");
+                return;
+              }
             },
           ),
         ],

@@ -29,7 +29,7 @@ class _DittoExampleState extends State<DittoExample> {
   final Map<String, Attachment?> _loadedAttachments = {};
   final appID =
       dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
-  final playground_token =
+  final playgroundToken =
       dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
       (throw Exception("env not found"));
   final authUrl = dotenv.env['DITTO_AUTH_URL'];
@@ -68,7 +68,7 @@ class _DittoExampleState extends State<DittoExample> {
 
     final identity = OnlinePlaygroundIdentity(
       appID: appID,
-      token: playground_token,
+      token: playgroundToken,
       enableDittoCloudSync:
           false, // This is required to be set to false to use the correct URLs
       customAuthUrl: authUrl,
@@ -155,7 +155,7 @@ class _DittoExampleState extends State<DittoExample> {
   );
 
   Widget get _portalInfo => Column(
-    children: [Text("AppID: $appID"), Text("Token: $playground_token")],
+    children: [Text("AppID: $appID"), Text("Token: $playgroundToken")],
   );
 
   Widget get _syncTile => SwitchListTile(
@@ -178,6 +178,51 @@ class _DittoExampleState extends State<DittoExample> {
       return ListView(children: tasks.map(_singleTask).toList());
     },
   );
+
+  Widget _dismissibleBackground(bool primary) => Container(
+    color: Colors.red,
+    child: Align(
+      alignment: primary ? Alignment.centerLeft : Alignment.centerRight,
+      child: const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Icon(Icons.delete),
+      ),
+    ),
+  );
+
+  Widget _loadAttachmentButton(Task task) {
+    final progress = _loadingProgress[task.id!] ?? 0.0;
+    final isLoading = progress > 0.0 && progress < 1.0;
+    final isLoaded = progress == 1.0;
+
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.25,
+      child: Center(
+        child: isLoading
+            ? Text(
+                'Loading: ${(progress * 100).toStringAsFixed(1)}%',
+                textAlign: TextAlign.center,
+              )
+            : ElevatedButton(
+                onPressed: () async {
+                  if (isLoaded) {
+                    final imageData = await _loadedAttachments[task.id!]!.data;
+                    if (mounted) {
+                      showImageDialog(context, imageData);
+                    }
+                  } else {
+                    _loadAttachment(task.image!, task.id!);
+                  }
+                },
+                child: Text(
+                  isLoaded ? 'Show Image' : 'Load Image',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+      ),
+    );
+  }
+
 
   Widget _singleTask(Task task) => Dismissible(
     key: Key("${task.id}-${task.title}"),
@@ -227,36 +272,7 @@ class _DittoExampleState extends State<DittoExample> {
               ),
             ),
             task.image != null
-                ? SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    child: Center(
-                      child:
-                          _loadingProgress.containsKey(task.id!) &&
-                              _loadingProgress[task.id!]! < 1.0
-                          ? Text(
-                              'Loading: ${(_loadingProgress[task.id!]! * 100).toStringAsFixed(1)}%',
-                              textAlign: TextAlign.center,
-                            )
-                          : ElevatedButton(
-                              onPressed: () async {
-                                if (_loadingProgress.containsKey(task.id!) &&
-                                    _loadingProgress[task.id!]! == 1.0) {
-                                  showImageDialog(
-                                    context,
-                                    await _loadedAttachments[task.id!]!.data,
-                                  );
-                                } else {
-                                  _loadAttachment(task.image!, task.id!);
-                                }
-                              },
-                              child: Center(
-                                child: _loadingProgress.containsKey(task.id!)
-                                    ? const Text('Show Image', textAlign: TextAlign.center)
-                                    : const Text('Load Image', textAlign: TextAlign.center),
-                              ),
-                            ),
-                    ),
-                  )
+                ?  _loadAttachmentButton(task)
                 : const SizedBox.shrink(),
           ],
         ),
@@ -269,7 +285,8 @@ class _DittoExampleState extends State<DittoExample> {
       _loadingProgress[taskId] = 0.0;
     });
 
-    _ditto!.store.fetchAttachment(token, (event) {
+    try {
+      _ditto!.store.fetchAttachment(token, (event) {
       switch (event) {
         case AttachmentFetchEventProgress progress:
           setState(() {
@@ -292,16 +309,15 @@ class _DittoExampleState extends State<DittoExample> {
           throw "unknown attachment fetch event type";
       }
     });
+    } catch (e) {
+      showErrorDialog(context, "Error", "Failed to load attachment");
+      setState(() {
+        _loadingProgress.remove(taskId);
+        _loadedAttachments.remove(taskId);
+      });
+    }
+    
   }
 
-  Widget _dismissibleBackground(bool primary) => Container(
-    color: Colors.red,
-    child: Align(
-      alignment: primary ? Alignment.centerLeft : Alignment.centerRight,
-      child: const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Icon(Icons.delete),
-      ),
-    ),
-  );
+  
 }
