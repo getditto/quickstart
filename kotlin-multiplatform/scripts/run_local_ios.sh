@@ -6,14 +6,12 @@ if [ -z "$DITTO_TASK_ID" ]; then
     exit 1
 fi
 
-echo "📱 Running iOS UITest with DITTO_TASK_ID='$DITTO_TASK_ID'..."
+echo "📱 Running iOS integration test with DITTO_TASK_ID='$DITTO_TASK_ID'..."
 
-cd iosApp
+# Export the environment variable for the Gradle test
+export DITTO_TASK_ID="$DITTO_TASK_ID"
 
-# Run XCUITest on iPhone 15 simulator
-DITTO_TASK_ID="$DITTO_TASK_ID" \
-xcodebuild -scheme iosApp \
- -destination 'platform=iOS Simulator,name=iPhone 15' \
- test -quiet
+# Run iOS Simulator tests using Kotlin Multiplatform
+./gradlew :composeApp:iosSimulatorArm64Test --quiet
 
 echo "✅ iOS integration test completed successfully!"
