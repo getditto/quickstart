@@ -553,7 +553,6 @@ jobs:
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-      working-directory: kotlin-multiplatform
     
     - name: Download iOS IPA Artifact
       uses: actions/download-artifact@v4
