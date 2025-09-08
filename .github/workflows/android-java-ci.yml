@@ -38,8 +38,8 @@ jobs:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
-          android-kotlin/QuickStartTasks/.gradle
-        key: gradle-${{ runner.os }}-${{ hashFiles('android-kotlin/QuickStartTasks/gradle/wrapper/gradle-wrapper.properties', 'android-kotlin/QuickStartTasks/**/*.gradle*', 'android-kotlin/QuickStartTasks/gradle/libs.versions.toml') }}
+          android-java/.gradle
+        key: gradle-${{ runner.os }}-${{ hashFiles('android-java/gradle/wrapper/gradle-wrapper.properties', 'android-java/**/*.gradle*') }}
         restore-keys: |
           gradle-${{ runner.os }}-
     
@@ -51,7 +51,7 @@ jobs:
         echo "DITTO_WEBSOCKET_URL=test" >> .env
     
     - name: Run Android linting
-      working-directory: android-kotlin/QuickStartTasks
+      working-directory: android-java
       run: ./gradlew lint
 
   build-and-test:
@@ -254,10 +254,7 @@ jobs:
             \"app\": \"$APP_URL\",
             \"testSuite\": \"$TEST_URL\",
             \"devices\": [
-              \"Google Pixel 8-14.0\",
-              \"Samsung Galaxy S23-13.0\",
-              \"Google Pixel 6-12.0\",
-              \"OnePlus 9-11.0\"
+              \"Google Pixel 8-14.0\"
             ],
             \"project\": \"Ditto Android Java\",
             \"buildName\": \"Build #${{ github.run_number }}\",
