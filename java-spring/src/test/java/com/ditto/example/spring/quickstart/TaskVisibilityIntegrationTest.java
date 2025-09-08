@@ -76,7 +76,7 @@ class TaskVisibilityIntegrationTest {
             // Set BrowserStack Local settings from system properties
             String local = System.getProperty("BROWSERSTACK_LOCAL");
             if ("true".equals(local)) {
-                browserstackOptions.put("local", "true");
+                browserstackOptions.put("local", true);
                 System.out.println("🔗 BrowserStack Local enabled");
                 
                 String localIdentifier = System.getProperty("BROWSERSTACK_LOCAL_IDENTIFIER");
@@ -117,8 +117,24 @@ class TaskVisibilityIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        baseUrl = "http://localhost:" + port;
-        System.out.println("🌐 Testing Spring Boot Ditto Tasks app at: " + baseUrl);
+        // Use bs-local.com for iOS Safari, localhost for other browsers
+        String browserStackUser = System.getenv("BROWSERSTACK_USERNAME");
+        boolean isIosSafari = checkIfIosSafari();
+        
+        if (browserStackUser != null && isIosSafari) {
+            baseUrl = "http://bs-local.com:" + port;
+            System.out.println("🍎 Using bs-local.com URL for iOS Safari: " + baseUrl);
+        } else {
+            baseUrl = "http://localhost:" + port;
+            System.out.println("🌐 Testing Spring Boot Ditto Tasks app at: " + baseUrl);
+        }
+    }
+    
+    private boolean checkIfIosSafari() {
+        // Check if this is iOS Safari testing (could be enhanced to check actual capabilities)
+        String os = System.getProperty("browserstack.os", "");
+        String browser = System.getProperty("browserstack.browser", "");
+        return os.toLowerCase().contains("ios") && browser.toLowerCase().contains("safari");
     }
 
     @Test

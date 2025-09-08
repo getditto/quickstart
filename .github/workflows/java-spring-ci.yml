@@ -75,15 +75,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
 
       - name: Generate test document title
         id: test_doc
@@ -199,21 +190,17 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: Download and setup BrowserStack Local
-      run: |
-        wget -q https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip
-        unzip -q BrowserStackLocal-linux-x64.zip
-        chmod +x BrowserStackLocal
+    - name: Set up BrowserStack env
+      uses: browserstack/github-actions/setup-env@master
+      with:
+        username: ${{ secrets.BROWSERSTACK_USERNAME }}
+        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
 
-    - name: Start BrowserStack Local tunnel
-      run: |
-        ./BrowserStackLocal --key ${{ secrets.BROWSERSTACK_ACCESS_KEY }} --local-identifier java-spring-${{ github.run_number }} &
-        echo $! > bs-local.pid
-        
-        # Wait for BrowserStack Local to start
-        echo "Waiting for BrowserStack Local tunnel..."
-        sleep 10
-        echo "✓ BrowserStack Local tunnel started"
+    - name: Start BrowserStack Local
+      uses: browserstack/github-actions/setup-local@master
+      with:
+        local-testing: start
+        local-identifier: java-spring-${{ github.run_number }}
     
     - name: Start Spring Boot app in background
       working-directory: java-spring
@@ -260,15 +247,12 @@ jobs:
           echo "✓ Stopped Spring Boot app"
         fi
     
-    - name: Stop BrowserStack Local tunnel
+    - name: Stop BrowserStack Local
       if: always()
-      run: |
-        if [ -f bs-local.pid ]; then
-          PID=$(cat bs-local.pid)
-          kill $PID || true
-          rm bs-local.pid
-          echo "✓ Stopped BrowserStack Local tunnel"
-        fi
+      uses: browserstack/github-actions/setup-local@master
+      with:
+        local-testing: stop
+        local-identifier: java-spring-${{ github.run_number }}
     
     - name: Upload test reports
       if: always()
