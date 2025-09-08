@@ -31,16 +31,16 @@ public class LocalBrowserStackTest {
     public void testSpringBootDittoTasksIntegration() throws Exception {
         System.out.println("🧪 Starting Spring Boot Ditto Tasks integration test...");
         
-        // Only check for the seeded document ID from CI workflow
+        // Only check for the generated document ID from CI workflow
         String githubTestDocId = System.getenv("GITHUB_TEST_DOC_ID");
         
         if (githubTestDocId == null) {
             System.out.println("❌ No GITHUB_TEST_DOC_ID found - test should fail locally");
-            System.out.println("💡 In CI, this test will have the seeded document ID from the workflow");
-            throw new RuntimeException("Integration test failed locally as expected - missing seeded document ID");
+            System.out.println("💡 In CI, this test will have the generated document ID from the workflow");
+            throw new RuntimeException("Integration test failed locally as expected - missing generated document ID");
         }
         
-        System.out.println("✅ Seeded document ID found: " + githubTestDocId);
+        System.out.println("✅ Generated document ID found: " + githubTestDocId);
         
         // Test that the Spring Boot app is running and verify seeded document
         String baseUrl = "http://localhost:" + port;
@@ -52,7 +52,7 @@ public class LocalBrowserStackTest {
         }
         
         System.out.println("🎉 Spring Boot Ditto Tasks integration test completed successfully!");
-        System.out.println("🎯 Seeded document '" + githubTestDocId + "' should appear first in task list");
+        System.out.println("🎯 Generated document '" + githubTestDocId + "' should appear first in task list");
     }
 
     @Test 

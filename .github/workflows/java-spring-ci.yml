@@ -23,19 +23,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: Build and Test Java Spring
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    timeout-minutes: 10
 
-      - name: Set up JDK 17
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
+          java-version: '17'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -47,6 +47,34 @@ jobs:
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
+      - name: Run linter (PMD)
+        working-directory: java-spring
+        run: ./gradlew pmdMain pmdTest
+
+      - name: Run static analysis (SpotBugs)
+        working-directory: java-spring
+        run: ./gradlew spotbugsMain
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 30
+    outputs:
+      test_doc_title: ${{ steps.test_doc.outputs.test_doc_title }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:
@@ -57,385 +85,151 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Insert test document into Ditto Cloud
+      - name: Generate test document title
+        id: test_doc
         run: |
-          DOC_ID="ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          
-          # Create inverted timestamp for alphabetical sorting (newest first)
-          # Use a large number (9999999999) minus current timestamp so newer = smaller = sorts first
-          CURRENT_TIMESTAMP=$(date +%s)
-          INVERTED_TIMESTAMP=$((9999999999 - CURRENT_TIMESTAMP))
-          SEED_TEXT="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          
-          # Insert test document using Ditto API
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H 'Content-type: application/json' \
-            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-            -d "{
-              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-              \"args\": {
-                \"newTask\": {
-                  \"_id\": \"${DOC_ID}\",
-                  \"text\": \"${SEED_TEXT}\",
-                  \"isCompleted\": false
-                }
-              }
-            }" \
-            "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-          
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-          
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Test document inserted successfully: ${DOC_ID}"
-            echo "✓ Seed text: ${SEED_TEXT}"
-            echo "✓ Inverted timestamp: ${INVERTED_TIMESTAMP} (newer documents sort first)"
-            echo "GITHUB_TEST_DOC_ID=${SEED_TEXT}" >> $GITHUB_ENV
-          else
-            echo "❌ Failed to insert test document (HTTP ${HTTP_CODE})"
-            echo "Response: $BODY"
-            exit 1
-          fi
+          # Create a unique GitHub test document with inverted timestamp to appear at top
+          TIMESTAMP=$(date +%s)
+          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+          DOC_ID="${INVERTED_TIMESTAMP}_java_spring_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+          DOC_TITLE="${INVERTED_TIMESTAMP}_java_spring_ci_test_${{ github.run_id }}_${{ github.run_number }}"
 
-      - name: Run linter (PMD)
-        working-directory: java-spring
-        run: ./gradlew pmdMain pmdTest
+          echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
+          echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
+          echo "📝 Generated test document (inverted timestamp for top position)"
+          echo "📝 ID: '${DOC_ID}'"
+          echo "📝 Title: '${DOC_TITLE}'"
+          echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
 
-      - name: Run static analysis (SpotBugs)
-        working-directory: java-spring
-        run: ./gradlew spotbugsMain
-
-      - name: Build application
-        working-directory: java-spring
+      - name: Create .env file
         run: |
-          ./gradlew bootJar
-          echo "Spring Boot JAR built successfully"
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
-      - name: Run Unit Tests
+      - name: Build Spring Boot JAR
         working-directory: java-spring
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+          DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+          DITTO_ENABLE_CLOUD_SYNC: true
+        run: ./gradlew bootJar
+
+      - name: Run unit tests
+        working-directory: java-spring
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+          DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+          DITTO_ENABLE_CLOUD_SYNC: false  # Default to false for local testing
         run: ./gradlew test --tests "QuickstartApplicationTests"
 
-      - name: Run BrowserStack integration test (Java)
-        working-directory: java-spring
-        run: |
-          # Set required environment variables for the integration test
-          export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
-          export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-          export DITTO_API_KEY="${{ secrets.DITTO_API_KEY }}"
-          export DITTO_API_URL="${{ secrets.DITTO_API_URL }}"
-          export GITHUB_TEST_DOC_ID="${{ env.GITHUB_TEST_DOC_ID }}"
-          export GITHUB_ACTIONS="true"
-          export GITHUB_RUN_ID="${{ github.run_id }}"
-          
-          # Run only the BrowserStack integration test
-          ./gradlew test --tests "*BrowserStackIntegrationTest*"
+      - name: Upload JAR artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-spring-jar-${{ github.run_number }}
+          path: java-spring/build/libs/quickstart-0.0.1-SNAPSHOT.jar
+          retention-days: 1
 
-      - name: Start Spring Boot application
-        run: |
-          cd java-spring
-          echo "🚀 Starting Spring Boot Ditto Tasks application..."
-          
-          # Start Spring Boot in background with explicit port
-          nohup ./gradlew bootRun --args="--server.port=8080" > spring-boot.log 2>&1 &
-          SPRING_PID=$!
-          echo "SPRING_PID=$SPRING_PID" >> $GITHUB_ENV
-          
-          # Wait for application to be ready
-          echo "⏳ Waiting for Spring Boot application to start..."
-          for i in {1..60}; do
-            if curl -s -f http://localhost:8080/ > /dev/null 2>&1; then
-              echo "✅ Spring Boot Ditto Tasks app is running at http://localhost:8080"
-              break
-            fi
-            if [ $i -eq 60 ]; then
-              echo "❌ Spring Boot app failed to start within 60 seconds"
-              cat spring-boot.log
-              exit 1
-            fi
-            echo "Waiting for startup... ($i/60)"
-            sleep 2
-          done
-          
-          # Show the app is responding
-          curl -s http://localhost:8080/ | head -10
-
-      - name: Upload Spring Boot JAR to BrowserStack
-        id: upload
-        run: |
-          CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-          
-          # Upload Spring Boot JAR as "app" for testing
-          echo "📦 Uploading Spring Boot JAR to BrowserStack..."
-          APP_RESPONSE=$(curl -u "$CREDS" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-            -F "file=@java-spring/build/libs/quickstart-0.0.1-SNAPSHOT.jar" \
-            -F "custom_id=ditto-java-spring-app")
-          
-          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
-          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
-          
-          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "❌ Failed to upload Spring Boot JAR"
-            echo "Response: $APP_RESPONSE"
-            exit 1
-          fi
-          echo "✅ Spring Boot JAR uploaded: $APP_URL"
-
-      - name: Execute BrowserStack web tests
-        id: browserstack_test
-        run: |
-          # Create comprehensive BrowserStack test script
-          cat > browserstack_spring_test.py << 'EOF'
-          import os
-          import time
-          import requests
-          from selenium import webdriver
-          from selenium.webdriver.common.by import By
-          from selenium.webdriver.support.ui import WebDriverWait
-          from selenium.webdriver.support import expected_conditions as EC
-
-          # BrowserStack configuration
-          username = os.environ['BROWSERSTACK_USERNAME']
-          access_key = os.environ['BROWSERSTACK_ACCESS_KEY']
-          test_doc_id = os.environ.get('GITHUB_TEST_DOC_ID', 'test-doc-id')
-          
-          # Multiple browser configurations like Android Java CI
-          browser_configs = [
-              {
-                  'browser': 'Chrome',
-                  'browser_version': 'latest',
-                  'os': 'Windows',
-                  'os_version': '10',
-                  'name': 'Spring Boot Ditto Tasks Test - Chrome Windows',
-              },
-              {
-                  'browser': 'Firefox',
-                  'browser_version': 'latest',
-                  'os': 'Windows',
-                  'os_version': '10', 
-                  'name': 'Spring Boot Ditto Tasks Test - Firefox Windows',
-              },
-              {
-                  'browser': 'Safari',
-                  'browser_version': 'latest',
-                  'os': 'OS X',
-                  'os_version': 'Monterey',
-                  'name': 'Spring Boot Ditto Tasks Test - Safari macOS',
-              },
-              {
-                  'browser': 'Edge',
-                  'browser_version': 'latest',
-                  'os': 'Windows',
-                  'os_version': '10',
-                  'name': 'Spring Boot Ditto Tasks Test - Edge Windows',
-              }
-          ]
-
-          all_passed = True
-          test_results = []
-
-          # Test across all browser configurations like Android Java CI
-          for i, config in enumerate(browser_configs):
-              print(f"\n🌐 Testing on {config['name']} ({i+1}/{len(browser_configs)})")
-              
-              # Add common configuration
-              desired_cap = {
-                  **config,
-                  'project': 'Ditto Java Spring',
-                  'build': f'Build #{os.environ.get("GITHUB_RUN_NUMBER", "local")}',
-                  'sessionName': f'Spring Boot Ditto Sync Test - {test_doc_id}',
-                  'local': 'false',
-                  'seleniumVersion': '4.0.0',
-                  'debug': 'true',
-                  'video': 'true',
-                  'networkLogs': 'true',
-                  'consoleLogs': 'info',
-                  'acceptInsecureCerts': 'true'
-              }
-              
-              driver = None
-              try:
-                  # Connect to BrowserStack
-                  driver = webdriver.Remote(
-                      command_executor=f'https://{username}:{access_key}@hub-cloud.browserstack.com/wd/hub',
-                      desired_capabilities=desired_cap
-                  )
-                  
-                  print(f"📱 BrowserStack session started for {config['name']}")
-                  
-                  # Navigate to the Spring Boot Ditto app
-                  print("🔗 Opening Spring Boot Ditto Tasks application...")
-                  driver.get("http://localhost:8080/")
-                  
-                  # Wait for page to load
-                  WebDriverWait(driver, 15).until(
-                      EC.presence_of_element_located((By.TAG_NAME, "body"))
-                  )
-                  
-                  # Verify the seeded document appears in the task list
-                  print(f"🔍 Looking for seeded document: {test_doc_id}")
-                  page_source = driver.page_source.lower()
-                  
-                  # Check if seeded document is present
-                  seeded_found = test_doc_id.lower() in page_source
-                  
-                  if seeded_found:
-                      print(f"✅ Seeded document found in {config['name']}")
-                      driver.execute_script('browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"passed", "reason": "Seeded document verification successful"}}')
-                      test_results.append(f"✅ {config['name']}: PASSED")
-                  else:
-                      print(f"❌ Seeded document NOT found in {config['name']}")
-                      driver.execute_script('browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"failed", "reason": "Seeded document not found"}}')
-                      test_results.append(f"❌ {config['name']}: FAILED")
-                      all_passed = False
-                  
-                  # Take screenshot for verification
-                  driver.save_screenshot(f"spring_boot_{config['browser'].lower()}_{i+1}.png")
-                  
-              except Exception as e:
-                  print(f"❌ Test failed on {config['name']}: {e}")
-                  test_results.append(f"❌ {config['name']}: ERROR - {str(e)[:50]}")
-                  all_passed = False
-                  if driver:
-                      try:
-                          driver.execute_script('browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"failed", "reason": f"Test error: {str(e)[:100]}"}}')
-                      except:
-                          pass
-              finally:
-                  if driver:
-                      driver.quit()
-                  print(f"🔚 Session ended for {config['name']}")
-          
-          # Print final results
-          print(f"\n📊 Final Test Results:")
-          for result in test_results:
-              print(f"  {result}")
-          
-          if all_passed:
-              print("🎉 All BrowserStack tests passed successfully!")
-          else:
-              print("❌ Some BrowserStack tests failed")
-              exit(1)
-
-          EOF
-
-          # Install Python dependencies
-          pip install selenium requests
-          
-          # Run the comprehensive BrowserStack test suite
-          export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
-          export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-          export GITHUB_TEST_DOC_ID="${{ env.GITHUB_TEST_DOC_ID }}"
-          export GITHUB_RUN_NUMBER="${{ github.run_number }}"
-          
-          echo "🚀 Starting comprehensive BrowserStack test suite..."
-          echo "📋 Testing on 4 browser configurations: Chrome, Firefox, Safari, Edge"
-          echo "🔍 Verifying seeded document: $GITHUB_TEST_DOC_ID"
-          
-          python browserstack_spring_test.py
-
-      - name: Stop Spring Boot application
-        if: always()
-        run: |
-          if [ -n "${{ env.SPRING_PID }}" ]; then
-            echo "🛑 Stopping Spring Boot application (PID: ${{ env.SPRING_PID }})"
-            kill ${{ env.SPRING_PID }} 2>/dev/null || true
-            sleep 2
-            kill -9 ${{ env.SPRING_PID }} 2>/dev/null || true
-          fi
-          
-          # Also kill any java processes running Spring Boot
-          pkill -f "spring-boot" || true
-          pkill -f "bootRun" || true
-
-      - name: Generate test report
-        if: always()
-        run: |
-          # Create comprehensive test report like Android Java CI
-          echo "# BrowserStack Test Report (Java Spring)" > test-report.md
-          echo "" >> test-report.md
-          echo "**Build Status:** ${{ job.status }}" >> test-report.md
-          echo "**GitHub Run ID:** ${{ github.run_id }}" >> test-report.md
-          echo "**Spring Boot JAR:** ${{ steps.upload.outputs.app_url || 'Upload failed' }}" >> test-report.md
-          echo "" >> test-report.md
-          
-          echo "## Build Pipeline Results" >> test-report.md
-          echo "- ✅ PMD static analysis completed" >> test-report.md
-          echo "- ✅ SpotBugs analysis completed" >> test-report.md
-          echo "- ✅ Spring Boot JAR build successful" >> test-report.md
-          echo "- ✅ Unit tests passed" >> test-report.md
-          echo "- ✅ BrowserStack integration tests executed" >> test-report.md
-          echo "- ${{ steps.upload.outputs.app_url && '✅' || '❌' }} Spring Boot JAR uploaded to BrowserStack" >> test-report.md
-          
-          echo "" >> test-report.md
-          echo "## BrowserStack Test Results" >> test-report.md
-          echo "**Test Suite Status:** ${{ steps.browserstack_test.outcome == 'success' && '✅ PASSED' || '❌ FAILED' }}" >> test-report.md
-          echo "" >> test-report.md
-          echo "**Browser Coverage:**" >> test-report.md
-          echo "- Chrome (Windows 10)" >> test-report.md
-          echo "- Firefox (Windows 10)" >> test-report.md
-          echo "- Safari (macOS Monterey)" >> test-report.md
-          echo "- Edge (Windows 10)" >> test-report.md
-          
-          echo "" >> test-report.md
-          echo "## Ditto Cloud Verification" >> test-report.md
-          echo "- **Seeded Document ID:** ${{ env.GITHUB_TEST_DOC_ID }}" >> test-report.md
-          echo "- **Document Seeding:** ✅ Success" >> test-report.md
-          echo "- **Cross-browser Verification:** ${{ steps.browserstack_test.outcome == 'success' && '✅ Success' || '❌ Failed' }}" >> test-report.md
-
-      - name: Upload test artifacts
+      - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: java-spring-test-results
-          path: |
-            java-spring/build/libs/
-            java-spring/build/reports/
-            test-report.md
+          name: test-reports-${{ github.run_number }}
+          path: java-spring/build/reports/
+          retention-days: 1
 
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const status = '${{ job.status }}';
-            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
-            const testDocId = '${{ env.GITHUB_TEST_DOC_ID }}';
-            const browserstackStatus = '${{ steps.browserstack_test.outcome }}';
-            
-            const appUrl = '${{ steps.upload.outputs.app_url }}';
-            
-            const body = `## ☕ Java Spring BrowserStack Test Results
-            
-            **Status:** ${status === 'success' ? '✅ Passed' : '❌ Failed'}
-            **Build:** [#${{ github.run_number }}](${runUrl})
-            **Spring Boot JAR:** ${appUrl || 'Upload failed'}
-            **Seeded Document ID:** ${testDocId || 'Not generated'}
-            
-            ### Build Pipeline Results:
-            - ✅ PMD static analysis completed
-            - ✅ SpotBugs analysis completed  
-            - ✅ Spring Boot JAR build successful
-            - ✅ Unit tests passed
-            - ${appUrl ? '✅' : '❌'} Spring Boot JAR uploaded to BrowserStack
-            - ${browserstackStatus === 'success' ? '✅' : '❌'} Cross-browser integration tests
-            
-            ### BrowserStack Test Coverage:
-            - Chrome (Windows 10)
-            - Firefox (Windows 10) 
-            - Safari (macOS Monterey)
-            - Edge (Windows 10)
-            
-            ### Ditto Cloud Integration:
-            This test suite verifies:
-            1. ✅ Document seeded to Ditto Cloud with inverted timestamp ordering
-            2. ${browserstackStatus === 'success' ? '✅' : '❌'} Seeded document appears in Spring Boot app across all browsers
-            3. ✅ Real-time sync functionality validated on BrowserStack infrastructure
-            `;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
+  browserstack-test:
+    name: BrowserStack Web Testing
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Download JAR artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: java-spring-jar-${{ github.run_number }}
+        path: java-spring/build/libs/
+
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+    - name: Start Spring Boot application
+      run: |
+        cd java-spring
+        echo "🚀 Starting Spring Boot application..."
+        
+        # Start Spring Boot in background
+        nohup java -jar build/libs/quickstart-0.0.1-SNAPSHOT.jar --server.port=8080 > spring-boot.log 2>&1 &
+        SPRING_PID=$!
+        
+        # Wait for application to be ready
+        echo "⏳ Waiting for Spring Boot app to start..."
+        for i in {1..60}; do
+          if curl -s -f http://localhost:8080/ > /dev/null 2>&1; then
+            echo "✅ Spring Boot app is running at http://localhost:8080"
+            break
+          fi
+          if [ $i -eq 60 ]; then
+            echo "❌ App failed to start within 60 seconds"
+            cat spring-boot.log
+            exit 1
+          fi
+          echo "Waiting... ($i/60)"
+          sleep 2
+        done
+
+    - name: Run BrowserStack integration tests
+      working-directory: java-spring
+      env:
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+        DITTO_ENABLE_CLOUD_SYNC: true
+        # Pass generated test document title to integration tests
+        GITHUB_TEST_DOC_ID: ${{ needs.build-and-test.outputs.test_doc_title }}
+        GITHUB_ACTIONS: true
+        GITHUB_RUN_ID: ${{ github.run_id }}
+      run: |
+        echo "🧪 Running BrowserStack integration tests..."
+        echo "📝 Test document: $GITHUB_TEST_DOC_ID"
+        ./gradlew test --tests "*BrowserStackIntegrationTest*"
+
+    - name: Stop Spring Boot application
+      if: always()
+      run: |
+        echo "🛑 Stopping Spring Boot application..."
+        pkill -f "java.*quickstart.*jar" || true
+        sleep 2
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: browserstack-test-results-${{ github.run_number }}
+        path: |
+          java-spring/build/reports/
+          java-spring/spring-boot.log
+        retention-days: 1
