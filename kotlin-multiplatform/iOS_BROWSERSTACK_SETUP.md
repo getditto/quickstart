@@ -27,7 +27,9 @@ open iosApp.xcodeproj
    - **Language**: Swift
    - Click **Finish**
 
-### 3. Replace Generated UI Test File
+### 3. Replace Xcode's Generated UI Test File
+
+⚠️ **Important**: After step 2, Xcode will generate a NEW test file (usually `iosAppUITestsUITests.swift`).
 
 **Option A: Automated (Recommended)**
 ```bash
@@ -36,9 +38,9 @@ cd kotlin-multiplatform/iosApp
 ```
 
 **Option B: Manual**  
-Xcode will create `iosAppUITests/iosAppUITestsUITests.swift`.
-Copy the contents from our custom file:
-`kotlin-multiplatform/iosApp/iosAppUITests/iosAppUITests.swift`
+1. Find the Xcode-generated file (typically `iosAppUITests/iosAppUITestsUITests.swift`)
+2. Replace its contents with the code from our prepared file: `iosAppUITests/iosAppUITests.swift`
+3. Or simply copy our file and rename it to match what Xcode expects
 
 ### 4. Share the Scheme
 1. **Product > Scheme > Manage Schemes...**

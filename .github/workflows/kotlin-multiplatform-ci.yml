@@ -534,122 +534,302 @@ jobs:
 
   browserstack-ios:
     name: BrowserStack iOS Testing  
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     needs: build-ios
-    if: false # Disabled: KMP project needs proper iOS UI test target for BrowserStack XCUITest integration
-    timeout-minutes: 1
+    if: needs.build-ios.outputs.ios-build-success == 'true'
+    timeout-minutes: 45
     
     steps:
-    - name: Placeholder for disabled job
-      run: |
-        echo "📝 Inserting iOS test document into Ditto Cloud..."
-        DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
-        
-        RESPONSE=$(curl -s -X POST "https://cloud.ditto.live/${{ secrets.DITTO_APP_ID }}/store/collections/tasks/documents" \
-          -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"document\": {
-              \"_id\": \"$DOC_TITLE\",
-              \"title\": \"$DOC_TITLE\", 
-              \"done\": false,
-              \"deleted\": false
-            }
-          }")
-        
-        echo "Ditto Cloud response: $RESPONSE"
-        echo "✅ Test document '$DOC_TITLE' inserted for iOS BrowserStack validation"
+    - uses: actions/checkout@v4
     
-    - name: Upload iOS app to BrowserStack
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+    
+    - name: Create production .env file
       run: |
-        echo "📤 Uploading iOS app to BrowserStack App Automate..."
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+      working-directory: kotlin-multiplatform
+    
+    - name: Download iOS IPA Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ios-kmp-ipa-${{ github.run_number }}
+        path: ./kotlin-multiplatform/build/
+    
+    - name: Build XCUITest Bundle for BrowserStack
+      id: build_test_bundle
+      working-directory: kotlin-multiplatform/iosApp
+      run: |
+        set -euo pipefail
+
+        echo "🧪 build-for-testing (device) with GitHub run info injected..."
+        DERIVED="$PWD/build/DerivedData"
+        PRODUCTS_DIR="$DERIVED/Build/Products"
+
+        # Build iOS UI tests for device
+        xcodebuild build-for-testing \
+          -project iosApp.xcodeproj \
+          -scheme iosApp \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -derivedDataPath "$DERIVED" \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          GITHUB_RUN_ID=${{ github.run_id }} \
+          GITHUB_RUN_NUMBER=${{ github.run_number }}
+
+        echo "🔍 Looking for Runner.app (device) and .xctestrun…"
+        # Runner.app must come from Debug-iphoneos (device), not simulator
+        RUNNER_APP=$(find "$PRODUCTS_DIR" -type d -path "*/Debug-iphoneos/*-Runner.app" -print -quit || true)
+        XCTESTRUN=$(find "$PRODUCTS_DIR" -maxdepth 1 -type f -name "*.xctestrun" -print -quit || true)
+
+        if [[ -z "${RUNNER_APP:-}" || ! -d "$RUNNER_APP" ]]; then
+          echo "❌ Runner.app not found under $PRODUCTS_DIR"
+          find "$PRODUCTS_DIR" -type d -name "*-Runner.app" || true
+          exit 1
+        fi
+
+        echo "✅ Runner: $RUNNER_APP"
+
+        # Create ZIP with Runner.app at ZIP ROOT (as BrowserStack expects)
+        OUT_DIR="$PWD/../../build"
+        mkdir -p "$OUT_DIR"
+        OUT_ZIP="$OUT_DIR/KMPUITests.zip"
+        rm -f "$OUT_ZIP"
+
+        echo "📦 Creating $OUT_ZIP with root: [$(basename "$RUNNER_APP")]"
+        ( cd "$(dirname "$RUNNER_APP")" && zip -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")" )
+
+        echo "🔍 ZIP contents:"
+        unzip -l "$OUT_ZIP" | sed -n '1,120p'
+
+        echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
+        echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
+    
+    - name: Insert test document into Ditto Cloud
+      run: |
+        # Use the same document title that was built into the IPA
+        DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
+        DOC_ID="$DOC_TITLE"
         
-        # Upload main app IPA to BrowserStack App Automate API  
-        APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-          -F "file=@./ios-artifacts/iosApp-unsigned.ipa" \
-          -F "custom_id=ios_kmp_app_${{ github.run_number }}")
+        echo "📝 Inserting test document that matches build-time configuration"
+        echo "📝 ID: '${DOC_ID}'"
+        echo "📝 Title: '${DOC_TITLE}'"
         
-        APP_URL=$(echo "$APP_RESPONSE" | jq -r '.app_url // empty')
-        echo "iOS App upload response: $APP_RESPONSE"
-        echo "iOS App URL: $APP_URL"
+        # Insert document using Ditto API v4
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"text\": \"${DOC_TITLE}\",
+                \"isCompleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
         
-        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
-          echo "❌ Failed to upload iOS app to BrowserStack"
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "✓ Document title: ${DOC_TITLE}"
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
+    
+    - name: Upload App and Test Bundle to BrowserStack
+      id: upload
+      run: |
+        echo "📤 Uploading KMP iOS app and XCUITest bundle to BrowserStack..."
+        
+        IPA_FILE="./kotlin-multiplatform/build/iosApp-unsigned.ipa"
+        TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
+        
+        echo "📱 App file: $IPA_FILE"
+        echo "🧪 Test bundle: $TEST_BUNDLE"
+        
+        # Validate both files exist
+        if [ ! -f "$IPA_FILE" ]; then
+          echo "❌ IPA file not found: $IPA_FILE"
+          ls -la ./kotlin-multiplatform/build/ || true
           exit 1
         fi
         
-        # Store URL for next step
-        echo "APP_URL=$APP_URL" >> $GITHUB_ENV
-        echo "✅ iOS app uploaded successfully to BrowserStack"
+        if [ ! -f "$TEST_BUNDLE" ]; then
+          echo "❌ Test bundle not found: $TEST_BUNDLE"
+          exit 1
+        fi
+        
+        # Upload app to BrowserStack XCUITest v2 API
+        echo "📱 Uploading KMP iOS app..."
+        APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/app" \
+          -F "file=@$IPA_FILE" \
+          -F "custom_id=ditto-kmp-ios-app")
+        
+        echo "App upload response: $APP_UPLOAD_RESPONSE"
+        APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
+        
+        if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+          echo "❌ Failed to upload app"
+          echo "Response: $APP_UPLOAD_RESPONSE"
+          exit 1
+        fi
+        
+        # Upload test bundle to XCUITest v2 API  
+        echo "🧪 Uploading test bundle..."
+        TEST_UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
+          -F "file=@$TEST_BUNDLE")
+
+        HTTP_CODE=$(echo "$TEST_UPLOAD_RESPONSE" | tail -n1)
+        BODY=$(echo "$TEST_UPLOAD_RESPONSE" | sed '$d')
+
+        echo "Test upload HTTP $HTTP_CODE"
+        echo "Response body: $BODY"
+
+        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+          echo "❌ Upload failed"; exit 1
+        fi
+
+        # Prefer test_suite_url, fallback to test_url
+        TEST_URL=$(echo "$BODY" | jq -r '.test_suite_url // .test_url // empty')
+        
+        if [ -z "$TEST_URL" ]; then
+          echo "❌ Failed to upload test bundle - no test suite URL in response"
+          echo "Response: $BODY"
+          exit 1
+        fi
+        
+        echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+        echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
+        echo "✅ App and test bundle uploaded successfully"
+        echo "📱 App URL: $APP_URL"
+        echo "🧪 Test URL: $TEST_URL"
     
-    - name: Execute iOS tests on BrowserStack
+    - name: Execute XCUITest on BrowserStack
+      id: test
       run: |
-        echo "🧪 Running iOS tests on BrowserStack real device..."
+        # Validate inputs
+        APP_URL="${{ steps.upload.outputs.app_url }}"
+        TEST_URL="${{ steps.upload.outputs.test_url }}"
         DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
         
+        echo "App URL: $APP_URL"
+        echo "Test URL: $TEST_URL"
+        echo "Test Document Title: $DOC_TITLE"
+        
+        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+          echo "Error: No valid app URL available"
+          exit 1
+        fi
+        
+        if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+          echo "Error: No valid test URL available"
+          exit 1
+        fi
+        
+        # Create XCUITest execution request using v2 API with setEnvVariables
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
           -H "Content-Type: application/json" \
           -d "{
             \"app\": \"$APP_URL\",
-            \"testSuite\": \"$TEST_SUITE_URL\",
+            \"testSuite\": \"$TEST_URL\",
             \"devices\": [\"iPhone 15 Pro-17\"],
-            \"env\": {
-              \"GITHUB_TEST_DOC_TITLE\": \"$DOC_TITLE\",
-              \"SYNC_MAX_WAIT_SECONDS\": \"15\"
-            },
-            \"callbackURL\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+            \"project\": \"Ditto Kotlin Multiplatform\",
+            \"buildName\": \"Build #${{ github.run_number }}\",
+            \"buildTag\": \"${{ github.ref_name }}\",
+            \"deviceLogs\": true,
+            \"video\": true,
+            \"networkLogs\": true,
+            \"setEnvVariables\": {
+              \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
+              \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\",
+              \"GITHUB_TEST_DOC_TITLE\": \"$DOC_TITLE\"
+            }
           }")
         
-        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r '.build_id // empty')
-        echo "iOS Build response: $BUILD_RESPONSE"
-        echo "iOS Build ID: $BUILD_ID"
+        echo "BrowserStack API Response:"
+        echo "$BUILD_RESPONSE"
         
-        if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
-          echo "❌ Failed to start iOS test build on BrowserStack"
+        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+        
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "Error: Failed to create BrowserStack build"
+          echo "Response: $BUILD_RESPONSE"
           exit 1
         fi
         
-        echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
-    
-    - name: Wait for iOS BrowserStack tests to complete
+        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+        echo "Build started with ID: $BUILD_ID"
+
+    - name: Wait for XCUITest to complete
       run: |
-        echo "⏳ Waiting for iOS BrowserStack test execution to complete..."
-        BUILD_ID="$BUILD_ID"
+        BUILD_ID="${{ steps.test.outputs.build_id }}"
         
-        # Wait up to 10 minutes for tests to complete
-        for i in {1..20}; do
-          echo "🔍 Checking iOS build status... (attempt $i/20)"
+        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+          echo "Error: No BUILD_ID available"
+          exit 1
+        fi
+        
+        MAX_WAIT_TIME=900  # 15 minutes
+        CHECK_INTERVAL=30   # Check every 30 seconds
+        ELAPSED=0
+        
+        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
           
-          STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build/$BUILD_ID")
+          BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
           
-          STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status // empty')
-          echo "Current iOS build status: $STATUS"
-          
-          if [ "$STATUS" = "passed" ] || [ "$STATUS" = "failed" ] || [ "$STATUS" = "error" ]; then
-            echo "✅ iOS BrowserStack tests completed with status: $STATUS"
-            
-            # Get detailed results
-            FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-              "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build/$BUILD_ID")
-            echo "Final iOS test result: $FINAL_RESULT"
-            
-            if [ "$STATUS" = "passed" ]; then
-              echo "🎉 iOS BrowserStack tests PASSED!"
-              exit 0
-            else
-              echo "❌ iOS BrowserStack tests FAILED or had ERRORS"
-              exit 1
-            fi
+          if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
+            echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+            continue
           fi
           
-          sleep 30
+          echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
+          
+          if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
+            echo "Build completed with status: $BUILD_STATUS"
+            break
+          fi
+          
+          sleep $CHECK_INTERVAL
+          ELAPSED=$((ELAPSED + CHECK_INTERVAL))
         done
         
-        echo "⏰ iOS tests timed out after 10 minutes"
-        exit 1
+        # Get final results
+        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
+        
+        echo "Final build result:"
+        echo "$FINAL_RESULT" | jq .
+        
+        # Check final status
+        BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+        if [ "$BUILD_STATUS" != "passed" ]; then
+          echo "Build failed with status: $BUILD_STATUS"
+          exit 1
+        else
+          echo "All tests passed successfully!"
+        fi
 
   build-summary:
     name: Build Summary
