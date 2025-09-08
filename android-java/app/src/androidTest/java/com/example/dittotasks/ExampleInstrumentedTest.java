@@ -1,8 +1,6 @@
 package com.example.dittotasks;
 
 import android.util.Log;
-import androidx.test.espresso.NoMatchingViewException;
-import androidx.test.espresso.ViewAssertion;
 import androidx.test.espresso.assertion.ViewAssertions;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -45,7 +43,8 @@ public class ExampleInstrumentedTest {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(intent)) {
             Log.i("DittoTest", "Activity launched successfully");
             
-            // Wait for Ditto to initialize and sync data (takes ~5 seconds)
+            // Wait for Ditto to initialize and sync data
+            // Note: Using fixed delay as Espresso IdlingResource is complex for Ditto sync timing
             Log.i("DittoTest", "Waiting for activity and Ditto initialization...");
             Thread.sleep(6000); // Allow time for Ditto sync and UI updates
             
@@ -91,7 +90,9 @@ public class ExampleInstrumentedTest {
             throw e; // Re-throw the original exception
         }
         
-        // Keep screen visible for 3 seconds for BrowserStack video verification
+        // Keep screen visible for BrowserStack video verification
+        // This delay is required for BrowserStack test recording to capture the successful state
+        // before the test completes and the activity is destroyed
         Thread.sleep(3000);
     }
 

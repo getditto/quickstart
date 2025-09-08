@@ -33,7 +33,6 @@ import live.ditto.DittoSyncSubscription;
 import live.ditto.android.DefaultAndroidDittoDependencies;
 import live.ditto.transports.DittoSyncPermissions;
 import live.ditto.transports.DittoTransportConfig;
-// import live.ditto.Logger; // Import not found, will try alternative
 
 public class MainActivity extends ComponentActivity {
     private TaskAdapter taskAdapter;
@@ -57,19 +56,24 @@ public class MainActivity extends ComponentActivity {
         setContentView(R.layout.activity_main);
         
         // Keep screen on during testing to prevent NoActivityResumedException
-        if(BuildConfig.DEBUG){
+        if(BuildConfig.DEBUG && isInstrumentationTest()){
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
         
-        initDitto(); // Re-enabled with debug logging
+        initDitto();
 
-        // Populate AppID view
-        TextView appId = findViewById(R.id.ditto_app_id);
-        appId.setText(String.format("App ID: %s", DITTO_APP_ID));
+        // Populate connection info (only in debug builds)
+        if(BuildConfig.DEBUG) {
+            TextView appId = findViewById(R.id.ditto_app_id);
+            appId.setText(String.format("App ID: %s", DITTO_APP_ID));
 
-        // Populate Playground Token view
-        TextView playgroundToken = findViewById(R.id.ditto_playground_token);
-        playgroundToken.setText(String.format("Playground Token: %s", DITTO_PLAYGROUND_TOKEN));
+            TextView playgroundToken = findViewById(R.id.ditto_playground_token);
+            playgroundToken.setText(String.format("Playground Token: %s", DITTO_PLAYGROUND_TOKEN));
+        } else {
+            // Hide credential views in production
+            findViewById(R.id.ditto_app_id).setVisibility(View.GONE);
+            findViewById(R.id.ditto_playground_token).setVisibility(View.GONE);
+        }
 
         // Initialize "add task" fab
         FloatingActionButton addButton = findViewById(R.id.add_button);
@@ -97,18 +101,6 @@ public class MainActivity extends ComponentActivity {
         taskAdapter.setTasks(List.of());
     }
 
-    private void addTestTasks() {
-        // Add some test tasks including our target task for testing
-        List<Task> testTasks = List.of(
-            new Task("1", "Learn Android Testing", false, false),
-            new Task("2", "Basic Test Task", false, false), // This is our target task
-            new Task("3", "Setup CI Pipeline", false, false),
-            new Task("4", "Write Documentation", true, false),
-            new Task("5", "Review Code Changes", false, false)
-        );
-        taskAdapter.setTasks(testTasks);
-        Log.i("MainActivity", "Added " + testTasks.size() + " test tasks including 'Basic Test Task'");
-    }
 
     void initDitto() {
         Log.d("DittoInit", "=== Starting Ditto initialization ===");
