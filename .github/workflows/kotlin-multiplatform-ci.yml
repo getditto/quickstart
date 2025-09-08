@@ -218,13 +218,13 @@ jobs:
           cd ..
         fi
         
-        if [ -f "iosApp.xcworkspace" ]; then
+        if [ -f "iosApp/iosApp.xcworkspace" ]; then
           echo "XCWORKSPACE=1" >> $GITHUB_ENV
-          CONTAINER="iosApp.xcworkspace"
+          CONTAINER="iosApp/iosApp.xcworkspace"
           CONTAINER_FLAG="-workspace"
         else
           echo "XCWORKSPACE=0" >> $GITHUB_ENV
-          CONTAINER="iosApp.xcodeproj"
+          CONTAINER="iosApp/iosApp.xcodeproj"
           CONTAINER_FLAG="-project"
         fi
         
