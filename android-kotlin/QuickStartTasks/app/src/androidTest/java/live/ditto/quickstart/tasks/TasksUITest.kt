@@ -33,7 +33,7 @@ class TasksUITest {
         
         val testDocumentTitle = fromInstrumentation?.takeIf { it.isNotEmpty() }
             ?: fromBuildConfig?.takeIf { it.isNotEmpty() }
-            ?: "Basic Test Task"
+            ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'github_test_doc_id' or BuildConfig.TEST_DOCUMENT_TITLE")
         
         try {
             // Wait for app initialization and Ditto sync with intelligent polling
