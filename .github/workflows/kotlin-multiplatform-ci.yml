@@ -533,141 +533,14 @@ jobs:
         fi
 
   browserstack-ios:
-    name: BrowserStack iOS Testing
-    runs-on: macos-latest
+    name: BrowserStack iOS Testing  
+    runs-on: ubuntu-latest
     needs: build-ios
-    if: false # Temporarily disabled - no iosAppUITests scheme available
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: kotlin-multiplatform
+    if: false # Disabled: KMP project needs proper iOS UI test target for BrowserStack XCUITest integration
+    timeout-minutes: 1
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'gradle'
-    
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: 'latest-stable'
-    
-    - name: Create production .env file
-      run: |
-        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > ../.env
-        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> ../.env
-        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> ../.env
-        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> ../.env
-    
-    - name: Download iOS IPA artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: ios-kmp-ipa-${{ github.run_number }}
-        path: ./ios-artifacts/
-    
-    - name: Build KMP iOS frameworks (for UI tests)
-      run: |
-        ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace
-        ./gradlew :composeApp:linkDebugFrameworkIosArm64 --stacktrace
-    
-    - name: Prepare Xcode container (for UI tests)
-      working-directory: kotlin-multiplatform/iosApp
-      run: |
-        set -euo pipefail
-        if [ -f "Podfile" ]; then
-          echo "Podfile found → installing pods for UI tests"
-          sudo gem install cocoapods --no-document
-          pod repo update
-          pod install
-        fi
-        
-        if [ -f "iosApp.xcworkspace" ]; then
-          CONTAINER="iosApp.xcworkspace"
-          CONTAINER_FLAG="-workspace"
-        else
-          CONTAINER="iosApp.xcodeproj"
-          CONTAINER_FLAG="-project"
-        fi
-        
-        echo "UITEST_CONTAINER=$CONTAINER" >> $GITHUB_ENV
-        echo "UITEST_CONTAINER_FLAG=$CONTAINER_FLAG" >> $GITHUB_ENV
-        
-        echo "Available UI test schemes:"
-        xcodebuild -list $CONTAINER_FLAG "$CONTAINER"
-    
-    - name: Build XCUITest Bundle for BrowserStack
-      id: build_test_bundle
-      working-directory: kotlin-multiplatform/iosApp
-      run: |
-        set -euo pipefail
-        echo "🧪 Building XCUITest bundle for BrowserStack..."
-        
-        DERIVED="$PWD/build/DerivedData"
-        PRODUCTS_DIR="$DERIVED/Build/Products"
-        
-        # Build test bundle for device using the existing iosApp scheme
-        xcodebuild build-for-testing \
-          $UITEST_CONTAINER_FLAG "$UITEST_CONTAINER" \
-          -scheme iosApp \
-          -configuration Debug \
-          -destination 'generic/platform=iOS' \
-          -sdk iphoneos \
-          -derivedDataPath "$DERIVED" \
-          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-          ENABLE_BITCODE=NO
-        
-        echo "📁 Listing build products..."
-        find "$PRODUCTS_DIR" -type f -name "*.app" -o -name "*.xctestrun" | head -10
-        
-        # Find the Runner app and .xctestrun file
-        RUNNER_APP=$(find "$PRODUCTS_DIR" -type d -path "*/Debug-iphoneos/*-Runner.app" -print -quit)
-        XCTESTRUN=$(find "$PRODUCTS_DIR" -maxdepth 1 -type f -name "*.xctestrun" -print -quit)
-        
-        if [ -z "$RUNNER_APP" ]; then
-          echo "❌ Could not find Runner.app in build products"
-          exit 1
-        fi
-        
-        if [ -z "$XCTESTRUN" ]; then
-          echo "❌ Could not find .xctestrun file in build products"
-          exit 1
-        fi
-        
-        echo "✅ Found Runner app: $RUNNER_APP"
-        echo "✅ Found XCTestRun file: $XCTESTRUN"
-        
-        # Create the test bundle ZIP with both files at root
-        OUT_DIR="$PWD/../../build"
-        mkdir -p "$OUT_DIR"
-        OUT_ZIP="$OUT_DIR/iosAppUITests.zip"
-        rm -f "$OUT_ZIP"
-        
-        echo "📦 Creating BrowserStack test bundle..."
-        
-        # Add Runner.app to zip (from its parent directory to get correct structure)
-        ( cd "$(dirname "$RUNNER_APP")" && zip -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")" )
-        
-        # Add .xctestrun to zip (from products directory)
-        ( cd "$PRODUCTS_DIR" && zip -qry "$OUT_ZIP" "$(basename "$XCTESTRUN")" )
-        
-        if [ -f "$OUT_ZIP" ]; then
-          echo "✅ Test bundle created successfully: $OUT_ZIP"
-          echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
-          
-          # Verify ZIP contents
-          echo "📋 Test bundle contents:"
-          unzip -l "$OUT_ZIP"
-        else
-          echo "❌ Failed to create test bundle"
-          exit 1
-        fi
-    
-    - name: Insert test document into Ditto Cloud
+    - name: Placeholder for disabled job
       run: |
         echo "📝 Inserting iOS test document into Ditto Cloud..."
         DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
@@ -687,13 +560,13 @@ jobs:
         echo "Ditto Cloud response: $RESPONSE"
         echo "✅ Test document '$DOC_TITLE' inserted for iOS BrowserStack validation"
     
-    - name: Upload iOS files to BrowserStack
+    - name: Upload iOS app to BrowserStack
       run: |
-        echo "📤 Uploading iOS app and test bundle to BrowserStack..."
+        echo "📤 Uploading iOS app to BrowserStack App Automate..."
         
-        # Upload main app IPA
+        # Upload main app IPA to BrowserStack App Automate API  
         APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/app" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
           -F "file=@./ios-artifacts/iosApp-unsigned.ipa" \
           -F "custom_id=ios_kmp_app_${{ github.run_number }}")
         
@@ -706,24 +579,9 @@ jobs:
           exit 1
         fi
         
-        # Upload test bundle
-        TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
-          -F "file=@${{ steps.build_test_bundle.outputs.test_bundle_path }}" \
-          -F "custom_id=ios_kmp_tests_${{ github.run_number }}")
-        
-        TEST_SUITE_URL=$(echo "$TEST_RESPONSE" | jq -r '.test_suite_url // empty')
-        echo "iOS Test suite upload response: $TEST_RESPONSE"  
-        echo "iOS Test suite URL: $TEST_SUITE_URL"
-        
-        if [ -z "$TEST_SUITE_URL" ] || [ "$TEST_SUITE_URL" = "null" ]; then
-          echo "❌ Failed to upload iOS test suite to BrowserStack"
-          exit 1
-        fi
-        
-        # Store URLs for next step
+        # Store URL for next step
         echo "APP_URL=$APP_URL" >> $GITHUB_ENV
-        echo "TEST_SUITE_URL=$TEST_SUITE_URL" >> $GITHUB_ENV
+        echo "✅ iOS app uploaded successfully to BrowserStack"
     
     - name: Execute iOS tests on BrowserStack
       run: |
