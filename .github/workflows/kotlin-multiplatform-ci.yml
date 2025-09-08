@@ -49,10 +49,10 @@ jobs:
     
     - name: Create test .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=test_app_id" > ../.env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> ../.env
+        echo "DITTO_AUTH_URL=https://test.com" >> ../.env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> ../.env
     
     - name: Make gradlew executable
       run: chmod +x gradlew
@@ -98,10 +98,10 @@ jobs:
     
     - name: Create test .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=test_app_id" > ../.env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> ../.env
+        echo "DITTO_AUTH_URL=https://test.com" >> ../.env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> ../.env
     
     - name: Make gradlew executable
       run: chmod +x gradlew
@@ -157,10 +157,10 @@ jobs:
     
     - name: Create test .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=test_app_id" > ../.env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> ../.env
+        echo "DITTO_AUTH_URL=https://test.com" >> ../.env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> ../.env
     
     - name: Make gradlew executable
       run: chmod +x gradlew
@@ -225,10 +225,10 @@ jobs:
     
     - name: Create test .env file
       run: |
-        echo "DITTO_APP_ID=test_app_id" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> .env
-        echo "DITTO_AUTH_URL=https://test.com" >> .env
-        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> .env
+        echo "DITTO_APP_ID=test_app_id" > ../.env
+        echo "DITTO_PLAYGROUND_TOKEN=test_token" >> ../.env
+        echo "DITTO_AUTH_URL=https://test.com" >> ../.env
+        echo "DITTO_WEBSOCKET_URL=wss://test.com" >> ../.env
     
     - name: Make gradlew executable
       run: chmod +x gradlew
