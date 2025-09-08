@@ -374,8 +374,8 @@ namespace DittoMauiTasksApp.UITests
                 // BrowserStack SDK will inject the proper driver configuration
                 // based on browserstack.yml settings
                 var options = new AppiumOptions();
-                options.AddAdditionalOption("browserstack.user", Environment.GetEnvironmentVariable("BROWSERSTACK_USERNAME"));
-                options.AddAdditionalOption("browserstack.key", Environment.GetEnvironmentVariable("BROWSERSTACK_ACCESS_KEY"));
+                options.AddAdditionalAppiumOption("browserstack.user", Environment.GetEnvironmentVariable("BROWSERSTACK_USERNAME"));
+                options.AddAdditionalAppiumOption("browserstack.key", Environment.GetEnvironmentVariable("BROWSERSTACK_ACCESS_KEY"));
                 
                 // The SDK will handle the actual driver initialization
                 Driver = new IOSDriver(new Uri("https://hub-cloud.browserstack.com/wd/hub"), options);

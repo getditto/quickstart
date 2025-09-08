@@ -12,24 +12,27 @@ platforms:
   - deviceName: iPhone 15
     platformVersion: 17
     platformName: ios
+    app: __IOS_APP_URL__
   - deviceName: iPhone 14
     platformVersion: 16
     platformName: ios
+    app: __IOS_APP_URL__
   - deviceName: iPad Pro 12.9 2022
     platformVersion: 16
     platformName: ios
+    app: __IOS_APP_URL__
   - deviceName: Google Pixel 8
     platformVersion: 14
     platformName: android
+    app: __ANDROID_APP_URL__
   - deviceName: Samsung Galaxy S23
     platformVersion: 13
     platformName: android
+    app: __ANDROID_APP_URL__
   - deviceName: Google Pixel 6
     platformVersion: 12
     platformName: android
-
-# App path - will be set dynamically at runtime  
-app: "placeholder"
+    app: __ANDROID_APP_URL__
 
 # Project name
 projectName: Ditto MAUI Quickstart

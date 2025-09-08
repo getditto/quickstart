@@ -53,6 +53,7 @@
         <!-- Test configuration files -->
         <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
         <None Include="browserstack.yml" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="browserstack.template.yml" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <!-- BrowserStack specific build targets -->

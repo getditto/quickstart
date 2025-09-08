@@ -138,16 +138,25 @@ jobs:
 
       - name: Install BrowserStack SDK (Apple Silicon support)
         if: runner.arch == 'ARM64'
+        working-directory: dotnet-maui/DittoMauiTasksApp.UITests
         run: |
           dotnet tool install browserstack-sdk --version 1.16.3 --create-manifest-if-needed
           dotnet browserstack-sdk setup-dotnet --dotnet-path "." --dotnet-version "9.0.x" --yes
 
       - name: Build UI Test project
         working-directory: dotnet-maui/DittoMauiTasksApp.UITests
+        env:
+          # Temporarily disable BrowserStack SDK during build
+          BROWSERSTACK_USERNAME: ""
+          BROWSERSTACK_ACCESS_KEY: ""
         run: |
-          # Build UITests for .NET only (not for mobile platforms)
+          # Create necessary directories
+          mkdir -p obj/Release/net9.0
+          mkdir -p .config
+          
+          # Build UITests without BrowserStack SDK processing first
           dotnet restore --ignore-failed-sources
-          dotnet build DittoMauiTasksApp.UITests.csproj -c Release -f net9.0 -p:BROWSERSTACK_BUILD=true
+          dotnet build DittoMauiTasksApp.UITests.csproj -c Release -f net9.0
 
       - name: Upload iOS app to BrowserStack
         id: upload-ios
@@ -209,13 +218,20 @@ jobs:
           echo "android_app_url=$ANDROID_APP_URL" >> $GITHUB_OUTPUT
           echo "Android app uploaded successfully: $ANDROID_APP_URL"
 
+      - name: Generate BrowserStack configuration
+        working-directory: dotnet-maui/DittoMauiTasksApp.UITests
+        run: |
+          # Generate browserstack.yml with actual app URLs
+          sed "s|__IOS_APP_URL__|${{ steps.upload-ios.outputs.ios_app_url }}|g; s|__ANDROID_APP_URL__|${{ steps.upload-android.outputs.android_app_url }}|g" browserstack.template.yml > browserstack.yml
+          
+          echo "Generated browserstack.yml:"
+          cat browserstack.yml
+
       - name: Run BrowserStack tests
         id: test-browserstack
         env:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          BROWSERSTACK_IOS_APP_URL: ${{ steps.upload-ios.outputs.ios_app_url }}
-          BROWSERSTACK_ANDROID_APP_URL: ${{ steps.upload-android.outputs.android_app_url }}
           GITHUB_TEST_DOC_ID: ${{ steps.seed-document.outputs.doc_id }}
           GITHUB_TEST_TITLE: ${{ steps.seed-document.outputs.title }}
           GITHUB_RUN_ID: ${{ github.run_id }}
@@ -226,19 +242,11 @@ jobs:
           echo "Starting BrowserStack tests via SDK..."
           
           # The BrowserStack SDK will handle platform-specific testing based on browserstack.yml
-          if [ "${{ runner.arch }}" = "ARM64" ]; then
-            # For Apple Silicon Macs
-            ./dotnet test DittoMauiTasksApp.UITests.csproj \
-              --configuration Release \
-              --logger "trx;LogFileName=browserstack-results.trx" \
-              --logger "console;verbosity=detailed"
-          else
-            # For Intel Macs
-            dotnet test DittoMauiTasksApp.UITests.csproj \
-              --configuration Release \
-              --logger "trx;LogFileName=browserstack-results.trx" \
-              --logger "console;verbosity=detailed"
-          fi
+          dotnet test DittoMauiTasksApp.UITests.csproj \
+            --configuration Release \
+            --logger "trx;LogFileName=browserstack-results.trx" \
+            --logger "console;verbosity=detailed" \
+            --no-build
           
           TEST_EXIT_CODE=$?
           echo "Tests completed with exit code: $TEST_EXIT_CODE"
