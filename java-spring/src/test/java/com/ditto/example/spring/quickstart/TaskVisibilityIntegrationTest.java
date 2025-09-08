@@ -66,6 +66,13 @@ class TaskVisibilityIntegrationTest {
             browserstackOptions.put("browserVersion", "latest");
             browserstackOptions.put("local", "true");
             
+            // Add BrowserStack Local identifier if provided
+            String localIdentifier = System.getProperty("BROWSERSTACK_LOCAL_IDENTIFIER");
+            if (localIdentifier != null && !localIdentifier.isEmpty()) {
+                browserstackOptions.put("localIdentifier", localIdentifier);
+                System.out.println("🔗 Using BrowserStack Local identifier: " + localIdentifier);
+            }
+            
             options.setCapability("bstack:options", browserstackOptions);
             
             driver = new RemoteWebDriver(
