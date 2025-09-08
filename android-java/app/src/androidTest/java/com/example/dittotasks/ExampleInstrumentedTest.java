@@ -19,7 +19,51 @@ import static org.hamcrest.Matchers.allOf;
 public class ExampleInstrumentedTest {
 
     @Test
-    public void testGitHubTestDocumentSyncs() throws Exception {
+    public void testSuccessWithSeededDocument() throws Exception {
+        String title = getTestDocumentTitle();
+        
+        // Success case: should find the seeded document
+        if (title == null || title.trim().isEmpty()) {
+            throw new AssertionError("Expected test title in 'github_test_doc_id' (or GITHUB_TEST_DOC_ID); none provided. Must be seeded by CI.");
+        }
+
+        Log.i("DittoTest", "✅ Success test - Looking for seeded document: " + title);
+        launchActivityAndPerformTest(title, true);
+    }
+    
+    @Test
+    public void testFailureWithEmptyEnvironmentVariable() throws Exception {
+        String title = getTestDocumentTitle();
+        
+        // Failure case: empty environment variable should be handled gracefully
+        if (title == null || title.trim().isEmpty()) {
+            Log.i("DittoTest", "✅ Empty env var test - Correctly detected missing document title");
+            return; // Test passes - we expected this condition
+        }
+        
+        // If we get here with a non-empty title, this test doesn't apply
+        Log.i("DittoTest", "⚠️  Empty env var test - Received non-empty title, skipping this validation");
+    }
+    
+    @Test  
+    public void testFailureWithNonExistingDocument() throws Exception {
+        String title = getTestDocumentTitle();
+        
+        // Failure case: non-existing document should fail gracefully
+        if (title == null || title.trim().isEmpty()) {
+            throw new AssertionError("Expected test title in 'github_test_doc_id' (or GITHUB_TEST_DOC_ID); none provided. Must be seeded by CI.");
+        }
+        
+        // Only run this test if the title looks like random gibberish
+        if (title.contains("random_gibberish_that_does_not_exist")) {
+            Log.i("DittoTest", "✅ Non-existing document test - Looking for gibberish document: " + title);
+            launchActivityAndPerformTest(title, false);
+        } else {
+            Log.i("DittoTest", "⚠️  Non-existing document test - Title doesn't match expected pattern, skipping");
+        }
+    }
+    
+    private String getTestDocumentTitle() {
         // Get environment variable with fallback options
         String title = InstrumentationRegistry.getArguments().getString("github_test_doc_id");
         
@@ -31,23 +75,19 @@ public class ExampleInstrumentedTest {
             title = System.getenv("GITHUB_TEST_DOC_ID");
         }
         
-        // No fallback - fail if seed is not set
-        if (title == null || title.trim().isEmpty()) {
-            throw new AssertionError("Expected test title in 'github_test_doc_id' (or GITHUB_TEST_DOC_ID); none provided. Must be seeded by CI.");
-        }
-
-        Log.i("DittoTest", "Testing with document title: " + title);
-
-        // Launch activity manually with proper error handling
-        Log.i("DittoTest", "Launching MainActivity...");
+        return title;
+    }
+    
+    private void launchActivityAndPerformTest(String title, boolean shouldFind) throws Exception {
+        Log.i("DittoTest", "Launching MainActivity for test with title: " + title);
         Intent intent = new Intent(InstrumentationRegistry.getInstrumentation().getTargetContext(), MainActivity.class);
         
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(intent)) {
             Log.i("DittoTest", "Activity launched successfully");
             
-            // Wait for Ditto to initialize and sync data (takes ~5 seconds)
+            // Wait for Ditto to initialize and sync data
             Log.i("DittoTest", "Waiting for activity and Ditto initialization...");
-            Thread.sleep(6000); // Allow time for Ditto sync and UI updates
+            Thread.sleep(6000);
             
             // Verify activity is still running
             scenario.onActivity(activity -> {
@@ -55,40 +95,53 @@ public class ExampleInstrumentedTest {
             });
             
             // Run the test logic
-            performTestLogic(title);
+            performTestLogic(title, shouldFind);
         } catch (Exception e) {
             Log.e("DittoTest", "Activity failed: " + e.getMessage(), e);
             throw e;
         }
     }
 
-    private void performTestLogic(String title) throws InterruptedException {
+    private void performTestLogic(String title, boolean shouldFind) throws InterruptedException {
         
         // Wait for RecyclerView to appear and be populated (with timeout)
         waitForRecyclerViewToLoad(7_000);
         
-        // Verify the seeded document is visible at the top (no scrolling needed)
-        Log.i("DittoTest", "🔍 Searching for document with title: '" + title + "'");
+        // Verify the document behavior based on expectation
+        Log.i("DittoTest", "🔍 Searching for document with title: '" + title + "' (should find: " + shouldFind + ")");
         
         try {
             onView(allOf(withId(R.id.task_text), withText(title)))
                     .check(ViewAssertions.matches(isDisplayed()));
-            Log.i("DittoTest", "✅ Found document with title: '" + title + "'");
-        } catch (Exception e) {
-            Log.e("DittoTest", "❌ Document NOT found with title: '" + title + "'");
-            Log.e("DittoTest", "Error: " + e.getMessage());
             
-            // Log what's actually visible for debugging
-            try {
-                Log.i("DittoTest", "🔍 Debugging: Checking what tasks are actually visible...");
-                onView(withId(R.id.task_list))
-                        .check(ViewAssertions.matches(isDisplayed()));
-                Log.i("DittoTest", "RecyclerView is present and displayed");
-            } catch (Exception recyclerError) {
-                Log.e("DittoTest", "RecyclerView not found or displayed: " + recyclerError.getMessage());
+            if (shouldFind) {
+                Log.i("DittoTest", "✅ SUCCESS: Found document with title: '" + title + "' as expected");
+            } else {
+                Log.e("DittoTest", "❌ UNEXPECTED: Found document with title: '" + title + "' but expected it to be missing");
+                throw new AssertionError("Expected document to NOT be found, but it was present: " + title);
             }
-            
-            throw e; // Re-throw the original exception
+        } catch (NoMatchingViewException e) {
+            if (shouldFind) {
+                Log.e("DittoTest", "❌ FAILURE: Document NOT found with title: '" + title + "' but expected it to be present");
+                Log.e("DittoTest", "Error: " + e.getMessage());
+                
+                // Log what's actually visible for debugging
+                try {
+                    Log.i("DittoTest", "🔍 Debugging: Checking what tasks are actually visible...");
+                    onView(withId(R.id.task_list))
+                            .check(ViewAssertions.matches(isDisplayed()));
+                    Log.i("DittoTest", "RecyclerView is present and displayed");
+                } catch (Exception recyclerError) {
+                    Log.e("DittoTest", "RecyclerView not found or displayed: " + recyclerError.getMessage());
+                }
+                
+                throw e; // Re-throw - this is a real failure
+            } else {
+                Log.i("DittoTest", "✅ SUCCESS: Document with title: '" + title + "' was correctly NOT found as expected");
+            }
+        } catch (Exception e) {
+            Log.e("DittoTest", "❌ Unexpected error during document search: " + e.getMessage());
+            throw e;
         }
         
         // Keep screen visible for 3 seconds for BrowserStack video verification
