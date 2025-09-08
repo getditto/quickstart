@@ -54,11 +54,11 @@ jobs:
       working-directory: android-java
       run: ./gradlew lint
 
-  build:
-    name: Build APKs
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
     needs: lint
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       test_doc_title: ${{ steps.test_doc.outputs.test_doc_title }}
     
@@ -110,9 +110,17 @@ jobs:
         DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-        DITTO_ENABLE_CLOUD_SYNC: true
         TEST_DOCUMENT_TITLE: ${{ steps.test_doc.outputs.test_doc_title }}
       run: ./gradlew assembleDebug assembleDebugAndroidTest
+    
+    - name: Run unit tests
+      working-directory: android-java
+      env:
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+      run: ./gradlew test
     
     - name: Upload APK artifacts
       uses: actions/upload-artifact@v4
@@ -122,47 +130,6 @@ jobs:
           android-java/app/build/outputs/apk/debug/app-debug.apk
           android-java/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
         retention-days: 1
-
-  test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: lint
-    timeout-minutes: 15
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-    
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-    
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-    
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-    
-    - name: Run unit tests
-      working-directory: android-java
-      env:
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
-        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
-        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-        DITTO_ENABLE_CLOUD_SYNC: false
-      run: ./gradlew test
     
     - name: Upload test reports
       if: always()
@@ -175,7 +142,7 @@ jobs:
   browserstack-test:
     name: BrowserStack Device Testing
     runs-on: ubuntu-latest
-    needs: [build, test]
+    needs: build-and-test
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
     
@@ -191,7 +158,7 @@ jobs:
     - name: Insert test document into Ditto Cloud
       run: |
         # Use the same document title that was built into the APK
-        DOC_TITLE="${{ needs.build.outputs.test_doc_title }}"
+        DOC_TITLE="${{ needs.build-and-test.outputs.test_doc_title }}"
         DOC_ID="$DOC_TITLE"
         
         echo "📝 Inserting test document that matches build-time configuration"
@@ -310,7 +277,7 @@ jobs:
             \"autoGrantPermissions\": true,
             \"instrumentationLogs\": true,
             \"instrumentationOptions\": {
-              \"github_test_doc_id\": \"${{ needs.build.outputs.test_doc_title }}\"
+              \"github_test_doc_id\": \"${{ needs.build-and-test.outputs.test_doc_title }}\"
             }
           }")
         
@@ -408,7 +375,7 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
-          const testDocId = '${{ needs.build.outputs.test_doc_title }}';
+          const testDocId = '${{ needs.build-and-test.outputs.test_doc_title }}';
           const status = '${{ job.status }}';
           const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
           
