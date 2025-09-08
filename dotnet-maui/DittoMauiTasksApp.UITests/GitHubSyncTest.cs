@@ -225,7 +225,7 @@ namespace DittoMauiTasksApp.UITests
             {
                 try
                 {
-                    var elements = _driver?.FindElements(strategy) ?? new ReadOnlyCollection<IWebElement>(new List<IWebElement>());
+                    var elements = _driver?.FindElements(strategy) ?? new List<AppiumElement>().AsReadOnly();
                     foreach (var element in elements)
                     {
                         var elementText = GetElementText(element);
@@ -356,7 +356,7 @@ namespace DittoMauiTasksApp.UITests
     // Test fixture for managing Appium driver lifecycle
     public class AppiumTestFixture : IDisposable
     {
-        public AppiumDriver Driver { get; private set; }
+        public AppiumDriver Driver { get; private set; } = null!;
         
         public AppiumTestFixture()
         {
@@ -374,21 +374,21 @@ namespace DittoMauiTasksApp.UITests
                 // BrowserStack SDK will inject the proper driver configuration
                 // based on browserstack.yml settings
                 var options = new AppiumOptions();
-                options.AddAdditionalCapability("browserstack.user", Environment.GetEnvironmentVariable("BROWSERSTACK_USERNAME"));
-                options.AddAdditionalCapability("browserstack.key", Environment.GetEnvironmentVariable("BROWSERSTACK_ACCESS_KEY"));
+                options.AddAdditionalOption("browserstack.user", Environment.GetEnvironmentVariable("BROWSERSTACK_USERNAME"));
+                options.AddAdditionalOption("browserstack.key", Environment.GetEnvironmentVariable("BROWSERSTACK_ACCESS_KEY"));
                 
                 // The SDK will handle the actual driver initialization
-                Driver = new AppiumDriver(new Uri("https://hub-cloud.browserstack.com/wd/hub"), options);
+                Driver = new IOSDriver(new Uri("https://hub-cloud.browserstack.com/wd/hub"), options);
             }
             else
             {
                 // Local configuration for development/debugging
                 var options = new AppiumOptions();
-                options.AddAdditionalCapability("platformName", "iOS");
-                options.AddAdditionalCapability("automationName", "XCUITest");
-                options.AddAdditionalCapability("deviceName", "iPhone Simulator");
+                options.PlatformName = "iOS";
+                options.AutomationName = "XCUITest";
+                options.DeviceName = "iPhone Simulator";
                 
-                Driver = new AppiumDriver(new Uri("http://localhost:4723/"), options);
+                Driver = new IOSDriver(new Uri("http://localhost:4723/"), options);
             }
         }
         

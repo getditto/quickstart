@@ -40,12 +40,13 @@
         <!-- <PackageReference Include="Microsoft.Maui.Appium" Version="9.0.0" /> -->
 
         <!-- Appium WebDriver for cross-platform UI testing -->
-        <PackageReference Include="Appium.WebDriver" Version="4.4.5" />
-        <PackageReference Include="Selenium.WebDriver" Version="4.15.0" />
-        <PackageReference Include="Selenium.Support" Version="4.15.0" />
+        <PackageReference Include="Appium.WebDriver" Version="5.1.0" />
+        <PackageReference Include="Selenium.WebDriver" Version="4.27.0" />
+        <PackageReference Include="Selenium.Support" Version="4.27.0" />
         
         <!-- BrowserStack SDK and TestAdapter -->
-        <PackageReference Include="BrowserStack.TestAdapter" Version="0.13.3" />
+        <!-- Note: BrowserStack SDK currently requires .NET 8, so we'll skip it for local builds -->
+        <PackageReference Include="BrowserStack.TestAdapter" Version="0.13.3" Condition="'$(BROWSERSTACK_BUILD)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -58,6 +59,11 @@
     <Target Name="PrepareForBrowserStack" BeforeTargets="Build">
         <Message Text="Preparing UI tests for BrowserStack execution" Importance="high" />
     </Target>
+    
+    <!-- Skip BrowserStack patching for local builds when SDK is not available -->
+    <PropertyGroup Condition="'$(BROWSERSTACK_USERNAME)' == ''">
+        <BrowserStackSkipPatch>true</BrowserStackSkipPatch>
+    </PropertyGroup>
 
     <!-- Test output settings -->
     <PropertyGroup>

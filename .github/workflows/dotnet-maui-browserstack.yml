@@ -147,7 +147,7 @@ jobs:
         run: |
           # Build UITests for .NET only (not for mobile platforms)
           dotnet restore --ignore-failed-sources
-          dotnet build DittoMauiTasksApp.UITests.csproj -c Release -f net9.0
+          dotnet build DittoMauiTasksApp.UITests.csproj -c Release -f net9.0 -p:BROWSERSTACK_BUILD=true
 
       - name: Upload iOS app to BrowserStack
         id: upload-ios
