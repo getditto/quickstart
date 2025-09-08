@@ -28,8 +28,16 @@ open iosApp.xcodeproj
    - Click **Finish**
 
 ### 3. Replace Generated UI Test File
-Xcode will create `iosAppUITests/iosAppUITests.swift`. 
-**Replace its contents** with the file I already created at:
+
+**Option A: Automated (Recommended)**
+```bash
+cd kotlin-multiplatform/iosApp
+./replace_ui_test_file.sh
+```
+
+**Option B: Manual**  
+Xcode will create `iosAppUITests/iosAppUITestsUITests.swift`.
+Copy the contents from our custom file:
 `kotlin-multiplatform/iosApp/iosAppUITests/iosAppUITests.swift`
 
 ### 4. Share the Scheme
