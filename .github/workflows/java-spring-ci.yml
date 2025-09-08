@@ -47,13 +47,9 @@ jobs:
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
-      - name: Run linter (PMD)
+      - name: Run linter (PMD + SpotBugs)
         working-directory: java-spring
-        run: ./gradlew pmdMain pmdTest
-
-      - name: Run static analysis (SpotBugs)
-        working-directory: java-spring
-        run: ./gradlew spotbugsMain
+        run: ./gradlew pmdMain pmdTest spotbugsMain
 
   build:
     name: Build
@@ -114,7 +110,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: java-spring-jar-${{ github.run_number }}
-          path: java-spring/build/libs/quickstart-0.0.1-SNAPSHOT.jar
+          path: java-spring/build/libs/*.jar
           retention-days: 1
 
   browserstack-test:
@@ -195,6 +191,8 @@ jobs:
       with:
         username: ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        build-name: "Java Spring Selenium Tests #${{ github.run_number }}"
+        project-name: "Ditto Java Spring"
 
     - name: Start BrowserStack Local
       uses: browserstack/github-actions/setup-local@master
@@ -205,7 +203,7 @@ jobs:
     - name: Start Spring Boot app in background
       working-directory: java-spring
       run: |
-        nohup java -jar build/libs/quickstart-0.0.1-SNAPSHOT.jar \
+        nohup java -jar build/libs/*.jar \
           --server.port=8080 \
           --spring.profiles.active=test > app.log 2>&1 &
         echo $! > app.pid
