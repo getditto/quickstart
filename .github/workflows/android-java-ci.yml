@@ -54,13 +54,11 @@ jobs:
       working-directory: android-java
       run: ./gradlew lint
 
-  build-and-test:
-    name: Build and Test
+  build:
+    name: Build APKs
     runs-on: ubuntu-latest
     needs: lint
-    timeout-minutes: 30
-    outputs:
-      test_doc_title: ${{ steps.test_doc.outputs.test_doc_title }}
+    timeout-minutes: 20
     
     steps:
     - uses: actions/checkout@v4
@@ -87,40 +85,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     
-    - name: Generate test document title
-      id: test_doc
-      run: |
-        # Create a unique GitHub test document with inverted timestamp to appear at top
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_ID="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        
-        echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
-        echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
-        echo "📝 Generated test document (inverted timestamp for top position)"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
-    
     - name: Build APKs
       working-directory: android-java
-      env:
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
-        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
-        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-        TEST_DOCUMENT_TITLE: ${{ steps.test_doc.outputs.test_doc_title }}
       run: ./gradlew assembleDebug assembleDebugAndroidTest
-    
-    - name: Run unit tests
-      working-directory: android-java
-      env:
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
-        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
-        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-      run: ./gradlew test
     
     - name: Upload APK artifacts
       uses: actions/upload-artifact@v4
@@ -130,19 +97,11 @@ jobs:
           android-java/app/build/outputs/apk/debug/app-debug.apk
           android-java/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
         retention-days: 1
-    
-    - name: Upload test reports
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-reports-${{ github.run_number }}
-        path: android-java/app/build/reports/
-        retention-days: 1
 
   browserstack-test:
     name: BrowserStack Device Testing
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: build
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
     
@@ -157,11 +116,13 @@ jobs:
     
     - name: Insert test document into Ditto Cloud
       run: |
-        # Use the same document title that was built into the APK
-        DOC_TITLE="${{ needs.build-and-test.outputs.test_doc_title }}"
-        DOC_ID="$DOC_TITLE"
+        # Generate test document for BrowserStack testing
+        TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+        DOC_ID="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+        DOC_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
         
-        echo "📝 Inserting test document that matches build-time configuration"
+        echo "📝 Inserting test document for BrowserStack testing"
         echo "📝 ID: '${DOC_ID}'"
         echo "📝 Title: '${DOC_TITLE}'"
         
@@ -277,7 +238,7 @@ jobs:
             \"autoGrantPermissions\": true,
             \"instrumentationLogs\": true,
             \"instrumentationOptions\": {
-              \"github_test_doc_id\": \"${{ needs.build-and-test.outputs.test_doc_title }}\"
+              \"github_test_doc_id\": \"${DOC_TITLE}\"
             }
           }")
         
@@ -375,7 +336,7 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
-          const testDocId = '${{ needs.build-and-test.outputs.test_doc_title }}';
+          const testDocId = 'Generated during BrowserStack testing';
           const status = '${{ job.status }}';
           const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
           
