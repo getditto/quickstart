@@ -12,12 +12,13 @@ import {
 } from "react-native";
 import {
   Ditto,
-  IdentityOnlinePlayground,
   StoreObserver,
   SyncSubscription,
   TransportConfig,
+  DittoConfig,
+  Authenticator
 } from "@dittolive/ditto";
-import { DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN } from "@env";
+import { DITTO_APP_ID, DITTO_AUTH_URL, DITTO_PLAYGROUND_TOKEN } from "@env";
 
 import Fab from "./components/Fab";
 import NewTaskModal from "./components/NewTaskModal";
@@ -33,11 +34,13 @@ type Task = {
   deleted: boolean;
 };
 
-const identity: IdentityOnlinePlayground = {
-  type: "onlinePlayground",
-  appID: DITTO_APP_ID,
-  token: DITTO_PLAYGROUND_TOKEN,
-};
+const config = new DittoConfig(
+  DITTO_APP_ID,
+  {
+    mode: "server",
+    url: DITTO_AUTH_URL
+  }
+);
 
 async function requestPermissions() {
   const permissions = [
@@ -116,22 +119,12 @@ const App = () => {
 
   const initDitto = async () => {
     try {
-      ditto.current = new Ditto(identity);
-
-      // Initialize transport config
-      {
-        const transportsConfig = new TransportConfig();
-        transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
-        transportsConfig.peerToPeer.lan.isEnabled = true;
-        transportsConfig.peerToPeer.lan.isMdnsEnabled = true;
-
-        if (Platform.OS === "ios") {
-          transportsConfig.peerToPeer.awdl.isEnabled = true;
-        }
-        ditto.current.setTransportConfig(transportsConfig);
-      }
-
-      ditto.current.startSync();
+      ditto.current = Ditto.openSync(config); 
+      await ditto.current.auth.setExpirationHandler((ditto) => {
+        // Handle token expiration
+        ditto.auth.login(DITTO_PLAYGROUND_TOKEN, Authenticator.DEVELOPMENT_PROVIDER);
+      })
+      ditto.current.sync.start();
 
       // Register a subscription, which determines what data syncs to this peer
       // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
@@ -142,7 +135,7 @@ const App = () => {
       // Register observer, which runs against the local database on this peer
       // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
       taskObserver.current = ditto.current.store.registerObserver(
-        "SELECT * FROM tasks WHERE NOT deleted",
+        "SELECT * FROM tasks WHERE deleted != false",
         (response) => {
           const fetchedTasks: Task[] = response.items.map((doc) => ({
             id: doc.value._id,
@@ -192,7 +185,7 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <DittoInfo appId={identity.appID} token={identity.token} />
+      <DittoInfo appId={config.databaseID} token={DITTO_PLAYGROUND_TOKEN} />
       <DittoSync value={syncEnabled} onChange={toggleSync} />
       <Fab onPress={() => setModalVisible(true)} />
       <NewTaskModal
