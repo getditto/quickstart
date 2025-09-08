@@ -1,16 +1,16 @@
-name: Android Kotlin CI
+name: Android Java CI
 
 on:
   push:
     branches: [ main ]
     paths: 
-      - 'android-kotlin/**'
-      - '.github/workflows/android-kotlin-ci.yml'
+      - 'android-java/**'
+      - '.github/workflows/android-java-ci.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'android-kotlin/**'
-      - '.github/workflows/android-kotlin-ci.yml'
+      - 'android-java/**'
+      - '.github/workflows/android-java-ci.yml'
   workflow_dispatch:
 
 concurrency:
