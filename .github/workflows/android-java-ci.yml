@@ -85,6 +85,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
     - name: Build APKs
       working-directory: android-java
       run: ./gradlew assembleDebug assembleDebugAndroidTest
