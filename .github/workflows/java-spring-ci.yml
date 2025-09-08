@@ -126,3 +126,130 @@ jobs:
           path: java-spring/build/libs/quickstart-0.0.1-SNAPSHOT.jar
           retention-days: 1
 
+  browserstack-test:
+    name: BrowserStack Device Testing
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download JAR artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: java-spring-jar-${{ github.run_number }}
+        path: java-spring/build/libs/
+    
+    - name: Insert test document into Ditto Cloud
+      run: |
+        # Use the same document title that was generated in build job
+        DOC_TITLE="${{ needs.build.outputs.test_doc_title }}"
+        DOC_ID="$DOC_TITLE"
+        
+        echo "📝 Inserting test document that matches build-time configuration"
+        echo "📝 ID: '${DOC_ID}'"
+        echo "📝 Title: '${DOC_TITLE}'"
+        
+        # Insert document using Ditto API v4 (same as Android workflow)
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"${DOC_TITLE}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "✓ Document title: ${DOC_TITLE}"
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+    
+    - name: Create .env file
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
+    - name: Start Spring Boot app in background
+      working-directory: java-spring
+      run: |
+        nohup java -jar build/libs/quickstart-0.0.1-SNAPSHOT.jar \
+          --server.port=8080 \
+          --spring.profiles.active=test > app.log 2>&1 &
+        echo $! > app.pid
+        
+        # Wait for application to be ready
+        echo "Waiting for Spring Boot app to start..."
+        for i in {1..30}; do
+          if curl -f http://localhost:8080 >/dev/null 2>&1; then
+            echo "✓ Spring Boot app is ready"
+            break
+          fi
+          echo "Waiting... ($i/30)"
+          sleep 2
+        done
+    
+    - name: Run Selenium tests on BrowserStack
+      working-directory: java-spring
+      env:
+        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        TEST_TASK_TITLE: ${{ needs.build.outputs.test_doc_title }}
+        GITHUB_TEST_DOC_ID: ${{ needs.build.outputs.test_doc_title }}
+      run: ./gradlew test --tests "*TaskVisibilityIntegrationTest"
+    
+    - name: Stop Spring Boot app
+      if: always()
+      working-directory: java-spring
+      run: |
+        if [ -f app.pid ]; then
+          PID=$(cat app.pid)
+          kill $PID || true
+          rm app.pid
+        fi
+    
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: browserstack-test-reports-${{ github.run_number }}
+        path: java-spring/build/reports/tests/
+        retention-days: 1
+    
+    - name: Upload app logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: spring-boot-logs-${{ github.run_number }}
+        path: java-spring/app.log
+        retention-days: 1
+
