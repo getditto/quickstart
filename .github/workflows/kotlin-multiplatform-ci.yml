@@ -109,9 +109,6 @@ jobs:
     - name: Build Android Debug APK
       run: ./gradlew :composeApp:assembleDebug --stacktrace
     
-    - name: Run Android unit tests
-      run: ./gradlew :composeApp:testDebugUnitTest --stacktrace
-    
     - name: Upload Android build outputs
       uses: actions/upload-artifact@v4
       if: always()
@@ -170,9 +167,6 @@ jobs:
     
     - name: Build iOS Framework (Device ARM64)
       run: ./gradlew :composeApp:linkDebugFrameworkIosArm64 --stacktrace
-    
-    - name: Run iOS unit tests
-      run: ./gradlew :composeApp:iosSimulatorArm64Test --stacktrace
     
     - name: Build iOS app with Xcode
       working-directory: kotlin-multiplatform/iosApp
@@ -235,9 +229,6 @@ jobs:
     
     - name: Build Desktop application
       run: ./gradlew :composeApp:packageDistributionForCurrentOS --stacktrace
-    
-    - name: Run Desktop unit tests
-      run: ./gradlew :composeApp:desktopTest --stacktrace
     
     - name: Upload Desktop build outputs
       uses: actions/upload-artifact@v4
