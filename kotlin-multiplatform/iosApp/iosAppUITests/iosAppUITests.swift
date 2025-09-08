@@ -57,6 +57,7 @@ final class iosAppUITests: XCTestCase {
         while Date().timeIntervalSince(start) < maxWaitTime, !found {
             let elapsed = Date().timeIntervalSince(start)
             print("📱 KMP UI search attempt at \(String(format: "%.1f", elapsed))s elapsed...")
+            print("🎯 BrowserStack Log: Searching for document '\(expectedTitle)' - attempt \(Int(elapsed) + 1)")
 
             // For KMP Compose UI, look for LazyColumn items or similar
             // This may need adjustment based on your actual Compose UI structure
@@ -69,13 +70,16 @@ final class iosAppUITests: XCTestCase {
             if lazyColumns.exists {
                 targetContainer = lazyColumns
                 print("📋 Found LazyColumn container")
+                print("🎯 BrowserStack Log: Using LazyColumn container for document search")
             } else if scrollViews.count > 0 {
                 targetContainer = scrollViews.firstMatch
                 print("📋 Found ScrollView container")
+                print("🎯 BrowserStack Log: Using ScrollView container for document search")
             } else {
                 // Fallback to main app window
                 targetContainer = app
                 print("📋 Using main app container")
+                print("🎯 BrowserStack Log: Using main app window for document search")
             }
 
             if let container = targetContainer {
@@ -93,17 +97,47 @@ final class iosAppUITests: XCTestCase {
                             continue
                         }
 
+                        // Try to tap the element to expand it in case text is truncated
+                        if textElement.exists && textElement.isHittable {
+                            textElement.tap()
+                            // Brief pause to allow text expansion
+                            usleep(200000) // 0.2 seconds
+                        }
+                        
                         let label = textElement.label
                         print("   Item[\(i)]: '\(label)'")
-
-                        if label == expectedTitle {
-                            print("✅ FOUND EXACT MATCH! KMP document '\(label)' found at item[\(i)]")
-                            print("🎉 Test should PASS - KMP Ditto sync working!")
-                            found = true
-                            break
-                        } else if label.contains(expectedTitle) || expectedTitle.contains(label) {
-                            print("🔍 Partial match found: '\(label)' vs expected '\(expectedTitle)'")
+                        
+                        // Also check the value property in case it contains full text
+                        let value = textElement.value as? String ?? ""
+                        if !value.isEmpty && value != label {
+                            print("   Item[\(i)] value: '\(value)'")
                         }
+
+                        // Check both label and value for matches
+                        let textToCheck = [label, value].filter { !$0.isEmpty }
+                        
+                        for text in textToCheck {
+                            if text == expectedTitle {
+                                print("✅ FOUND EXACT MATCH! KMP document '\(text)' found at item[\(i)]")
+                                print("🎯 BrowserStack Log: Document found - exact match!")
+                                print("📍 Location: Item[\(i)] in KMP task list")
+                                print("🔍 Expected: '\(expectedTitle)'")
+                                print("✅ Actual: '\(text)'")
+                                
+                                // 3 second sleep to see the list of elements in BrowserStack video
+                                print("⏱️ Sleeping 3 seconds to capture UI state in BrowserStack...")
+                                sleep(3)
+                                print("🎉 Test will PASS - KMP Ditto sync working!")
+                                
+                                found = true
+                                break
+                            } else if text.contains(expectedTitle) || expectedTitle.contains(text) {
+                                print("🔍 Partial match found: '\(text)' vs expected '\(expectedTitle)'")
+                                print("📝 BrowserStack Log: Partial match detected")
+                            }
+                        }
+                        
+                        if found { break }
                     }
                 }
             }
@@ -118,15 +152,19 @@ final class iosAppUITests: XCTestCase {
         let finalElapsed = Date().timeIntervalSince(start)
         if found {
             print("🎉 SUCCESS: Found exact KMP document '\(expectedTitle)' after \(String(format: "%.1f", finalElapsed))s")
+            print("🎯 BrowserStack Log: TEST PASSED - Document successfully found!")
             print("✅ This proves GitHub Actions → Ditto Cloud → BrowserStack → KMP sync is working!")
             print("🏆 Kotlin Multiplatform iOS integration validated!")
+            print("📊 BrowserStack Result: PASS - End-to-end sync validated")
         } else {
             print("❌ FAILURE: KMP document '\(expectedTitle)' not found after \(String(format: "%.1f", finalElapsed))s")
+            print("🎯 BrowserStack Log: TEST FAILED - Document not found in UI")
             print("💡 This means either:")
             print("   1. GitHub Actions didn't seed the document")
-            print("   2. Ditto Cloud sync is not working")
+            print("   2. Ditto Cloud sync is not working") 
             print("   3. KMP Compose UI structure differs from expected")
             print("   4. Environment variable GITHUB_TEST_DOC_TITLE is incorrect")
+            print("📊 BrowserStack Result: FAIL - Sync or UI issue detected")
         }
 
         XCTAssertTrue(found, "GitHub-seeded KMP document '\(expectedTitle)' not found")
