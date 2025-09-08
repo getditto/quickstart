@@ -622,15 +622,23 @@ jobs:
         OUT_ZIP="$OUT_DIR/iosAppUITests.zip"
         rm -f "$OUT_ZIP"
 
-        echo "📦 Creating $OUT_ZIP with root: [$(basename "$RUNNER_APP")]"
-        echo "ℹ️  BrowserStack expects Runner.app only (following Swift pattern)"
-        ( cd "$(dirname "$RUNNER_APP")" && zip -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")" )
+        echo "📦 Creating $OUT_ZIP with Runner.app + .xctestrun at ZIP root (BrowserStack requirement)"
+        
+        # ZIP **both** Runner.app and .xctestrun at the ZIP root
+        # Use relative paths from PRODUCTS_DIR to get both files at ZIP root
+        RUNNER_REL=$(basename "$RUNNER_APP")
+        XCTESTRUN_REL=$(basename "$XCTESTRUN")
+        
+        ( cd "$(dirname "$RUNNER_APP")" && \
+          cp "$XCTESTRUN" . && \
+          zip -qry "$OUT_ZIP" "$RUNNER_REL" "$XCTESTRUN_REL" && \
+          rm -f "$XCTESTRUN_REL" )
 
-        echo "🔍 ZIP contents:"
+        echo "🔍 ZIP contents (should show Runner.app + .xctestrun at root):"
         unzip -l "$OUT_ZIP" | sed -n '1,120p'
 
         echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
-        echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
+        echo "✅ XCUITest test-suite zip ready with both Runner.app and .xctestrun: $OUT_ZIP"
     
     - name: Upload App and Test Bundle to BrowserStack
       id: upload
@@ -736,7 +744,7 @@ jobs:
           -d "{
             \"app\": \"$APP_URL\",
             \"testSuite\": \"$TEST_URL\",
-            \"devices\": [\"iPhone 15 Pro-17\", \"iPhone 14-16\"],
+            \"devices\": [\"iPhone 15 Pro-17\"],
             \"project\": \"Ditto Kotlin Multiplatform iOS\",
             \"buildName\": \"Build #${{ github.run_number }}\",
             \"buildTag\": \"${{ github.ref_name }}\",
