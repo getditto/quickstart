@@ -127,15 +127,14 @@ jobs:
         TIMESTAMP=$(date +%s)
         INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
         DOC_ID="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}_WRONG_SUFFIX"
+        DOC_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
         
         echo "📝 Inserting test document for BrowserStack testing"
         echo "📝 ID: '${DOC_ID}'"
         echo "📝 Title: '${DOC_TITLE}'"
         
-        # Store title WITHOUT suffix for test, but document was created WITH suffix
-        TEST_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        echo "TEST_DOC_TITLE=${TEST_TITLE}" >> $GITHUB_ENV
+        # Store title for later use in BrowserStack step
+        echo "TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
         
         # Insert document using Ditto API v4 (same as Kotlin workflow)
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
