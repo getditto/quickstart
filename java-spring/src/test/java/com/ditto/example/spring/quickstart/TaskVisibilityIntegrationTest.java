@@ -188,9 +188,8 @@ class TaskVisibilityIntegrationTest {
         // Wait for page to load
         wait.until(ExpectedConditions.titleContains("Ditto"));
         
-        // Wait for the task list to load
-        WebElement taskList = wait.until(ExpectedConditions.presenceOfElementLocated(
-            By.cssSelector("body")));
+        // Wait for the page body to load
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("body")));
         
         // Add delay to let tasks load from Ditto
         System.out.println("⏳ Waiting for Ditto tasks to load...");
@@ -239,9 +238,8 @@ class TaskVisibilityIntegrationTest {
         // Wait for page to load
         wait.until(ExpectedConditions.titleContains("Ditto"));
         
-        // Wait for the task list to load
-        WebElement taskList = wait.until(ExpectedConditions.presenceOfElementLocated(
-            By.cssSelector("body")));
+        // Wait for the page body to load
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("body")));
         
         // Add delay to let tasks load from Ditto
         System.out.println("⏳ Waiting for Ditto tasks to load...");
