@@ -23,7 +23,13 @@ class TasksUITest {
         // Get test document title from BrowserStack instrumentationOptions, BuildConfig, or fallback
         val args = InstrumentationRegistry.getArguments()
         val fromInstrumentation = args?.getString("github_test_doc_id")
-        val fromBuildConfig = try { BuildConfig.TEST_DOCUMENT_TITLE } catch (e: Exception) { null }
+        val fromBuildConfig = try { 
+            BuildConfig.TEST_DOCUMENT_TITLE 
+        } catch (e: NoSuchFieldError) { 
+            null 
+        } catch (e: ExceptionInInitializerError) { 
+            null 
+        }
         
         val testDocumentTitle = fromInstrumentation?.takeIf { it.isNotEmpty() }
             ?: fromBuildConfig?.takeIf { it.isNotEmpty() }
