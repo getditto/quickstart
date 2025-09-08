@@ -63,6 +63,17 @@ androidComponents {
                 "Ditto Websocket URL"
             )
         )
+
+        // DITTO_ENABLE_CLOUD_SYNC: false by default, can be overridden for integration tests
+        val cloudSyncEnabled = System.getenv("DITTO_ENABLE_CLOUD_SYNC")?.toBoolean() ?: false
+        it.buildConfigFields.put(
+            "DITTO_ENABLE_CLOUD_SYNC",
+            BuildConfigField(
+                "boolean",
+                cloudSyncEnabled.toString(),
+                "Enable Ditto cloud sync (false by default, true only for integration tests)"
+            )
+        )
     }
 }
 
@@ -79,6 +90,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Pass environment variables to instrumentation tests
+        testInstrumentationRunnerArguments["github_test_doc_id"] = System.getenv("GITHUB_TEST_DOC_ID") ?: ""
     }
 
     buildTypes {
@@ -127,6 +141,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)

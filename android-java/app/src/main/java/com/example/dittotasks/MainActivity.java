@@ -3,6 +3,7 @@ package com.example.dittotasks;
 import android.app.AlertDialog;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -37,22 +38,28 @@ public class MainActivity extends ComponentActivity {
     private TaskAdapter taskAdapter;
     private SwitchCompat syncSwitch;
 
-    Ditto ditto;
-    DittoSyncSubscription taskSubscription;
-    DittoStoreObserver taskObserver;
+    private Ditto ditto;
+    private DittoSyncSubscription taskSubscription;
+    private DittoStoreObserver taskObserver;
 
     private String DITTO_APP_ID = BuildConfig.DITTO_APP_ID;
     private String DITTO_PLAYGROUND_TOKEN = BuildConfig.DITTO_PLAYGROUND_TOKEN;
     private String DITTO_AUTH_URL = BuildConfig.DITTO_AUTH_URL;
     private String DITTO_WEBSOCKET_URL = BuildConfig.DITTO_WEBSOCKET_URL;
 
-    // This is required to be set to false to use the correct URLs
-    private Boolean DITTO_ENABLE_CLOUD_SYNC = true;
+    // Configured via build system: false by default, true only for integration tests
+    private Boolean DITTO_ENABLE_CLOUD_SYNC = BuildConfig.DITTO_ENABLE_CLOUD_SYNC;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // Keep screen on during testing to prevent NoActivityResumedException
+        if(BuildConfig.DEBUG){
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+        
         initDitto();
 
         // Populate AppID view
@@ -84,14 +91,21 @@ public class MainActivity extends ComponentActivity {
         });
         taskAdapter.setOnTaskDeleteListener(this::deleteTask);
         taskAdapter.setOnTaskLongPressListener(this::showEditTaskModal);
+        
+        // Initialize empty list - Ditto observer will populate it
         taskAdapter.setTasks(List.of());
     }
 
+
     void initDitto() {
-        requestPermissions();
+        // Request permissions (skipped during automated testing to prevent dialog blocking)
+        if (!isInstrumentationTest()) {
+            requestPermissions();
+        }
 
         try {
             DittoDependencies androidDependencies = new DefaultAndroidDittoDependencies(getApplicationContext());
+            
             /*
              *  Setup Ditto Identity
              *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
@@ -101,8 +115,9 @@ public class MainActivity extends ComponentActivity {
                             androidDependencies,
                             DITTO_APP_ID,
                             DITTO_PLAYGROUND_TOKEN,
-                            DITTO_ENABLE_CLOUD_SYNC, // This is required to be set to false to use the correct URLs
+                            DITTO_ENABLE_CLOUD_SYNC,
                             DITTO_AUTH_URL);
+            
             ditto = new Ditto(androidDependencies, identity);
 
             //https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations
@@ -127,7 +142,7 @@ public class MainActivity extends ComponentActivity {
 
             // register observer for live query
             // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-            taskObserver = ditto.store.registerObserver("SELECT * FROM tasks WHERE deleted=false ORDER BY _id", null, result -> {
+            taskObserver = ditto.store.registerObserver("SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC", null, result -> {
                 var tasks = result.getItems().stream().map(Task::fromQueryItem).collect(Collectors.toCollection(ArrayList::new));
                 runOnUiThread(() -> {
                     taskAdapter.setTasks(new ArrayList<>(tasks));
@@ -135,11 +150,27 @@ public class MainActivity extends ComponentActivity {
                 return Unit.INSTANCE;
             });
 
-
-
             ditto.startSync();
         } catch (DittoError e) {
+            Log.e("MainActivity", "DittoError during initialization: " + e.getMessage(), e);
             e.printStackTrace();
+        } catch (Exception e) {
+            Log.e("MainActivity", "Unexpected error during Ditto initialization: " + e.getMessage(), e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Detects if running under instrumentation testing.
+     * Required for BrowserStack/CI integration to prevent permission dialogs from blocking tests.
+     * Note: BrowserStack handles permissions via autoGrantPermissions setting.
+     */
+    private boolean isInstrumentationTest() {
+        try {
+            Class.forName("androidx.test.espresso.Espresso");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
         }
     }
 
@@ -186,6 +217,11 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void toggleTask(Task task) {
+        if (ditto == null) {
+            Log.i("MainActivity", "Ditto disabled - toggle task ignored: " + task.getTitle());
+            return;
+        }
+        
         HashMap<String, Object> args = new HashMap<>();
         args.put("id", task.getId());
         args.put("done", !task.isDone());
@@ -200,6 +236,11 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void deleteTask(Task task) {
+        if (ditto == null) {
+            Log.i("MainActivity", "Ditto disabled - delete task ignored: " + task.getTitle());
+            return;
+        }
+        
         HashMap<String, Object> args = new HashMap<>();
         args.put("id", task.getId());
         try {
