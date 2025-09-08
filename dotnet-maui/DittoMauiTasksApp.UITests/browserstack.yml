@@ -1,0 +1,78 @@
+userName: ${BROWSERSTACK_USERNAME}
+accessKey: ${BROWSERSTACK_ACCESS_KEY}
+
+# Framework
+framework: nunit
+
+# Appium version
+appiumVersion: 2.0
+
+# Set platforms for testing
+platforms:
+  - deviceName: iPhone 15
+    platformVersion: 17
+    platformName: ios
+    app: ${BROWSERSTACK_IOS_APP_URL}
+  - deviceName: iPhone 14
+    platformVersion: 16
+    platformName: ios
+    app: ${BROWSERSTACK_IOS_APP_URL}
+  - deviceName: iPad Pro 12.9 2022
+    platformVersion: 16
+    platformName: ios
+    app: ${BROWSERSTACK_IOS_APP_URL}
+  - deviceName: Google Pixel 8
+    platformVersion: 14
+    platformName: android
+    app: ${BROWSERSTACK_ANDROID_APP_URL}
+  - deviceName: Samsung Galaxy S23
+    platformVersion: 13
+    platformName: android
+    app: ${BROWSERSTACK_ANDROID_APP_URL}
+  - deviceName: Google Pixel 6
+    platformVersion: 12
+    platformName: android
+    app: ${BROWSERSTACK_ANDROID_APP_URL}
+
+# Project name
+projectName: Ditto MAUI Quickstart
+
+# Build name
+buildName: Build ${GITHUB_RUN_NUMBER}
+
+# Build tag
+buildTag: ${GITHUB_REF_NAME}
+
+# Use Local testing for app automation
+browserstackLocal: false
+
+# Debug mode
+debug: true
+
+# Capture video
+video: true
+
+# Network logs
+networkLogs: true
+
+# Device logs
+deviceLogs: true
+
+# Appium logs
+appiumLogs: true
+
+# Auto grant permissions
+autoGrantPermissions: true
+
+# Set environment variables for tests
+env:
+  GITHUB_TEST_DOC_ID: ${GITHUB_TEST_DOC_ID}
+  GITHUB_TEST_TITLE: ${GITHUB_TEST_TITLE}
+  GITHUB_RUN_ID: ${GITHUB_RUN_ID}
+  GITHUB_RUN_NUMBER: ${GITHUB_RUN_NUMBER}
+
+# Test suite timeout
+testSuiteTimeout: 30m
+
+# Parallel execution
+parallels: 3

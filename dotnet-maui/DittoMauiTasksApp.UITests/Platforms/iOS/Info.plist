@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Application identification -->
+    <key>CFBundleDisplayName</key>
+    <string>DittoMauiTasksApp.UITests</string>
+    <key>CFBundleIdentifier</key>
+    <string>live.ditto.quickstart.mauitasksapp.uitests</string>
+    <key>CFBundleName</key>
+    <string>DittoMauiTasksApp.UITests</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <!-- iOS version support -->
+    <key>MinimumOSVersion</key>
+    <string>15.0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>15.0</string>
+
+    <!-- Test runner configuration -->
+    <key>CFBundleExecutable</key>
+    <string>DittoMauiTasksApp.UITests</string>
+
+    <!-- UI Test specific permissions and capabilities -->
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+        <string>armv7</string>
+    </array>
+
+    <!-- Device orientation support -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- iPad orientation support -->
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- Network and permissions for Ditto testing -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+
+    <!-- Network usage description for BrowserStack -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This test app uses local networking to connect to Ditto for peer-to-peer synchronization testing.</string>
+
+    <!-- Background modes for testing -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>background-processing</string>
+        <string>background-fetch</string>
+    </array>
+
+    <!-- XCTest specific configurations -->
+    <key>NSUserActivityTypes</key>
+    <array>
+        <string>XCTestActivity</string>
+    </array>
+
+    <!-- BrowserStack specific settings -->
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        <string>iPhoneOS</string>
+    </array>
+
+    <!-- Test automation support -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    
+    <!-- Status bar configuration -->
+    <key>UIStatusBarHidden</key>
+    <false/>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
+
+    <!-- Launch screen configuration -->
+    <key>UILaunchScreen</key>
+    <dict>
+        <key>UIColorName</key>
+        <string>AccentColor</string>
+        <key>UIImageName</key>
+        <string>appiconfg</string>
+    </dict>
+</dict>
+</plist>

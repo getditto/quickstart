@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DittoMauiTasksApp", "DittoMauiTasksApp.csproj", "{01D3B2D3-C50F-4C2A-9B8E-8C4CA20CA850}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DittoMauiTasksApp.UITests", "..\DittoMauiTasksApp.UITests\DittoMauiTasksApp.UITests.csproj", "{A8B9C123-D4E5-F678-9012-3456789ABCDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,6 +19,10 @@ Global
 		{01D3B2D3-C50F-4C2A-9B8E-8C4CA20CA850}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01D3B2D3-C50F-4C2A-9B8E-8C4CA20CA850}.Release|Any CPU.Build.0 = Release|Any CPU
 		{01D3B2D3-C50F-4C2A-9B8E-8C4CA20CA850}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{A8B9C123-D4E5-F678-9012-3456789ABCDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8B9C123-D4E5-F678-9012-3456789ABCDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8B9C123-D4E5-F678-9012-3456789ABCDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8B9C123-D4E5-F678-9012-3456789ABCDE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,68 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <RootNamespace>DittoMauiTasksApp.UITests</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+        <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Core testing packages -->
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+        <PackageReference Include="xunit" Version="2.9.2" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="6.0.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+
+        <!-- MAUI Testing packages - with explicit version -->
+        <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.1" />
+        
+        <!-- Microsoft.Maui.TestFramework is not available - using Appium directly -->
+        <!-- <PackageReference Include="Microsoft.Maui.TestFramework" Version="9.0.0" /> -->
+        <!-- <PackageReference Include="Microsoft.Maui.Testing" Version="9.0.0" /> -->
+        <!-- <PackageReference Include="Microsoft.Maui.Appium" Version="9.0.0" /> -->
+
+        <!-- Appium WebDriver for cross-platform UI testing -->
+        <PackageReference Include="Appium.WebDriver" Version="4.4.5" />
+        <PackageReference Include="Selenium.WebDriver" Version="4.15.0" />
+        <PackageReference Include="Selenium.Support" Version="4.15.0" />
+        
+        <!-- BrowserStack SDK and TestAdapter -->
+        <PackageReference Include="BrowserStack.TestAdapter" Version="0.13.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Test configuration files -->
+        <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="browserstack.yml" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <!-- BrowserStack specific build targets -->
+    <Target Name="PrepareForBrowserStack" BeforeTargets="Build">
+        <Message Text="Preparing UI tests for BrowserStack execution" Importance="high" />
+    </Target>
+
+    <!-- Test output settings -->
+    <PropertyGroup>
+        <TestResults>TestResults</TestResults>
+        <VSTestResultsDirectory>$(TestResults)</VSTestResultsDirectory>
+    </PropertyGroup>
+
+</Project>

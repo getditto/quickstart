@@ -1,0 +1,367 @@
+#
+# .github/workflows/dotnet-maui-browserstack.yml
+# Workflow for building and testing dotnet-maui on BrowserStack physical devices
+#
+---
+name: dotnet-maui-browserstack
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'sdk-*'
+    paths:
+      - 'dotnet-maui/**'
+      - '.github/workflows/dotnet-maui-browserstack.yml'
+  push:
+    branches:
+      - main
+      - 'sdk-*'
+    paths:
+      - 'dotnet-maui/**'
+      - '.github/workflows/dotnet-maui-browserstack.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and Test on BrowserStack
+    runs-on: macos-latest  # Required for iOS builds
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Setup .NET MAUI workload
+        run: dotnet workload install maui
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Seed GitHub test document to Ditto Cloud
+        id: seed-document
+        run: |
+          # Create unique document ID for this test run
+          TIMESTAMP=$(date +%s)
+          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+          DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          TITLE="GitHub Test Task ${{ github.run_id }}"
+          
+          echo "doc_id=$DOC_ID" >> $GITHUB_OUTPUT
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          
+          # Insert test document via Ditto Cloud HTTP API
+          curl -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"$DOC_ID\",
+                  \"title\": \"$TITLE\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+            "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute"
+          
+          echo "Seeded test document: $DOC_ID with title: $TITLE"
+
+      - name: Build iOS app
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          # Build only the main app project for iOS (exclude UITests)
+          dotnet build DittoMauiTasksApp.csproj -f net9.0-ios -c Release \
+            -p:MtouchLink=None \
+            -p:EnableAssemblyILStripping=false \
+            -p:MtouchInterpreter=all \
+            -p:MtouchDebug=true \
+            -p:MtouchFastDev=true \
+            -p:EnableLLVMOptimizations=false \
+            -p:MtouchUseLlvm=false \
+            -p:OptimizePNGs=false
+
+          
+          # Create IPA for BrowserStack upload
+          dotnet publish DittoMauiTasksApp.csproj -f net9.0-ios -c Release \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:ArchiveOnBuild=true \
+            -p:EnableAssemblyILStripping=false \
+            -p:MtouchLink=None \
+            -p:MtouchInterpreter=all \
+            -p:MtouchDebug=true \
+            -p:MtouchFastDev=true \
+            -p:EnableLLVMOptimizations=false \
+            -p:MtouchUseLlvm=false \
+            -p:OptimizePNGs=false \
+            -p:TrimMode=partial \
+            -p:PublishReadyToRun=false \
+            -p:MtouchNoSymbolStrip=true
+
+      - name: Build Android app
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          # Build only the main app project for Android (exclude UITests)
+          dotnet build DittoMauiTasksApp.csproj -f net9.0-android -c Release \
+            -p:AndroidLinkMode=None \
+            -p:RunAOTCompilation=false \
+            -p:EnableProguard=false \
+            -p:AndroidUseSharedRuntime=false
+          
+          # Create APK for BrowserStack upload
+          dotnet publish DittoMauiTasksApp.csproj -f net9.0-android -c Release \
+            -p:RuntimeIdentifier=android-arm64 \
+            -p:AndroidPackageFormat=apk \
+            -p:AndroidLinkMode=None \
+            -p:RunAOTCompilation=false \
+            -p:EnableProguard=false
+
+      - name: Install Appium and drivers
+        run: |
+          npm install -g appium
+          appium driver install uiautomator2
+          appium driver install xcuitest
+
+      - name: Install BrowserStack SDK (Apple Silicon support)
+        if: runner.arch == 'ARM64'
+        run: |
+          dotnet tool install browserstack-sdk --version 1.16.3 --create-manifest-if-needed
+          dotnet browserstack-sdk setup-dotnet --dotnet-path "." --dotnet-version "9.0.x" --yes
+
+      - name: Build UI Test project
+        working-directory: dotnet-maui/DittoMauiTasksApp.UITests
+        run: |
+          # Build UITests for .NET only (not for mobile platforms)
+          dotnet restore --ignore-failed-sources
+          dotnet build DittoMauiTasksApp.UITests.csproj -c Release -f net9.0
+
+      - name: Upload iOS app to BrowserStack
+        id: upload-ios
+        run: |
+          # Find the IPA file
+          IPA_PATH=$(find dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64 -name "*.ipa" | head -n 1)
+          
+          if [ -z "$IPA_PATH" ]; then
+            echo "Error: No IPA file found"
+            exit 1
+          fi
+          
+          echo "Uploading iOS app: $IPA_PATH"
+          
+          IOS_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@$IPA_PATH" \
+            -F "custom_id=ditto-maui-ios-app")
+          
+          echo "iOS upload response: $IOS_UPLOAD_RESPONSE"
+          IOS_APP_URL=$(echo $IOS_UPLOAD_RESPONSE | jq -r .app_url)
+          
+          if [ "$IOS_APP_URL" = "null" ] || [ -z "$IOS_APP_URL" ]; then
+            echo "Error: Failed to upload iOS app"
+            echo "Response: $IOS_UPLOAD_RESPONSE"
+            exit 1
+          fi
+          
+          echo "ios_app_url=$IOS_APP_URL" >> $GITHUB_OUTPUT
+          echo "iOS app uploaded successfully: $IOS_APP_URL"
+
+      - name: Upload Android app to BrowserStack
+        id: upload-android
+        run: |
+          # Find the APK file
+          APK_PATH=$(find dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-android/android-arm64 -name "*.apk" | head -n 1)
+          
+          if [ -z "$APK_PATH" ]; then
+            echo "Error: No APK file found"
+            exit 1
+          fi
+          
+          echo "Uploading Android app: $APK_PATH"
+          
+          ANDROID_UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@$APK_PATH" \
+            -F "custom_id=ditto-maui-android-app")
+          
+          echo "Android upload response: $ANDROID_UPLOAD_RESPONSE"
+          ANDROID_APP_URL=$(echo $ANDROID_UPLOAD_RESPONSE | jq -r .app_url)
+          
+          if [ "$ANDROID_APP_URL" = "null" ] || [ -z "$ANDROID_APP_URL" ]; then
+            echo "Error: Failed to upload Android app"
+            echo "Response: $ANDROID_UPLOAD_RESPONSE"
+            exit 1
+          fi
+          
+          echo "android_app_url=$ANDROID_APP_URL" >> $GITHUB_OUTPUT
+          echo "Android app uploaded successfully: $ANDROID_APP_URL"
+
+      - name: Run BrowserStack tests
+        id: test-browserstack
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BROWSERSTACK_IOS_APP_URL: ${{ steps.upload-ios.outputs.ios_app_url }}
+          BROWSERSTACK_ANDROID_APP_URL: ${{ steps.upload-android.outputs.android_app_url }}
+          GITHUB_TEST_DOC_ID: ${{ steps.seed-document.outputs.doc_id }}
+          GITHUB_TEST_TITLE: ${{ steps.seed-document.outputs.title }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        working-directory: dotnet-maui/DittoMauiTasksApp.UITests
+        run: |
+          echo "Starting BrowserStack tests via SDK..."
+          
+          # The BrowserStack SDK will handle platform-specific testing based on browserstack.yml
+          if [ "${{ runner.arch }}" = "ARM64" ]; then
+            # For Apple Silicon Macs
+            ./dotnet test DittoMauiTasksApp.UITests.csproj \
+              --configuration Release \
+              --logger "trx;LogFileName=browserstack-results.trx" \
+              --logger "console;verbosity=detailed"
+          else
+            # For Intel Macs
+            dotnet test DittoMauiTasksApp.UITests.csproj \
+              --configuration Release \
+              --logger "trx;LogFileName=browserstack-results.trx" \
+              --logger "console;verbosity=detailed"
+          fi
+          
+          TEST_EXIT_CODE=$?
+          echo "Tests completed with exit code: $TEST_EXIT_CODE"
+          
+          # Generate a build ID for consistency
+          BUILD_ID="browserstack_$(date +%s)"
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          
+          if [ $TEST_EXIT_CODE -eq 0 ]; then
+            echo "✅ All BrowserStack tests passed"
+          else
+            echo "❌ Some BrowserStack tests failed"
+            exit $TEST_EXIT_CODE
+          fi
+
+
+      - name: Collect test results
+        if: always()
+        run: |
+          BUILD_ID="${{ steps.test-browserstack.outputs.build_id }}"
+          
+          echo "Collecting test results..."
+          echo "Build ID: $BUILD_ID"
+          
+          # Copy test result files
+          mkdir -p test-results
+          
+          if [ -f "dotnet-maui/DittoMauiTasksApp.UITests/TestResults/browserstack-results.trx" ]; then
+            cp "dotnet-maui/DittoMauiTasksApp.UITests/TestResults/browserstack-results.trx" test-results/
+            echo "✅ BrowserStack test results collected"
+          else
+            echo "⚠️ BrowserStack test results not found"
+          fi
+          
+          # Check for BrowserStack logs and artifacts
+          if [ -d "dotnet-maui/DittoMauiTasksApp.UITests/browserstack-artifacts" ]; then
+            cp -r "dotnet-maui/DittoMauiTasksApp.UITests/browserstack-artifacts" test-results/
+            echo "✅ BrowserStack artifacts collected"
+          fi
+          
+          # Check for any screenshots or other test artifacts
+          find dotnet-maui/DittoMauiTasksApp.UITests -name "*.png" -o -name "*.jpg" -o -name "*.xml" | head -10
+
+      - name: Generate test report
+        if: always()
+        run: |
+          BUILD_ID="${{ steps.test-browserstack.outputs.build_id }}"
+          
+          # Create test report
+          echo "# BrowserStack MAUI Test Report" > test-report.md
+          echo "" >> test-report.md
+          echo "**Test Document ID**: ${{ steps.seed-document.outputs.doc_id }}" >> test-report.md
+          echo "**Test Document Title**: ${{ steps.seed-document.outputs.title }}" >> test-report.md
+          echo "**Build Number**: ${{ github.run_number }}" >> test-report.md
+          echo "**Build ID**: $BUILD_ID" >> test-report.md
+          echo "" >> test-report.md
+          
+          # Test Results Summary
+          echo "## Test Results" >> test-report.md
+          echo "" >> test-report.md
+          echo "The BrowserStack SDK automatically ran tests on the following devices:" >> test-report.md
+          echo "" >> test-report.md
+          echo "### iOS Devices" >> test-report.md
+          echo "- iPhone 15 (iOS 17)" >> test-report.md
+          echo "- iPhone 14 (iOS 16)" >> test-report.md
+          echo "- iPad Pro 12.9 2022 (iOS 16)" >> test-report.md
+          echo "" >> test-report.md
+          echo "### Android Devices" >> test-report.md
+          echo "- Google Pixel 8 (Android 14)" >> test-report.md
+          echo "- Samsung Galaxy S23 (Android 13)" >> test-report.md
+          echo "- Google Pixel 6 (Android 12)" >> test-report.md
+          echo "" >> test-report.md
+          echo "View full results in the BrowserStack Dashboard: https://app-automate.browserstack.com/dashboard" >> test-report.md
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            dotnet-maui/DittoMauiTasksApp/bin/
+            test-report.md
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildId = '${{ steps.test-browserstack.outputs.build_id }}';
+            const status = '${{ job.status }}';
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+            const docId = '${{ steps.seed-document.outputs.doc_id }}';
+            const docTitle = '${{ steps.seed-document.outputs.title }}';
+            
+            const body = `## 📱 BrowserStack MAUI Test Results
+            
+            **Status:** ${status === 'success' ? '✅ Passed' : '❌ Failed'}
+            **Build:** [#${{ github.run_number }}](${runUrl})
+            **Test Document:** \`${docId}\` - "${docTitle}"
+            
+            ### Test Execution Summary:
+            Tests were executed via BrowserStack SDK on the following real devices:
+            
+            **iOS Devices:**
+            - iPhone 15 (iOS 17)
+            - iPhone 14 (iOS 16) 
+            - iPad Pro 12.9 2022 (iOS 16)
+            
+            **Android Devices:**
+            - Google Pixel 8 (Android 14)
+            - Samsung Galaxy S23 (Android 13)
+            - Google Pixel 6 (Android 12)
+            
+            ### View Results:
+            [BrowserStack Dashboard](https://app-automate.browserstack.com/dashboard)
+            
+            ### Test Validation:
+            This test verifies that documents inserted via the Ditto Cloud HTTP API successfully sync to the MAUI application running on real devices via BrowserStack's device cloud.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

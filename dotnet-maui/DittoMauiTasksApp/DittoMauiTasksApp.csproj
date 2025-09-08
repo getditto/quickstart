@@ -26,6 +26,35 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     </PropertyGroup>
 
+    <!-- CI/CD Performance Optimizations -->
+    <PropertyGroup Condition="'$(CI)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true'">
+        <EnableAssemblyILStripping>false</EnableAssemblyILStripping>
+        <MtouchLink>None</MtouchLink>
+        <AndroidLinkMode>None</AndroidLinkMode>
+        <MauiEnableXamlCBindingWithSourceCompilation>false</MauiEnableXamlCBindingWithSourceCompilation>
+        <RunCodeAnalysis>false</RunCodeAnalysis>
+        <SkipValidatePackageReferences>true</SkipValidatePackageReferences>
+        <_RequireCodeSigning>false</_RequireCodeSigning>
+        <CodesignEntitlements></CodesignEntitlements>
+        <MtouchUseLlvm>false</MtouchUseLlvm>
+        <MtouchUseThumb>false</MtouchUseThumb>
+        <OptimizePNGs>false</OptimizePNGs>
+        <MtouchDebug>true</MtouchDebug>
+        <MtouchFastDev>true</MtouchFastDev>
+        <EnableLLVMOptimizations>false</EnableLLVMOptimizations>
+        <MtouchInterpreter>all</MtouchInterpreter>
+        <TrimMode>partial</TrimMode>
+        <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+        <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+        <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+        <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+        <PublishReadyToRun>false</PublishReadyToRun>
+        <MtouchNoSymbolStrip>true</MtouchNoSymbolStrip>
+        <TrimmerDefaultAction>link</TrimmerDefaultAction>
+        <IlcDisableReflection>true</IlcDisableReflection>
+        <IlcTrimMetadata>false</IlcTrimMetadata>
+    </PropertyGroup>
+
     <ItemGroup>
         <!-- App Icon -->
         <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
