@@ -199,21 +199,17 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: Download and setup BrowserStack Local
-      run: |
-        wget -q https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip
-        unzip -q BrowserStackLocal-linux-x64.zip
-        chmod +x BrowserStackLocal
-    
-    - name: Start BrowserStack Local tunnel
-      run: |
-        ./BrowserStackLocal --key ${{ secrets.BROWSERSTACK_ACCESS_KEY }} --local-identifier java-spring-${{ github.run_number }} &
-        echo $! > bs-local.pid
-        
-        # Wait for BrowserStack Local to start
-        echo "Waiting for BrowserStack Local tunnel..."
-        sleep 10
-        echo "✓ BrowserStack Local tunnel started"
+    - name: Set up BrowserStack env
+      uses: browserstack/github-actions/setup-env@master
+      with:
+        username: ${{ secrets.BROWSERSTACK_USERNAME }}
+        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+
+    - name: Start BrowserStack Local
+      uses: browserstack/github-actions/setup-local@master
+      with:
+        local-testing: start
+        local-identifier: java-spring-${{ github.run_number }}
     
     - name: Start Spring Boot app in background
       working-directory: java-spring
@@ -235,59 +231,37 @@ jobs:
         done
     
     - name: Execute Selenium tests on BrowserStack cloud browsers
-      id: browserstack_tests
+      working-directory: java-spring
       run: |
-        # Create BrowserStack test execution request for web browsers
         TITLE="${{ needs.build.outputs.test_doc_title }}"
         
-        # Execute tests using BrowserStack Automate API for web browsers
-        BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -X POST "https://api-cloud.browserstack.com/automate/builds" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"name\": \"Java Spring Selenium Tests #${{ github.run_number }}\",
-            \"project\": \"Ditto Java Spring\",
-            \"settings\": {
-              \"local\": true,
-              \"localIdentifier\": \"java-spring-${{ github.run_number }}\"
-            }
-          }")
-        
-        echo "BrowserStack Build Response:"
-        echo "$BUILD_RESPONSE"
-        
-        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
-        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-        
-        # Run tests with BrowserStack capabilities
-        cd java-spring
+        # Run tests with proper BrowserStack capabilities (build name set via capabilities)
         ./gradlew test --tests "*TaskVisibilityIntegrationTest" \
           -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
+          -DBROWSERSTACK_LOCAL=true \
+          -DBROWSERSTACK_LOCAL_IDENTIFIER="java-spring-${{ github.run_number }}" \
           -DTEST_TASK_TITLE="$TITLE" \
-          -DGITHUB_TEST_DOC_ID="$TITLE" \
-          -DBROWSERSTACK_LOCAL_IDENTIFIER="java-spring-${{ github.run_number }}"
+          -DGITHUB_TEST_DOC_ID="$TITLE"
     
-    - name: Stop Spring Boot app and BrowserStack Local
+    - name: Stop Spring Boot app
       if: always()
+      working-directory: java-spring
       run: |
-        # Stop Spring Boot app
-        cd java-spring
         if [ -f app.pid ]; then
           PID=$(cat app.pid)
           kill $PID || true
           rm app.pid
           echo "✓ Stopped Spring Boot app"
         fi
-        
-        # Stop BrowserStack Local tunnel
-        cd ..
-        if [ -f bs-local.pid ]; then
-          PID=$(cat bs-local.pid)
-          kill $PID || true
-          rm bs-local.pid
-          echo "✓ Stopped BrowserStack Local tunnel"
-        fi
+    
+    - name: Stop BrowserStack Local
+      if: always()
+      uses: browserstack/github-actions/setup-local@master
+      with:
+        local-testing: stop
+        local-identifier: java-spring-${{ github.run_number }}
     
     - name: Upload test reports
       if: always()

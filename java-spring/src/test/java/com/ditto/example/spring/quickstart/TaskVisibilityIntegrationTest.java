@@ -59,18 +59,31 @@ class TaskVisibilityIntegrationTest {
             browserstackOptions.put("userName", username);
             browserstackOptions.put("accessKey", accessKey);
             browserstackOptions.put("projectName", "Ditto Java Spring Tasks");
-            browserstackOptions.put("buildName", "Task Visibility Integration Test");
             browserstackOptions.put("sessionName", "Visual Task Testing");
             browserstackOptions.put("os", "Windows");
             browserstackOptions.put("osVersion", "11");
             browserstackOptions.put("browserVersion", "latest");
-            browserstackOptions.put("local", "true");
             
-            // Add BrowserStack Local identifier if provided
-            String localIdentifier = System.getProperty("BROWSERSTACK_LOCAL_IDENTIFIER");
-            if (localIdentifier != null && !localIdentifier.isEmpty()) {
-                browserstackOptions.put("localIdentifier", localIdentifier);
-                System.out.println("🔗 Using BrowserStack Local identifier: " + localIdentifier);
+            // Set build name from system property (passed from CI)
+            String buildName = System.getProperty("BROWSERSTACK_BUILD_NAME");
+            if (buildName != null && !buildName.isEmpty()) {
+                browserstackOptions.put("buildName", buildName);
+                System.out.println("📋 Using BrowserStack build name: " + buildName);
+            } else {
+                browserstackOptions.put("buildName", "Task Visibility Integration Test");
+            }
+            
+            // Set BrowserStack Local settings from system properties
+            String local = System.getProperty("BROWSERSTACK_LOCAL");
+            if ("true".equals(local)) {
+                browserstackOptions.put("local", "true");
+                System.out.println("🔗 BrowserStack Local enabled");
+                
+                String localIdentifier = System.getProperty("BROWSERSTACK_LOCAL_IDENTIFIER");
+                if (localIdentifier != null && !localIdentifier.isEmpty()) {
+                    browserstackOptions.put("localIdentifier", localIdentifier);
+                    System.out.println("🔗 Using BrowserStack Local identifier: " + localIdentifier);
+                }
             }
             
             options.setCapability("bstack:options", browserstackOptions);
