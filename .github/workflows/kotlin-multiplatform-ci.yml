@@ -206,27 +206,33 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x gradlew
     
-    - name: Build iOS Framework (Simulator ARM64)
-      run: ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+    - name: Prepare KMP frameworks for Xcode
+      run: |
+        echo "🔨 Generating Kotlin/Native framework for Xcode..."
+        ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --stacktrace
     
-    - name: Build iOS Framework (Device ARM64)
-      run: ./gradlew :composeApp:linkDebugFrameworkIosArm64 --stacktrace
+    - name: Install CocoaPods
+      working-directory: kotlin-multiplatform/iosApp
+      run: |
+        echo "📦 Installing CocoaPods and updating repos..."
+        sudo gem install cocoapods --no-document
+        pod repo update
+        pod install
     
     - name: Build iOS Device Archive and IPA (for BrowserStack)
       working-directory: kotlin-multiplatform/iosApp
       run: |
         echo "🍎 Building iOS device .ipa for BrowserStack..."
         
-        # Build and archive iOS app for real device
-        xcodebuild -project iosApp.xcodeproj \
+        # Build and archive iOS app using the workspace (required for CocoaPods/KMP)
+        xcodebuild \
+          -workspace iosApp.xcworkspace \
           -scheme iosApp \
           -configuration Debug \
           -destination 'generic/platform=iOS' \
           -archivePath build/iosApp.xcarchive \
           archive \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
         
         echo "📦 Creating unsigned .ipa for BrowserStack..."
         
@@ -516,8 +522,8 @@ jobs:
           echo "Raw response: $FINAL_RESULT"
         fi
 
-  test-ios-kmp:
-    name: KMP Native iOS Testing
+  browserstack-ios:
+    name: BrowserStack iOS Testing
     runs-on: macos-latest
     needs: build-ios
     if: needs.build-ios.outputs.ios-build-success == 'true'
@@ -548,35 +554,219 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> ../.env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> ../.env
     
-    - name: Make gradlew executable
-      run: chmod +x gradlew
+    - name: Download iOS IPA artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ios-kmp-ipa-${{ github.run_number }}
+        path: ./ios-artifacts/
     
-    - name: Run KMP Native iOS Tests
+    - name: Prepare KMP frameworks for Xcode (for UI tests)
       run: |
-        echo "🧪 Running KMP native iOS tests with seeded task validation..."
+        echo "🔨 Generating Kotlin/Native framework for XCUITests..."
+        ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --stacktrace
+    
+    - name: Install CocoaPods for UI tests
+      working-directory: kotlin-multiplatform/iosApp
+      run: |
+        echo "📦 Installing CocoaPods for UI test workspace..."
+        sudo gem install cocoapods --no-document
+        pod repo update
+        pod install
+    
+    - name: Build XCUITest Bundle for BrowserStack
+      id: build_test_bundle
+      working-directory: kotlin-multiplatform/iosApp
+      run: |
+        echo "🧪 Building XCUITest bundle for BrowserStack..."
+        
+        DERIVED="$PWD/build/DerivedData"
+        PRODUCTS_DIR="$DERIVED/Build/Products"
+        
+        # Build UI test bundle for device
+        xcodebuild build-for-testing \
+          -workspace iosApp.xcworkspace \
+          -scheme iosAppUITests \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -derivedDataPath "$DERIVED" \
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+        
+        echo "📁 Listing build products..."
+        find "$PRODUCTS_DIR" -type f -name "*.app" -o -name "*.xctestrun" | head -10
+        
+        # Find the Runner app and .xctestrun file
+        RUNNER_APP=$(find "$PRODUCTS_DIR" -type d -path "*/Debug-iphoneos/*-Runner.app" -print -quit)
+        XCTESTRUN=$(find "$PRODUCTS_DIR" -maxdepth 1 -type f -name "*.xctestrun" -print -quit)
+        
+        if [ -z "$RUNNER_APP" ]; then
+          echo "❌ Could not find Runner.app in build products"
+          exit 1
+        fi
+        
+        if [ -z "$XCTESTRUN" ]; then
+          echo "❌ Could not find .xctestrun file in build products"
+          exit 1
+        fi
+        
+        echo "✅ Found Runner app: $RUNNER_APP"
+        echo "✅ Found XCTestRun file: $XCTESTRUN"
+        
+        # Create the test bundle ZIP with both files at root
+        OUT_DIR="$PWD/../../build"
+        mkdir -p "$OUT_DIR"
+        OUT_ZIP="$OUT_DIR/iosAppUITests.zip"
+        rm -f "$OUT_ZIP"
+        
+        echo "📦 Creating BrowserStack test bundle..."
+        
+        # Add Runner.app to zip (from its parent directory to get correct structure)
+        ( cd "$(dirname "$RUNNER_APP")" && zip -qry "$OUT_ZIP" "$(basename "$RUNNER_APP")" )
+        
+        # Add .xctestrun to zip (from products directory)
+        ( cd "$PRODUCTS_DIR" && zip -qry "$OUT_ZIP" "$(basename "$XCTESTRUN")" )
+        
+        if [ -f "$OUT_ZIP" ]; then
+          echo "✅ Test bundle created successfully: $OUT_ZIP"
+          echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
+          
+          # Verify ZIP contents
+          echo "📋 Test bundle contents:"
+          unzip -l "$OUT_ZIP"
+        else
+          echo "❌ Failed to create test bundle"
+          exit 1
+        fi
+    
+    - name: Insert test document into Ditto Cloud
+      run: |
+        echo "📝 Inserting iOS test document into Ditto Cloud..."
         DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
         
-        echo "📝 Test environment:"
-        echo "  DITTO_TASK_ID: '$DOC_TITLE'"
-        echo "  Running KMP iOS tests that validate app behavior gracefully"
+        RESPONSE=$(curl -s -X POST "https://cloud.ditto.live/${{ secrets.DITTO_APP_ID }}/store/collections/tasks/documents" \
+          -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"document\": {
+              \"_id\": \"$DOC_TITLE\",
+              \"title\": \"$DOC_TITLE\", 
+              \"done\": false,
+              \"deleted\": false
+            }
+          }")
         
-        # Run KMP iOS tests with environment variable
-        export DITTO_TASK_ID="$DOC_TITLE"
+        echo "Ditto Cloud response: $RESPONSE"
+        echo "✅ Test document '$DOC_TITLE' inserted for iOS BrowserStack validation"
+    
+    - name: Upload iOS files to BrowserStack
+      run: |
+        echo "📤 Uploading iOS app and test bundle to BrowserStack..."
         
-        # Run both iOS test classes to validate behavior
-        echo "🚀 Running DittoSeededIdTest..."
-        ./gradlew :composeApp:iosSimulatorArm64Test --tests="integration.DittoSeededIdTest.testSeededTaskBehavior" --info
+        # Upload main app IPA
+        APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/app" \
+          -F "file=@./ios-artifacts/iosApp-unsigned.ipa" \
+          -F "custom_id=ios_kmp_app_${{ github.run_number }}")
         
-        echo "🚀 Running SimpleIosTest (all scenarios)..."
-        ./gradlew :composeApp:iosSimulatorArm64Test --tests="integration.SimpleIosTest" --info
+        APP_URL=$(echo "$APP_RESPONSE" | jq -r '.app_url // empty')
+        echo "iOS App upload response: $APP_RESPONSE"
+        echo "iOS App URL: $APP_URL"
         
-        echo "✅ All KMP native iOS tests completed successfully!"
-        echo "📝 Results: Tests validated app behavior and passed gracefully as expected"
+        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+          echo "❌ Failed to upload iOS app to BrowserStack"
+          exit 1
+        fi
+        
+        # Upload test bundle
+        TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
+          -F "file=@${{ steps.build_test_bundle.outputs.test_bundle_path }}" \
+          -F "custom_id=ios_kmp_tests_${{ github.run_number }}")
+        
+        TEST_SUITE_URL=$(echo "$TEST_RESPONSE" | jq -r '.test_suite_url // empty')
+        echo "iOS Test suite upload response: $TEST_RESPONSE"  
+        echo "iOS Test suite URL: $TEST_SUITE_URL"
+        
+        if [ -z "$TEST_SUITE_URL" ] || [ "$TEST_SUITE_URL" = "null" ]; then
+          echo "❌ Failed to upload iOS test suite to BrowserStack"
+          exit 1
+        fi
+        
+        # Store URLs for next step
+        echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+        echo "TEST_SUITE_URL=$TEST_SUITE_URL" >> $GITHUB_ENV
+    
+    - name: Execute iOS tests on BrowserStack
+      run: |
+        echo "🧪 Running iOS tests on BrowserStack real device..."
+        DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
+        
+        BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"app\": \"$APP_URL\",
+            \"testSuite\": \"$TEST_SUITE_URL\",
+            \"devices\": [\"iPhone 15 Pro-17\"],
+            \"env\": {
+              \"GITHUB_TEST_DOC_TITLE\": \"$DOC_TITLE\",
+              \"SYNC_MAX_WAIT_SECONDS\": \"15\"
+            },
+            \"callbackURL\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+          }")
+        
+        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r '.build_id // empty')
+        echo "iOS Build response: $BUILD_RESPONSE"
+        echo "iOS Build ID: $BUILD_ID"
+        
+        if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" = "null" ]; then
+          echo "❌ Failed to start iOS test build on BrowserStack"
+          exit 1
+        fi
+        
+        echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+    
+    - name: Wait for iOS BrowserStack tests to complete
+      run: |
+        echo "⏳ Waiting for iOS BrowserStack test execution to complete..."
+        BUILD_ID="$BUILD_ID"
+        
+        # Wait up to 10 minutes for tests to complete
+        for i in {1..20}; do
+          echo "🔍 Checking iOS build status... (attempt $i/20)"
+          
+          STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build/$BUILD_ID")
+          
+          STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status // empty')
+          echo "Current iOS build status: $STATUS"
+          
+          if [ "$STATUS" = "passed" ] || [ "$STATUS" = "failed" ] || [ "$STATUS" = "error" ]; then
+            echo "✅ iOS BrowserStack tests completed with status: $STATUS"
+            
+            # Get detailed results
+            FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build/$BUILD_ID")
+            echo "Final iOS test result: $FINAL_RESULT"
+            
+            if [ "$STATUS" = "passed" ]; then
+              echo "🎉 iOS BrowserStack tests PASSED!"
+              exit 0
+            else
+              echo "❌ iOS BrowserStack tests FAILED or had ERRORS"
+              exit 1
+            fi
+          fi
+          
+          sleep 30
+        done
+        
+        echo "⏰ iOS tests timed out after 10 minutes"
+        exit 1
 
   build-summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [lint, build-android, build-ios, build-desktop, browserstack-android, test-ios-kmp]
+    needs: [lint, build-android, build-ios, build-desktop, browserstack-android, browserstack-ios]
     if: always()
     
     steps:
@@ -591,7 +781,7 @@ jobs:
         echo "| iOS Build | ${{ needs.build-ios.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
         echo "| Desktop Build | ${{ needs.build-desktop.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
         echo "| Android BrowserStack | ${{ needs.browserstack-android.result == 'success' && '✅ Passed' || (needs.browserstack-android.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| iOS KMP Native Tests | ${{ needs.test-ios-kmp.result == 'success' && '✅ Passed' || (needs.test-ios-kmp.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| iOS BrowserStack | ${{ needs.browserstack-ios.result == 'success' && '✅ Passed' || (needs.browserstack-ios.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # Check core build results
@@ -606,12 +796,12 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Testing results summary
-          if [[ "${{ needs.browserstack-android.result }}" == "success" ]] && [[ "${{ needs.test-ios-kmp.result }}" == "success" ]]; then
-            echo "🚀 **Full end-to-end success!** All builds passed, Android BrowserStack testing completed, and iOS KMP native tests passed." >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.browserstack-android.result }}" == "success" ]] && [[ "${{ needs.browserstack-ios.result }}" == "success" ]]; then
+            echo "🚀 **Full end-to-end success!** All builds passed, Android BrowserStack testing completed, and iOS BrowserStack testing passed." >> $GITHUB_STEP_SUMMARY
           elif [[ "${{ needs.browserstack-android.result }}" == "success" ]]; then
-            echo "✅ Android BrowserStack testing passed. iOS KMP testing was skipped or failed." >> $GITHUB_STEP_SUMMARY  
-          elif [[ "${{ needs.test-ios-kmp.result }}" == "success" ]]; then
-            echo "✅ iOS KMP native testing passed. Android BrowserStack testing was skipped or failed." >> $GITHUB_STEP_SUMMARY
+            echo "✅ Android BrowserStack testing passed. iOS BrowserStack testing was skipped or failed." >> $GITHUB_STEP_SUMMARY  
+          elif [[ "${{ needs.browserstack-ios.result }}" == "success" ]]; then
+            echo "✅ iOS BrowserStack testing passed. Android BrowserStack testing was skipped or failed." >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ Core builds passed but testing had issues. Check testing logs above." >> $GITHUB_STEP_SUMMARY
           fi
