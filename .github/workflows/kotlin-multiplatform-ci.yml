@@ -183,20 +183,14 @@ jobs:
     - name: Generate test document title
       id: test_doc
       run: |
-        # Create a unique GitHub test document with inverted timestamp to appear at top
         TIMESTAMP=$(date +%s)
         INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
         DOC_ID="${INVERTED_TIMESTAMP}_kmp_ios_ci_test_${{ github.run_id }}_${{ github.run_number }}"
         DOC_TITLE="${INVERTED_TIMESTAMP}_kmp_ios_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        
         echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
         echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
-        echo "📝 Generated iOS test document (inverted timestamp for top position)"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
     
-    - name: Create production .env file
+    - name: Write production .env
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > ../.env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> ../.env
@@ -206,70 +200,86 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x gradlew
     
-    - name: Prepare KMP frameworks for Xcode
+    - name: Build KMP iOS frameworks (sim + device)
       run: |
-        echo "🔨 Generating Kotlin/Native framework for Xcode..."
-        ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --stacktrace
+        ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+        ./gradlew :composeApp:linkDebugFrameworkIosArm64 --stacktrace
     
-    - name: Install CocoaPods
-      working-directory: kotlin-multiplatform/iosApp
+    # ---- iOS app build without archive/signing (more reliable on CI) ----
+    - name: Prepare Xcode container (project/workspace + CocoaPods)
       run: |
-        echo "📦 Installing CocoaPods and updating repos..."
-        sudo gem install cocoapods --no-document
-        pod repo update
-        pod install
-    
-    - name: Build iOS Device Archive and IPA (for BrowserStack)
-      working-directory: kotlin-multiplatform/iosApp
-      run: |
-        echo "🍎 Building iOS device .ipa for BrowserStack..."
+        set -euo pipefail
+        if [ -f "iosApp/Podfile" ]; then
+          echo "Podfile found → installing pods"
+          sudo gem install cocoapods --no-document
+          cd iosApp
+          pod repo update
+          pod install
+          cd ..
+        fi
         
-        # Build and archive iOS app using the workspace (required for CocoaPods/KMP)
+        if [ -f "iosApp.xcworkspace" ]; then
+          echo "XCWORKSPACE=1" >> $GITHUB_ENV
+          CONTAINER="iosApp.xcworkspace"
+          CONTAINER_FLAG="-workspace"
+        else
+          echo "XCWORKSPACE=0" >> $GITHUB_ENV
+          CONTAINER="iosApp.xcodeproj"
+          CONTAINER_FLAG="-project"
+        fi
+        
+        echo "CONTAINER=$CONTAINER" >> $GITHUB_ENV
+        echo "CONTAINER_FLAG=$CONTAINER_FLAG" >> $GITHUB_ENV
+        
+        echo "Available schemes:"
+        xcodebuild -list $CONTAINER_FLAG "$CONTAINER"
+    
+    - name: Build device .app (no signing)
+      run: |
+        set -euo pipefail
+        DERIVED="$PWD/build/DerivedData"
+        PRODUCTS="$DERIVED/Build/Products"
+        
         xcodebuild \
-          -workspace iosApp.xcworkspace \
+          $CONTAINER_FLAG "$CONTAINER" \
           -scheme iosApp \
           -configuration Debug \
-          -destination 'generic/platform=iOS' \
-          -archivePath build/iosApp.xcarchive \
-          archive \
-          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          -sdk iphoneos \
+          -derivedDataPath "$DERIVED" \
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+          ENABLE_BITCODE=NO \
+          ONLY_ACTIVE_ARCH=NO \
+          build
         
-        echo "📦 Creating unsigned .ipa for BrowserStack..."
-        
-        # Find the .app bundle from the archive
-        APP_BUNDLE_PATH=$(find build/iosApp.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d | head -1)
-        
-        if [ -d "$APP_BUNDLE_PATH" ]; then
-          echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
-          
-          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
-          mkdir -p build/Payload
-          cp -R "$APP_BUNDLE_PATH" build/Payload/
-          (cd build && zip -qry iosApp-unsigned.ipa Payload && rm -rf Payload)
-          
-          if [ -f "build/iosApp-unsigned.ipa" ]; then
-            echo "✅ Unsigned .ipa created successfully"
-            ls -la build/iosApp-unsigned.ipa
-          else
-            echo "❌ Failed to create .ipa file"
-            exit 1
-          fi
-        else
-          echo "❌ iOS app bundle not found in archive"
+        echo "Searching for device .app…"
+        APP_DIR=$(find "$PRODUCTS/Debug-iphoneos" -maxdepth 1 -type d -name "*.app" | head -1 || true)
+        if [ -z "${APP_DIR:-}" ]; then
+          echo "❌ Could not locate Debug-iphoneos/*.app. Dumping tree for debugging:"
+          find "$PRODUCTS" -maxdepth 3 -print
           exit 1
         fi
+        echo "APP_DIR=$APP_DIR" >> $GITHUB_ENV
+        echo "✅ Found app: $APP_DIR"
+    
+    - name: Create unsigned .ipa for BrowserStack
+      run: |
+        set -euo pipefail
+        mkdir -p build/Payload
+        cp -R "$APP_DIR" build/Payload/
+        (cd build && zip -qry iosApp-unsigned.ipa Payload && rm -rf Payload)
+        test -f build/iosApp-unsigned.ipa || (echo "❌ IPA not created" && exit 1)
+        ls -la build/iosApp-unsigned.ipa
     
     - name: Upload iOS IPA Artifact
       uses: actions/upload-artifact@v4
       with:
         name: ios-kmp-ipa-${{ github.run_number }}
-        path: kotlin-multiplatform/iosApp/build/iosApp-unsigned.ipa
+        path: kotlin-multiplatform/build/iosApp-unsigned.ipa
         retention-days: 1
     
     - name: Set build status
       id: build-status
-      run: |
-        echo "success=true" >> $GITHUB_OUTPUT
+      run: echo "success=true" >> $GITHUB_OUTPUT
 
   build-desktop:
     name: Build Desktop (ubuntu-latest)
@@ -560,36 +570,55 @@ jobs:
         name: ios-kmp-ipa-${{ github.run_number }}
         path: ./ios-artifacts/
     
-    - name: Prepare KMP frameworks for Xcode (for UI tests)
+    - name: Build KMP iOS frameworks (for UI tests)
       run: |
-        echo "🔨 Generating Kotlin/Native framework for XCUITests..."
-        ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --stacktrace
+        ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+        ./gradlew :composeApp:linkDebugFrameworkIosArm64 --stacktrace
     
-    - name: Install CocoaPods for UI tests
+    - name: Prepare Xcode container (for UI tests)
       working-directory: kotlin-multiplatform/iosApp
       run: |
-        echo "📦 Installing CocoaPods for UI test workspace..."
-        sudo gem install cocoapods --no-document
-        pod repo update
-        pod install
+        set -euo pipefail
+        if [ -f "Podfile" ]; then
+          echo "Podfile found → installing pods for UI tests"
+          sudo gem install cocoapods --no-document
+          pod repo update
+          pod install
+        fi
+        
+        if [ -f "iosApp.xcworkspace" ]; then
+          CONTAINER="iosApp.xcworkspace"
+          CONTAINER_FLAG="-workspace"
+        else
+          CONTAINER="iosApp.xcodeproj"
+          CONTAINER_FLAG="-project"
+        fi
+        
+        echo "UITEST_CONTAINER=$CONTAINER" >> $GITHUB_ENV
+        echo "UITEST_CONTAINER_FLAG=$CONTAINER_FLAG" >> $GITHUB_ENV
+        
+        echo "Available UI test schemes:"
+        xcodebuild -list $CONTAINER_FLAG "$CONTAINER"
     
     - name: Build XCUITest Bundle for BrowserStack
       id: build_test_bundle
       working-directory: kotlin-multiplatform/iosApp
       run: |
+        set -euo pipefail
         echo "🧪 Building XCUITest bundle for BrowserStack..."
         
         DERIVED="$PWD/build/DerivedData"
         PRODUCTS_DIR="$DERIVED/Build/Products"
         
-        # Build UI test bundle for device
+        # Build UI test bundle for device using detected container
         xcodebuild build-for-testing \
-          -workspace iosApp.xcworkspace \
+          $UITEST_CONTAINER_FLAG "$UITEST_CONTAINER" \
           -scheme iosAppUITests \
           -configuration Debug \
-          -destination 'generic/platform=iOS' \
+          -sdk iphoneos \
           -derivedDataPath "$DERIVED" \
-          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+          ENABLE_BITCODE=NO
         
         echo "📁 Listing build products..."
         find "$PRODUCTS_DIR" -type f -name "*.app" -o -name "*.xctestrun" | head -10
