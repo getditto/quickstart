@@ -1,6 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.compose.ExperimentalComposeLibrary
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -70,6 +71,7 @@ kotlin {
             dependencies {
                 implementation(libs.androidx.test.junit)
                 implementation(libs.androidx.test.runner)
+                @OptIn(ExperimentalComposeLibrary::class)
                 implementation(compose.uiTest)
             }
         }
@@ -152,6 +154,12 @@ detekt {
 dependencies {
     implementation(libs.androidx.material3.android)
     debugImplementation(compose.uiTooling)
+    
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    @OptIn(ExperimentalComposeLibrary::class)
+    androidTestImplementation(compose.uiTest)
 }
 
 compose.desktop {
