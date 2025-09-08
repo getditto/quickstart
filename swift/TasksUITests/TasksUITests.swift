@@ -10,14 +10,14 @@ final class TasksUITests: XCTestCase {
                       "App should launch successfully")
 
         // Get seeded GitHub identifiers from environment (set by BrowserStack setEnvVariables)
-        let githubRunId = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
+        let githubRunID = ProcessInfo.processInfo.environment["GITHUB_RUN_ID"] ?? ""
         let githubRunNumber = ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
 
         print("🔍 GitHub Run Info:")
-        print("  GITHUB_RUN_ID: '\(githubRunId)'")  
+        print("  GITHUB_RUN_ID: '\(githubRunID)'")  
         print("  GITHUB_RUN_NUMBER: '\(githubRunNumber)'")
 
-        guard !githubRunId.isEmpty, !githubRunNumber.isEmpty else {
+        guard !githubRunID.isEmpty, !githubRunNumber.isEmpty else {
             XCTFail("Missing GITHUB_RUN_ID or GITHUB_RUN_NUMBER - expected for BrowserStack validation")
             return
         }
