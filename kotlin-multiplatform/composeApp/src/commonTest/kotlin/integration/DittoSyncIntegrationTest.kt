@@ -84,11 +84,11 @@ class DittoSyncIntegrationTest {
             dittoManager.startSync()
             
             // Register subscription for tasks collection
-            val subscription = dittoManager.registerSubscription("SELECT * FROM tasks WHERE NOT deleted ORDER BY _id")
+            val subscription = dittoManager.registerSubscription("SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC")
             assertNotNull(subscription, "Should be able to register tasks subscription")
             
             // Register observer to get live updates
-            val tasksFlow = dittoManager.registerObserver("SELECT * FROM tasks WHERE NOT deleted ORDER BY _id")
+            val tasksFlow = dittoManager.registerObserver("SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC")
             
             // Wait longer for sync to complete from Ditto Cloud
             var attempts = 0

@@ -25,7 +25,7 @@ import com.ditto.quickstart.data.dto.UpdateTaskTitleDto
 import com.ditto.quickstart.ditto.DittoManager
 
 private const val QUERY_SELECT_TASKS = """
-SELECT * FROM tasks WHERE NOT deleted ORDER BY _id
+SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC
 """
 
 private const val QUERY_SELECT_TASK = """
@@ -138,38 +138,8 @@ class DittoTaskRepository(
             observer
                 .map { result -> result.items.map { item -> item.toTask() } }
                 .collect { tasks ->
-                    // Sort tasks with inverted timestamp prefixes first (newest first), then alphabetically
-                    val sortedTasks = tasks.sortedWith { task1, task2 ->
-                        // Check if tasks have inverted timestamp prefixes (e.g., "6023227936_", or legacy "000_", "001_")
-                        val task1HasTimestampPrefix = task1.title.matches(Regex("^\\d{10}_.*")) // 10-digit inverted timestamp
-                        val task2HasTimestampPrefix = task2.title.matches(Regex("^\\d{10}_.*"))
-                        val task1HasLegacyPrefix = task1.title.matches(Regex("^\\d{3}_.*")) // 3-digit legacy prefix
-                        val task2HasLegacyPrefix = task2.title.matches(Regex("^\\d{3}_.*"))
-                        
-                        when {
-                            // Both have inverted timestamp prefixes: sort by prefix (smaller = newer)
-                            task1HasTimestampPrefix && task2HasTimestampPrefix -> {
-                                val prefix1 = task1.title.substringBefore("_").toLong()
-                                val prefix2 = task2.title.substringBefore("_").toLong()
-                                prefix1.compareTo(prefix2) // Ascending = newest first (smaller inverted timestamp)
-                            }
-                            // Both have legacy prefixes: sort by prefix number
-                            task1HasLegacyPrefix && task2HasLegacyPrefix -> {
-                                val prefix1 = task1.title.substring(0, 3).toInt()
-                                val prefix2 = task2.title.substring(0, 3).toInt()
-                                prefix1.compareTo(prefix2)
-                            }
-                            // Inverted timestamp comes before legacy prefix
-                            task1HasTimestampPrefix && task2HasLegacyPrefix -> -1
-                            task1HasLegacyPrefix && task2HasTimestampPrefix -> 1
-                            // Any prefix comes before non-prefixed tasks
-                            (task1HasTimestampPrefix || task1HasLegacyPrefix) && !(task2HasTimestampPrefix || task2HasLegacyPrefix) -> -1
-                            !(task1HasTimestampPrefix || task1HasLegacyPrefix) && (task2HasTimestampPrefix || task2HasLegacyPrefix) -> 1
-                            // Neither has prefix: alphabetical by title
-                            else -> task1.title.compareTo(task2.title, ignoreCase = true)
-                        }
-                    }
-                    tasksMutableStateFlow.value = sortedTasks
+                    // Use database ordering (ORDER BY title ASC) - no client-side sorting needed
+                    tasksMutableStateFlow.value = tasks
                 }
         }
     }
