@@ -4,7 +4,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.browserstack:gradle-tool:1.0.0")
+        // Only include BrowserStack plugin when needed
+        if (System.getenv("BROWSERSTACK_USERNAME") != null) {
+            classpath("com.browserstack:gradle-tool:1.0.0")
+        }
     }
 }
 

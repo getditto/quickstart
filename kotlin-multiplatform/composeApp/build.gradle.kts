@@ -9,7 +9,11 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.detekt)
-    id("com.browserstack.gradle-tool")
+    
+    // Only apply BrowserStack plugin when on BrowserStack
+    if (System.getenv("BROWSERSTACK_USERNAME") != null) {
+        id("com.browserstack.gradle-tool")
+    }
 
     id("quickstart-conventions")
 }
@@ -75,7 +79,13 @@ kotlin {
                 implementation(libs.androidx.test.runner)
                 implementation("androidx.test.uiautomator:uiautomator:2.3.0")
                 implementation("androidx.tracing:tracing:1.1.0")
-                implementation("com.browserstack:browserstack-java-sdk:1.29.6")
+                
+                // Only include BrowserStack SDK when running on BrowserStack
+                if (System.getenv("BROWSERSTACK_BUILD_ID") != null || 
+                    System.getProperty("browserstack.enabled") == "true") {
+                    implementation("com.browserstack:browserstack-java-sdk:1.29.6")
+                }
+                
                 @OptIn(ExperimentalComposeLibrary::class)
                 implementation(compose.uiTest)
             }
