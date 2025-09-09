@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint (ubuntu-latest)
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
@@ -43,7 +43,7 @@ jobs:
       run: yarn lint
 
   build-android:
-    name: Build Android (ubuntu-latest)
+    name: Build Android
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 30
@@ -86,12 +86,19 @@ jobs:
       working-directory: react-native-expo
       run: npx expo prebuild --platform android
     
-    - name: Build Android
+    - name: Build Android APK
       working-directory: react-native-expo
       run: yarn build:android
+    
+    - name: Upload Android APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: expo-android-apk
+        path: react-native-expo/android/app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 1
 
   build-ios:
-    name: Build iOS (macos-latest)
+    name: Build iOS
     runs-on: macos-latest
     needs: lint
     timeout-minutes: 30
@@ -133,6 +140,286 @@ jobs:
       working-directory: react-native-expo/ios
       run: pod install --repo-update
     
-    - name: Build iOS
+    - name: Build iOS IPA
       working-directory: react-native-expo
       run: yarn build:ios
+    
+    - name: Build iOS Archive and IPA (for BrowserStack)
+      working-directory: react-native-expo
+      run: |
+        echo "🍎 Building iOS device .ipa for BrowserStack..."
+        
+        # Build and archive iOS app for real device
+        xcodebuild -workspace ios/reactnativeexpo.xcworkspace \
+          -scheme reactnativeexpo \
+          -configuration Debug \
+          -destination 'generic/platform=iOS' \
+          -archivePath ios/build/reactnativeexpo.xcarchive \
+          archive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+        
+        echo "📦 Creating unsigned .ipa for BrowserStack..."
+        
+        # Find the .app bundle from the archive
+        APP_BUNDLE_PATH=$(find ios/build/reactnativeexpo.xcarchive/Products/Applications -maxdepth 1 -name "*.app" -type d | head -1)
+        
+        if [ -d "$APP_BUNDLE_PATH" ]; then
+          echo "✅ iOS app bundle found: $APP_BUNDLE_PATH"
+          
+          # Create unsigned IPA: Payload/<App>.app zipped as .ipa
+          mkdir -p ios/build/Payload
+          cp -R "$APP_BUNDLE_PATH" ios/build/Payload/
+          (cd ios/build && zip -qry reactnativeexpo-unsigned.ipa Payload && rm -rf Payload)
+          
+          if [ -f "ios/build/reactnativeexpo-unsigned.ipa" ]; then
+            echo "✅ Unsigned .ipa created successfully"
+            ls -la ios/build/reactnativeexpo-unsigned.ipa
+          else
+            echo "❌ Failed to create .ipa file"
+            exit 1
+          fi
+        else
+          echo "❌ iOS app bundle not found in archive"
+          exit 1
+        fi
+    
+    - name: Upload iOS IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: expo-ios-ipa
+        path: react-native-expo/ios/build/reactnativeexpo-unsigned.ipa
+        retention-days: 1
+
+  seed-ditto-cloud:
+    name: Seed Ditto Cloud
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    timeout-minutes: 10
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install Ditto CLI
+      run: npm install -g @dittolive/ditto-cli
+    
+    - name: Seed test data to Ditto Cloud
+      run: |
+        # Create test task for Maestro verification
+        ditto_cli create_task "Basic Test Task" \
+          --app-id "${{ secrets.DITTO_APP_ID }}" \
+          --token "${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
+          --completed false
+      env:
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+
+  test-android-maestro:
+    name: Test Android - BrowserStack Maestro
+    runs-on: ubuntu-latest
+    needs: [seed-ditto-cloud]
+    timeout-minutes: 30
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download Android APK
+      uses: actions/download-artifact@v4
+      with:
+        name: expo-android-apk
+        path: ./artifacts/
+    
+    - name: Upload APK to BrowserStack
+      id: upload-apk
+      run: |
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
+          -F "file=@./artifacts/app-debug.apk" \
+          -F "custom_id=ReactNative-Expo-Android-${{ github.run_id }}")
+        
+        echo "Upload response: $response"
+        app_url=$(echo $response | jq -r '.app_url')
+        echo "app_url=$app_url" >> $GITHUB_OUTPUT
+    
+    - name: Create Maestro test suite ZIP
+      run: |
+        cd react-native-expo/.maestro
+        zip -r ../../maestro-tests.zip . -x "*.DS_Store"
+        ls -la ../../maestro-tests.zip
+    
+    - name: Upload Maestro test suite to BrowserStack
+      id: upload-tests
+      run: |
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
+          -F "file=@./maestro-tests.zip" \
+          -F "custom_id=ReactNative-Expo-Tests-${{ github.run_id }}")
+        
+        echo "Upload response: $response"
+        test_suite_url=$(echo $response | jq -r '.test_suite_url')
+        echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
+    
+    - name: Execute Maestro tests on BrowserStack (Parallel)
+      id: execute-tests
+      run: |
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/android/build" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "app": "${{ steps.upload-apk.outputs.app_url }}",
+            "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
+            "project": "React Native Expo - Android",
+            "devices": [
+              "Samsung Galaxy S22-12.0",
+              "Google Pixel 7-13.0"
+            ],
+            "execute": ["01-app-launch-and-seeded-tasks.yaml"],
+            "deviceLogs": true,
+            "networkLogs": true
+          }')
+        
+        echo "Execution response: $response"
+        build_id=$(echo $response | jq -r '.build_id')
+        echo "build_id=$build_id" >> $GITHUB_OUTPUT
+        echo "BrowserStack Build ID: $build_id"
+    
+    - name: Wait for test completion and get results
+      run: |
+        build_id="${{ steps.execute-tests.outputs.build_id }}"
+        
+        # Wait for tests to complete (max 20 minutes)
+        for i in {1..120}; do
+          response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
+          
+          status=$(echo $response | jq -r '.status')
+          echo "Test status: $status (attempt $i/120)"
+          
+          if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
+            echo "Tests completed with status: $status"
+            echo $response | jq '.'
+            
+            if [ "$status" = "failed" ]; then
+              echo "❌ Android Maestro tests failed!"
+              exit 1
+            else
+              echo "✅ Android Maestro tests passed!"
+            fi
+            break
+          fi
+          
+          sleep 10
+        done
+        
+        if [ $i -eq 120 ]; then
+          echo "❌ Tests timed out after 20 minutes"
+          exit 1
+        fi
+
+  test-ios-maestro:
+    name: Test iOS - BrowserStack Maestro  
+    runs-on: ubuntu-latest
+    needs: [seed-ditto-cloud]
+    timeout-minutes: 30
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download iOS IPA
+      uses: actions/download-artifact@v4
+      with:
+        name: expo-ios-ipa
+        path: ./artifacts/
+    
+    - name: Upload IPA to BrowserStack
+      id: upload-ipa
+      run: |
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
+          -F "file=@./artifacts/reactnativeexpo-unsigned.ipa" \
+          -F "custom_id=ReactNative-Expo-iOS-${{ github.run_id }}")
+        
+        echo "Upload response: $response"
+        app_url=$(echo $response | jq -r '.app_url')
+        echo "app_url=$app_url" >> $GITHUB_OUTPUT
+    
+    - name: Create Maestro test suite ZIP
+      run: |
+        cd react-native-expo/.maestro
+        zip -r ../../maestro-tests.zip . -x "*.DS_Store"
+        ls -la ../../maestro-tests.zip
+    
+    - name: Upload Maestro test suite to BrowserStack
+      id: upload-tests
+      run: |
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
+          -F "file=@./maestro-tests.zip" \
+          -F "custom_id=ReactNative-Expo-iOS-Tests-${{ github.run_id }}")
+        
+        echo "Upload response: $response" 
+        test_suite_url=$(echo $response | jq -r '.test_suite_url')
+        echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
+    
+    - name: Execute Maestro tests on BrowserStack (Parallel)
+      id: execute-tests
+      run: |
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/ios/build" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "app": "${{ steps.upload-ipa.outputs.app_url }}",
+            "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
+            "project": "React Native Expo - iOS",
+            "devices": [
+              "iPhone 15-17.0",
+              "iPhone 14-16.0"
+            ],
+            "execute": ["01-app-launch-and-seeded-tasks-ios.yaml"],
+            "deviceLogs": true,
+            "networkLogs": true
+          }')
+        
+        echo "Execution response: $response"
+        build_id=$(echo $response | jq -r '.build_id')
+        echo "build_id=$build_id" >> $GITHUB_OUTPUT
+        echo "BrowserStack Build ID: $build_id"
+    
+    - name: Wait for test completion and get results
+      run: |
+        build_id="${{ steps.execute-tests.outputs.build_id }}"
+        
+        # Wait for tests to complete (max 20 minutes)
+        for i in {1..120}; do
+          response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
+          
+          status=$(echo $response | jq -r '.status')
+          echo "Test status: $status (attempt $i/120)"
+          
+          if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
+            echo "Tests completed with status: $status"
+            echo $response | jq '.'
+            
+            if [ "$status" = "failed" ]; then
+              echo "❌ iOS Maestro tests failed!"
+              exit 1
+            else
+              echo "✅ iOS Maestro tests passed!"
+            fi
+            break
+          fi
+          
+          sleep 10
+        done
+        
+        if [ $i -eq 120 ]; then
+          echo "❌ Tests timed out after 20 minutes"
+          exit 1
+        fi
