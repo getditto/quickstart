@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -66,7 +67,8 @@ private fun TaskItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .testTag("task_item_${task.id}"),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
@@ -81,10 +83,10 @@ private fun TaskItem(
 
         Text(
             text = task.title,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.body1.copy(textDecoration = titleTextDecoration),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .testTag("task_title_${task.title.replace(" ", "_").replace("[^A-Za-z0-9_]".toRegex(), "")}")
         )
         IconButton(onClick = onEdit) {
             Icon(

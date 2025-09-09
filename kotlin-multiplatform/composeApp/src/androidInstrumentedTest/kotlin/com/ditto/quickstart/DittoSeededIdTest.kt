@@ -1,61 +1,95 @@
 package com.ditto.quickstart
 
-import androidx.test.ext.junit.rules.ActivityScenarioRule
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.Assert.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 class DittoSeededIdTest {
     @get:Rule
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+    val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun testGitHubSeededDocumentSync() {
-        println("🧪 [Android] Starting GitHub seeded document sync test...")
-        
-        // Get the exact document title that GitHub Actions seeded
+        // Get test document title from instrumentation arguments
         val args = InstrumentationRegistry.getArguments()
-        val expectedTitle = args.getString("DITTO_TASK_ID")
+        val testDocumentTitle = args?.getString("github_test_doc_title")
+            ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'github_test_doc_title'")
         
-        println("🔍 [Android] Looking for seeded document with title: '${expectedTitle ?: "null"}'")
+        println("🔍 Looking for document: '$testDocumentTitle'")
         
-        if (expectedTitle.isNullOrEmpty()) {
-            println("❌ [Android] Missing DITTO_TASK_ID - expected exact document title from GitHub Actions")
-            assert(false) { "GitHub-seeded document title not provided" }
-            return
+        // Give the app time to fully launch and set up Compose
+        Thread.sleep(3000)
+        
+        // Handle permission dialogs using UiAutomator (can interact with system dialogs)
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        for (i in 1..3) { // Try up to 3 permission dialogs
+            try {
+                // Look for permission dialog buttons in different Android versions
+                val allowSelectors = listOf(
+                    UiSelector().text("Allow"),
+                    UiSelector().text("ALLOW"), 
+                    UiSelector().text("Allow only while using the app"),
+                    UiSelector().text("While using the app"),
+                    UiSelector().text("OK")
+                )
+                
+                var found = false
+                for (selector in allowSelectors) {
+                    val allowButton = device.findObject(selector)
+                    if (allowButton.exists()) {
+                        println("📱 Found permission dialog $i, clicking '${allowButton.text}'")
+                        allowButton.click()
+                        Thread.sleep(1500) // Wait for dialog to dismiss and next one to appear
+                        found = true
+                        break
+                    }
+                }
+                
+                if (!found) {
+                    println("ℹ️ No more permission dialogs found after $i attempts")
+                    break
+                }
+            } catch (e: Exception) {
+                println("⚠️ Error handling permission dialog $i: ${e.message}")
+                break
+            }
         }
         
-        println("🔍 [Android] Waiting for app to launch and sync...")
-        // Give app time to start and sync with Ditto Cloud
-        runBlocking { delay(5000) }
-        
-        var found = false
-        activityRule.scenario.onActivity { activity ->
-            println("🔍 [Android] App launched, checking for seeded document...")
-            // In a real implementation, this would scan the UI for the expected title
-            // For now, we simulate that the document sync is working
-            println("📱 [Android] Scanning UI for document: '$expectedTitle'")
-            
-            // TODO: Add actual UI scanning logic here to find the document title
-            // This would use Espresso ViewMatchers to search for text elements
-            
-            found = true // Simulate finding the document
-            println("✅ [Android] Found exact match! Document '$expectedTitle' found in UI")
-            println("🎉 [Android] Test should PASS - Android Ditto sync working!")
+        // Debug: Print the UI tree to see what's actually there
+        try {
+            composeTestRule.onRoot().printToLog("UI_TREE")
+        } catch (e: Exception) {
+            println("⚠️ Could not print UI tree: ${e.message}")
         }
         
-        if (found) {
-            println("🎉 [Android] SUCCESS: Found GitHub-seeded document '$expectedTitle'")
-            println("✅ This proves GitHub Actions → Ditto Cloud → BrowserStack → Android sync is working!")
-        } else {
-            println("❌ [Android] FAILURE: GitHub-seeded document '$expectedTitle' not found")
-        }
+        // Wait for app initialization and Ditto sync with intelligent polling
+        composeTestRule.waitUntil(
+            condition = {
+                try {
+                    val nodes = composeTestRule.onAllNodes(hasText(testDocumentTitle)).fetchSemanticsNodes()
+                    println("📊 Found ${nodes.size} nodes with text '$testDocumentTitle'")
+                    nodes.isNotEmpty()
+                } catch (e: Exception) {
+                    println("❌ Exception while searching: ${e.message}")
+                    false
+                }
+            },
+            timeoutMillis = 15000 // Wait up to 15 seconds for app init and Ditto sync
+        )
         
-        assert(found) { "GitHub-seeded document '$expectedTitle' not found in Android UI" }
+        // Final verification that document exists
+        composeTestRule
+            .onNode(hasText(testDocumentTitle))
+            .assertExists("Document with title '$testDocumentTitle' should exist in the task list")
+        
+        println("✅ DOCUMENT FOUND: '$testDocumentTitle'")
     }
 }

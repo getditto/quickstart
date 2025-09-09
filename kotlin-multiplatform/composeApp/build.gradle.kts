@@ -50,6 +50,7 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -71,6 +72,7 @@ kotlin {
             dependencies {
                 implementation(libs.androidx.test.junit)
                 implementation(libs.androidx.test.runner)
+                implementation("androidx.test.uiautomator:uiautomator:2.3.0")
                 @OptIn(ExperimentalComposeLibrary::class)
                 implementation(compose.uiTest)
             }
@@ -121,6 +123,9 @@ android {
         versionName = "1.0"
         
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Pass environment variables to instrumented tests
+        testInstrumentationRunnerArguments["github_test_doc_title"] = System.getenv("GITHUB_TEST_DOC_TITLE") ?: ""
     }
     packaging {
         resources {
@@ -158,6 +163,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.ui.test.junit4)
     @OptIn(ExperimentalComposeLibrary::class)
     androidTestImplementation(compose.uiTest)
 }
