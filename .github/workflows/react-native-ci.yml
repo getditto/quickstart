@@ -89,7 +89,7 @@ jobs:
     - name: Upload Android APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-apk
+        name: android-apk-${{ github.run_number }}
         path: react-native/android/app/build/outputs/apk/debug/app-debug.apk
         retention-days: 1
 
@@ -185,7 +185,7 @@ jobs:
     - name: Upload iOS IPA artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ios-ipa
+        name: ios-ipa-${{ github.run_number }}
         path: react-native/ios/build/DittoReactNativeSampleApp-unsigned.ipa
         retention-days: 1
 
@@ -251,15 +251,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Wait for artifact availability
-      run: |
-        echo "⏳ Waiting a moment to ensure artifacts are fully uploaded..."
-        sleep 10
-    
     - name: Download Android APK
       uses: actions/download-artifact@v4
       with:
-        name: android-apk
+        name: android-apk-${{ github.run_number }}
         path: ./artifacts/
     
     - name: Upload APK to BrowserStack
@@ -379,15 +374,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Wait for artifact availability
-      run: |
-        echo "⏳ Waiting a moment to ensure artifacts are fully uploaded..."
-        sleep 10
-    
     - name: Download iOS IPA
       uses: actions/download-artifact@v4
       with:
-        name: ios-ipa
+        name: ios-ipa-${{ github.run_number }}
         path: ./artifacts/
     
     - name: Upload IPA to BrowserStack
