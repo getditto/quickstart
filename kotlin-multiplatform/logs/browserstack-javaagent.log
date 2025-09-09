@@ -185,3 +185,7 @@ Caused by: compile error: ) is missing
 16:54:37.993 [Execution worker Thread 7] INFO  c.b.AndroidClassTransformer - Transforming class: org/junit/runners/Parameterized.class
 16:54:37.994 [Execution worker Thread 7] INFO  com.browserstack.ModifyClassesTask - Starting Transformation
 16:54:37.994 [Execution worker Thread 7] INFO  c.b.AndroidClassTransformer - Transforming class: org/junit/runners/model/FrameworkMethod.class
+17:09:26.738 [Daemon worker Thread 13] INFO  c.b.BrowserstackGradleTool - Starting Browserstack Helper plugin
+17:09:26.963 [Daemon worker Thread 13] INFO  c.b.BrowserstackGradleTool - Found AndroidTest
+17:10:17.297 [Daemon worker Thread 13] INFO  c.b.BrowserstackGradleTool - Starting Browserstack Helper plugin
+17:10:17.315 [Daemon worker Thread 13] INFO  c.b.BrowserstackGradleTool - Found AndroidTest
