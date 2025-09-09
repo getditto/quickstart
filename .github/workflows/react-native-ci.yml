@@ -321,7 +321,7 @@ jobs:
               "Samsung Galaxy S22-12.0",
               "Google Pixel 7-13.0"
             ],
-            "execute": ["01-app-launch-and-seeded-tasks.yaml"],
+            "execute": ["flows/01-app-launch-and-seeded-tasks.yaml"],
             "deviceLogs": true,
             "networkLogs": true,
             "video": true
@@ -435,7 +435,7 @@ jobs:
               "iPhone 15-17.0",
               "iPhone 14-16.0"
             ],
-            "execute": ["01-app-launch-and-seeded-tasks-ios.yaml"],
+            "execute": ["flows/01-app-launch-and-seeded-tasks-ios.yaml"],
             "deviceLogs": true,
             "networkLogs": true,
             "video": true
