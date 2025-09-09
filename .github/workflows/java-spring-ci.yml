@@ -219,6 +219,23 @@ jobs:
           sleep 2
         done
     
+    - name: Create test task for visibility testing
+      run: |
+        TITLE="${{ needs.build.outputs.test_doc_title }}"
+        echo "Creating test task: $TITLE"
+        
+        # Create the test task via API
+        curl -X POST "http://localhost:8080/tasks" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "title=$TITLE" || true
+        
+        # Wait a moment for task to sync
+        sleep 2
+        
+        # Verify task was created
+        echo "Verifying test task exists..."
+        curl -s http://localhost:8080 | grep -q "$TITLE" && echo "✓ Test task found" || echo "⚠ Test task not found"
+    
     - name: Execute Selenium tests on BrowserStack cloud browsers
       working-directory: java-spring
       env:
