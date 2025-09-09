@@ -36,42 +36,6 @@ jobs:
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
       
-      - name: Insert test document into Ditto Cloud
-        run: |
-          # Use GitHub run ID to create deterministic document ID
-          DOC_ID="cpp_github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          
-          # Insert document using curl with correct JSON structure
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H 'Content-type: application/json' \
-            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-            -d "{
-              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-              \"args\": {
-                \"newTask\": {
-                  \"_id\": \"${DOC_ID}\",
-                  \"title\": \"C++ GitHub Test Task ${GITHUB_RUN_ID}\",
-                  \"done\": false,
-                  \"deleted\": false
-                }
-              }
-            }" \
-          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-          
-          # Extract HTTP status code and response body
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-          
-          # Check if insertion was successful
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Successfully inserted C++ test document with ID: ${DOC_ID}"
-            echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
-          else
-            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-            echo "Response: $BODY"
-            exit 1
-          fi
-      
       - name: Run linter
         working-directory: cpp-tui/taskscpp
         run: |
@@ -104,13 +68,11 @@ jobs:
       - name: Run integration tests with REAL Ditto SDK
         working-directory: cpp-tui/taskscpp
         env:
-          GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
-          echo "🧪 Running REAL C++ integration tests with Ditto Cloud..."
-          echo "📝 Test document ID: ${GITHUB_TEST_DOC_ID}"
-          echo "🌐 This test will connect to REAL Ditto Cloud and verify sync works"
+          echo "🧪 Running C++ integration tests with Ditto Cloud..."
+          echo "🌐 Tests will connect to Ditto Cloud and verify sync functionality"
           
           # Build integration test with REAL Ditto SDK
           g++ -std=c++17 -I./src -I./sdk -I./third_party/cxxopts/include \
@@ -119,7 +81,7 @@ jobs:
             -L./sdk -lditto -ldl -lrt -pthread \
             -o build/integration_test
           
-          echo "🚀 Running integration test with real Ditto SDK..."
+          echo "🚀 Running integration tests..."
           ./build/integration_test
           
-          echo "✅ REAL C++ integration tests completed successfully"
+          echo "✅ C++ integration tests completed successfully"
