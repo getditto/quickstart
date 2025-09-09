@@ -358,7 +358,7 @@ jobs:
         echo "📝 ID: '${DOC_ID}'"
         echo "📝 Title: '${DOC_TITLE}'"
         
-        # Insert document using Ditto API v4
+        # Insert document using Ditto API v4 (use "title" field to match KMP app)
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
           -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
@@ -367,8 +367,9 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"text\": \"${DOC_TITLE}\",
-                \"isCompleted\": false
+                \"title\": \"${DOC_TITLE}\",
+                \"done\": false,
+                \"deleted\": false
               }
             }
           }" \
@@ -622,7 +623,7 @@ jobs:
         echo "📝 ID: '${DOC_ID}'"
         echo "📝 Title: '${DOC_TITLE}'"
         
-        # Insert document using Ditto API v4
+        # Insert document using Ditto API v4 (use "title" field to match KMP app)
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
           -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
@@ -631,8 +632,9 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"text\": \"${DOC_TITLE}\",
-                \"isCompleted\": false
+                \"title\": \"${DOC_TITLE}\",
+                \"done\": false,
+                \"deleted\": false
               }
             }
           }" \
