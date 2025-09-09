@@ -59,8 +59,9 @@ download-sdk: ## Downloads and installs the Ditto C++ SDK
 			echo "✅ Ditto C++ SDK v$(DITTO_SDK_VERSION) installed successfully"; \
 		else \
 			echo "❌ Failed to download SDK for $(DITTO_PLATFORM)"; \
-			echo "💡 For macOS/Windows, manually download from: https://docs.ditto.live/install-guides/cpp"; \
-			echo "💡 Then copy Ditto.h and libditto.a to sdk/ directory"; \
+			echo "💡 The Ditto C++ SDK only supports Linux x64/ARM64 platforms"; \
+			echo "💡 macOS and Windows are not supported by Ditto C++ SDK"; \
+			echo "💡 See: https://docs.ditto.live/reference/compatibility/cpp"; \
 			exit 1; \
 		fi; \
 	else \

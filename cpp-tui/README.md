@@ -1,5 +1,16 @@
 # Ditto C++ Console QuickStart Tasks App
 
+## Platform Support
+
+**This application only runs on Linux.** The Ditto C++ SDK has limited platform support:
+
+- ✅ **Linux (x64)**: Ubuntu 20.04 LTS and later
+- ✅ **Linux (AArch64)**: Ubuntu 22.04 LTS and later  
+- ❌ **macOS**: Not supported by Ditto C++ SDK
+- ❌ **Windows**: Not supported by Ditto C++ SDK
+
+For Android development, see the separate `android-cpp` project.
+
 ## Prerequisites
 
 After you have completed the [common prerequisites] you will need the following:
@@ -7,13 +18,9 @@ After you have completed the [common prerequisites] you will need the following:
 - A C++ compiler (clang or gcc)
 - CMake 3.10 or later
 - Make
+- **Linux operating system** (Ubuntu 20.04+ recommended)
 
-The build system will automatically download the Ditto C++ SDK for your platform
-when you run `make build`. No manual SDK installation is required!
-
-Alternatively, you can manually download and unpack the C++ Ditto SDK by following the
-instructions in the [Ditto C++ Install Guide](https://docs.ditto.live/install-guides/cpp)
-and copying the `Ditto.h` and `libditto.a` files into the `sdk/` subdirectory.
+The build system will automatically download the Ditto C++ SDK when you run `make build` on Linux. No manual SDK installation is required!
 
 ## Documentation
 
@@ -31,7 +38,7 @@ Assuming you have the prerequisites installed, you can build and run the app by 
 2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
 3. In a shell, navigate to the `quickstart/cpp-tui/taskscpp` directory and run the command `make build` to automatically download the Ditto SDK and build the C++ application.
 
-The build system will detect your platform (Linux/macOS) and architecture (x86_64/arm64) and download the appropriate Ditto C++ SDK version automatically.
+The build system will detect your Linux architecture (x86_64/arm64) and download the appropriate Ditto C++ SDK version automatically.
 
 ## Running the Application
 
