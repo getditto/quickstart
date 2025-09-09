@@ -195,7 +195,7 @@ jobs:
   seed-ditto-cloud:
     name: Seed Ditto Cloud
     runs-on: ubuntu-latest
-    needs: [build-android, build-ios]
+    needs: lint
     timeout-minutes: 10
     
     steps:
@@ -223,7 +223,7 @@ jobs:
   test-android-maestro:
     name: Test Android - BrowserStack Maestro
     runs-on: ubuntu-latest
-    needs: [seed-ditto-cloud]
+    needs: [build-android, seed-ditto-cloud]
     timeout-minutes: 30
     
     steps:
@@ -346,7 +346,7 @@ jobs:
   test-ios-maestro:
     name: Test iOS - BrowserStack Maestro  
     runs-on: ubuntu-latest
-    needs: [seed-ditto-cloud]
+    needs: [build-ios, seed-ditto-cloud]
     timeout-minutes: 30
     
     steps:
