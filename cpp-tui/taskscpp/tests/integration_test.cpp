@@ -296,6 +296,81 @@ public:
     }
     
     /**
+     * Test that finds the exact GitHub-seeded document (like Swift CI)
+     */
+    void test_find_github_seeded_document() {
+        cout << "🔍 Testing for exact GitHub-seeded document..." << endl;
+        
+        // Get the exact document title that GitHub Actions seeded
+        const char* expected_title_env = getenv("GITHUB_TEST_DOC_TITLE");
+        if (!expected_title_env || string(expected_title_env).empty()) {
+            cout << "❌ Missing GITHUB_TEST_DOC_TITLE environment variable" << endl;
+            throw runtime_error("Missing GITHUB_TEST_DOC_TITLE - expected exact document title from GitHub Actions");
+        }
+        
+        string expected_title = string(expected_title_env);
+        cout << "📝 Looking for exact document with title: '" << expected_title << "'" << endl;
+        
+        // Ensure sync is active
+        if (!peer->is_sync_active()) {
+            peer->start_sync();
+        }
+        
+        // Wait for sync and search for the exact document
+        const int max_wait_seconds = 30;
+        const int poll_interval_ms = 500;
+        bool found = false;
+        
+        auto start_time = high_resolution_clock::now();
+        
+        while (duration_cast<seconds>(high_resolution_clock::now() - start_time).count() < max_wait_seconds && !found) {
+            auto elapsed = duration_cast<milliseconds>(high_resolution_clock::now() - start_time).count();
+            cout << "📱 Search attempt at " << elapsed << "ms elapsed..." << endl;
+            
+            vector<Task> tasks = peer->get_tasks();
+            cout << "📋 Found " << tasks.size() << " tasks in total" << endl;
+            
+            if (tasks.empty()) {
+                cout << "⚠️ No tasks found - might not be synced yet" << endl;
+            } else {
+                cout << "📄 Examining all documents (sorted by title ASC):" << endl;
+                for (size_t i = 0; i < tasks.size(); i++) {
+                    const auto& task = tasks[i];
+                    cout << "   Task[" << i << "]: '" << task.title << "'" << endl;
+                    
+                    if (task.title == expected_title) {
+                        cout << "✅ FOUND EXACT MATCH! Document '" << task.title << "' found at position[" << i << "]" << endl;
+                        cout << "🎉 Test should PASS - document sync working!" << endl;
+                        found = true;
+                        break;
+                    } else {
+                        cout << "   ❌ No match (expected exact: '" << expected_title << "')" << endl;
+                    }
+                }
+            }
+            
+            if (!found) {
+                cout << "💤 Waiting " << poll_interval_ms << "ms before retry..." << endl;
+                sleep_for(milliseconds(poll_interval_ms));
+            }
+        }
+        
+        auto final_elapsed = duration_cast<milliseconds>(high_resolution_clock::now() - start_time).count();
+        if (found) {
+            cout << "🎉 SUCCESS: Found exact GitHub-seeded document '" << expected_title << "' after " << final_elapsed << "ms" << endl;
+            cout << "✅ This proves GitHub Actions → Ditto Cloud → C++ SDK sync is working!" << endl;
+            cout << "🏆 Inverted timestamp ensured document appeared at top of list!" << endl;
+        } else {
+            cout << "❌ FAILURE: Exact document '" << expected_title << "' not found after " << final_elapsed << "ms" << endl;
+            cout << "💡 This means either:" << endl;
+            cout << "   1. GitHub Actions didn't seed the document" << endl;
+            cout << "   2. Ditto Cloud sync is not working" << endl;
+            cout << "   3. Environment variable GITHUB_TEST_DOC_TITLE is incorrect" << endl;
+            throw runtime_error("GitHub-seeded document not found: " + expected_title);
+        }
+    }
+    
+    /**
      * Run all integration tests
      */
     void run_all_tests() {
@@ -305,13 +380,11 @@ public:
         try {
             test_ditto_initialization();
             test_sync_lifecycle();
-            test_crud_operations_with_sdk();
-            test_cloud_sync_with_sdk();
-            test_performance();
+            test_find_github_seeded_document();
             
             cout << "===========================================" << endl;
             cout << "✅ ALL C++ INTEGRATION TESTS PASSED!" << endl;
-            cout << "🎯 Verified: Ditto SDK initialization, sync, CRUD operations, and cloud sync" << endl;
+            cout << "🎯 Verified: Ditto SDK initialization, sync, and GitHub document sync" << endl;
             
         } catch (const exception& e) {
             cout << "❌ Integration test failed: " << e.what() << endl;

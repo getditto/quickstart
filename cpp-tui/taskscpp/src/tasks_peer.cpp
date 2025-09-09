@@ -85,9 +85,9 @@ private:
 
   string select_tasks_query(bool include_deleted_tasks = false) {
     if (include_deleted_tasks) {
-      return "SELECT * FROM tasks ORDER BY _id";
+      return "SELECT * FROM tasks ORDER BY title ASC";
     } else {
-      return "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id";
+      return "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC";
     }
   }
 
