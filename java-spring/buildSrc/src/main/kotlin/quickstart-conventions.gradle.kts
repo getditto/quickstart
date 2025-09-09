@@ -30,21 +30,29 @@ sourceSets.main {
 }
 
 val generateSecretProperties by tasks.registering {
-    val envFile = rootDir.resolve("../.env")
+    // Try multiple locations for the .env file: current directory first, then parent
+    val envFileLocal = rootDir.resolve(".env")
+    val envFileParent = rootDir.resolve("../.env")
+    val envFile = when {
+        envFileLocal.exists() -> envFileLocal
+        envFileParent.exists() -> envFileParent
+        else -> envFileParent // Use parent as default for error message
+    }
+    
     val outputFile = generatedSources.map {
         it.file("com/ditto/example/spring/quickstart/configuration/DittoSecretsConfiguration.java")
     }
-    inputs.files(envFile.takeIf { it.exists() }).optional()
+    inputs.files(envFileLocal.takeIf { it.exists() }, envFileParent.takeIf { it.exists() }).optional()
     outputs.file(outputFile)
     doLast {
         val properties = Properties()
 
-        // Load properties from the env.properties file at project root
+        // Load properties from the env.properties file at project root or parent directory
         if (envFile.exists()) {
             FileInputStream(envFile).use(properties::load)
         } else {
             throw FileNotFoundException("""
-                Could not find env file at ${envFile.path}.
+                Could not find env file at ${envFileLocal.path} or ${envFileParent.path}.
                 Please take a look at the README.md file and create a '.env' file in the root of the quickstarts repository based on the '.env.sample' file.
             """.trimIndent())
         }
