@@ -14,8 +14,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DITTO_SDK_VERSION: "4.12.0"
 
 jobs:
   build-and-test:
@@ -89,15 +87,8 @@ jobs:
       - name: Download and setup Ditto C++ SDK
         working-directory: cpp-tui/taskscpp
         run: |
-          echo "📥 Downloading real Ditto C++ SDK v${{ env.DITTO_SDK_VERSION }} for integration test..."
-          curl -O https://software.ditto.live/cpp-linux-x86_64/Ditto/${{ env.DITTO_SDK_VERSION }}/dist/Ditto.tar.gz
-          tar xvfz Ditto.tar.gz
-          
-          # Copy SDK files to expected location
-          cp Ditto.h sdk/
-          cp libditto.a sdk/
-          
-          echo "✅ Real Ditto C++ SDK installed"
+          echo "📥 Downloading Ditto C++ SDK using Makefile logic..."
+          make download-sdk
       
       - name: Build application
         working-directory: cpp-tui/taskscpp
