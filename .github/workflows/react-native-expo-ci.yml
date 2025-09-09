@@ -201,24 +201,50 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-    
-    - name: Install Ditto CLI
-      run: npm install -g @dittolive/ditto-cli
-    
-    - name: Seed test data to Ditto Cloud
+    - name: Insert test document into Ditto Cloud
       run: |
-        # Create test task for Maestro verification
-        ditto_cli create_task "Basic Test Task" \
-          --app-id "${{ secrets.DITTO_APP_ID }}" \
-          --token "${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
-          --completed false
-      env:
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        # Create a unique GitHub test document with inverted timestamp to appear at top
+        TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+        DOC_ID="${INVERTED_TIMESTAMP}_expo_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        DOC_TITLE="Basic Test Task"
+        
+        echo "📝 Inserting GitHub test document (inverted timestamp for top position)"
+        echo "📝 ID: '${DOC_ID}'"
+        echo "📝 Title: '${DOC_TITLE}'"
+        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
+        
+        # Insert document using Ditto API v4 (same as Swift workflow)
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"text\": \"${DOC_TITLE}\",
+                \"isCompleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "✓ Document title: ${DOC_TITLE}"
+          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
+          echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
 
   test-android-maestro:
     name: Test Android - BrowserStack Maestro
