@@ -2,12 +2,10 @@
 
 ## Platform Support
 
-**This application only runs on Linux.** The Ditto C++ SDK has limited platform support:
+**Linux Console Application** - Runs on modern Linux distributions with full Ditto sync capabilities:
 
 - ✅ **Linux (x64)**: Ubuntu 20.04 LTS and later
-- ✅ **Linux (AArch64)**: Ubuntu 22.04 LTS and later  
-- ❌ **macOS**: Not supported by Ditto C++ SDK
-- ❌ **Windows**: Not supported by Ditto C++ SDK
+- ✅ **Linux (AArch64)**: Ubuntu 22.04 LTS and later
 
 For Android development, see the separate `android-cpp` project.
 
