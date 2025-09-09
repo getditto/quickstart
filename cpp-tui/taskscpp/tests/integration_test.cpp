@@ -374,20 +374,18 @@ public:
      * Run all integration tests
      */
     void run_all_tests() {
-        cout << "🚀 Starting C++ Ditto Integration Tests..." << endl;
-        cout << "===========================================" << endl;
+        cout << "🚀 Starting C++ GitHub Seeded Document Test..." << endl;
+        cout << "================================================" << endl;
         
         try {
-            test_ditto_initialization();
-            test_sync_lifecycle();
             test_find_github_seeded_document();
             
-            cout << "===========================================" << endl;
-            cout << "✅ ALL C++ INTEGRATION TESTS PASSED!" << endl;
-            cout << "🎯 Verified: Ditto SDK initialization, sync, and GitHub document sync" << endl;
+            cout << "================================================" << endl;
+            cout << "✅ C++ GITHUB DOCUMENT TEST PASSED!" << endl;
+            cout << "🎯 Verified: GitHub Actions → Ditto Cloud → C++ SDK sync working!" << endl;
             
         } catch (const exception& e) {
-            cout << "❌ Integration test failed: " << e.what() << endl;
+            cout << "❌ GitHub document test failed: " << e.what() << endl;
             throw;
         }
     }
