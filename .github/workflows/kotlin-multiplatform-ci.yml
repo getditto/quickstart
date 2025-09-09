@@ -451,7 +451,7 @@ jobs:
             \"networkLogs\": true,
             \"autoGrantPermissions\": true,
             \"instrumentationOptions\": {
-              \"DITTO_TASK_ID\": \"$TITLE\"
+              \"github_test_doc_title\": \"$TITLE\"
             }
           }")
         
