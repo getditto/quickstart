@@ -55,8 +55,14 @@ download-sdk: ## Downloads and installs the Ditto C++ SDK
 	@echo "📥 Downloading Ditto C++ SDK v$(DITTO_SDK_VERSION) for $(DITTO_PLATFORM)..."
 	@if [ ! -f sdk/Ditto.h ] || [ ! -f sdk/libditto.a ]; then \
 		mkdir -p sdk; \
-		cd sdk && curl -L -f $(DITTO_SDK_URL) | tar xz --strip-components=0; \
-		echo "✅ Ditto C++ SDK v$(DITTO_SDK_VERSION) installed successfully"; \
+		if curl -L -f $(DITTO_SDK_URL) | tar xz --strip-components=0 -C sdk/; then \
+			echo "✅ Ditto C++ SDK v$(DITTO_SDK_VERSION) installed successfully"; \
+		else \
+			echo "❌ Failed to download SDK for $(DITTO_PLATFORM)"; \
+			echo "💡 For macOS/Windows, manually download from: https://docs.ditto.live/install-guides/cpp"; \
+			echo "💡 Then copy Ditto.h and libditto.a to sdk/ directory"; \
+			exit 1; \
+		fi; \
 	else \
 		echo "✅ Ditto C++ SDK already installed"; \
 	fi
