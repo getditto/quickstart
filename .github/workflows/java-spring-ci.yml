@@ -40,7 +40,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Create .env file
+      - name: Create .env file (java-spring)
+        working-directory: java-spring
         run: |
           echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
           echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
@@ -88,7 +89,8 @@ jobs:
           echo "📝 Title: '${DOC_TITLE}'"
           echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
 
-      - name: Create .env file
+      - name: Create .env file (java-spring)
+        working-directory: java-spring
         run: |
           echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
           echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
@@ -179,7 +181,8 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
     
-    - name: Create .env file
+    - name: Create .env file (java-spring)
+      working-directory: java-spring
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
