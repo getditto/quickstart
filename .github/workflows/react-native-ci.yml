@@ -92,13 +92,13 @@ jobs:
     
     - name: Build Android APK
       working-directory: react-native/android
-      run: ./gradlew assembleDebug --no-daemon --console=plain
+      run: NODE_ENV=production ./gradlew assembleRelease --no-daemon --console=plain
     
     - name: Upload Android APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: android-apk-${{ github.run_number }}
-        path: react-native/android/app/build/outputs/apk/debug/app-debug.apk
+        path: react-native/android/app/build/outputs/apk/release/app-release.apk
         retention-days: 1
 
   build-ios:
@@ -164,7 +164,7 @@ jobs:
         # Build and archive iOS app for real device
         xcodebuild -workspace ios/DittoReactNativeSampleApp.xcworkspace \
           -scheme DittoReactNativeSampleApp \
-          -configuration Debug \
+          -configuration Release \
           -destination 'generic/platform=iOS' \
           -archivePath ios/build/DittoReactNativeSampleApp.xcarchive \
           archive \
@@ -277,7 +277,7 @@ jobs:
       run: |
         response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
-          -F "file=@./artifacts/app-debug.apk" \
+          -F "file=@./artifacts/app-release.apk" \
           -F "custom_id=ReactNative-Android-${{ github.run_id }}")
         
         echo "Upload response: $response"
