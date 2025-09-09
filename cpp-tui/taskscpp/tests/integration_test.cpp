@@ -40,9 +40,10 @@ int main() {
         string expected_title = string(expected_title_env);
         cout << "📝 Looking for GitHub-seeded document: '" << expected_title << "'" << endl;
         
-        // Test for false positives by intentionally checking wrong title first
-        string wrong_title = expected_title + "_WRONG_SUFFIX";
-        cout << "🧪 First checking wrong title (should NOT match): '" << wrong_title << "'" << endl;
+        // TEMPORARY: Test false positive detection by breaking the expected title
+        // This should cause the test to FAIL, proving exact matching works
+        expected_title = expected_title + "_BREAK_TEST";
+        cout << "🧪 INTENTIONALLY BREAKING TEST - Looking for wrong title: '" << expected_title << "'" << endl;
         
         // Initialize TasksPeer and start sync
         cout << "🔄 Initializing Ditto and starting sync..." << endl;
@@ -72,20 +73,12 @@ int main() {
             vector<Task> tasks = peer->get_tasks();
             cout << "📋 Found " << tasks.size() << " tasks (sorted by title ASC)" << endl;
             
-            // First check that wrong title doesn't match (false positive test)
-            bool wrong_match_found = false;
             for (size_t i = 0; i < tasks.size(); i++) {
                 const auto& task = tasks[i];
                 cout << "   [" << i << "] '" << task.title << "'" << endl;
                 
-                if (task.title == wrong_title) {
-                    cout << "❌ ERROR: Wrong title matched! Test has false positive." << endl;
-                    return 1;
-                }
-                
                 if (task.title == expected_title) {
-                    cout << "✅ FOUND GitHub-seeded document at position " << i << "!" << endl;
-                    cout << "✅ Confirmed exact match (no false positive)" << endl;
+                    cout << "✅ FOUND document at position " << i << "!" << endl;
                     found = true;
                     break;
                 }
