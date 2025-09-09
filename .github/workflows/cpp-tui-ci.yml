@@ -139,6 +139,7 @@ jobs:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
           awk -f scripts/generate_env.awk ../../.env > src/env.h
+          mkdir -p build
           g++ -std=c++17 -I./src -I./sdk -I./third_party/cxxopts/include \
             tests/integration_test.cpp \
             src/task.cpp src/tasks_peer.cpp src/tasks_log.cpp \

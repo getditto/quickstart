@@ -118,7 +118,7 @@ public:
 
     ditto->start_sync();
     tasks_subscription =
-        ditto->sync().register_subscription("SELECT * FROM tasks");
+        ditto->get_sync().register_subscription("SELECT * FROM tasks");
   }
 
   void stop_sync() {
