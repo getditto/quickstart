@@ -83,8 +83,8 @@ jobs:
           gradle-${{ runner.os }}-
     
     - name: Build Android APK
-      working-directory: react-native
-      run: yarn build:android
+      working-directory: react-native/android
+      run: ./gradlew assembleDebug --no-daemon --console=plain
     
     - name: Upload Android APK artifact
       uses: actions/upload-artifact@v4

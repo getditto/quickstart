@@ -87,8 +87,8 @@ jobs:
       run: npx expo prebuild --platform android
     
     - name: Build Android APK
-      working-directory: react-native-expo
-      run: yarn build:android
+      working-directory: react-native-expo/android
+      run: ./gradlew assembleDebug --no-daemon --console=plain
     
     - name: Upload Android APK artifact
       uses: actions/upload-artifact@v4
