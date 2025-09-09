@@ -72,6 +72,13 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
     
+    - name: Create .env file (production credentials for builds)
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
@@ -117,6 +124,13 @@ jobs:
     - name: Install dependencies
       working-directory: react-native-expo
       run: yarn install
+    
+    - name: Create .env file (production credentials for builds)
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
     - name: Cache CocoaPods dependencies
       uses: actions/cache@v4
