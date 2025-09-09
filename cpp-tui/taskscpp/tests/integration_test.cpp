@@ -37,7 +37,7 @@ int main() {
             return 1;
         }
         
-        string expected_title = string(expected_title_env);
+        string expected_title = string(expected_title_env) + "_SIMULATE_FAILURE";
         cout << "📝 Looking for GitHub-seeded document: '" << expected_title << "'" << endl;
         
         // Initialize TasksPeer and start sync
