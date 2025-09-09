@@ -255,6 +255,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Wait for artifact availability
+      run: |
+        echo "⏳ Waiting a moment to ensure artifacts are fully uploaded..."
+        sleep 10
+    
     - name: Download Android APK
       uses: actions/download-artifact@v4
       with:
@@ -377,6 +382,11 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Wait for artifact availability
+      run: |
+        echo "⏳ Waiting a moment to ensure artifacts are fully uploaded..."
+        sleep 10
     
     - name: Download iOS IPA
       uses: actions/download-artifact@v4
