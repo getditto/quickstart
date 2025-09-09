@@ -51,7 +51,11 @@ class DittoManager {
 
                 val config = createDittoConfig(identity = identity)
 
-                DittoLogger.minimumLogLevel = DittoLogLevel.Debug
+                DittoLogger.minimumLogLevel = DittoLogLevel.Verbose
+                println("🔧 DittoManager: Setting up Ditto with verbose logging...")
+                println("🔧 DittoManager: App ID: ${DittoSecretsConfiguration.DITTO_APP_ID}")
+                println("🔧 DittoManager: WebSocket URL: ${DittoSecretsConfiguration.DITTO_WEBSOCKET_URL}")
+                println("🔧 DittoManager: Auth URL: ${DittoSecretsConfiguration.DITTO_AUTH_URL}")
                 Ditto(config = config).apply {
                     updateTransportConfig { config ->
                         config.connect.websocketUrls.add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL)
@@ -107,11 +111,24 @@ class DittoManager {
         }
         
         println("🔄 DittoManager: Starting sync on Ditto instance...")
+        println("🔧 DittoManager: Transport config before sync:")
+        println("🔧 DittoManager: WebSocket URLs: ${ditto.transportConfig.connect.websocketUrls}")
+        
         ditto.startSync()
         println("✅ DittoManager: Ditto.startSync() called")
         
+        // Give a moment for sync to initialize
+        kotlinx.coroutines.delay(1000)
+        
         val isActive = ditto.isSyncActive
         println("🔍 DittoManager: Sync active status: $isActive")
+        
+        // Log transport status
+        println("🌐 DittoManager: Transport status after sync start:")
+        println("🌐 DittoManager: WebSocket URLs configured: ${ditto.transportConfig.connect.websocketUrls.size}")
+        ditto.transportConfig.connect.websocketUrls.forEachIndexed { index, url ->
+            println("🌐 DittoManager: WebSocket URL[$index]: $url")
+        }
     }
 
     suspend fun stopSync() {

@@ -73,6 +73,7 @@ kotlin {
                 implementation(libs.androidx.test.junit)
                 implementation(libs.androidx.test.runner)
                 implementation("androidx.test.uiautomator:uiautomator:2.3.0")
+                implementation("androidx.tracing:tracing:1.1.0")
                 @OptIn(ExperimentalComposeLibrary::class)
                 implementation(compose.uiTest)
             }
