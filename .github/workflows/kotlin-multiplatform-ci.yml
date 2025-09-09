@@ -450,6 +450,8 @@ jobs:
             \"video\": true,
             \"networkLogs\": true,
             \"autoGrantPermissions\": true,
+            \"acceptInsecureCerts\": true,
+            \"enableWebsocketTunneling\": true,
             \"instrumentationOptions\": {
               \"github_test_doc_title\": \"$TITLE\"
             }
@@ -756,6 +758,8 @@ jobs:
             \"deviceLogs\": true,
             \"video\": true,
             \"networkLogs\": true,
+            \"acceptInsecureCerts\": true,
+            \"enableWebsocketTunneling\": true,
             \"setEnvVariables\": {
               \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
               \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\",
