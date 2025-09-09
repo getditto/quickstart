@@ -83,17 +83,22 @@ class _DialogState extends State<_Dialog> {
           ElevatedButton(
             child: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
             onPressed: () async {
+              final navigator = Navigator.of(context);
               try {
-                final image = (await _createAttachment())?.toJson();
+                final image = await _createAttachment();
                 final task = Task(
                     title: _name.text,
                     done: _done,
                     deleted: false,
-                    image: image,
+                    image: image!.toJson(),
                   );
-                  Navigator.of(context).pop(task);
+                  if (mounted) {
+                    navigator.pop(task);
+                  }
               } catch (_) {
-                showErrorDialog(context, "Error", "Failed to create task with attachment");
+                if (mounted) {
+                  showErrorDialog(context, "Error", "Failed to create task with attachment");
+                }
                 return;
               }
             },

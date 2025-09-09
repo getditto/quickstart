@@ -9,7 +9,7 @@ class Task {
   final String title;
   final bool done;
   final bool deleted;
-  final Map<String, dynamic>? image; // This should be an Attachment Type but there are issues with it
+  final Map<String, dynamic> image; // This should be an Attachment Type but there are issues with it
 
   const Task({
     this.id,

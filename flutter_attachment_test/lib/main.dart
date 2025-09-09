@@ -211,7 +211,7 @@ class _DittoExampleState extends State<DittoExample> {
                       showImageDialog(context, imageData);
                     }
                   } else {
-                    _loadAttachment(task.image!, task.id!);
+                    _loadAttachment(task.image, task.id!);
                   }
                 },
                 child: Text(
@@ -271,9 +271,7 @@ class _DittoExampleState extends State<DittoExample> {
                 ),
               ),
             ),
-            task.image != null
-                ?  _loadAttachmentButton(task)
-                : const SizedBox.shrink(),
+            _loadAttachmentButton(task)
           ],
         ),
       ],
