@@ -40,11 +40,6 @@ int main() {
         string expected_title = string(expected_title_env);
         cout << "📝 Looking for GitHub-seeded document: '" << expected_title << "'" << endl;
         
-        // TEMPORARY: Test false positive detection by breaking the expected title
-        // This should cause the test to FAIL, proving exact matching works
-        expected_title = expected_title + "_BREAK_TEST";
-        cout << "🧪 INTENTIONALLY BREAKING TEST - Looking for wrong title: '" << expected_title << "'" << endl;
-        
         // Initialize TasksPeer and start sync
         cout << "🔄 Initializing Ditto and starting sync..." << endl;
         auto peer = unique_ptr<TasksPeer>(new TasksPeer(
