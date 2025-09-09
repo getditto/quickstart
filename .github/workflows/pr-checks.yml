@@ -6,9 +6,13 @@ name: PR Checks
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - 'sdk-*'
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'sdk-*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
