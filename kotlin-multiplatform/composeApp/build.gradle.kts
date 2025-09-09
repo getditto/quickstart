@@ -115,6 +115,13 @@ kotlin {
 android {
     namespace = "com.ditto.quickstart"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+    
+    // Force consistent androidx.tracing version to resolve test dependency conflicts
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.tracing:tracing:1.1.0")
+        }
+    }
 
     defaultConfig {
         applicationId = "com.ditto.quickstart"
