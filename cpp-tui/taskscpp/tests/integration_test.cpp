@@ -27,21 +27,20 @@ using std::this_thread::sleep_for;
  */
 int main() {
     try {
-        cout << "🔍 C++ GitHub Seeded Document Test" << endl;
-        cout << "===================================" << endl;
+        cout << "C++ GitHub Seeded Document Test" << endl;
         
         // Get the exact document title that GitHub Actions seeded
         const char* expected_title_env = getenv("GITHUB_TEST_DOC_TITLE");
         if (!expected_title_env || string(expected_title_env).empty()) {
-            cout << "❌ Missing GITHUB_TEST_DOC_TITLE environment variable" << endl;
+            cout << "FAIL: Missing GITHUB_TEST_DOC_TITLE environment variable" << endl;
             return 1;
         }
         
         string expected_title = string(expected_title_env);
-        cout << "📝 Looking for GitHub-seeded document: '" << expected_title << "'" << endl;
+        cout << "Looking for seeded document: '" << expected_title << "'" << endl;
         
         // Initialize TasksPeer and start sync
-        cout << "🔄 Initializing Ditto and starting sync..." << endl;
+        cout << "Initializing Ditto sync..." << endl;
         auto peer = unique_ptr<TasksPeer>(new TasksPeer(
             DITTO_APP_ID,
             DITTO_PLAYGROUND_TOKEN, 
@@ -52,7 +51,7 @@ int main() {
         ));
         
         peer->start_sync();
-        cout << "✅ Ditto sync started" << endl;
+        cout << "Sync started, polling for document..." << endl;
         
         // Wait for sync and search for the exact document
         const int max_wait_seconds = 30;
@@ -63,24 +62,20 @@ int main() {
         
         while (duration_cast<seconds>(high_resolution_clock::now() - start_time).count() < max_wait_seconds && !found) {
             auto elapsed = duration_cast<seconds>(high_resolution_clock::now() - start_time).count();
-            cout << "📱 Checking synced tasks at " << elapsed << "s..." << endl;
             
             vector<Task> tasks = peer->get_tasks();
-            cout << "📋 Found " << tasks.size() << " tasks (sorted by title ASC)" << endl;
+            cout << "Checking " << tasks.size() << " synced tasks at " << elapsed << "s..." << endl;
             
             for (size_t i = 0; i < tasks.size(); i++) {
                 const auto& task = tasks[i];
-                cout << "   [" << i << "] '" << task.title << "'" << endl;
-                
                 if (task.title == expected_title) {
-                    cout << "✅ FOUND document at position " << i << "!" << endl;
+                    cout << "SUCCESS: Found document '" << expected_title << "' at position " << i << endl;
                     found = true;
                     break;
                 }
             }
             
             if (!found) {
-                cout << "⏳ Document not found yet, waiting..." << endl;
                 sleep_for(milliseconds(poll_interval_ms));
             }
         }
@@ -88,16 +83,15 @@ int main() {
         auto final_elapsed = duration_cast<seconds>(high_resolution_clock::now() - start_time).count();
         
         if (found) {
-            cout << "🎉 SUCCESS: Found GitHub-seeded document after " << final_elapsed << "s" << endl;
-            cout << "✅ GitHub Actions → Ditto Cloud → C++ SDK sync verified!" << endl;
+            cout << "PASS: GitHub Actions → Ditto Cloud → C++ SDK sync verified in " << final_elapsed << "s" << endl;
             return 0;
         } else {
-            cout << "❌ FAILURE: Document '" << expected_title << "' not found after " << final_elapsed << "s" << endl;
+            cout << "FAIL: Document '" << expected_title << "' not found after " << final_elapsed << "s" << endl;
             return 1;
         }
         
     } catch (const exception& e) {
-        cout << "❌ Test failed with exception: " << e.what() << endl;
+        cout << "FAIL: Test exception: " << e.what() << endl;
         return 1;
     }
 }
