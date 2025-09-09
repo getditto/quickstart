@@ -39,17 +39,23 @@ class TaskVisibilityIntegrationTest {
 
     @BeforeAll
     static void setupWebDriver() {
-        // Check if running on BrowserStack (CI environment)
-        String browserStackUser = System.getenv("BROWSERSTACK_USERNAME");
-        String browserStackKey = System.getenv("BROWSERSTACK_ACCESS_KEY");
-        
+        // Check if running on BrowserStack (CI environment). Support both env and -D system properties
+        String browserStackUser = firstNonEmpty(
+                System.getProperty("BROWSERSTACK_USERNAME"),
+                System.getenv("BROWSERSTACK_USERNAME")
+        );
+        String browserStackKey = firstNonEmpty(
+                System.getProperty("BROWSERSTACK_ACCESS_KEY"),
+                System.getenv("BROWSERSTACK_ACCESS_KEY")
+        );
+
         if (browserStackUser != null && browserStackKey != null) {
             setupBrowserStackDriver(browserStackUser, browserStackKey);
         } else {
             setupLocalChromeDriver();
         }
-        
-        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        wait = new WebDriverWait(driver, Duration.ofSeconds(20));
     }
 
     private static void setupBrowserStackDriver(String username, String accessKey) {
@@ -74,12 +80,12 @@ class TaskVisibilityIntegrationTest {
             }
             
             // Set BrowserStack Local settings from system properties
-            String local = System.getProperty("BROWSERSTACK_LOCAL");
+            String local = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
             if ("true".equals(local)) {
                 browserstackOptions.put("local", true);
                 System.out.println("🔗 BrowserStack Local enabled");
                 
-                String localIdentifier = System.getProperty("BROWSERSTACK_LOCAL_IDENTIFIER");
+                String localIdentifier = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL_IDENTIFIER"), System.getenv("BROWSERSTACK_LOCAL_IDENTIFIER"));
                 if (localIdentifier != null && !localIdentifier.isEmpty()) {
                     browserstackOptions.put("localIdentifier", localIdentifier);
                     System.out.println("🔗 Using BrowserStack Local identifier: " + localIdentifier);
@@ -88,12 +94,14 @@ class TaskVisibilityIntegrationTest {
             
             options.setCapability("bstack:options", browserstackOptions);
             
-            driver = new RemoteWebDriver(
+            RemoteWebDriver remote = new RemoteWebDriver(
                 new URL("https://hub-cloud.browserstack.com/wd/hub"), 
                 options
             );
+            driver = remote;
             
             System.out.println("✅ BrowserStack WebDriver initialized for visual testing");
+            System.out.println("🆔 Session ID: " + remote.getSessionId());
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize BrowserStack WebDriver: " + e.getMessage(), e);
         }
@@ -103,7 +111,11 @@ class TaskVisibilityIntegrationTest {
         try {
             WebDriverManager.chromedriver().setup();
             ChromeOptions options = new ChromeOptions();
-            // Remove headless mode for local visual testing
+            // Headless in CI for reliability; non-headless locally
+            if (System.getenv("CI") != null) {
+                // Use new headless for Chrome 109+
+                options.addArguments("--headless=new");
+            }
             options.addArguments("--no-sandbox");
             options.addArguments("--disable-dev-shm-usage");
             options.addArguments("--window-size=1200,800");
@@ -117,13 +129,15 @@ class TaskVisibilityIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Use bs-local.com for iOS Safari, localhost for other browsers
-        String browserStackUser = System.getenv("BROWSERSTACK_USERNAME");
-        boolean isIosSafari = checkIfIosSafari();
-        
-        if (browserStackUser != null && isIosSafari) {
+        // Use bs-local.com when BrowserStack Local is enabled, otherwise use localhost
+        String bsUser = firstNonEmpty(System.getProperty("BROWSERSTACK_USERNAME"), System.getenv("BROWSERSTACK_USERNAME"));
+        String bsLocal = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
+
+        boolean useBrowserStackLocal = (bsUser != null) && "true".equalsIgnoreCase(String.valueOf(bsLocal));
+
+        if (useBrowserStackLocal) {
             baseUrl = "http://bs-local.com:" + port;
-            System.out.println("🍎 Using bs-local.com URL for iOS Safari: " + baseUrl);
+            System.out.println("🔗 Using bs-local.com URL via BrowserStack Local: " + baseUrl);
         } else {
             baseUrl = "http://localhost:" + port;
             System.out.println("🌐 Testing Spring Boot Ditto Tasks app at: " + baseUrl);
@@ -258,8 +272,15 @@ class TaskVisibilityIntegrationTest {
     void shouldPassWithExistingTask() {
         System.out.println("🧪 Test 4: Should pass when finding existing task...");
         
-        String searchText = "Task 1 - a2218d97";  // Known existing task
-        System.out.println("🔍 Searching for existing task: " + searchText);
+        // Prefer CI-provided title/ID; fall back to known local sample
+        String envTitle = firstNonEmpty(
+                System.getenv("GITHUB_TEST_DOC_ID"),
+                System.getProperty("GITHUB_TEST_DOC_ID"),
+                System.getenv("TEST_TASK_TITLE"),
+                System.getProperty("TEST_TASK_TITLE")
+        );
+        String searchText = envTitle != null ? envTitle : "Task 1 - a2218d97";  // fallback for local dev
+        System.out.println("🔍 Searching for existing task: " + searchText + (envTitle != null ? " (from CI/env)" : " (fallback)"));
         
         driver.get(baseUrl);
         System.out.println("📍 Browser opened at: " + baseUrl);
@@ -273,7 +294,7 @@ class TaskVisibilityIntegrationTest {
         // Add delay to let tasks load from Ditto
         System.out.println("⏳ Waiting for Ditto tasks to load...");
         try {
-            Thread.sleep(3000);
+            Thread.sleep(4000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -301,6 +322,13 @@ class TaskVisibilityIntegrationTest {
             "Should find the exact task '" + searchText + "' in the UI");
         
         System.out.println("✅ Pre-existing task successfully found and visible in UI");
+    }
+
+    private static String firstNonEmpty(String... values) {
+        for (String v : values) {
+            if (v != null && !v.isEmpty()) return v;
+        }
+        return null;
     }
 
     private boolean searchForTask(String searchText) {
