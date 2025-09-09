@@ -280,9 +280,9 @@ jobs:
     
     - name: Create Maestro test suite ZIP
       run: |
-        cd react-native/.maestro
-        zip -r ../../maestro-tests.zip . -x "*.DS_Store"
-        ls -la ../../maestro-tests.zip
+        cd react-native
+        zip -r maestro-tests.zip .maestro -x "*.DS_Store"
+        ls -la maestro-tests.zip
     
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
@@ -355,6 +355,17 @@ jobs:
               echo "✅ Android Maestro tests passed!"
             fi
             break
+          elif [ "$status" = "error" ]; then
+            echo "❌ BrowserStack reported build error. Fetching session details..."
+            echo $response | jq '.'
+            echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
+              if [ -n "$sid" ]; then
+                echo "Session $sid details:"
+                curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+                  "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id/sessions/$sid" | jq '.'
+              fi
+            done
+            exit 1
           fi
           
           sleep 10
@@ -403,9 +414,9 @@ jobs:
     
     - name: Create Maestro test suite ZIP
       run: |
-        cd react-native/.maestro
-        zip -r ../../maestro-tests.zip . -x "*.DS_Store"
-        ls -la ../../maestro-tests.zip
+        cd react-native
+        zip -r maestro-tests.zip .maestro -x "*.DS_Store"
+        ls -la maestro-tests.zip
     
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
@@ -469,6 +480,17 @@ jobs:
               echo "✅ iOS Maestro tests passed!"
             fi
             break
+          elif [ "$status" = "error" ]; then
+            echo "❌ BrowserStack reported build error. Fetching session details..."
+            echo $response | jq '.'
+            echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
+              if [ -n "$sid" ]; then
+                echo "Session $sid details:"
+                curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+                  "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id/sessions/$sid" | jq '.'
+              fi
+            done
+            exit 1
           fi
           
           sleep 10
