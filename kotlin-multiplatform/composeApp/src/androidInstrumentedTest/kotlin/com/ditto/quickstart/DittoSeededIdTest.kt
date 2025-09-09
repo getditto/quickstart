@@ -21,12 +21,23 @@ class DittoSeededIdTest {
         val actualDocumentTitle = args?.getString("github_test_doc_title")
             ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'github_test_doc_title'")
         
-        // INTENTIONALLY SEARCH FOR NON-EXISTENT TASK TO TEST FALSE POSITIVES
-        val testDocumentTitle = "NonExistentTask_FalsePositive_12345"
+        // On BrowserStack: intentionally search for wrong document to test false positives
+        // Locally: search for correct document to ensure functionality works
+        val testDocumentTitle = if (actualDocumentTitle.contains("_ci_test_")) {
+            // BrowserStack environment - add suffix to make it fail
+            "${actualDocumentTitle}_INTENTIONAL_FAIL"
+        } else {
+            // Local environment - use correct title
+            actualDocumentTitle
+        }
         
-        println("🔍 INTENTIONAL FALSE POSITIVE TEST")
-        println("🔍 Actual seeded document: '$actualDocumentTitle'")
-        println("🔍 Searching for NON-EXISTENT document: '$testDocumentTitle'")
+        if (testDocumentTitle != actualDocumentTitle) {
+            println("🔍 BROWSERSTACK FALSE POSITIVE TEST")
+            println("🔍 Actual seeded document: '$actualDocumentTitle'")
+            println("🔍 Searching for WRONG document: '$testDocumentTitle'")
+        } else {
+            println("🔍 LOCAL TEST - searching for correct document: '$testDocumentTitle'")
+        }
         
         // Give the app time to fully launch and set up Compose
         Thread.sleep(5000)
