@@ -245,6 +245,15 @@ jobs:
         
         echo "Upload response: $response"
         app_url=$(echo $response | jq -r '.app_url')
+        
+        # Validate API response
+        if [ -z "$app_url" ] || [ "$app_url" = "null" ]; then
+          echo "❌ Failed to get app_url from upload response"
+          echo "Response: $response"
+          exit 1
+        fi
+        
+        echo "✅ APK uploaded successfully: $app_url"
         echo "app_url=$app_url" >> $GITHUB_OUTPUT
     
     - name: Create Maestro test suite ZIP
@@ -263,6 +272,15 @@ jobs:
         
         echo "Upload response: $response"
         test_suite_url=$(echo $response | jq -r '.test_suite_url')
+        
+        # Validate API response
+        if [ -z "$test_suite_url" ] || [ "$test_suite_url" = "null" ]; then
+          echo "❌ Failed to get test_suite_url from upload response"
+          echo "Response: $response"
+          exit 1
+        fi
+        
+        echo "✅ Test suite uploaded successfully: $test_suite_url"
         echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
     
     - name: Execute Maestro tests on BrowserStack (Parallel)
@@ -274,14 +292,17 @@ jobs:
           -d '{
             "app": "${{ steps.upload-apk.outputs.app_url }}",
             "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
-            "project": "React Native Expo - Android",
+            "project": "Ditto React Native Expo",
+            "buildName": "Build #${{ github.run_number }}",
+            "buildTag": "${{ github.ref_name }}",
             "devices": [
               "Samsung Galaxy S22-12.0",
               "Google Pixel 7-13.0"
             ],
             "execute": ["01-app-launch-and-seeded-tasks.yaml"],
             "deviceLogs": true,
-            "networkLogs": true
+            "networkLogs": true,
+            "video": true
           }')
         
         echo "Execution response: $response"
@@ -347,6 +368,15 @@ jobs:
         
         echo "Upload response: $response"
         app_url=$(echo $response | jq -r '.app_url')
+        
+        # Validate API response
+        if [ -z "$app_url" ] || [ "$app_url" = "null" ]; then
+          echo "❌ Failed to get app_url from upload response"
+          echo "Response: $response"
+          exit 1
+        fi
+        
+        echo "✅ IPA uploaded successfully: $app_url"
         echo "app_url=$app_url" >> $GITHUB_OUTPUT
     
     - name: Create Maestro test suite ZIP
@@ -376,14 +406,17 @@ jobs:
           -d '{
             "app": "${{ steps.upload-ipa.outputs.app_url }}",
             "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
-            "project": "React Native Expo - iOS",
+            "project": "Ditto React Native Expo",
+            "buildName": "Build #${{ github.run_number }}",
+            "buildTag": "${{ github.ref_name }}",
             "devices": [
               "iPhone 15-17.0",
               "iPhone 14-16.0"
             ],
             "execute": ["01-app-launch-and-seeded-tasks-ios.yaml"],
             "deviceLogs": true,
-            "networkLogs": true
+            "networkLogs": true,
+            "video": true
           }')
         
         echo "Execution response: $response"
