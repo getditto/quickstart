@@ -1,9 +1,0 @@
-# BrowserStack configuration
-# Disable for local testing, enable only on BrowserStack
-local: false
-debug: false
-
-# Only enable when running on BrowserStack
-testObservability: true
-project: "Ditto KMP Android"
-buildName: "Local Build"
