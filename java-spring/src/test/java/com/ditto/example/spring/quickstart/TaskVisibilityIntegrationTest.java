@@ -143,13 +143,6 @@ class TaskVisibilityIntegrationTest {
             System.out.println("🌐 Testing Spring Boot Ditto Tasks app at: " + baseUrl);
         }
     }
-    
-    private boolean checkIfIosSafari() {
-        // Check if this is iOS Safari testing (could be enhanced to check actual capabilities)
-        String os = System.getProperty("browserstack.os", "");
-        String browser = System.getProperty("browserstack.browser", "");
-        return os.toLowerCase().contains("ios") && browser.toLowerCase().contains("safari");
-    }
 
     @Test
     @Order(1)
