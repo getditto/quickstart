@@ -32,7 +32,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  ditto_live: ^4.11.0
+  ditto_live: ^4.12.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -40,7 +40,6 @@ dependencies:
   equatable: ^2.0.5
   permission_handler: ^11.3.1
   json_annotation: ^4.9.0
-  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +55,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
+  meta: ^1.16.0
+  http: ^1.5.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
