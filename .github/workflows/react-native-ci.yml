@@ -13,6 +13,7 @@ on:
       - 'sdk-*'
     paths: 
       - 'react-native/**'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -286,28 +287,17 @@ jobs:
     
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
+      env:
+        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
       run: |
-        # Verify ZIP file exists before uploading
-        pwd
-        ls -la react-native/maestro-tests.zip
-        
-        response=$(curl --fail-with-body -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+        set -euo pipefail
+        test -f react-native/maestro-tests.zip
+        response=$(curl --fail-with-body -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
           -F "file=@react-native/maestro-tests.zip" \
           -F "custom_id=ReactNative-Tests-${{ github.run_id }}")
-        
-        echo "Upload response: $response"
-        test_suite_url=$(echo $response | jq -r '.test_suite_url')
-        
-        # Validate API response
-        if [ -z "$test_suite_url" ] || [ "$test_suite_url" = "null" ]; then
-          echo "❌ Failed to get test_suite_url from upload response"
-          echo "Response: $response"
-          exit 1
-        fi
-        
-        echo "✅ Test suite uploaded successfully: $test_suite_url"
-        echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
+        echo "test_suite_url=$(echo "$response" | jq -r '.test_suite_url')" >> $GITHUB_OUTPUT
     
     - name: Execute Maestro tests on BrowserStack (Parallel)
       id: execute-tests
