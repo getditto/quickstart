@@ -62,12 +62,6 @@ extension WidgetTesterExtension on WidgetTester {
     throw "Timed out";
   }
 
-  Future<void> launchApp({Duration delay = const Duration(seconds: 5)}) async {
-    await pumpWidget(const MaterialApp(home: DittoExample()));
-    await pumpAndSettle();
-    await pump(delay);
-  }
-
   Ditto? get ditto =>
       state<DittoExampleState>(find.byType(DittoExampleState)).ditto;
 
@@ -159,12 +153,14 @@ void testDitto(
         await tester.waitUntil(() => !tester.isVisible(spinner));
         while (tester.allTasks.isNotEmpty) {
           await tester.clearList();
-          // the fling finishes at the next event loop cycle which can cause
+          // the fling finishes at the next event loop cycle which can cause 
           // issues with the old ditto instance closing
           await tester.pump(const Duration(seconds: 1));
         }
 
         await callback(tester);
+
+        await tester.pump(const Duration(seconds: 2));
       },
     );
 

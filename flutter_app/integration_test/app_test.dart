@@ -13,121 +13,65 @@ void main() {
     expect(openAddDialogButton, findsOneWidget);
   });
 
-  testWidgets('Can add and verify a task', (tester) async {
-    await tester.launchApp();
-
-    final fab = find.byType(FloatingActionButton);
-    await tester.tap(fab);
-    await tester.pumpAndSettle();
-
-    final textField = find.byType(TextField);
-    expect(textField, findsOneWidget);
-
-    await tester.enterText(textField, 'Integration Test Task');
-
-    final addButton = find.widgetWithText(ElevatedButton, 'Add');
-    await tester.tap(addButton);
-    await tester.pumpAndSettle();
-
+  testDitto('Can add and verify a task', (tester) async {
+    const name = "Integration Test Task";
+    await tester.addTask(name);
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('Integration Test Task'), findsOneWidget);
+    expect(taskWithName(name), findsOneWidget);
   });
 
-  testWidgets('Can mark task as complete', (tester) async {
-    await tester.launchApp();
+  testDitto('Can mark task as complete', (tester) async {
+    const name = "Task to Complete";
+    await tester.addTask(name);
 
-    final fab = find.byType(FloatingActionButton);
-    await tester.tap(fab);
-    await tester.pumpAndSettle();
+    expect(tester.task(name).done, false);
 
-    final textField = find.byType(TextField);
-    await tester.enterText(textField, 'Task to Complete');
-
-    final addButton = find.widgetWithText(ElevatedButton, 'Add');
-    await tester.tap(addButton);
-    await tester.pumpAndSettle();
-
-    await tester.pump(const Duration(seconds: 3));
-
-    final checkbox = find.byType(Checkbox);
-    expect(checkbox, findsAtLeastNWidgets(1));
-
-    await tester.tap(checkbox.first);
-    await tester.pumpAndSettle();
-
-    await tester.pump(const Duration(seconds: 2));
+    await tester.setTaskDone(name: name, done: true);
+    expect(tester.task(name).done, true);
   });
 
-  testWidgets('Can delete a task by swipe', (tester) async {
-    await tester.launchApp();
+  testDitto('Can delete a task by swipe', (tester) async {
+    const name = "Task to Delete";
+    await tester.addTask(name);
 
-    final fab = find.byType(FloatingActionButton);
-    await tester.tap(fab);
-    await tester.pumpAndSettle();
+    expect(taskWithName(name), findsOneWidget);
 
-    final textField = find.byType(TextField);
-    await tester.enterText(textField, 'Task to Delete');
-
-    final addButton = find.widgetWithText(ElevatedButton, 'Add');
-    await tester.tap(addButton);
-    await tester.pumpAndSettle();
-
-    await tester.pump(const Duration(seconds: 3));
-
-    final taskTile = find.text('Task to Delete');
-    expect(taskTile, findsOneWidget);
-
-    await tester.drag(taskTile, const Offset(-500.0, 0.0));
-    await tester.pumpAndSettle();
-
-    await tester.pump(const Duration(seconds: 2));
+    await tester.deleteTask(name);
+    expect(taskWithName(name), findsNothing);
   });
 
-  testWidgets('Sync functionality test', (tester) async {
-    await tester.launchApp();
+  testDitto('Sync functionality test', (tester) async {
+    expect(tester.isSyncing, true);
 
-    final syncTile = find.byType(SwitchListTile);
-    expect(syncTile, findsOneWidget);
+    await tester.setSyncing(false);
+    expect(tester.isSyncing, false);
 
-    await tester.tap(syncTile);
-    await tester.pumpAndSettle();
-
-    await tester.pump(const Duration(seconds: 2));
-
-    await tester.tap(syncTile);
-    await tester.pumpAndSettle();
+    await tester.setSyncing(true);
+    expect(tester.isSyncing, true);
   });
 
-  testWidgets('GitHub test document sync verification', (tester) async {
-    await tester.launchApp();
+  testDitto(
+    'GitHub test document sync verification',
+    skip: !const bool.hasEnvironment("GITHUB_TEST_DOC_ID"),
+    (tester) async {
+      const githubRunId = String.fromEnvironment("GITHUB_TEST_DOC_ID");
 
-    const githubRunId = String.fromEnvironment('GITHUB_TEST_DOC_ID');
-    if (githubRunId.isNotEmpty) {
       final splitRunId = githubRunId.split('_');
       // Expected format: 'github_test_RUNID_RUNNUMBER' where index 2 contains RUNID
       if (splitRunId.length >= 3) {
         final runIdPart = splitRunId[2]; // Extract RUNID from position 2
-        final testDocumentText = find.textContaining(runIdPart);
 
-        int attempts = 0;
-        const maxAttempts = 15;
-
-        while (attempts < maxAttempts && testDocumentText.evaluate().isEmpty) {
-          await tester.pump(const Duration(seconds: 2));
-          attempts++;
-        }
-        if (testDocumentText.evaluate().isNotEmpty) {
-          // GitHub test document synced successfully
-        } else {
+        try {
+          await tester.waitUntil(
+            () => tester.isVisible(taskWithName(runIdPart)),
+          );
+        } catch (_) {
           // GitHub test document not found within timeout
         }
       } else {
         // GitHub test document ID format invalid, skipping sync verification
       }
-    } else {
-      // No GitHub test document ID provided, skipping sync verification
-    }
-  });
+    },
+  );
 }
-
