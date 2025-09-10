@@ -170,4 +170,3 @@ jobs:
     - name: Build macOS
       working-directory: react-native
       run: yarn build:macos
-      
