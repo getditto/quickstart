@@ -84,11 +84,20 @@ class TaskVisibilityIntegrationTest {
                 System.out.println("🔗 BrowserStack Local enabled");
             }
             
-            // Enable debug features (like javascript-web)
-            bsOptions.put("debug", "true");
-            bsOptions.put("video", "true");
-            bsOptions.put("networkLogs", "true");
-            bsOptions.put("consoleLogs", "info");
+            // Enable ALL debug features for maximum visibility
+            bsOptions.put("debug", "true");           // Visual logs (screenshots)
+            bsOptions.put("video", "true");           // Video recording 
+            bsOptions.put("networkLogs", "true");     // HAR network logs
+            bsOptions.put("consoleLogs", "verbose");  // All console logs
+            bsOptions.put("seleniumLogs", "true");    // Selenium command logs
+            bsOptions.put("telemetryLogs", "true");   // Request tracing logs
+            
+            // Network log options to capture full request/response data
+            Map<String, Object> networkLogsOptions = new HashMap<>();
+            networkLogsOptions.put("captureContent", true);
+            bsOptions.put("networkLogsOptions", networkLogsOptions);
+            
+            System.out.println("🔍 Enabled comprehensive BrowserStack logging: visual, video, network, console, selenium, telemetry");
             
             options.setCapability("bstack:options", bsOptions);
             
@@ -148,43 +157,73 @@ class TaskVisibilityIntegrationTest {
     @Order(1)
     void shouldLoadTasksWebPage() {
         System.out.println("🧪 Test 1: Loading Tasks web page...");
+        System.out.println("🌐 Target URL: " + baseUrl);
         
-        driver.get(baseUrl);
-        System.out.println("📍 Browser opened at: " + baseUrl);
-        
-        // Add delay to see the page loading
         try {
+            driver.get(baseUrl);
+            System.out.println("📍 Browser navigation initiated to: " + baseUrl);
+            
+            // Log current URL and page source for debugging
+            String currentUrl = driver.getCurrentUrl();
+            System.out.println("🔍 Current browser URL: " + currentUrl);
+            
+            // Add delay to see the page loading
             Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        
-        // Wait for page to load and verify title
-        wait.until(ExpectedConditions.titleContains("Ditto"));
-        
-        String pageTitle = driver.getTitle();
-        System.out.println("📄 Page title: " + pageTitle);
-        Assertions.assertTrue(pageTitle.contains("Ditto"), 
-            "Page title should contain 'Ditto', but was: " + pageTitle);
-        
-        // Verify main elements are present - use more flexible selectors
-        WebElement taskInput = wait.until(ExpectedConditions.presenceOfElementLocated(
-            By.cssSelector("input")));
-        Assertions.assertTrue(taskInput.isDisplayed(), "Task input field should be visible");
-        System.out.println("✅ Found input field");
-        
-        WebElement addButton = driver.findElement(By.cssSelector("button"));
-        Assertions.assertTrue(addButton.isDisplayed(), "Add task button should be visible");
-        System.out.println("✅ Found add button");
-        
-        // Keep browser open longer to see the result
-        try {
+            
+            // Check if we got redirected or if there's an error page
+            String pageSource = driver.getPageSource();
+            System.out.println("📄 Page source length: " + pageSource.length() + " characters");
+            
+            if (pageSource.contains("This site can't be reached") || 
+                pageSource.contains("ERR_") || 
+                pageSource.contains("404") ||
+                pageSource.contains("Connection refused")) {
+                System.out.println("❌ ERROR PAGE DETECTED! Page source snippet:");
+                System.out.println(pageSource.length() > 500 ? pageSource.substring(0, 500) + "..." : pageSource);
+                throw new RuntimeException("Browser shows error page - connectivity issue detected");
+            }
+            
+            // Wait for page to load and verify title
+            wait.until(ExpectedConditions.titleContains("Ditto"));
+            
+            String pageTitle = driver.getTitle();
+            System.out.println("📄 Page title: " + pageTitle);
+            Assertions.assertTrue(pageTitle.contains("Ditto"), 
+                "Page title should contain 'Ditto', but was: " + pageTitle);
+            
+            // Verify main elements are present - use more flexible selectors
+            WebElement taskInput = wait.until(ExpectedConditions.presenceOfElementLocated(
+                By.cssSelector("input")));
+            Assertions.assertTrue(taskInput.isDisplayed(), "Task input field should be visible");
+            System.out.println("✅ Found input field");
+            
+            WebElement addButton = driver.findElement(By.cssSelector("button"));
+            Assertions.assertTrue(addButton.isDisplayed(), "Add task button should be visible");
+            System.out.println("✅ Found add button");
+            
+            // Keep browser open longer to see the result
             Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            
+            System.out.println("✅ Tasks web page loaded successfully with input field and add button");
+            
+        } catch (Exception e) {
+            // Enhanced error logging for BrowserStack debugging
+            try {
+                System.out.println("❌ Test failed with error: " + e.getMessage());
+                System.out.println("🔍 Current URL when error occurred: " + driver.getCurrentUrl());
+                System.out.println("📄 Page title when error occurred: " + driver.getTitle());
+                
+                String errorPageSource = driver.getPageSource();
+                if (errorPageSource.length() > 1000) {
+                    System.out.println("📄 Error page source (first 1000 chars): " + errorPageSource.substring(0, 1000));
+                } else {
+                    System.out.println("📄 Full error page source: " + errorPageSource);
+                }
+            } catch (Exception logError) {
+                System.out.println("⚠️ Could not capture additional error details: " + logError.getMessage());
+            }
+            throw e; // Re-throw original exception
         }
-        
-        System.out.println("✅ Tasks web page loaded successfully with input field and add button");
     }
 
     @Test
