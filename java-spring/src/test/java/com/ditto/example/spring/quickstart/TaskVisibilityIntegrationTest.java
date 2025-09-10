@@ -24,16 +24,13 @@ import java.util.Map;
  * 
  * Supports both local Chrome testing and BrowserStack remote testing.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TaskVisibilityIntegrationTest {
 
     private static WebDriver driver;
     private static WebDriverWait wait;
-
-    @LocalServerPort
-    private int port;
 
     private String baseUrl;
 
@@ -129,6 +126,9 @@ class TaskVisibilityIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // Use fixed port 8080 to match CI configuration
+        final int FIXED_PORT = 8080;
+        
         // Use bs-local.com when BrowserStack Local is enabled, otherwise use localhost
         String bsUser = firstNonEmpty(System.getProperty("BROWSERSTACK_USERNAME"), System.getenv("BROWSERSTACK_USERNAME"));
         String bsLocal = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
@@ -136,10 +136,10 @@ class TaskVisibilityIntegrationTest {
         boolean useBrowserStackLocal = (bsUser != null) && "true".equalsIgnoreCase(String.valueOf(bsLocal));
 
         if (useBrowserStackLocal) {
-            baseUrl = "http://bs-local.com:" + port;
+            baseUrl = "http://bs-local.com:" + FIXED_PORT;
             System.out.println("🔗 Using bs-local.com URL via BrowserStack Local: " + baseUrl);
         } else {
-            baseUrl = "http://localhost:" + port;
+            baseUrl = "http://localhost:" + FIXED_PORT;
             System.out.println("🌐 Testing Spring Boot Ditto Tasks app at: " + baseUrl);
         }
     }
