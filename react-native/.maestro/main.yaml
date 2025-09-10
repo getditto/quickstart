@@ -4,6 +4,26 @@ appId: com.dittoreactnativesampleapp
 # Simple app launch test
 - launchApp:
     appId: com.dittoreactnativesampleapp
+
+# Grant all permissions required by the app
+- grantPermissions:
+    - bluetooth
+    - location
+    - notifications
+
+# Dismiss system permission dialogs (fallback)
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# Dismiss app's internal permission denied alert
+- runFlow:
+    when:
+      visible: "Permission Denied"
+    commands:
+      - tapOn: "OK"
+
 - waitForAnimationToEnd
 - waitForAnimationToEnd
-- takeScreenshot: app-launched
