@@ -1,9 +1,0 @@
-appId: com.dittoreactnativesampleapp
----
-# Main entry point for BrowserStack execution (when no execute parameter provided)
-# Simple app launch test
-- launchApp:
-    appId: com.dittoreactnativesampleapp
-- waitForAnimationToEnd
-- waitForAnimationToEnd
-- takeScreenshot: app-launched

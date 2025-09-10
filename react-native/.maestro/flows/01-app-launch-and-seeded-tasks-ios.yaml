@@ -10,11 +10,26 @@ tags:
 
 - launchApp:
     appId: org.reactjs.native.example.dittoreactnativesampleapp
+
+# Grant all permissions required by the app
+- grantPermissions:
+    - bluetooth
+    - location
+    - notifications
+
+# Dismiss iOS system permission dialogs (fallback)
 - runFlow:
     when:
       visible: "Allow"
     commands:
       - tapOn: "Allow"
+
+# Dismiss app's internal permission denied alert
+- runFlow:
+    when:
+      visible: "Permission Denied"
+    commands:
+      - tapOn: "OK"
 
 # Wait for the app to fully load
 - waitForAnimationToEnd
