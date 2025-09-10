@@ -19,10 +19,7 @@ tags:
 - waitForAnimationToEnd
 - waitForAnimationToEnd  # Double wait to ensure stability
 
-# Take screenshot for debugging
-- takeScreenshot: before-assertion
-
 # Check if the specified task is visible in the task list
 # Using a simple assertion that should definitely fail for non-existent tasks
 - assertVisible:
-    text: "${TASK_TO_FIND}"
+    text: "${MAESTRO_TASK_TO_FIND}"

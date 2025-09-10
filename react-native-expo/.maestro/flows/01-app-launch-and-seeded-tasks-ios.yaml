@@ -1,4 +1,4 @@
-appId: org.reactjs.native.example.DittoReactNativeSampleApp
+appId: com.anonymous.reactnativeexpo
 tags:
   - "smoke"
   - "task-verification"
@@ -9,7 +9,7 @@ tags:
 # Usage: maestro test -e TASK_TO_FIND="My Task" 01-app-launch-and-seeded-tasks-ios.yaml
 
 - launchApp:
-    appId: org.reactjs.native.example.DittoReactNativeSampleApp
+    appId: com.anonymous.reactnativeexpo
 - runFlow:
     when:
       visible: "Allow"

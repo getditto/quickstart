@@ -354,7 +354,10 @@ jobs:
             ],
             "execute": ["flows/01-app-launch-and-seeded-tasks.yaml"],
             "env": {
-              "MAESTRO_TASK_TO_FIND": "$MAESTRO_TASK_TO_FIND"
+              "MAESTRO_TASK_TO_FIND": "${{ needs.seed-ditto-cloud.outputs.test_task_title }}"
+            },
+            "options": {
+              "autoGrantPermissions": true
             },
             "deviceLogs": true,
             "networkLogs": true,
@@ -502,7 +505,10 @@ jobs:
             ],
             "execute": ["flows/01-app-launch-and-seeded-tasks-ios.yaml"],
             "env": {
-              "MAESTRO_TASK_TO_FIND": "$MAESTRO_TASK_TO_FIND"
+              "MAESTRO_TASK_TO_FIND": "${{ needs.seed-ditto-cloud.outputs.test_task_title }}"
+            },
+            "options": {
+              "autoAcceptAlerts": true
             },
             "deviceLogs": true,
             "networkLogs": true,
