@@ -4,7 +4,7 @@ java = "17"
 
 agp = "8.7.3"
 android-compileSdk = "35"
-android-minSdk = "26"
+android-minSdk = "24"
 android-targetSdk = "35"
 androidx-activityCompose = "1.10.0"
 androidx-appcompat = "1.7.0"
