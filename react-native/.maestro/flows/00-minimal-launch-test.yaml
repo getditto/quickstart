@@ -1,0 +1,11 @@
+appId: com.dittoreactnativesampleapp
+tags:
+  - "smoke"
+  - "minimal"
+---
+# Minimal Test: Just launch app and take screenshot
+# This test should work on BrowserStack since it doesn't do complex interactions
+
+- launchApp:
+    appId: com.dittoreactnativesampleapp
+- takeScreenshot: minimal-launch-test
