@@ -289,7 +289,7 @@ class _DittoExampleState extends State<DittoExample> {
         case AttachmentFetchEventProgress progress:
           setState(() {
             _loadingProgress[taskId] =
-                progress.totalBytes / progress.downloadedBytes;
+                progress.downloadedBytes / progress.totalBytes;
           });
           break;
         case AttachmentFetchEventCompleted _:
@@ -314,8 +314,5 @@ class _DittoExampleState extends State<DittoExample> {
         _loadedAttachments.remove(taskId);
       });
     }
-    
   }
-
-  
 }
