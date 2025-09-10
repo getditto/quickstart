@@ -4,6 +4,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,16 +20,48 @@ class DittoSeededIdTest {
     fun testGitHubSeededDocumentSync() {
         // Get test document title from instrumentation arguments
         val args = InstrumentationRegistry.getArguments()
-        val actualDocumentTitle = args?.getString("github_test_doc_title")
+        val testDocumentTitle = args?.getString("github_test_doc_title")
             ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'github_test_doc_title'")
-        
-        // Search for the correct document to ensure tests pass
-        val testDocumentTitle = actualDocumentTitle
         
         println("🔍 Looking for document: '$testDocumentTitle'")
         
         // Give the app time to fully launch and set up Compose
-        Thread.sleep(5000)
+        Thread.sleep(3000)
+        
+        // Handle permission dialogs using UiAutomator (can interact with system dialogs)
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        for (i in 1..3) { // Try up to 3 permission dialogs
+            try {
+                // Look for permission dialog buttons in different Android versions
+                val allowSelectors = listOf(
+                    UiSelector().text("Allow"),
+                    UiSelector().text("ALLOW"), 
+                    UiSelector().text("Allow only while using the app"),
+                    UiSelector().text("While using the app"),
+                    UiSelector().text("OK")
+                )
+                
+                var found = false
+                for (selector in allowSelectors) {
+                    val allowButton = device.findObject(selector)
+                    if (allowButton.exists()) {
+                        println("📱 Found permission dialog $i, clicking '${allowButton.text}'")
+                        allowButton.click()
+                        Thread.sleep(1500) // Wait for dialog to dismiss and next one to appear
+                        found = true
+                        break
+                    }
+                }
+                
+                if (!found) {
+                    println("ℹ️ No more permission dialogs found after $i attempts")
+                    break
+                }
+            } catch (e: Exception) {
+                println("⚠️ Error handling permission dialog $i: ${e.message}")
+                break
+            }
+        }
         
         // Debug: Print the UI tree to see what's actually there
         try {
