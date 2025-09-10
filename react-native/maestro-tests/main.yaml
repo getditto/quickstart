@@ -1,10 +1,9 @@
 appId: com.dittoreactnativesampleapp
 ---
-# Main entry point for BrowserStack Maestro execution
-# Simple test: Just launch app and take screenshot (works with release APK)
+# Main entry point for BrowserStack execution (when no execute parameter provided)
+# Simple app launch test
 - launchApp:
     appId: com.dittoreactnativesampleapp
 - waitForAnimationToEnd
 - waitForAnimationToEnd
-- waitForAnimationToEnd
-- takeScreenshot: app-launched-successfully
+- takeScreenshot: app-launched

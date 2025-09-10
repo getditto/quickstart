@@ -300,33 +300,16 @@ jobs:
         rm -rf maestro-tests
         mkdir maestro-tests
         
-        # Copy flows from .maestro to root level and flows/ subfolder
-        if [ -f ".maestro 3"/main.yaml ]; then
-          cp ".maestro 3"/main.yaml maestro-tests/
-        elif [ -f .maestro/main.yaml ]; then
-          cp .maestro/main.yaml maestro-tests/
-        else
-          echo "Creating main.yaml for BrowserStack execution..."
-          echo 'appId: com.dittoreactnativesampleapp' > maestro-tests/main.yaml
-          echo '---' >> maestro-tests/main.yaml
-          echo '- launchApp:' >> maestro-tests/main.yaml
-          echo '    appId: com.dittoreactnativesampleapp' >> maestro-tests/main.yaml
-          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
-          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
-          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
-          echo '- takeScreenshot: app-launched-successfully' >> maestro-tests/main.yaml
-        fi
+        # Copy main.yaml to root level (required by BrowserStack for no-execute runs)
+        cp .maestro/main.yaml maestro-tests/
         
-        # Copy flows to root level and create flows/ subfolder
-        if [ -d ".maestro 3"/flows ]; then
-          cp ".maestro 3"/flows/*.yaml maestro-tests/ 2>/dev/null || true
-          mkdir maestro-tests/flows
-          cp ".maestro 3"/flows/*.yaml maestro-tests/flows/ 2>/dev/null || true
-        elif [ -d .maestro/flows ]; then
-          cp .maestro/flows/*.yaml maestro-tests/ 2>/dev/null || true
-          mkdir maestro-tests/flows  
-          cp .maestro/flows/*.yaml maestro-tests/flows/ 2>/dev/null || true
-        fi
+        # Copy the specific tests to root level (as per BrowserStack requirements)
+        cp .maestro/flows/01-app-launch-and-seeded-tasks.yaml maestro-tests/
+        cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
+        
+        # Also create flows/ subfolder for organization
+        mkdir maestro-tests/flows
+        cp .maestro/flows/*.yaml maestro-tests/flows/
         
         # Create ZIP with proper structure
         zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
@@ -462,33 +445,16 @@ jobs:
         rm -rf maestro-tests
         mkdir maestro-tests
         
-        # Copy flows from .maestro to root level and flows/ subfolder
-        if [ -f ".maestro 3"/main.yaml ]; then
-          cp ".maestro 3"/main.yaml maestro-tests/
-        elif [ -f .maestro/main.yaml ]; then
-          cp .maestro/main.yaml maestro-tests/
-        else
-          echo "Creating main.yaml for BrowserStack execution..."
-          echo 'appId: com.dittoreactnativesampleapp' > maestro-tests/main.yaml
-          echo '---' >> maestro-tests/main.yaml
-          echo '- launchApp:' >> maestro-tests/main.yaml
-          echo '    appId: com.dittoreactnativesampleapp' >> maestro-tests/main.yaml
-          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
-          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
-          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
-          echo '- takeScreenshot: app-launched-successfully' >> maestro-tests/main.yaml
-        fi
+        # Copy main.yaml to root level (required by BrowserStack for no-execute runs)
+        cp .maestro/main.yaml maestro-tests/
         
-        # Copy flows to root level and create flows/ subfolder
-        if [ -d ".maestro 3"/flows ]; then
-          cp ".maestro 3"/flows/*.yaml maestro-tests/ 2>/dev/null || true
-          mkdir maestro-tests/flows
-          cp ".maestro 3"/flows/*.yaml maestro-tests/flows/ 2>/dev/null || true
-        elif [ -d .maestro/flows ]; then
-          cp .maestro/flows/*.yaml maestro-tests/ 2>/dev/null || true
-          mkdir maestro-tests/flows  
-          cp .maestro/flows/*.yaml maestro-tests/flows/ 2>/dev/null || true
-        fi
+        # Copy the specific tests to root level (as per BrowserStack requirements)
+        cp .maestro/flows/01-app-launch-and-seeded-tasks.yaml maestro-tests/
+        cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
+        
+        # Also create flows/ subfolder for organization
+        mkdir maestro-tests/flows
+        cp .maestro/flows/*.yaml maestro-tests/flows/
         
         # Create ZIP with proper structure
         zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"

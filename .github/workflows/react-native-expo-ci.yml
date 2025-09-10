@@ -300,8 +300,26 @@ jobs:
     - name: Create Maestro test suite ZIP
       run: |
         cd react-native-expo
-        zip -r maestro-tests.zip .maestro -x "*.DS_Store"
+        # Create proper BrowserStack folder structure (normal parent folder, not hidden)
+        rm -rf maestro-tests
+        mkdir maestro-tests
+        
+        # Copy main.yaml to root level (required by BrowserStack for no-execute runs)
+        cp .maestro/main.yaml maestro-tests/
+        
+        # Copy the specific tests to root level (as per BrowserStack requirements)
+        cp .maestro/flows/01-app-launch-and-seeded-tasks.yaml maestro-tests/
+        cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
+        
+        # Also create flows/ subfolder for organization
+        mkdir maestro-tests/flows
+        cp .maestro/flows/*.yaml maestro-tests/flows/
+        
+        # Create ZIP with proper structure
+        zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
         ls -la maestro-tests.zip
+        echo "Maestro test structure:"
+        unzip -l maestro-tests.zip
     
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
@@ -438,8 +456,26 @@ jobs:
     - name: Create Maestro test suite ZIP
       run: |
         cd react-native-expo
-        zip -r maestro-tests.zip .maestro -x "*.DS_Store"
+        # Create proper BrowserStack folder structure (normal parent folder, not hidden)
+        rm -rf maestro-tests
+        mkdir maestro-tests
+        
+        # Copy main.yaml to root level (required by BrowserStack for no-execute runs)
+        cp .maestro/main.yaml maestro-tests/
+        
+        # Copy the specific tests to root level (as per BrowserStack requirements)
+        cp .maestro/flows/01-app-launch-and-seeded-tasks.yaml maestro-tests/
+        cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
+        
+        # Also create flows/ subfolder for organization
+        mkdir maestro-tests/flows
+        cp .maestro/flows/*.yaml maestro-tests/flows/
+        
+        # Create ZIP with proper structure
+        zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
         ls -la maestro-tests.zip
+        echo "Maestro test structure:"
+        unzip -l maestro-tests.zip
     
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
