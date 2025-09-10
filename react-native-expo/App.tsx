@@ -142,7 +142,7 @@ const App = () => {
       // Register observer, which runs against the local database on this peer
       // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
       taskObserver.current = ditto.current.store.registerObserver(
-        "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id ASC",
+        "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC",
         (response) => {
           const fetchedTasks: Task[] = response.items.map((doc) => ({
             id: doc.value._id,
