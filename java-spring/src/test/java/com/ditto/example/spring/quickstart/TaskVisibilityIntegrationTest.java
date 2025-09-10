@@ -58,41 +58,43 @@ class TaskVisibilityIntegrationTest {
     private static void setupBrowserStackDriver(String username, String accessKey) {
         try {
             ChromeOptions options = new ChromeOptions();
-            Map<String, Object> browserstackOptions = new HashMap<>();
-            browserstackOptions.put("userName", username);
-            browserstackOptions.put("accessKey", accessKey);
-            browserstackOptions.put("projectName", "Ditto Java Spring Tasks");
-            browserstackOptions.put("sessionName", "Visual Task Testing");
-            browserstackOptions.put("os", "Windows");
-            browserstackOptions.put("osVersion", "11");
-            browserstackOptions.put("browserVersion", "latest");
+            
+            // Use simplified BrowserStack options (like javascript-web Python script)
+            Map<String, Object> bsOptions = new HashMap<>();
+            bsOptions.put("os", "Windows");
+            bsOptions.put("osVersion", "11");
+            bsOptions.put("browserVersion", "latest");
             
             // Set build name from system property (passed from CI)
             String buildName = System.getProperty("BROWSERSTACK_BUILD_NAME");
             if (buildName != null && !buildName.isEmpty()) {
-                browserstackOptions.put("buildName", buildName);
+                bsOptions.put("buildName", buildName);
                 System.out.println("📋 Using BrowserStack build name: " + buildName);
             } else {
-                browserstackOptions.put("buildName", "Task Visibility Integration Test");
+                bsOptions.put("buildName", "Task Visibility Integration Test");
             }
             
-            // Set BrowserStack Local settings from system properties
+            bsOptions.put("projectName", "Ditto Java Spring");
+            bsOptions.put("sessionName", "Visual Task Testing");
+            
+            // Enable BrowserStack Local (like javascript-web)
             String local = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
             if ("true".equals(local)) {
-                browserstackOptions.put("local", true);
+                bsOptions.put("local", "true");
                 System.out.println("🔗 BrowserStack Local enabled");
-                
-                String localIdentifier = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL_IDENTIFIER"), System.getenv("BROWSERSTACK_LOCAL_IDENTIFIER"));
-                if (localIdentifier != null && !localIdentifier.isEmpty()) {
-                    browserstackOptions.put("localIdentifier", localIdentifier);
-                    System.out.println("🔗 Using BrowserStack Local identifier: " + localIdentifier);
-                }
             }
             
-            options.setCapability("bstack:options", browserstackOptions);
+            // Enable debug features (like javascript-web)
+            bsOptions.put("debug", "true");
+            bsOptions.put("video", "true");
+            bsOptions.put("networkLogs", "true");
+            bsOptions.put("consoleLogs", "info");
             
+            options.setCapability("bstack:options", bsOptions);
+            
+            // Use hub.browserstack.com with credentials in URL (like javascript-web Python script)
             RemoteWebDriver remote = new RemoteWebDriver(
-                new URL("https://hub-cloud.browserstack.com/wd/hub"), 
+                new URL("https://" + username + ":" + accessKey + "@hub.browserstack.com/wd/hub"), 
                 options
             );
             driver = remote;
@@ -129,18 +131,16 @@ class TaskVisibilityIntegrationTest {
         // Use fixed port 8080 to match CI configuration
         final int FIXED_PORT = 8080;
         
-        // Use bs-local.com when BrowserStack Local is enabled, otherwise use localhost
+        // Always use localhost - BrowserStack Local tunnel handles the routing (like javascript-web)
+        baseUrl = "http://localhost:" + FIXED_PORT;
+        
         String bsUser = firstNonEmpty(System.getProperty("BROWSERSTACK_USERNAME"), System.getenv("BROWSERSTACK_USERNAME"));
         String bsLocal = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
-
-        boolean useBrowserStackLocal = (bsUser != null) && "true".equalsIgnoreCase(String.valueOf(bsLocal));
-
-        if (useBrowserStackLocal) {
-            baseUrl = "http://bs-local.com:" + FIXED_PORT;
-            System.out.println("🔗 Using bs-local.com URL via BrowserStack Local: " + baseUrl);
+        
+        if (bsUser != null && "true".equals(bsLocal)) {
+            System.out.println("🔗 BrowserStack testing with Local tunnel: " + baseUrl);
         } else {
-            baseUrl = "http://localhost:" + FIXED_PORT;
-            System.out.println("🌐 Testing Spring Boot Ditto Tasks app at: " + baseUrl);
+            System.out.println("🌐 Local testing: " + baseUrl);
         }
     }
 
