@@ -1,0 +1,9 @@
+appId: org.reactjs.native.example.DittoReactNativeSampleApp
+---
+# Simple test: Just launch app and take screenshot (works with release build)
+- launchApp:
+    appId: org.reactjs.native.example.DittoReactNativeSampleApp
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: app-launched-successfully

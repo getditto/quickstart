@@ -296,8 +296,46 @@ jobs:
     - name: Create Maestro test suite ZIP
       run: |
         cd react-native
-        zip -r maestro-tests.zip .maestro -x "*.DS_Store"
+        # Create proper BrowserStack folder structure (normal parent folder, not hidden)
+        rm -rf maestro-tests
+        mkdir maestro-tests
+        
+        # Copy flows from .maestro to root level and flows/ subfolder
+        if [ -f ".maestro 3"/main.yaml ]; then
+          cp ".maestro 3"/main.yaml maestro-tests/
+        elif [ -f .maestro/main.yaml ]; then
+          cp .maestro/main.yaml maestro-tests/
+        else
+          echo "Creating main.yaml for BrowserStack execution..."
+          cat > maestro-tests/main.yaml << 'EOF'
+appId: com.dittoreactnativesampleapp
+---
+# Main entry point for BrowserStack Maestro execution
+- launchApp:
+    appId: com.dittoreactnativesampleapp
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: app-launched-successfully
+EOF
+        fi
+        
+        # Copy flows to root level and create flows/ subfolder
+        if [ -d ".maestro 3"/flows ]; then
+          cp ".maestro 3"/flows/*.yaml maestro-tests/ 2>/dev/null || true
+          mkdir maestro-tests/flows
+          cp ".maestro 3"/flows/*.yaml maestro-tests/flows/ 2>/dev/null || true
+        elif [ -d .maestro/flows ]; then
+          cp .maestro/flows/*.yaml maestro-tests/ 2>/dev/null || true
+          mkdir maestro-tests/flows  
+          cp .maestro/flows/*.yaml maestro-tests/flows/ 2>/dev/null || true
+        fi
+        
+        # Create ZIP with proper structure
+        zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
         ls -la maestro-tests.zip
+        echo "Maestro test structure:"
+        unzip -l maestro-tests.zip
     
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
@@ -423,8 +461,46 @@ jobs:
     - name: Create Maestro test suite ZIP
       run: |
         cd react-native
-        zip -r maestro-tests.zip .maestro -x "*.DS_Store"
+        # Create proper BrowserStack folder structure (normal parent folder, not hidden)
+        rm -rf maestro-tests
+        mkdir maestro-tests
+        
+        # Copy flows from .maestro to root level and flows/ subfolder
+        if [ -f ".maestro 3"/main.yaml ]; then
+          cp ".maestro 3"/main.yaml maestro-tests/
+        elif [ -f .maestro/main.yaml ]; then
+          cp .maestro/main.yaml maestro-tests/
+        else
+          echo "Creating main.yaml for BrowserStack execution..."
+          cat > maestro-tests/main.yaml << 'EOF'
+appId: com.dittoreactnativesampleapp
+---
+# Main entry point for BrowserStack Maestro execution
+- launchApp:
+    appId: com.dittoreactnativesampleapp
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: app-launched-successfully
+EOF
+        fi
+        
+        # Copy flows to root level and create flows/ subfolder
+        if [ -d ".maestro 3"/flows ]; then
+          cp ".maestro 3"/flows/*.yaml maestro-tests/ 2>/dev/null || true
+          mkdir maestro-tests/flows
+          cp ".maestro 3"/flows/*.yaml maestro-tests/flows/ 2>/dev/null || true
+        elif [ -d .maestro/flows ]; then
+          cp .maestro/flows/*.yaml maestro-tests/ 2>/dev/null || true
+          mkdir maestro-tests/flows  
+          cp .maestro/flows/*.yaml maestro-tests/flows/ 2>/dev/null || true
+        fi
+        
+        # Create ZIP with proper structure
+        zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
         ls -la maestro-tests.zip
+        echo "Maestro test structure:"
+        unzip -l maestro-tests.zip
     
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests

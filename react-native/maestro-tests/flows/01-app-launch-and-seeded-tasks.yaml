@@ -1,0 +1,9 @@
+appId: com.dittoreactnativesampleapp
+---
+# Simple test: Just launch app and take screenshot (works with release APK)
+- launchApp:
+    appId: com.dittoreactnativesampleapp
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: app-launched-successfully
