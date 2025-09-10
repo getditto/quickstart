@@ -1,0 +1,28 @@
+userName: ${BROWSERSTACK_USERNAME}
+accessKey: ${BROWSERSTACK_ACCESS_KEY}
+
+projectName: Ditto Java Spring Tasks
+buildName: Java Spring Selenium Tests
+
+platforms:
+  - os: Windows
+    osVersion: 11
+    browserName: Chrome
+    browserVersion: latest
+
+# Enable BrowserStack Local for localhost testing
+browserstackLocal: true
+
+# Debug options
+debug: true
+video: true
+networkLogs: true
+consoleLogs: verbose
+seleniumLogs: true
+telemetryLogs: true
+
+# Network log options
+networkLogsOptions:
+  captureContent: true
+
+parallelsPerPlatform: 1

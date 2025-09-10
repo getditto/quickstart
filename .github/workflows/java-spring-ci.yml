@@ -186,19 +186,29 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: Set up BrowserStack env
-      uses: browserstack/github-actions/setup-env@master
-      with:
-        username: ${{ secrets.BROWSERSTACK_USERNAME }}
-        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: "Java Spring Selenium Tests #${{ github.run_number }}"
-        project-name: "Ditto Java Spring"
+    - name: Install BrowserStack Local binary
+      run: |
+        wget "https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip"
+        unzip BrowserStackLocal-linux-x64.zip
+        chmod +x BrowserStackLocal
 
-    - name: Start BrowserStack Local
-      uses: browserstack/github-actions/setup-local@master
-      with:
-        local-testing: start
-        local-identifier: java-spring-${{ github.run_number }}
+        # Create minimal BrowserStack Local config
+        echo "key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}" > bs-local.yml
+        chmod 600 bs-local.yml
+
+        nohup ./BrowserStackLocal --config-file ./bs-local.yml --daemon start &
+        sleep 10
+        echo "BrowserStack Local tunnel established"
+    
+    - name: Configure BrowserStack test config
+      working-directory: java-spring
+      run: |
+        # Update browserstack.yml with actual credentials
+        sed -i "s/\${BROWSERSTACK_USERNAME}/${{ secrets.BROWSERSTACK_USERNAME }}/g" browserstack.yml
+        sed -i "s/\${BROWSERSTACK_ACCESS_KEY}/${{ secrets.BROWSERSTACK_ACCESS_KEY }}/g" browserstack.yml
+        
+        echo "📋 BrowserStack config updated with credentials"
+        cat browserstack.yml
     
     - name: Start Spring Boot app in background
       working-directory: java-spring
@@ -236,25 +246,23 @@ jobs:
         echo "Verifying test task exists..."
         curl -s http://localhost:8080 | grep -q "$TITLE" && echo "✓ Test task found" || echo "⚠ Test task not found"
     
-    - name: Execute Selenium tests on BrowserStack cloud browsers
+    - name: Execute Selenium tests on BrowserStack cloud browsers  
       working-directory: java-spring
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
-        BROWSERSTACK_LOCAL_IDENTIFIER: java-spring-${{ github.run_number }}
         TEST_TASK_TITLE: ${{ needs.build.outputs.test_doc_title }}
         GITHUB_TEST_DOC_ID: ${{ needs.build.outputs.test_doc_title }}
       run: |
         TITLE="${{ needs.build.outputs.test_doc_title }}"
         
-        # Run tests with proper BrowserStack capabilities (build name set via capabilities)
+        # Run tests with simplified BrowserStack setup (like javascript-web)
         ./gradlew test --tests "*TaskVisibilityIntegrationTest" \
           -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
           -DBROWSERSTACK_LOCAL=true \
-          -DBROWSERSTACK_LOCAL_IDENTIFIER="java-spring-${{ github.run_number }}" \
           -DTEST_TASK_TITLE="$TITLE" \
           -DGITHUB_TEST_DOC_ID="$TITLE"
     
@@ -269,12 +277,9 @@ jobs:
           echo "✓ Stopped Spring Boot app"
         fi
     
-    - name: Stop BrowserStack Local
+    - name: Stop BrowserStack Local tunnel
       if: always()
-      uses: browserstack/github-actions/setup-local@master
-      with:
-        local-testing: stop
-        local-identifier: java-spring-${{ github.run_number }}
+      run: ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
     
     - name: Upload test reports
       if: always()

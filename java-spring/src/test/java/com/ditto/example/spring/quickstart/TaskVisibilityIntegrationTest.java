@@ -59,49 +59,21 @@ class TaskVisibilityIntegrationTest {
         try {
             ChromeOptions options = new ChromeOptions();
             
-            // Use simplified BrowserStack options (like javascript-web Python script)
+            // Use standard BrowserStack approach with minimal capabilities
+            // Let browserstack.yml file handle most configuration
             Map<String, Object> bsOptions = new HashMap<>();
-            bsOptions.put("os", "Windows");
-            bsOptions.put("osVersion", "11");
-            bsOptions.put("browserVersion", "latest");
+            bsOptions.put("sessionName", "Java Spring Task Visibility Test");
             
-            // Set build name from system property (passed from CI)
+            // Set build name from system property if provided
             String buildName = System.getProperty("BROWSERSTACK_BUILD_NAME");
             if (buildName != null && !buildName.isEmpty()) {
                 bsOptions.put("buildName", buildName);
                 System.out.println("📋 Using BrowserStack build name: " + buildName);
-            } else {
-                bsOptions.put("buildName", "Task Visibility Integration Test");
             }
-            
-            bsOptions.put("projectName", "Ditto Java Spring");
-            bsOptions.put("sessionName", "Visual Task Testing");
-            
-            // Enable BrowserStack Local (like javascript-web)
-            String local = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
-            if ("true".equals(local)) {
-                bsOptions.put("local", "true");
-                System.out.println("🔗 BrowserStack Local enabled");
-            }
-            
-            // Enable ALL debug features for maximum visibility
-            bsOptions.put("debug", "true");           // Visual logs (screenshots)
-            bsOptions.put("video", "true");           // Video recording 
-            bsOptions.put("networkLogs", "true");     // HAR network logs
-            bsOptions.put("consoleLogs", "verbose");  // All console logs
-            bsOptions.put("seleniumLogs", "true");    // Selenium command logs
-            bsOptions.put("telemetryLogs", "true");   // Request tracing logs
-            
-            // Network log options to capture full request/response data
-            Map<String, Object> networkLogsOptions = new HashMap<>();
-            networkLogsOptions.put("captureContent", true);
-            bsOptions.put("networkLogsOptions", networkLogsOptions);
-            
-            System.out.println("🔍 Enabled comprehensive BrowserStack logging: visual, video, network, console, selenium, telemetry");
             
             options.setCapability("bstack:options", bsOptions);
             
-            // Use hub.browserstack.com with credentials in URL (like javascript-web Python script)
+            // Use standard BrowserStack hub URL (like documentation)
             RemoteWebDriver remote = new RemoteWebDriver(
                 new URL("https://" + username + ":" + accessKey + "@hub.browserstack.com/wd/hub"), 
                 options
