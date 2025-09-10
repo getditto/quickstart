@@ -307,17 +307,14 @@ jobs:
           cp .maestro/main.yaml maestro-tests/
         else
           echo "Creating main.yaml for BrowserStack execution..."
-          cat > maestro-tests/main.yaml << 'EOF'
-appId: com.dittoreactnativesampleapp
----
-# Main entry point for BrowserStack Maestro execution
-- launchApp:
-    appId: com.dittoreactnativesampleapp
-- waitForAnimationToEnd
-- waitForAnimationToEnd
-- waitForAnimationToEnd
-- takeScreenshot: app-launched-successfully
-EOF
+          echo 'appId: com.dittoreactnativesampleapp' > maestro-tests/main.yaml
+          echo '---' >> maestro-tests/main.yaml
+          echo '- launchApp:' >> maestro-tests/main.yaml
+          echo '    appId: com.dittoreactnativesampleapp' >> maestro-tests/main.yaml
+          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
+          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
+          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
+          echo '- takeScreenshot: app-launched-successfully' >> maestro-tests/main.yaml
         fi
         
         # Copy flows to root level and create flows/ subfolder
@@ -472,17 +469,14 @@ EOF
           cp .maestro/main.yaml maestro-tests/
         else
           echo "Creating main.yaml for BrowserStack execution..."
-          cat > maestro-tests/main.yaml << 'EOF'
-appId: com.dittoreactnativesampleapp
----
-# Main entry point for BrowserStack Maestro execution
-- launchApp:
-    appId: com.dittoreactnativesampleapp
-- waitForAnimationToEnd
-- waitForAnimationToEnd
-- waitForAnimationToEnd
-- takeScreenshot: app-launched-successfully
-EOF
+          echo 'appId: com.dittoreactnativesampleapp' > maestro-tests/main.yaml
+          echo '---' >> maestro-tests/main.yaml
+          echo '- launchApp:' >> maestro-tests/main.yaml
+          echo '    appId: com.dittoreactnativesampleapp' >> maestro-tests/main.yaml
+          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
+          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
+          echo '- waitForAnimationToEnd' >> maestro-tests/main.yaml
+          echo '- takeScreenshot: app-launched-successfully' >> maestro-tests/main.yaml
         fi
         
         # Copy flows to root level and create flows/ subfolder
