@@ -19,7 +19,7 @@ class DittoSeededIdTest {
     fun testGitHubSeededDocumentSync() {
         val args = InstrumentationRegistry.getArguments()
         val testDocumentTitle = args?.getString("github_test_doc_title")
-            ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'github_test_doc_title'")
+            ?: throw IllegalStateException("No test document title provided. Please provide it via the instrumentation argument 'github_test_doc_title'.")
         
         Thread.sleep(3000)
         

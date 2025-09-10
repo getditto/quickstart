@@ -45,7 +45,10 @@ class DittoManager {
                 val identity = DittoIdentity.OnlinePlayground(
                     appId = DittoSecretsConfiguration.DITTO_APP_ID,
                     token = DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-                    enableDittoCloudSync = false, // Set to false to use correct WebSocket URLs and avoid auth issues
+                    // Cloud sync is intentionally disabled to avoid authentication issues in test environments.
+                    // When enabled, Ditto Cloud Sync requires additional auth setup that causes certificate 
+                    // validation failures in BrowserStack. Disabling ensures sync occurs via WebSocket URLs only.
+                    enableDittoCloudSync = false,
                     customAuthUrl = DittoSecretsConfiguration.DITTO_AUTH_URL,
                 )
 

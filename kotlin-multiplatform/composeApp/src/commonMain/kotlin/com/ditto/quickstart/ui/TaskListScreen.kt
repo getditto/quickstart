@@ -28,6 +28,14 @@ import com.ditto.quickstart.data.Task
 import com.ditto.quickstart.data.screenstate.TaskListScreenState
 import com.ditto.quickstart.ui.components.Loading
 
+private fun generateTestTag(title: String): String {
+    return if (title.isBlank()) {
+        "task_title_empty"
+    } else {
+        "task_title_${title.replace(" ", "_").replace(Regex("[^A-Za-z0-9_]"), "")}"
+    }
+}
+
 @Composable
 fun TaskListScreen(
     state: TaskListScreenState,
@@ -86,7 +94,7 @@ private fun TaskItem(
             style = MaterialTheme.typography.body1.copy(textDecoration = titleTextDecoration),
             modifier = Modifier
                 .weight(1f)
-                .testTag("task_title_${task.title.replace(" ", "_").replace("[^A-Za-z0-9_]".toRegex(), "")}")
+                .testTag(generateTestTag(task.title))
         )
         IconButton(onClick = onEdit) {
             Icon(
