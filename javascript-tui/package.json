@@ -11,7 +11,9 @@
 		"start": "npm run build && node dist/cli.js",
 		"build": "babel --out-dir=dist source",
 		"dev": "babel --out-dir=dist --watch source",
-		"test": "prettier --check .",
+		"test": "npm run test:lint && npm run test:integration",
+		"test:lint": "prettier --check .",
+		"test:integration": "node tests/integration_test.js",
 		"format": "prettier --write ."
 	},
 	"files": [
@@ -29,12 +31,12 @@
 		"@babel/cli": "^7.21.0",
 		"@babel/preset-react": "^7.18.6",
 		"@vdemedes/prettier-config": "^2.0.1",
+		"ava": "^6.4.1",
 		"chalk": "^5.2.0",
 		"eslint-config-xo-react": "^0.27.0",
 		"eslint-plugin-react": "^7.32.2",
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"import-jsx": "^5.0.0",
-		"ink-testing-library": "^3.0.0",
 		"prettier": "^2.8.7"
 	},
 	"ava": {
@@ -43,6 +45,9 @@
 		},
 		"nodeArguments": [
 			"--loader=import-jsx"
+		],
+		"files": [
+			"tests/*.js"
 		]
 	},
 	"xo": {
