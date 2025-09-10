@@ -59,6 +59,11 @@ final class iosAppUITests: XCTestCase {
             print("📱 KMP UI search attempt at \(String(format: "%.1f", elapsed))s elapsed...")
             print("🎯 BrowserStack Log: Searching for document '\(expectedTitle)' - attempt \(Int(elapsed) + 1)")
 
+            // FIXME: KMP Compose UI accessibility labels were not working reliably for iOS automation
+            // at the time of implementation. Using generic element detection instead of
+            // accessibility identifiers or labels. Future improvement could investigate
+            // proper accessibility support for Compose Multiplatform iOS targets.
+            
             // For KMP Compose UI, look for LazyColumn items or similar
             // This may need adjustment based on your actual Compose UI structure
             let scrollViews = app.scrollViews
