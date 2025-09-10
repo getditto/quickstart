@@ -3,10 +3,9 @@ tags:
   - "smoke"
   - "task-verification"
   - "ios"
-  - "expo"
 ---
-# Test: Task Visibility Verification (Expo iOS)
-# This flow launches the Expo iOS app and checks if a specific task is visible in the task list
+# Test: Task Visibility Verification
+# This flow launches the app and checks if a specific task is visible in the task list
 # Usage: maestro test -e TASK_TO_FIND="My Task" 01-app-launch-and-seeded-tasks-ios.yaml
 
 - launchApp:
@@ -22,9 +21,9 @@ tags:
 - waitForAnimationToEnd  # Double wait to ensure stability
 
 # Take screenshot for debugging
-- takeScreenshot: expo-ios-before-assertion
+- takeScreenshot: before-assertion
 
 # Check if the specified task is visible in the task list
 # Using a simple assertion that should definitely fail for non-existent tasks
 - assertVisible:
-    text: ${TASK_TO_FIND}
+    text: "${TASK_TO_FIND}"

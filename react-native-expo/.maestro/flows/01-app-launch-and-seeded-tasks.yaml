@@ -2,10 +2,9 @@ appId: com.dittoreactnativesampleapp
 tags:
   - "smoke"
   - "task-verification"
-  - "expo"
 ---
-# Test: Task Visibility Verification (Expo)
-# This flow launches the Expo app and checks if a specific task is visible in the task list
+# Test: Task Visibility Verification
+# This flow launches the app and checks if a specific task is visible in the task list
 # Usage: maestro test -e TASK_TO_FIND="My Task" 01-app-launch-and-seeded-tasks.yaml
 
 - launchApp:
@@ -21,7 +20,7 @@ tags:
 - waitForAnimationToEnd  # Double wait to ensure stability
 
 # Take screenshot for debugging
-- takeScreenshot: expo-before-assertion
+- takeScreenshot: before-assertion
 
 # Check if the specified task is visible in the task list
 # Using a simple assertion that should definitely fail for non-existent tasks
