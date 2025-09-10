@@ -1,13 +1,17 @@
 name: React Native CI
 
 on:
-  push:
-    branches: [ main ]
+  pull_request:
+    branches:
+      - main
+      - 'sdk-*'
     paths: 
       - 'react-native/**'
-  pull_request:
-    branches: [ main ]
-    paths:
+  push:
+    branches:
+      - main
+      - 'sdk-*'
+    paths: 
       - 'react-native/**'
 
 concurrency:
