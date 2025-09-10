@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from 'child_process';
+import {spawn} from 'child_process';
 import chalk from 'chalk';
 
 /**
@@ -13,9 +13,13 @@ async function main() {
 
 		// Get the expected task title from environment
 		const expectedTitle = process.env.GITHUB_TEST_DOC_TITLE;
-		
+
 		if (!expectedTitle || expectedTitle.trim() === '') {
-			console.log(chalk.red('❌ FAIL: Missing GITHUB_TEST_DOC_TITLE environment variable'));
+			console.log(
+				chalk.red(
+					'❌ FAIL: Missing GITHUB_TEST_DOC_TITLE environment variable',
+				),
+			);
 			process.exit(1);
 		}
 
@@ -26,7 +30,7 @@ async function main() {
 		// Spawn the TUI app in a pseudo-terminal
 		const app = spawn('npm', ['start'], {
 			stdio: ['pipe', 'pipe', 'pipe'],
-			env: process.env
+			env: process.env,
 		});
 
 		let output = '';
@@ -40,7 +44,11 @@ async function main() {
 			console.log(chalk.gray(`📺 Checking at ${elapsed}s...`));
 
 			if (elapsed >= maxWaitSeconds) {
-				console.log(chalk.red(`❌ FAIL: Task '${expectedTitle}' not found after ${elapsed}s`));
+				console.log(
+					chalk.red(
+						`❌ FAIL: Task '${expectedTitle}' not found after ${elapsed}s`,
+					),
+				);
 				console.log(chalk.yellow('💡 Output received:'));
 				console.log(chalk.gray(output.slice(0, 500)));
 				clearInterval(checkInterval);
@@ -50,15 +58,19 @@ async function main() {
 		}, 1000);
 
 		// Capture all output from the TUI
-		app.stdout.on('data', (data) => {
+		app.stdout.on('data', data => {
 			const text = data.toString();
 			output += text;
-			
+
 			// Check if we found the task
 			if (!found && text.includes(expectedTitle)) {
 				found = true;
 				const elapsed = Math.floor((Date.now() - startTime) / 1000);
-				console.log(chalk.green(`✅ SUCCESS: Task '${expectedTitle}' found in TUI output`));
+				console.log(
+					chalk.green(
+						`✅ SUCCESS: Task '${expectedTitle}' found in TUI output`,
+					),
+				);
 				console.log(chalk.green(`🎉 PASS: TUI test completed in ${elapsed}s`));
 				clearInterval(checkInterval);
 				app.kill();
@@ -66,27 +78,33 @@ async function main() {
 			}
 		});
 
-		app.stderr.on('data', (data) => {
+		app.stderr.on('data', data => {
 			const text = data.toString();
 			// Ignore Ditto logs and debug output, but still capture relevant TUI output
-			if (!text.includes('ditto') && !text.includes('INFO') && !text.includes('WARN') && !text.includes('node_modules')) {
+			if (
+				!text.includes('ditto') &&
+				!text.includes('INFO') &&
+				!text.includes('WARN') &&
+				!text.includes('node_modules')
+			) {
 				output += text;
 			}
 		});
 
-		app.on('close', (code) => {
+		app.on('close', code => {
 			clearInterval(checkInterval);
 			const elapsed = Math.floor((Date.now() - startTime) / 1000);
-			
+
 			if (found) {
 				console.log(chalk.green(`🎉 PASS: TUI test completed in ${elapsed}s`));
 				process.exit(0);
 			} else {
-				console.log(chalk.red(`❌ FAIL: App exited without finding task (code: ${code})`));
+				console.log(
+					chalk.red(`❌ FAIL: App exited without finding task (code: ${code})`),
+				);
 				process.exit(1);
 			}
 		});
-
 	} catch (error) {
 		console.log(chalk.red(`💥 FAIL: ${error.message}`));
 		process.exit(1);
