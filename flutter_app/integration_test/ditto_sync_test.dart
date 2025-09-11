@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 
 import 'util.dart';
 
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -26,7 +27,7 @@ void main() {
 
       await tester.addTask(testTaskTitle);
 
-      tester.waitUntil(() => tester.isVisible(taskWithName(testTaskTitle)));
+      await tester.waitUntil(() => tester.isVisible(taskWithName(testTaskTitle)));
       await tester.pump(const Duration(seconds: 3));
     },
   );
@@ -72,7 +73,7 @@ void main() {
         arguments: {"doc": task.toJson()},
       );
 
-      tester.waitUntil(() => tester.isVisible(taskWithName(title)));
+      await tester.waitUntil(() => tester.isVisible(taskWithName(title)));
     },
   );
 
@@ -80,22 +81,24 @@ void main() {
     'Documents created via SDK are available via Big Peer',
     (tester) async {
       final title = "flutter_test_sdk_${DateTime.now().millisecondsSinceEpoch}";
-      tester.addTask(title);
+      await tester.addTask(title);
 
       Future<Task> taskExistsOnBigPeer() async {
-        final {"items": [item]} = await bigPeerHttpExecute(
-          "SELECT * FROM tasks WHERE title = $title",
+        final {"items": List items} = await bigPeerHttpExecute(
+          "SELECT * FROM tasks",
         );
 
+        final item = items.singleWhere((json) => json["title"] == title);
         return Task.fromJson(item);
       }
 
       late final Task task;
-      tester.waitUntil(() async {
+      await tester.waitUntil(() async {
         try {
           task = await taskExistsOnBigPeer();
           return true;
-        } catch (_) {
+        } catch (e) {
+          print(e);
           return false;
         }
       });

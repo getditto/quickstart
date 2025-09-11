@@ -10,6 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 
+typedef Json = Map<String, dynamic>;
+
 final syncTile = find.ancestor(
   of: find.text("Sync Active"),
   matching: find.byType(SwitchListTile),
@@ -152,18 +154,10 @@ void testDitto(
         );
         await tester.waitUntil(() => !tester.isVisible(spinner));
         while (tester.allTasks.isNotEmpty) {
-<<<<<<< HEAD
           try {
             await tester.clearList();
           } catch (_) {}
           // the fling finishes at the next event loop cycle which can cause
-||||||| 4097909
-          await tester.clearList();
-          // the fling finishes at the next event loop cycle which can cause 
-=======
-          await tester.clearList();
-          // the fling finishes at the next event loop cycle which can cause
->>>>>>> 8e01b2a03faa0d29da978f1e62a2a23c1a5152d4
           // issues with the old ditto instance closing
           await tester.pump(const Duration(seconds: 1));
         }
@@ -174,16 +168,28 @@ void testDitto(
       },
     );
 
+const cloudUrl = String.fromEnvironment('DITTO_CLOUD_ENDPOINT');
+const apiKey = String.fromEnvironment('DITTO_API_KEY');
+
 Future<Map<String, dynamic>> bigPeerHttpExecute(
   String query, {
   Map<String, dynamic> arguments = const {},
 }) async {
-  const url = String.fromEnvironment("DITTO_CLOUD_ENDPOINT");
-  final uri = Uri.parse("$url/store/execute");
-  final response = await post(uri, body: {
-    "statement": query,
-    "args": arguments,
-  });
+  assert(apiKey.isNotEmpty);
+  assert(cloudUrl.isNotEmpty);
+
+  final uri = Uri.parse("$cloudUrl/api/v4/store/execute");
+  final response = await post(
+    uri,
+    body: jsonEncode({
+      "statement": query,
+      "args": arguments,
+    }),
+    headers: {
+      "Authorization": "Bearer $apiKey",
+      "Content-Type": "application/json",
+    },
+  );
 
   if (response.statusCode != 200) {
     throw "bad HTTP status: ${response.statusCode}";
