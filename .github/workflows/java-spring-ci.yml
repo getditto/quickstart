@@ -115,7 +115,7 @@ jobs:
 
   browserstack-test:
     name: BrowserStack Device Testing
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     needs: build
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
@@ -188,8 +188,8 @@ jobs:
     
     - name: Install BrowserStack Local binary
       run: |
-        wget "https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip"
-        unzip BrowserStackLocal-linux-x64.zip
+        curl -O "https://www.browserstack.com/browserstack-local/BrowserStackLocal-darwin-x64.zip"
+        unzip BrowserStackLocal-darwin-x64.zip
         chmod +x BrowserStackLocal
 
     - name: Start BrowserStack Local tunnel 
