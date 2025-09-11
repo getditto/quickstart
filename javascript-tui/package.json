@@ -11,9 +11,9 @@
 		"start": "npm run build && node dist/cli.js",
 		"build": "babel --out-dir=dist source",
 		"dev": "babel --out-dir=dist --watch source",
-		"test": "npm run test:lint && npm run test:integration",
+		"test": "npm run test:lint && npm run test:e2e",
 		"test:lint": "prettier --check .",
-		"test:integration": "node tests/integration_test.js",
+		"test:e2e": "node tests/e2e_test.js",
 		"format": "prettier --write ."
 	},
 	"files": [

@@ -72,8 +72,8 @@ jobs:
         working-directory: javascript-tui
         run: npm run build
 
-  integration-test:
-    name: Integration Test
+  e2e-test:
+    name: End-to-End Test
     runs-on: ubuntu-latest
     needs: [lint, build]
     timeout-minutes: 10
@@ -134,10 +134,10 @@ jobs:
             exit 1
           fi
       
-      - name: Run integration test
+      - name: Run end-to-end test
         working-directory: javascript-tui
         env:
           GITHUB_TEST_DOC_TITLE: ${{ env.GITHUB_TEST_DOC_TITLE }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
-        run: npm run test:integration
+        run: npm run test:e2e

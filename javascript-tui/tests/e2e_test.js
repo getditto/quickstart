@@ -3,13 +3,13 @@ import {spawn} from 'child_process';
 import chalk from 'chalk';
 
 /**
- * TUI Integration test
+ * TUI End-to-End test
  * Tests the actual TUI app like a customer would use it
- * Usage: GITHUB_TEST_DOC_TITLE="Task Name" node tests/integration_test.js
+ * Usage: GITHUB_TEST_DOC_TITLE="Task Name" node tests/e2e_test.js
  */
 async function main() {
 	try {
-		console.log(chalk.blue('🧪 JavaScript TUI Integration Test'));
+		console.log(chalk.blue('🧪 JavaScript TUI End-to-End Test'));
 
 		// Get the expected task title from environment
 		const expectedTitle = process.env.GITHUB_TEST_DOC_TITLE;
