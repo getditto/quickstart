@@ -235,7 +235,7 @@ const TodoApp = ({ditto}) => {
 					const highlight = selected === i ? 'blue' : '';
 					const cursor = selected === i ? '❯ ' : '  ';
 					return (
-						<Box flexDirection="row">
+						<Box key={task._id || i} flexDirection="row">
 							<Text color={highlight}>
 								<Text>{done} </Text>
 								<Text>

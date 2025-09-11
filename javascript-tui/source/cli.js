@@ -4,10 +4,10 @@ import {render} from 'ink';
 import meow from 'meow';
 import App from './app.js';
 import dotenv from 'dotenv';
-import {Ditto, TransportConfig} from '@dittolive/ditto';
+import {Ditto} from '@dittolive/ditto';
 import {temporaryDirectory} from 'tempy';
 
-const config = dotenv.config({path: '../.env'});
+dotenv.config({path: '../.env'});
 const cli = meow(
 	`
     Usage
@@ -47,8 +47,8 @@ const websocketURL = cli.flags.websocketURL ?? process.env.DITTO_WEBSOCKET_URL;
 const ditto = new Ditto(
 	{
 		type: 'onlinePlayground',
-		appID: appID,
-		token: token,
+		appID,
+		token,
 		customAuthURL: authURL,
 		enableDittoCloudSync: false,
 	},
