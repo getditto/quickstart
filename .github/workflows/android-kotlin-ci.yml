@@ -12,6 +12,11 @@ on:
       - 'android-kotlin/**'
       - '.github/workflows/android-kotlin-ci.yml'
   workflow_dispatch:
+    inputs:
+      websocket_url:
+        description: 'Custom Ditto websocket URL (optional, defaults to secret)'
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -109,7 +114,7 @@ jobs:
         DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
         DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
-        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+        DITTO_WEBSOCKET_URL: ${{ github.event.inputs.websocket_url || secrets.DITTO_WEBSOCKET_URL }}
         TEST_DOCUMENT_TITLE: ${{ steps.test_doc.outputs.test_doc_title }}
       run: ./gradlew assembleDebug assembleDebugAndroidTest
     
@@ -119,7 +124,7 @@ jobs:
         DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
         DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
-        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+        DITTO_WEBSOCKET_URL: ${{ github.event.inputs.websocket_url || secrets.DITTO_WEBSOCKET_URL }}
       run: ./gradlew test
     
     - name: Upload APK artifacts
