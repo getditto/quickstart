@@ -1,7 +1,11 @@
 name: JavaScript TUI CI
 on:
   push:
-    branches: [main, teodorciuraru/sdks-1617-javascript-tui-add-integration-test-support]
+    branches: [main]
+    paths:
+      - 'javascript-tui/**'
+  pull_request:
+    branches: [main]
     paths:
       - 'javascript-tui/**'
   workflow_dispatch:
