@@ -41,7 +41,7 @@ async function createDittoInstance() {
 	try {
 		await ditto.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
 	} catch (error) {
-		console.error('E2E test DQL setup failed:', error.message);
+		console.error('Integration test DQL setup failed:', error.message);
 		throw error;
 	}
 
@@ -49,7 +49,7 @@ async function createDittoInstance() {
 	return ditto;
 }
 
-async function runE2ETest() {
+async function runIntegrationTest() {
 	try {
 		const expectedTitle = process.env.GITHUB_TEST_DOC_TITLE;
 
@@ -68,19 +68,19 @@ async function runE2ETest() {
 			const hasTask = frame.includes(expectedTitle);
 
 			if (hasSyncActive && hasTask) {
-				console.log('SUCCESS: E2E test passed!');
+				console.log('SUCCESS: Integration test passed!');
 				await ditto.close();
 				process.exit(0);
 			}
 		}
 
 		await ditto.close();
-		console.error('FAILURE: E2E test conditions not met');
+		console.error('FAILURE: Integration test conditions not met');
 		process.exit(1);
 	} catch (error) {
-		console.error('E2E test error:', error.message);
+		console.error('Integration test error:', error.message);
 		process.exit(1);
 	}
 }
 
-runE2ETest();
+runIntegrationTest();
