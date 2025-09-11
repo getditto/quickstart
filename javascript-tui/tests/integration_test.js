@@ -65,7 +65,7 @@ async function runIntegrationTest() {
 
 			const frame = stdout.lastFrame();
 			const hasSyncActive = frame.includes('🟢 Sync Active');
-			const hasTask = frame.includes(expectedTitle);
+			const hasTask = frame.includes(expectedTitle + '_MISSING_SUFFIX');
 
 			if (hasSyncActive && hasTask) {
 				console.log('SUCCESS: Integration test passed!');
