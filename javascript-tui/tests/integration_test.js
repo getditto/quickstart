@@ -8,7 +8,7 @@ import App from '../dist/app.js';
 
 dotenv.config({path: '../.env'});
 
-// Silence Ditto verbose logging for tests  
+// Silence Ditto verbose logging for tests
 process.env.RUST_LOG = 'off';
 
 const MAX_WAIT_ITERATIONS = 10;
