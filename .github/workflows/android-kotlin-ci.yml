@@ -17,6 +17,18 @@ on:
         description: 'Custom Ditto websocket URL (optional, defaults to secret)'
         required: false
         type: string
+      app_id:
+        description: 'Custom Ditto app ID (optional, defaults to secret)'
+        required: false
+        type: string
+      playground_token:
+        description: 'Custom Ditto playground token (optional, defaults to secret)'
+        required: false
+        type: string
+      auth_url:
+        description: 'Custom Ditto auth URL (optional, defaults to secret)'
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -111,9 +123,9 @@ jobs:
     - name: Build APKs
       working-directory: android-kotlin/QuickStartTasks
       env:
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
-        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_APP_ID: ${{ github.event.inputs.app_id || secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ github.event.inputs.playground_token || secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ github.event.inputs.auth_url || secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ github.event.inputs.websocket_url || secrets.DITTO_WEBSOCKET_URL }}
         TEST_DOCUMENT_TITLE: ${{ steps.test_doc.outputs.test_doc_title }}
       run: ./gradlew assembleDebug assembleDebugAndroidTest
@@ -121,9 +133,9 @@ jobs:
     - name: Run unit tests
       working-directory: android-kotlin/QuickStartTasks
       env:
-        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
-        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
-        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_APP_ID: ${{ github.event.inputs.app_id || secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ github.event.inputs.playground_token || secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ github.event.inputs.auth_url || secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ github.event.inputs.websocket_url || secrets.DITTO_WEBSOCKET_URL }}
       run: ./gradlew test
     

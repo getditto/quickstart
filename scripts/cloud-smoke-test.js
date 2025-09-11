@@ -3,10 +3,23 @@
 /**
  * Cloud Smoke Test Script
  * 
- * Dispatches all BrowserStack workflows with a custom websocket URL
+ * Dispatches all BrowserStack workflows with custom Ditto configuration
  * and waits for completion, reporting results.
  * 
- * Usage: node scripts/cloud-smoke-test.js <websocket-url>
+ * Usage: node scripts/cloud-smoke-test.js [options]
+ * 
+ * Options:
+ *   --websocket-url <url>     Custom websocket URL (optional, defaults to env var)
+ *   --app-id <id>            Custom app ID (optional, defaults to env var)
+ *   --playground-token <token> Custom playground token (optional, defaults to env var)
+ *   --auth-url <url>         Custom auth URL (optional, defaults to env var)
+ *   --help                   Show this help message
+ * 
+ * Environment variables (used as defaults):
+ *   DITTO_WEBSOCKET_URL      Default websocket URL
+ *   DITTO_APP_ID             Default app ID
+ *   DITTO_PLAYGROUND_TOKEN   Default playground token
+ *   DITTO_AUTH_URL           Default auth URL
  */
 
 const { execSync, spawn } = require('child_process');
@@ -52,27 +65,134 @@ function execCommand(command, options = {}) {
   }
 }
 
-function validateWebsocketUrl(url) {
-  try {
-    const parsed = new URL(url);
-    if (!['ws:', 'wss:'].includes(parsed.protocol)) {
-      throw new Error('URL must use ws:// or wss:// protocol');
+function parseArguments() {
+  const args = process.argv.slice(2);
+  const config = {
+    websocketUrl: process.env.DITTO_WEBSOCKET_URL,
+    appId: process.env.DITTO_APP_ID,
+    playgroundToken: process.env.DITTO_PLAYGROUND_TOKEN,
+    authUrl: process.env.DITTO_AUTH_URL
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '--help' || arg === '-h') {
+      showHelp();
+      process.exit(0);
+    } else if (arg === '--websocket-url') {
+      config.websocketUrl = args[++i];
+    } else if (arg === '--app-id') {
+      config.appId = args[++i];
+    } else if (arg === '--playground-token') {
+      config.playgroundToken = args[++i];
+    } else if (arg === '--auth-url') {
+      config.authUrl = args[++i];
+    } else {
+      log(`❌ Unknown argument: ${arg}`, colors.red);
+      log('Use --help for usage information', colors.yellow);
+      process.exit(1);
     }
-    return true;
-  } catch (error) {
-    log(`❌ Invalid websocket URL: ${error.message}`, colors.red);
-    return false;
   }
+
+  return config;
+}
+
+function showHelp() {
+  console.log(`
+🚭 Ditto Cloud Smoke Test
+
+Dispatches all BrowserStack workflows with custom Ditto configuration
+and waits for completion, reporting results.
+
+Usage: node scripts/cloud-smoke-test.js [options]
+
+Options:
+  --websocket-url <url>     Custom websocket URL (optional, defaults to env var)
+  --app-id <id>            Custom app ID (optional, defaults to env var)
+  --playground-token <token> Custom playground token (optional, defaults to env var)
+  --auth-url <url>         Custom auth URL (optional, defaults to env var)
+  --help, -h               Show this help message
+
+Environment variables (used as defaults):
+  DITTO_WEBSOCKET_URL      Default websocket URL
+  DITTO_APP_ID             Default app ID
+  DITTO_PLAYGROUND_TOKEN   Default playground token
+  DITTO_AUTH_URL           Default auth URL
+
+Examples:
+  # Test with all defaults from environment variables
+  node scripts/cloud-smoke-test.js
+  
+  # Test with custom websocket URL only
+  node scripts/cloud-smoke-test.js --websocket-url wss://test.example.com/ws
+  
+  # Test with custom websocket URL and app ID
+  node scripts/cloud-smoke-test.js --websocket-url wss://test.example.com/ws --app-id my-app-id
+  
+  # Test with all custom values
+  node scripts/cloud-smoke-test.js \\
+    --websocket-url wss://test.example.com/ws \\
+    --app-id my-app-id \\
+    --playground-token my-token \\
+    --auth-url https://auth.example.com
+`);
+}
+
+function validateConfig(config) {
+  // Validate websocket URL format if provided
+  if (config.websocketUrl) {
+    try {
+      const parsed = new URL(config.websocketUrl);
+      if (!['ws:', 'wss:'].includes(parsed.protocol)) {
+        throw new Error('URL must use ws:// or wss:// protocol');
+      }
+    } catch (error) {
+      log(`❌ Invalid websocket URL: ${error.message}`, colors.red);
+      return false;
+    }
+  }
+
+  // Warn about missing values - all are optional now
+  if (!config.websocketUrl) {
+    log('⚠️  No websocket URL specified (using workflow default)', colors.yellow);
+  }
+  if (!config.appId) {
+    log('⚠️  No app ID specified (using workflow default)', colors.yellow);
+  }
+  if (!config.playgroundToken) {
+    log('⚠️  No playground token specified (using workflow default)', colors.yellow);
+  }
+  if (!config.authUrl) {
+    log('⚠️  No auth URL specified (using workflow default)', colors.yellow);
+  }
+
+  return true;
 }
 
 function getCurrentBranch() {
   return execCommand('git branch --show-current', { silent: true });
 }
 
-function dispatchWorkflow(workflow, websocketUrl, branch) {
+function dispatchWorkflow(workflow, config, branch) {
   log(`📤 Dispatching workflow: ${workflow}`, colors.blue);
   
-  const command = `gh workflow run "${workflow}" --ref "${branch}" -f websocket_url="${websocketUrl}"`;
+  let command = `gh workflow run "${workflow}" --ref "${branch}"`;
+  
+  // Add optional parameters if provided
+  if (config.websocketUrl) {
+    command += ` -f websocket_url="${config.websocketUrl}"`;
+  }
+  if (config.appId) {
+    command += ` -f app_id="${config.appId}"`;
+  }
+  if (config.playgroundToken) {
+    command += ` -f playground_token="${config.playgroundToken}"`;
+  }
+  if (config.authUrl) {
+    command += ` -f auth_url="${config.authUrl}"`;
+  }
+  
   execCommand(command, { silent: true });
   
   // Small delay to ensure workflow appears in listing
@@ -138,28 +258,28 @@ function waitForWorkflowCompletion(runIds, maxWaitMinutes = 45) {
 }
 
 function main() {
-  const args = process.argv.slice(2);
-  
-  if (args.length !== 1) {
-    log('Usage: node scripts/cloud-smoke-test.js <websocket-url>', colors.red);
-    log('', colors.reset);
-    log('Example:', colors.yellow);
-    log('  node scripts/cloud-smoke-test.js wss://cloud.ditto.live/ws', colors.yellow);
-    process.exit(1);
-  }
-  
-  const websocketUrl = args[0];
+  const config = parseArguments();
   
   log('🚀 Ditto Cloud Smoke Test', colors.bright);
   log('========================', colors.bright);
   log('');
   
-  // Validate websocket URL
-  if (!validateWebsocketUrl(websocketUrl)) {
+  // Validate configuration
+  if (!validateConfig(config)) {
     process.exit(1);
   }
   
-  log(`📋 Websocket URL: ${websocketUrl}`, colors.magenta);
+  log('📋 Configuration:', colors.magenta);
+  log(`   Websocket URL: ${config.websocketUrl}`, colors.magenta);
+  if (config.appId) {
+    log(`   App ID: ${config.appId}`, colors.magenta);
+  }
+  if (config.playgroundToken) {
+    log(`   Playground Token: ${config.playgroundToken.substring(0, 8)}...`, colors.magenta);
+  }
+  if (config.authUrl) {
+    log(`   Auth URL: ${config.authUrl}`, colors.magenta);
+  }
   
   // Check if gh CLI is available
   try {
@@ -185,7 +305,7 @@ function main() {
     const beforeRuns = execCommand(`gh run list --workflow="${workflow}" --limit=1 --json databaseId`, { silent: true });
     const beforeCount = JSON.parse(beforeRuns).length;
     
-    dispatchWorkflow(workflow, websocketUrl, branch);
+    dispatchWorkflow(workflow, config, branch);
     
     // Find the new run
     let attempts = 0;
