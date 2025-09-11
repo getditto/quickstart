@@ -6,4 +6,5 @@ export default defineConfig({
 	timeout: 60000, // 60 second timeout for full test
 	testDir: 'tests',
 	workers: 1, // Run tests sequentially to avoid conflicts
+	testMatch: '**/*_test.js', // Only run test files, avoid importing source
 });

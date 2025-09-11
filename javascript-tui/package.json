@@ -13,7 +13,7 @@
 		"dev": "babel --out-dir=dist --watch source",
 		"test": "npm run test:lint && npm run test:e2e",
 		"test:lint": "prettier --check .",
-		"test:e2e": "npm run build && npx @microsoft/tui-test",
+		"test:e2e": "npm run build && node tests/e2e_test.js",
 		"format": "prettier --write ."
 	},
 	"files": [
