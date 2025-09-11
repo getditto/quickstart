@@ -195,6 +195,7 @@ jobs:
     - name: Start BrowserStack Local tunnel 
       run: |
         # Use direct key approach like JavaScript CI and our working local setup
+        echo "🚀 Starting BrowserStack Local tunnel with credentials..."
         nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           --verbose 2 \
           --daemon-mode > browserstack-local.log 2>&1 &
@@ -202,15 +203,29 @@ jobs:
         # Wait for tunnel with proper verification
         echo "Starting BrowserStack Local tunnel..."
         TUNNEL_READY=false
-        TIMEOUT=60
+        TIMEOUT=120  # Increase timeout to 2 minutes
         ELAPSED=0
         
         while [ $ELAPSED -lt $TIMEOUT ] && [ "$TUNNEL_READY" = false ]; do
-          if grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
-            echo "✅ BrowserStack Local tunnel established successfully!"
-            TUNNEL_READY=true
+          if [ -f browserstack-local.log ]; then
+            echo "📋 Current tunnel log (last 10 lines):"
+            tail -10 browserstack-local.log
+            
+            if grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
+              echo "✅ BrowserStack Local tunnel established successfully!"
+              TUNNEL_READY=true
+            elif grep -q -i "error\|failed\|unable" browserstack-local.log; then
+              echo "❌ BrowserStack Local tunnel encountered errors"
+              echo "Full tunnel logs:"
+              cat browserstack-local.log
+              exit 1
+            else
+              echo "⏳ Waiting for tunnel... (${ELAPSED}s elapsed)"
+              sleep 10
+              ELAPSED=$((ELAPSED + 10))
+            fi
           else
-            echo "⏳ Waiting for tunnel... (${ELAPSED}s elapsed)"
+            echo "⏳ Waiting for log file... (${ELAPSED}s elapsed)"
             sleep 5
             ELAPSED=$((ELAPSED + 5))
           fi
@@ -218,8 +233,8 @@ jobs:
         
         if [ "$TUNNEL_READY" = false ]; then
           echo "❌ BrowserStack Local tunnel failed to establish within ${TIMEOUT}s"
-          echo "Tunnel logs:"
-          cat browserstack-local.log
+          echo "Full tunnel logs:"
+          cat browserstack-local.log || echo "No log file found"
           exit 1
         fi
         
