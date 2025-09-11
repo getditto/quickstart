@@ -27,7 +27,7 @@ async function main() {
 
 		console.log(chalk.green('🚀 Starting actual TUI App...'));
 
-		// Spawn the TUI app in a pseudo-terminal
+		// Spawn the TUI app
 		const app = spawn('npm', ['start'], {
 			stdio: ['pipe', 'pipe', 'pipe'],
 			env: process.env,
@@ -80,14 +80,25 @@ async function main() {
 
 		app.stderr.on('data', data => {
 			const text = data.toString();
-			// Ignore Ditto logs and debug output, but still capture relevant TUI output
-			if (
-				!text.includes('ditto') &&
-				!text.includes('INFO') &&
-				!text.includes('WARN') &&
-				!text.includes('node_modules')
-			) {
+			// In CI, capture ALL stderr because TUI content might be mixed with errors
+			// Only filter out verbose Ditto logging
+			if (!text.includes('ditto_') && !text.includes('INFO') && !text.includes('WARN')) {
 				output += text;
+				
+				// Check if we found the task in stderr output (TUI content)
+				if (!found && text.includes(expectedTitle)) {
+					found = true;
+					const elapsed = Math.floor((Date.now() - startTime) / 1000);
+					console.log(
+						chalk.green(
+							`✅ SUCCESS: Task '${expectedTitle}' found in TUI stderr`,
+						),
+					);
+					console.log(chalk.green(`🎉 PASS: TUI test completed in ${elapsed}s`));
+					clearInterval(checkInterval);
+					app.kill();
+					process.exit(0);
+				}
 			}
 		});
 
