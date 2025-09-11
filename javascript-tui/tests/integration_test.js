@@ -8,8 +8,8 @@ import App from '../dist/app.js';
 
 dotenv.config({path: '../.env'});
 
-// Silence Ditto verbose logging for tests
-process.env.RUST_LOG = 'error';
+// Silence Ditto verbose logging for tests  
+process.env.RUST_LOG = 'off';
 
 const MAX_WAIT_ITERATIONS = 10;
 const POLL_INTERVAL_MS = 2000;
@@ -65,7 +65,7 @@ async function runIntegrationTest() {
 
 			const frame = stdout.lastFrame();
 			const hasSyncActive = frame.includes('🟢 Sync Active');
-			const hasTask = frame.includes(expectedTitle + '_MISSING_SUFFIX');
+			const hasTask = frame.includes(expectedTitle);
 
 			if (hasSyncActive && hasTask) {
 				console.log('SUCCESS: Integration test passed!');
