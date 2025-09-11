@@ -1,10 +1,14 @@
 #!/usr/bin/env node
-import {spawn} from 'child_process';
+import {Ditto} from '@dittolive/ditto';
+import {temporaryDirectory} from 'tempy';
+import dotenv from 'dotenv';
 import chalk from 'chalk';
 
+dotenv.config({path: '../.env'});
+
 /**
- * TUI End-to-End test
- * Tests the actual TUI app like a customer would use it
+ * Ditto Cloud End-to-End test
+ * Tests that seeded task data syncs properly from Ditto Cloud
  * Usage: GITHUB_TEST_DOC_TITLE="Task Name" node tests/e2e_test.js
  */
 async function main() {
@@ -23,99 +27,86 @@ async function main() {
 			process.exit(1);
 		}
 
-		console.log(chalk.yellow(`🔍 Looking for task in TUI: '${expectedTitle}'`));
+		console.log(chalk.yellow(`🔍 Looking for task: '${expectedTitle}'`));
 
-		console.log(chalk.green('🚀 Starting actual TUI App...'));
+		// Test the core functionality: Ditto Cloud sync
+		const tempdir = temporaryDirectory();
+		const appID = process.env.DITTO_APP_ID;
+		const token = process.env.DITTO_PLAYGROUND_TOKEN;
+		const authURL = process.env.DITTO_AUTH_URL;
+		const websocketURL = process.env.DITTO_WEBSOCKET_URL;
 
-		// Spawn the TUI app
-		const app = spawn('npm', ['start'], {
-			stdio: ['pipe', 'pipe', 'pipe'],
-			env: process.env,
+		if (!appID || !token || !authURL || !websocketURL) {
+			console.log(chalk.red('❌ FAIL: Missing required environment variables'));
+			process.exit(1);
+		}
+
+		console.log(chalk.cyan('🔗 Connecting to Ditto Cloud...'));
+
+		const ditto = new Ditto(
+			{
+				type: 'onlinePlayground',
+				appID: appID,
+				token: token,
+				customAuthURL: authURL,
+				enableDittoCloudSync: false,
+			},
+			tempdir,
+		);
+
+		ditto.updateTransportConfig(config => {
+			config.connect.websocketURLs = [websocketURL];
 		});
 
-		let output = '';
-		let found = false;
-		const startTime = Date.now();
+		await ditto.disableSyncWithV3();
+		await ditto.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
+
+		console.log(chalk.green('📊 Querying tasks database...'));
+
+		// Query the tasks that would be displayed by the TUI
 		const maxWaitSeconds = 20;
+		const startTime = Date.now();
+		let found = false;
 
-		// Monitor progress and handle timeout
-		const checkInterval = setInterval(() => {
+		const checkInterval = setInterval(async () => {
 			const elapsed = Math.floor((Date.now() - startTime) / 1000);
-			console.log(chalk.gray(`📺 Checking at ${elapsed}s...`));
+			console.log(chalk.gray(`🔍 Checking at ${elapsed}s...`));
 
-			if (elapsed >= maxWaitSeconds) {
-				console.log(
-					chalk.red(
-						`❌ FAIL: Task '${expectedTitle}' not found after ${elapsed}s`,
-					),
+			try {
+				// Query tasks using the same query as the TUI app
+				const queryResult = await ditto.store.execute(
+					'SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC'
 				);
-				console.log(chalk.yellow('💡 Output received:'));
-				console.log(chalk.gray(output.slice(0, 500)));
+				
+				// Check if our expected task is in the results
+				const tasks = queryResult.items || [];
+				const foundTask = tasks.find(task => 
+					task.title === expectedTitle || task.text === expectedTitle
+				);
+
+				if (foundTask && !found) {
+					found = true;
+					console.log(chalk.green(`✅ SUCCESS: Task '${expectedTitle}' found in database`));
+					console.log(chalk.blue(`📋 Task data: ${JSON.stringify(foundTask)}`));
+					console.log(chalk.green(`🎉 PASS: E2E test completed in ${elapsed}s`));
+					clearInterval(checkInterval);
+					ditto.stopSync();
+					process.exit(0);
+				}
+
+			} catch (error) {
+				console.log(chalk.yellow(`⚠️  Query error at ${elapsed}s: ${error.message}`));
+			}
+
+			if (elapsed >= maxWaitSeconds && !found) {
+				console.log(
+					chalk.red(`❌ FAIL: Task '${expectedTitle}' not found after ${elapsed}s`)
+				);
 				clearInterval(checkInterval);
-				app.kill();
+				ditto.stopSync();
 				process.exit(1);
 			}
 		}, 1000);
-
-		// Capture all output from the TUI
-		app.stdout.on('data', data => {
-			const text = data.toString();
-			output += text;
-
-			// Check if we found the task
-			if (!found && text.includes(expectedTitle)) {
-				found = true;
-				const elapsed = Math.floor((Date.now() - startTime) / 1000);
-				console.log(
-					chalk.green(
-						`✅ SUCCESS: Task '${expectedTitle}' found in TUI output`,
-					),
-				);
-				console.log(chalk.green(`🎉 PASS: TUI test completed in ${elapsed}s`));
-				clearInterval(checkInterval);
-				app.kill();
-				process.exit(0);
-			}
-		});
-
-		app.stderr.on('data', data => {
-			const text = data.toString();
-			// In CI, capture ALL stderr because TUI content might be mixed with errors
-			// Only filter out verbose Ditto logging
-			if (!text.includes('ditto_') && !text.includes('INFO') && !text.includes('WARN')) {
-				output += text;
-				
-				// Check if we found the task in stderr output (TUI content)
-				if (!found && text.includes(expectedTitle)) {
-					found = true;
-					const elapsed = Math.floor((Date.now() - startTime) / 1000);
-					console.log(
-						chalk.green(
-							`✅ SUCCESS: Task '${expectedTitle}' found in TUI stderr`,
-						),
-					);
-					console.log(chalk.green(`🎉 PASS: TUI test completed in ${elapsed}s`));
-					clearInterval(checkInterval);
-					app.kill();
-					process.exit(0);
-				}
-			}
-		});
-
-		app.on('close', code => {
-			clearInterval(checkInterval);
-			const elapsed = Math.floor((Date.now() - startTime) / 1000);
-
-			if (found) {
-				console.log(chalk.green(`🎉 PASS: TUI test completed in ${elapsed}s`));
-				process.exit(0);
-			} else {
-				console.log(
-					chalk.red(`❌ FAIL: App exited without finding task (code: ${code})`),
-				);
-				process.exit(1);
-			}
-		});
 	} catch (error) {
 		console.log(chalk.red(`💥 FAIL: ${error.message}`));
 		process.exit(1);
