@@ -6,7 +6,6 @@ import {
   Platform,
   View,
   SafeAreaView,
-  Alert,
   FlatList,
   Button,
 } from 'react-native';
@@ -182,18 +181,15 @@ const App = () => {
     }
   };
 
+  const [hasPermissions, setHasPermissions] = useState<boolean>(true);
+
   useEffect(() => {
     (async () => {
       const granted =
         Platform.OS === 'android' ? await requestPermissions() : true;
-      if (granted) {
-        initDitto();
-      } else {
-        Alert.alert(
-          'Permission Denied',
-          'You need to grant all permissions to use this app.',
-        );
-      }
+      
+      setHasPermissions(granted);
+      initDitto();
     })();
   }, []);
 
@@ -215,12 +211,18 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {!hasPermissions && (
+        <View style={styles.permissionBanner}>
+          <Text style={styles.permissionText}>
+            ⚠️ Limited functionality: Grant Bluetooth & WiFi permissions for peer-to-peer sync
+          </Text>
+        </View>
+      )}
       <DittoInfo appId={DITTO_APP_ID} token={DITTO_PLAYGROUND_TOKEN} />
       <DittoSync value={syncEnabled} onChange={toggleSync} />
       <Fab onPress={() => setModalVisible(true)} />
       <NewTaskModal
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
         onSubmit={task => {
           createTask(task);
           setModalVisible(false);
@@ -271,6 +273,20 @@ const styles = StyleSheet.create({
   taskButton: {
     flexShrink: 1,
     alignSelf: 'center',
+  },
+  permissionBanner: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#D97706',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  permissionText: {
+    color: '#92400E',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

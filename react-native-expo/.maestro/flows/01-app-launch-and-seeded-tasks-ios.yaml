@@ -2,34 +2,20 @@ appId: com.anonymous.reactnativeexpo
 tags:
   - "smoke"
   - "task-verification"
-  - "ios"
 ---
 # Test: Task Visibility Verification
 # This flow launches the app and checks if a specific task is visible in the task list
-# Usage: maestro test -e TASK_TO_FIND="My Task" 01-app-launch-and-seeded-tasks-ios.yaml
+# Usage: maestro test -e TASK_TO_FIND="My Task" 01-app-launch-and-seeded-tasks.yaml
 
 - launchApp:
     appId: com.anonymous.reactnativeexpo
 
-# Grant all permissions required by the app
-- grantPermissions:
-    - bluetooth
-    - location
-    - notifications
-
-# Dismiss iOS system permission dialogs (fallback)
+# Handle permission dialogs if they appear
 - runFlow:
     when:
       visible: "Allow"
     commands:
       - tapOn: "Allow"
-
-# Dismiss app's internal permission denied alert
-- runFlow:
-    when:
-      visible: "Permission Denied"
-    commands:
-      - tapOn: "OK"
 
 # Wait for the app to fully load
 - waitForAnimationToEnd
