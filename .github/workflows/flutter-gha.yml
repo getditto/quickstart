@@ -17,6 +17,7 @@ jobs:
           flutter-version: "3.32.8"
       
       - run: |
+          cd flutter_app
           flutter pub get
           flutter test integration_test/ditto_sync_test.dart \
             --dart-define DITTO_APP_ID="$DITTO_API_KEY" \
