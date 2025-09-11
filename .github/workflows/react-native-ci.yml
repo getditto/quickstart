@@ -310,11 +310,10 @@ jobs:
         
         # Copy the specific tests to root level (as per BrowserStack requirements)
         cp .maestro/flows/01-app-launch-and-seeded-tasks.yaml maestro-tests/
-        cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
         
         # Also create flows/ subfolder for organization
         mkdir maestro-tests/flows
-        cp .maestro/flows/*.yaml maestro-tests/flows/
+        cp .maestro/flows/01-app-launch-and-seeded-tasks.yaml maestro-tests/flows/
         
         # Create ZIP with proper structure
         zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
@@ -458,13 +457,12 @@ jobs:
         # Copy main.yaml to root level (required by BrowserStack for no-execute runs)
         cp .maestro/main.yaml maestro-tests/
         
-        # Copy the specific tests to root level (as per BrowserStack requirements)
-        cp .maestro/flows/01-app-launch-and-seeded-tasks.yaml maestro-tests/
+        # Copy only iOS-specific tests to root level (avoid conflicting appIds)
         cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
         
         # Also create flows/ subfolder for organization
         mkdir maestro-tests/flows
-        cp .maestro/flows/*.yaml maestro-tests/flows/
+        cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/flows/
         
         # Create ZIP with proper structure
         zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
