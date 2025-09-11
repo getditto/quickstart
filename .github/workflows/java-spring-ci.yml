@@ -297,8 +297,8 @@ jobs:
       run: |
         TITLE="${{ needs.build.outputs.test_doc_title }}"
         
-        # Run tests with all required system properties for BrowserStack
-        ./gradlew test --tests "*TaskVisibilityIntegrationTest" \
+        # Run only the BrowserStack test method, not all test methods
+        ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
           -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
