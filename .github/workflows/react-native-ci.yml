@@ -219,7 +219,7 @@ jobs:
         TIMESTAMP=$(date +%s)
         INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
         DOC_ID="${INVERTED_TIMESTAMP}_rn_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        DOC_TITLE="Basic Test Task"
+        DOC_TITLE="${INVERTED_TIMESTAMP}_rn_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
         
         echo "📝 Inserting GitHub test document (inverted timestamp for top position)"
         echo "📝 ID: '${DOC_ID}'"
