@@ -282,14 +282,15 @@ jobs:
       run: |
         TITLE="${{ needs.build.outputs.test_doc_title }}"
         
-        # Run tests with simplified BrowserStack setup (like javascript-web)
+        # Run tests with all required system properties for BrowserStack
         ./gradlew test --tests "*TaskVisibilityIntegrationTest" \
           -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
           -DBROWSERSTACK_LOCAL=true \
           -DTEST_TASK_TITLE="$TITLE" \
-          -DGITHUB_TEST_DOC_ID="$TITLE"
+          -DGITHUB_TEST_DOC_ID="$TITLE" \
+          --info
     
     - name: Stop Spring Boot app
       if: always()

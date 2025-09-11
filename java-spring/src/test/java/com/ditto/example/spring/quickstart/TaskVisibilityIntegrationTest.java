@@ -64,11 +64,26 @@ class TaskVisibilityIntegrationTest {
             Map<String, Object> bsOptions = new HashMap<>();
             bsOptions.put("sessionName", "Java Spring Task Visibility Test");
             
+            // Enable BrowserStack Local tunnel
+            String bsLocal = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
+            System.out.println("🔍 BROWSERSTACK_LOCAL system property: " + System.getProperty("BROWSERSTACK_LOCAL"));
+            System.out.println("🔍 BROWSERSTACK_LOCAL environment var: " + System.getenv("BROWSERSTACK_LOCAL"));
+            System.out.println("🔍 Final bsLocal value: " + bsLocal);
+            if ("true".equals(bsLocal)) {
+                bsOptions.put("local", "true");
+                System.out.println("✅ BrowserStack Local tunnel enabled for test");
+            } else {
+                System.out.println("❌ BrowserStack Local tunnel NOT enabled - bsLocal='" + bsLocal + "'");
+            }
+            
             // Set build name from system property if provided
             String buildName = System.getProperty("BROWSERSTACK_BUILD_NAME");
+            System.out.println("🔍 BROWSERSTACK_BUILD_NAME system property: " + buildName);
             if (buildName != null && !buildName.isEmpty()) {
                 bsOptions.put("buildName", buildName);
-                System.out.println("📋 Using BrowserStack build name: " + buildName);
+                System.out.println("✅ Using BrowserStack build name: " + buildName);
+            } else {
+                System.out.println("❌ No BrowserStack build name provided");
             }
             
             options.setCapability("bstack:options", bsOptions);
@@ -318,6 +333,9 @@ class TaskVisibilityIntegrationTest {
         // Wait for the page body to load
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("body")));
         
+        // Enable sync if it's currently disabled
+        enableSyncIfDisabled();
+        
         // Add delay to let tasks load from Ditto
         System.out.println("⏳ Waiting for Ditto tasks to load...");
         try {
@@ -403,6 +421,39 @@ class TaskVisibilityIntegrationTest {
         }
     }
 
+    private void enableSyncIfDisabled() {
+        try {
+            // Look for sync state text to determine current state
+            List<WebElement> syncStateElements = driver.findElements(By.xpath("//*[contains(text(), 'Sync State:')]"));
+            if (!syncStateElements.isEmpty()) {
+                String syncText = syncStateElements.get(0).getText();
+                System.out.println("🔍 Current sync state: " + syncText);
+                
+                if (syncText.contains("Sync State: false")) {
+                    System.out.println("🔄 Sync is disabled, clicking Toggle button...");
+                    
+                    // Find and click the Toggle button
+                    WebElement toggleButton = wait.until(ExpectedConditions.elementToBeClickable(
+                        By.xpath("//button[contains(text(), 'Toggle')]")));
+                    toggleButton.click();
+                    
+                    System.out.println("✅ Toggle button clicked, sync should now be enabled");
+                    
+                    // Wait a moment for the state to update
+                    Thread.sleep(2000);
+                    
+                    // Verify sync is now enabled
+                    String newSyncText = syncStateElements.get(0).getText();
+                    System.out.println("🔍 Updated sync state: " + newSyncText);
+                    
+                } else {
+                    System.out.println("✅ Sync is already enabled");
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ Could not check/enable sync state: " + e.getMessage());
+        }
+    }
 
     @AfterAll
     static void tearDown() {
