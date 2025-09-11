@@ -143,4 +143,4 @@ jobs:
           GITHUB_TEST_DOC_TITLE: ${{ env.GITHUB_TEST_DOC_TITLE }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
-        run: npm run test:integration
+        run: npm run build && node tests/integration_test.js
