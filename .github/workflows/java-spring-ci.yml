@@ -243,9 +243,9 @@ jobs:
     - name: Configure BrowserStack test config
       working-directory: java-spring
       run: |
-        # Update browserstack.yml with actual credentials
-        sed -i "s/\${BROWSERSTACK_USERNAME}/${{ secrets.BROWSERSTACK_USERNAME }}/g" browserstack.yml
-        sed -i "s/\${BROWSERSTACK_ACCESS_KEY}/${{ secrets.BROWSERSTACK_ACCESS_KEY }}/g" browserstack.yml
+        # Update browserstack.yml with actual credentials (macOS sed requires backup extension)
+        sed -i '' "s/\${BROWSERSTACK_USERNAME}/${{ secrets.BROWSERSTACK_USERNAME }}/g" browserstack.yml
+        sed -i '' "s/\${BROWSERSTACK_ACCESS_KEY}/${{ secrets.BROWSERSTACK_ACCESS_KEY }}/g" browserstack.yml
         
         echo "📋 BrowserStack config updated with credentials"
         cat browserstack.yml
