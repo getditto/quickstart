@@ -99,6 +99,9 @@ jobs:
       - name: Insert test document into Ditto Cloud
         run: |
           TIMESTAMP=$(date +%s)
+          # Invert the timestamp to allow reverse-chronological sorting of documents by ID.
+          # 9999999999 is chosen as a far-future Unix timestamp (Sat Nov 20 2286 17:46:39 UTC),
+          # ensuring all current timestamps are less than this value.
           INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
           DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
           DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
