@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit;
  * 
  * Supports both local Chrome testing and BrowserStack remote testing.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE) // Don't start embedded server for BrowserStack tests
-@ActiveProfiles("test")
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+// Note: Removed @SpringBootTest to avoid DittoService initialization issues in CI
+// This test uses external Spring Boot app running on localhost:8080
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class) 
 class TaskVisibilityIntegrationTest {
 
     private static WebDriver driver;
