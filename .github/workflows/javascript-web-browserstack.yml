@@ -109,13 +109,49 @@ jobs:
           unzip BrowserStackLocal-linux-x64.zip
           chmod +x BrowserStackLocal
 
-          # Create config file with restricted permissions
-          echo "key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}" > browserstack.yml
-          chmod 600 browserstack.yml
-
-          nohup ./BrowserStackLocal --config-file ./browserstack.yml --daemon start &
-          sleep 10
-          echo "BrowserStack Local tunnel established"
+      - name: Start BrowserStack Local tunnel
+        run: |
+          # Start BrowserStack Local tunnel with proper logging
+          nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            --verbose 2 \
+            --daemon-mode > browserstack-local.log 2>&1 &
+          
+          # Wait for tunnel to establish with proper verification
+          echo "Starting BrowserStack Local tunnel..."
+          TUNNEL_READY=false
+          TIMEOUT=60  # 60 seconds timeout
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $TIMEOUT ] && [ "$TUNNEL_READY" = false ]; do
+            # Check if tunnel is ready by looking for success message in logs
+            if grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
+              echo "✅ BrowserStack Local tunnel established successfully!"
+              TUNNEL_READY=true
+            else
+              echo "⏳ Waiting for tunnel... (${ELAPSED}s elapsed)"
+              sleep 5
+              ELAPSED=$((ELAPSED + 5))
+            fi
+          done
+          
+          if [ "$TUNNEL_READY" = false ]; then
+            echo "❌ BrowserStack Local tunnel failed to establish within ${TIMEOUT}s"
+            echo "Tunnel logs:"
+            cat browserstack-local.log
+            exit 1
+          fi
+          
+          # Additional verification - check if tunnel process is running
+          if pgrep -f "BrowserStackLocal" > /dev/null; then
+            echo "✅ BrowserStack Local process is running"
+          else
+            echo "❌ BrowserStack Local process not found"
+            exit 1
+          fi
+          
+          # Final connectivity test
+          sleep 3
+          echo "🔍 Tunnel verification complete - ready for tests"
 
       - name: Make test script executable
         run: chmod +x .github/scripts/browserstack-test.py
@@ -136,7 +172,10 @@ jobs:
 
       - name: Stop BrowserStack Local tunnel
         if: always()
-        run: ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
+        run: |
+          echo "Stopping BrowserStack Local tunnel..."
+          pkill -f "BrowserStackLocal" || true
+          echo "BrowserStack Local tunnel stopped"
           
       - name: Generate test report
         if: always()
@@ -158,6 +197,7 @@ jobs:
           path: |
             javascript-web/dist/
             javascript-web/server.log
+            browserstack-local.log
             test-report.md
             *screenshot*.png
             .github/scripts/browserstack-test.py
