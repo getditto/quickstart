@@ -269,22 +269,18 @@ jobs:
           sleep 2
         done
     
-    - name: Create test task for visibility testing
+    - name: Wait for Ditto sync to complete
       run: |
         TITLE="${{ needs.build.outputs.test_doc_title }}"
-        echo "Creating test task: $TITLE"
+        echo "Waiting for Ditto to sync test document: $TITLE"
         
-        # Create the test task via API
-        curl -X POST "http://localhost:8080/tasks" \
-          -H "Content-Type: application/x-www-form-urlencoded" \
-          -d "title=$TITLE" || true
+        # Wait for the app to sync the document from Ditto Cloud
+        echo "Giving Ditto time to sync the document from cloud..."
+        sleep 10
         
-        # Wait a moment for task to sync
-        sleep 2
-        
-        # Verify task was created
-        echo "Verifying test task exists..."
-        curl -s http://localhost:8080 | grep -q "$TITLE" && echo "✓ Test task found" || echo "⚠ Test task not found"
+        # Verify task appears in the UI (synced from Ditto Cloud)
+        echo "Checking if test task synced to the app..."
+        curl -s http://localhost:8080 | grep -q "$TITLE" && echo "✓ Test task synced from Ditto Cloud" || echo "⚠ Test task not yet synced (may take longer)"
     
     - name: Execute Selenium tests on BrowserStack cloud browsers  
       working-directory: java-spring
