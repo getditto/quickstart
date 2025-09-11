@@ -12,7 +12,7 @@ data class MainScreenState(
             appId = "",
             appToken = "",
             isLoading = true,
-            isSyncEnabled = false,
+            isSyncEnabled = true,
             errorMessage = null,
         )
     }

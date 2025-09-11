@@ -25,7 +25,7 @@ import com.ditto.quickstart.data.dto.UpdateTaskTitleDto
 import com.ditto.quickstart.ditto.DittoManager
 
 private const val QUERY_SELECT_TASKS = """
-SELECT * FROM tasks WHERE NOT deleted ORDER BY _id
+SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC
 """
 
 private const val QUERY_SELECT_TASK = """
@@ -137,8 +137,9 @@ class DittoTaskRepository(
         scope.launch {
             observer
                 .map { result -> result.items.map { item -> item.toTask() } }
-                .collect {
-                    tasksMutableStateFlow.value = it
+                .collect { tasks ->
+                    // Use database ordering (ORDER BY title ASC) - no client-side sorting needed
+                    tasksMutableStateFlow.value = tasks
                 }
         }
     }

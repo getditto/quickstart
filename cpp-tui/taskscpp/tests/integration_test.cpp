@@ -30,10 +30,10 @@ int main() {
         cout << "C++ GitHub Seeded Document Test" << endl;
         
         // Get the exact document title that GitHub Actions seeded
-        const char* expected_title_env = getenv("GITHUB_TEST_DOC_TITLE");
+        const auto expected_title_env = getenv("GITHUB_TEST_DOC_TITLE");
         if (!expected_title_env || string(expected_title_env).empty()) {
             cout << "FAIL: Missing GITHUB_TEST_DOC_TITLE environment variable" << endl;
-            return 1;
+            std::exit(EXIT_FAILURE);
         }
         
         string expected_title = string(expected_title_env);
@@ -54,9 +54,9 @@ int main() {
         cout << "Sync started, polling for document..." << endl;
         
         // Wait for sync and search for the exact document
-        const int max_wait_seconds = 30;
-        const int poll_interval_ms = 1000;
-        bool found = false;
+        const auto max_wait_seconds = 30;
+        const auto poll_interval_ms = 1000;
+        auto found = false;
         
         auto start_time = high_resolution_clock::now();
         
@@ -87,11 +87,11 @@ int main() {
             return 0;
         } else {
             cout << "FAIL: Document '" << expected_title << "' not found after " << final_elapsed << "s" << endl;
-            return 1;
+            std::exit(EXIT_FAILURE);
         }
         
     } catch (const exception& e) {
         cout << "FAIL: Test exception: " << e.what() << endl;
-        return 1;
+        std::exit(EXIT_FAILURE);
     }
 }

@@ -102,7 +102,6 @@ jobs:
         working-directory: javascript-tui
         run: npm run test
 
-
   kotlin-multiplatform:
     name: Kotlin Multiplatform (ubuntu-24.04)
     runs-on: ubuntu-24.04
