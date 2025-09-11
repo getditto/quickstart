@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Visual browser integration test for Task visibility using Selenium WebDriver.
@@ -311,8 +312,10 @@ class TaskVisibilityIntegrationTest {
 
     @Test
     @Order(4)
+    @Timeout(value = 10, unit = TimeUnit.MINUTES)  // Increase timeout for CI
     void shouldPassWithExistingTask() {
         System.out.println("🧪 Test 4: Should pass when finding existing task...");
+        System.out.println("🔍 DEBUG: Test method started, about to get task title...");
         
         // Prefer CI-provided title/ID; fall back to known local sample
         String envTitle = firstNonEmpty(
@@ -323,6 +326,7 @@ class TaskVisibilityIntegrationTest {
         );
         String searchText = envTitle != null ? envTitle : "Task 1 - a2218d97";  // fallback for local dev
         System.out.println("🔍 Searching for existing task: " + searchText + (envTitle != null ? " (from CI/env)" : " (fallback)"));
+        System.out.println("🔍 DEBUG: About to call driver.get() with URL: " + baseUrl);
         
         driver.get(baseUrl);
         System.out.println("📍 Browser opened at: " + baseUrl);
