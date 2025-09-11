@@ -5,13 +5,13 @@ on:
     branches:
       - main
       - 'sdk-*'
-    paths: 
+    paths:
       - 'react-native/**'
   push:
     branches:
       - main
       - 'sdk-*'
-    paths: 
+    paths:
       - 'react-native/**'
 
 concurrency:
@@ -23,21 +23,21 @@ jobs:
     name: Lint (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
         cache-dependency-path: react-native/yarn.lock
-    
+
     - name: Install dependencies
       working-directory: react-native
       run: yarn install --frozen-lockfile
-    
+
     - name: Run linting
       working-directory: react-native
       run: yarn lint
@@ -47,30 +47,30 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 30
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
         cache-dependency-path: react-native/yarn.lock
-    
+
     - name: Install dependencies
       working-directory: react-native
       run: yarn install --frozen-lockfile
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-    
+
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
-    
+
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
@@ -81,7 +81,7 @@ jobs:
         key: gradle-${{ runner.os }}-${{ hashFiles('react-native/android/gradle/wrapper/gradle-wrapper.properties', 'react-native/android/**/*.gradle*') }}
         restore-keys: |
           gradle-${{ runner.os }}-
-    
+
     - name: Build Android
       working-directory: react-native
       run: yarn build:android
@@ -91,21 +91,21 @@ jobs:
     runs-on: macos-latest
     needs: lint
     timeout-minutes: 30
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
         cache-dependency-path: react-native/yarn.lock
-    
+
     - name: Install dependencies
       working-directory: react-native
       run: yarn install --frozen-lockfile
-    
+
     - name: Cache CocoaPods dependencies
       uses: actions/cache@v4
       with:
@@ -116,16 +116,16 @@ jobs:
         key: cocoapods-${{ runner.os }}-${{ hashFiles('react-native/ios/Podfile.lock') }}
         restore-keys: |
           cocoapods-${{ runner.os }}-
-    
+
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '16.4'
-    
+
     - name: Install Ruby gems
       working-directory: react-native
       run: bundle install
-    
+
     - name: Install CocoaPods
       working-directory: react-native/ios
       run: bundle exec pod install
@@ -139,30 +139,30 @@ jobs:
     runs-on: macos-latest
     needs: lint
     timeout-minutes: 30
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
         cache-dependency-path: react-native/yarn.lock
-    
+
     - name: Install dependencies
       working-directory: react-native
       run: yarn install --frozen-lockfile
-    
+
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '16.4'
-    
+
     - name: Install Ruby gems
       working-directory: react-native
       run: bundle install
-    
+
     - name: Install CocoaPods for macOS
       working-directory: react-native/macos
       run: bundle exec pod install

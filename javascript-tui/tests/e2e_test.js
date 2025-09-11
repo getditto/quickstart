@@ -1,109 +1,91 @@
 #!/usr/bin/env node
-import {spawn} from 'child_process';
+import React from 'react';
+import {render} from 'ink-testing-library';
 import dotenv from 'dotenv';
-import chalk from 'chalk';
+import {Ditto} from '@dittolive/ditto';
+import {temporaryDirectory} from 'tempy';
+import App from '../dist/app.js';
 
 dotenv.config({path: '../.env'});
 
-/**
- * TUI End-to-End test using process spawning
- * Tests the actual TUI app by spawning the CLI and capturing output
- * Usage: GITHUB_TEST_DOC_TITLE="Task Name" node tests/e2e_test.js
- */
 
-// Get the expected task title from environment
-const expectedTitle = process.env.GITHUB_TEST_DOC_TITLE;
+async function createDittoInstance() {
+	const tempdir = temporaryDirectory();
+	const appID = process.env.DITTO_APP_ID;
+	const token = process.env.DITTO_PLAYGROUND_TOKEN;
+	const authURL = process.env.DITTO_AUTH_URL;
+	const websocketURL = process.env.DITTO_WEBSOCKET_URL;
 
-if (!expectedTitle || expectedTitle.trim() === '') {
-	console.error(
-		chalk.red('❌ Missing GITHUB_TEST_DOC_TITLE environment variable'),
+	const ditto = new Ditto(
+		{
+			type: 'onlinePlayground',
+			appID,
+			token,
+			customAuthURL: authURL,
+			enableDittoCloudSync: false,
+		},
+		tempdir,
 	);
-	process.exit(1);
+
+	ditto.updateTransportConfig(config => {
+		config.connect.websocketURLs = [websocketURL];
+	});
+
+	await ditto.disableSyncWithV3();
+
+	try {
+		await ditto.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
+	} catch (error) {
+		console.log('DQL strict mode setup:', error.message);
+	}
+	
+	ditto.startSync();
+	return ditto;
 }
 
-console.log(chalk.blue(`🧪 Testing TUI for task: '${expectedTitle}'`));
+async function runE2ETest() {
+	try {
+		const expectedTitle = process.env.GITHUB_TEST_DOC_TITLE;
 
-// Start the TUI process
-const tui = spawn('node', ['dist/cli.js'], {
-	env: process.env,
-	stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
-});
+		if (!expectedTitle || expectedTitle.trim() === '') {
+			throw new Error('Missing GITHUB_TEST_DOC_TITLE environment variable');
+		}
 
-let output = '';
-let foundSyncActive = false;
-let foundTask = false;
+		const ditto = await createDittoInstance();
+		const {stdout} = render(React.createElement(App, {ditto}));
 
-// Capture and process stdout
-tui.stdout.on('data', data => {
-	const text = data.toString();
-	output += text;
+	for (let i = 1; i <= 10; i++) {
+			await new Promise(resolve => setTimeout(resolve, 2000));
+			
+			const frame = stdout.lastFrame();
+			const hasSyncActive = frame.includes('🟢 Sync Active');
+			const hasTask = frame.includes(expectedTitle);
+			
+			if (hasSyncActive && hasTask) {
+				console.log('SUCCESS: E2E test passed!');
+				await ditto.close();
+				process.exit(0);
+			}
+		}
 
-	// Check for sync indicator
-	if (text.includes('🟢 Sync Active')) {
-		foundSyncActive = true;
-		console.log(chalk.green('✅ Found sync indicator: 🟢 Sync Active'));
-	}
-
-	// Check for our test task
-	if (text.includes(expectedTitle)) {
-		foundTask = true;
-		console.log(chalk.green(`✅ Found test task: '${expectedTitle}'`));
-	}
-});
-
-// Capture stderr for debugging
-tui.stderr.on('data', data => {
-	const text = data.toString();
-	console.log(chalk.gray('stderr:', text.slice(0, 200)));
-});
-
-// Handle process exit
-tui.on('exit', code => {
-	console.log(chalk.yellow(`TUI process exited with code: ${code}`));
-});
-
-// Run test for maximum 45 seconds
-const timeout = setTimeout(() => {
-	console.log(chalk.yellow('⏰ Test timeout reached, terminating TUI'));
-	tui.kill('SIGTERM');
-
-	// Give results after timeout
-	setTimeout(() => {
-		console.log(chalk.blue('\n📊 Test Results:'));
-		console.log(
-			`   Sync Active Found: ${
-				foundSyncActive ? chalk.green('✅') : chalk.red('❌')
-			}`,
-		);
-		console.log(
-			`   Task Found: ${foundTask ? chalk.green('✅') : chalk.red('❌')}`,
-		);
-
-		if (foundSyncActive && foundTask) {
-			console.log(chalk.green('\n🎉 SUCCESS: All checks passed!'));
+	const finalFrame = stdout.lastFrame();
+		const hasSyncActive = finalFrame.includes('🟢 Sync Active');
+		const hasTask = finalFrame.includes(expectedTitle);
+		
+		await ditto.close();
+		
+		if (hasSyncActive && hasTask) {
+			console.log('SUCCESS: All E2E checks passed!');
 			process.exit(0);
 		} else {
-			console.log(chalk.red('\n💥 FAILURE: Test conditions not met'));
-			console.log(chalk.gray('Last 500 chars of output:'));
-			console.log(chalk.gray(output.slice(-500)));
+			console.log('FAILURE: E2E test conditions not met');
 			process.exit(1);
 		}
-	}, 1000);
-}, 45000);
 
-// Check periodically if we found both conditions
-const checkInterval = setInterval(() => {
-	if (foundSyncActive && foundTask) {
-		console.log(chalk.green('\n🎉 SUCCESS: Both conditions met!'));
-		clearTimeout(timeout);
-		clearInterval(checkInterval);
-		tui.kill('SIGTERM');
-
-		setTimeout(() => {
-			console.log(chalk.blue('📊 Test Results:'));
-			console.log(`   Sync Active Found: ${chalk.green('✅')}`);
-			console.log(`   Task Found: ${chalk.green('✅')}`);
-			process.exit(0);
-		}, 1000);
+	} catch (error) {
+		console.error('E2E test error:', error.message);
+		process.exit(1);
 	}
-}, 2000);
+}
+
+runE2ETest();
