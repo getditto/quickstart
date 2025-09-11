@@ -10,3 +10,31 @@
 build/
 captures
 local.properties
+
+# iOS specific ignores
+iosApp/**/DerivedData/
+iosApp/**/build/
+**/DerivedData/
+
+# Xcode
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Build products  
+Debug-iphonesimulator/
+Debug-iphoneos/
+Release-iphonesimulator/
+Release-iphoneos/
