@@ -150,7 +150,7 @@ jobs:
       - name: Build and run integration test
         working-directory: rust-tui
         env:
-          TASK_TO_FIND: ${{ env.GITHUB_TEST_DOC_TITLE }}_nonexistent
+          TASK_TO_FIND: ${{ env.GITHUB_TEST_DOC_TITLE }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
