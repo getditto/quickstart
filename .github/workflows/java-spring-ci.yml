@@ -192,13 +192,38 @@ jobs:
         unzip BrowserStackLocal-linux-x64.zip
         chmod +x BrowserStackLocal
 
-        # Create minimal BrowserStack Local config
-        echo "key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}" > bs-local.yml
-        chmod 600 bs-local.yml
-
-        nohup ./BrowserStackLocal --config-file ./bs-local.yml --daemon start &
-        sleep 10
-        echo "BrowserStack Local tunnel established"
+    - name: Start BrowserStack Local tunnel 
+      run: |
+        # Use direct key approach like JavaScript CI and our working local setup
+        nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          --verbose 2 \
+          --daemon-mode > browserstack-local.log 2>&1 &
+        
+        # Wait for tunnel with proper verification
+        echo "Starting BrowserStack Local tunnel..."
+        TUNNEL_READY=false
+        TIMEOUT=60
+        ELAPSED=0
+        
+        while [ $ELAPSED -lt $TIMEOUT ] && [ "$TUNNEL_READY" = false ]; do
+          if grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
+            echo "✅ BrowserStack Local tunnel established successfully!"
+            TUNNEL_READY=true
+          else
+            echo "⏳ Waiting for tunnel... (${ELAPSED}s elapsed)"
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+          fi
+        done
+        
+        if [ "$TUNNEL_READY" = false ]; then
+          echo "❌ BrowserStack Local tunnel failed to establish within ${TIMEOUT}s"
+          echo "Tunnel logs:"
+          cat browserstack-local.log
+          exit 1
+        fi
+        
+        echo "🔍 Tunnel verification complete - ready for tests"
     
     - name: Configure BrowserStack test config
       working-directory: java-spring
@@ -279,7 +304,10 @@ jobs:
     
     - name: Stop BrowserStack Local tunnel
       if: always()
-      run: ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
+      run: |
+        echo "Stopping BrowserStack Local tunnel..."
+        pkill -f "BrowserStackLocal" || true
+        echo "BrowserStack Local tunnel stopped"
     
     - name: Upload test reports
       if: always()
@@ -294,7 +322,9 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: spring-boot-logs-${{ github.run_number }}
-        path: java-spring/app.log
+        path: |
+          java-spring/app.log
+          browserstack-local.log
         retention-days: 1
 
 
