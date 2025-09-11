@@ -8,7 +8,6 @@ import App from '../dist/app.js';
 
 dotenv.config({path: '../.env'});
 
-
 async function createDittoInstance() {
 	const tempdir = temporaryDirectory();
 	const appID = process.env.DITTO_APP_ID;
@@ -38,7 +37,7 @@ async function createDittoInstance() {
 	} catch (error) {
 		console.log('DQL strict mode setup:', error.message);
 	}
-	
+
 	ditto.startSync();
 	return ditto;
 }
@@ -54,13 +53,13 @@ async function runE2ETest() {
 		const ditto = await createDittoInstance();
 		const {stdout} = render(React.createElement(App, {ditto}));
 
-	for (let i = 1; i <= 10; i++) {
+		for (let i = 1; i <= 10; i++) {
 			await new Promise(resolve => setTimeout(resolve, 2000));
-			
+
 			const frame = stdout.lastFrame();
 			const hasSyncActive = frame.includes('🟢 Sync Active');
 			const hasTask = frame.includes(expectedTitle);
-			
+
 			if (hasSyncActive && hasTask) {
 				console.log('SUCCESS: E2E test passed!');
 				await ditto.close();
@@ -68,12 +67,12 @@ async function runE2ETest() {
 			}
 		}
 
-	const finalFrame = stdout.lastFrame();
+		const finalFrame = stdout.lastFrame();
 		const hasSyncActive = finalFrame.includes('🟢 Sync Active');
 		const hasTask = finalFrame.includes(expectedTitle);
-		
+
 		await ditto.close();
-		
+
 		if (hasSyncActive && hasTask) {
 			console.log('SUCCESS: All E2E checks passed!');
 			process.exit(0);
@@ -81,7 +80,6 @@ async function runE2ETest() {
 			console.log('FAILURE: E2E test conditions not met');
 			process.exit(1);
 		}
-
 	} catch (error) {
 		console.error('E2E test error:', error.message);
 		process.exit(1);
