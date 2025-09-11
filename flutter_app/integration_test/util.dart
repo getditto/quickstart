@@ -152,8 +152,10 @@ void testDitto(
         );
         await tester.waitUntil(() => !tester.isVisible(spinner));
         while (tester.allTasks.isNotEmpty) {
-          await tester.clearList();
-          // the fling finishes at the next event loop cycle which can cause 
+          try {
+            await tester.clearList();
+          } catch (_) {}
+          // the fling finishes at the next event loop cycle which can cause
           // issues with the old ditto instance closing
           await tester.pump(const Duration(seconds: 1));
         }
