@@ -1,8 +1,0 @@
-npm error code ENOENT
-npm error syscall open
-npm error path /Users/teodorc/Projects/worktrees/teodorciuraru/sdks-1617-javascript-tui-add-integration-test-support/package.json
-npm error errno -2
-npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/Users/teodorc/Projects/worktrees/teodorciuraru/sdks-1617-javascript-tui-add-integration-test-support/package.json'
-npm error enoent This is related to npm not being able to find a file.
-npm error enoent
-npm error A complete log of this run can be found in: /Users/teodorc/.npm/_logs/2025-09-11T14_36_09_937Z-debug-0.log
