@@ -152,10 +152,18 @@ void testDitto(
         );
         await tester.waitUntil(() => !tester.isVisible(spinner));
         while (tester.allTasks.isNotEmpty) {
+<<<<<<< HEAD
           try {
             await tester.clearList();
           } catch (_) {}
           // the fling finishes at the next event loop cycle which can cause
+||||||| 4097909
+          await tester.clearList();
+          // the fling finishes at the next event loop cycle which can cause 
+=======
+          await tester.clearList();
+          // the fling finishes at the next event loop cycle which can cause
+>>>>>>> 8e01b2a03faa0d29da978f1e62a2a23c1a5152d4
           // issues with the old ditto instance closing
           await tester.pump(const Duration(seconds: 1));
         }
@@ -166,12 +174,15 @@ void testDitto(
       },
     );
 
-Future<Map<String, dynamic>> httpExecute(String query) async {
+Future<Map<String, dynamic>> bigPeerHttpExecute(
+  String query, {
+  Map<String, dynamic> arguments = const {},
+}) async {
   const url = String.fromEnvironment("DITTO_CLOUD_ENDPOINT");
   final uri = Uri.parse("$url/store/execute");
   final response = await post(uri, body: {
     "statement": query,
-    "args": {},
+    "args": arguments,
   });
 
   if (response.statusCode != 200) {

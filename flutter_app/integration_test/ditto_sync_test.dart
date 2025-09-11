@@ -1,3 +1,4 @@
+import 'package:flutter_quickstart/task.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -61,46 +62,45 @@ void main() {
   );
 
   testDitto(
-    'GitHub CI test document sync verification',
-    skip: !const bool.hasEnvironment('GITHUB_TEST_DOC_ID'),
+    'Documents created via Big Peer are available on SDK',
     (tester) async {
-      // Check for GitHub test document if running in CI
-      const githubDocId = String.fromEnvironment('GITHUB_TEST_DOC_ID');
-      final parts = githubDocId.split('_');
-      // Expected format: 'github_test_RUNID_RUNNUMBER' where index 2 contains RUNID
-      final runIdPart = parts.length > 2 ? parts[2] : githubDocId;
+      final title = "flutter_test_bp_${DateTime.now().millisecondsSinceEpoch}";
+      final task = Task(title: title, done: false, deleted: false);
 
-      try {
-        tester.waitUntil(() => tester.isVisible(taskWithName(runIdPart)));
-      } catch (_) {
-        // GitHub test document not found - this may indicate sync issues
-        // Don't fail the test in case it's a timing issue
-      }
+      await bigPeerHttpExecute(
+        "INSERT INTO tasks DOCUMENTS (:doc)",
+        arguments: {"doc": task.toJson()},
+      );
+
+      tester.waitUntil(() => tester.isVisible(taskWithName(title)));
     },
   );
 
   testDitto(
-    'Multiple tasks cloud sync stress test',
+    'Documents created via SDK are available via Big Peer',
     (tester) async {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      const taskCount = 3;
+      final title = "flutter_test_sdk_${DateTime.now().millisecondsSinceEpoch}";
+      tester.addTask(title);
 
-      final taskNames =
-          List.generate(taskCount, (i) => "Stress Test Task $timestamp $i");
+      Future<Task> taskExistsOnBigPeer() async {
+        final {"items": [item]} = await bigPeerHttpExecute(
+          "SELECT * FROM tasks WHERE title = $title",
+        );
 
-      // Create multiple tasks rapidly
-      for (final taskTitle in taskNames) {
-        await tester.addTask(taskTitle);
-        await tester.waitUntil(() => tester.isVisible(openAddDialogButton));
+        return Task.fromJson(item);
       }
 
-      await tester.waitUntil(
-        () => taskNames.every((name) => tester.isVisible(taskWithName(name))),
-      );
+      late final Task task;
+      tester.waitUntil(() async {
+        try {
+          task = await taskExistsOnBigPeer();
+          return true;
+        } catch (_) {
+          return false;
+        }
+      });
 
-      for (final name in taskNames) {
-        expect(taskWithName(name), findsOneWidget);
-      }
+      expect(task.title, equals(title));
     },
   );
 }
