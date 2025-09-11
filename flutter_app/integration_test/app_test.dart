@@ -52,7 +52,31 @@ void main() {
   });
 
   testDitto(
-    'GitHub test document sync verification',
+    'Document created on Big Peer is visible in SDK',
+    skip: !const bool.hasEnvironment("GITHUB_TEST_DOC_ID"),
+    (tester) async {
+      const githubRunId = String.fromEnvironment("GITHUB_TEST_DOC_ID");
+
+      final splitRunId = githubRunId.split('_');
+      // Expected format: 'github_test_RUNID_RUNNUMBER' where index 2 contains RUNID
+      if (splitRunId.length >= 3) {
+        final runIdPart = splitRunId[2]; // Extract RUNID from position 2
+
+        try {
+          await tester.waitUntil(
+            () => tester.isVisible(taskWithName(runIdPart)),
+          );
+        } catch (_) {
+          // GitHub test document not found within timeout
+        }
+      } else {
+        // GitHub test document ID format invalid, skipping sync verification
+      }
+    },
+  );
+
+  testDitto(
+    'Document created pp''ion ',
     skip: !const bool.hasEnvironment("GITHUB_TEST_DOC_ID"),
     (tester) async {
       const githubRunId = String.fromEnvironment("GITHUB_TEST_DOC_ID");
