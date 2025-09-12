@@ -16,7 +16,15 @@ jobs:
           channel: stable
           flutter-version: "3.32.8"
       
-      - run: |
+      - name: Run tests
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+          DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+          DITTO_API_URL: ${{ secrets.DITTO_API_URL }}
+          DITTO_API_KEY: ${{ secrets.DITTO_API_KEY }}
+        run: |
           sudo apt-get install -y curl git unzip xz-utils zip libglu1-mesa
           sudo apt-get install \
             clang cmake git \
