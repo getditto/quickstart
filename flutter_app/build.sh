@@ -7,7 +7,6 @@ FLUTTER_APP=$ROOT/flutter_app
 ANDROID_APP=$FLUTTER_APP/android
 
 
-
 # Gradle expects dart-defines to be passed in via a special parameter where
 # each key-value pair is encoded as: `base64("$key=$value")`
 function encode_define() {
@@ -25,11 +24,11 @@ function encode_define() {
 source "$FLUTTER_APP/.env"
 
 DART_DEFINES="$(encode_define DITTO_APP_ID)"
-DART_DEFINES="$DART_DEFINES,$(encode_define DITTO_DATABASE_ID)"
+DART_DEFINES="$DART_DEFINES,$(encode_define DITTO_APP_ID)"
 DART_DEFINES="$DART_DEFINES,$(encode_define DITTO_PLAYGROUND_TOKEN)"
 DART_DEFINES="$DART_DEFINES,$(encode_define DITTO_WEBSOCKET_URL)"
 DART_DEFINES="$DART_DEFINES,$(encode_define DITTO_AUTH_URL)"
-DART_DEFINES="$DART_DEFINES,$(encode_define DITTO_CLOUD_ENDPOINT)"
+DART_DEFINES="$DART_DEFINES,$(encode_define DITTO_API_URL)"
 DART_DEFINES="$DART_DEFINES,$(encode_define DITTO_API_KEY)"
 
 cd "$FLUTTER_APP"
@@ -56,9 +55,8 @@ TEST_PATH="$FLUTTER_APP/build/app/outputs/flutter-apk/app-debug.apk"
 
 BS_APP_UPLOAD_RESPONSE=$(
   curl -u "$BROWSERSTACK_BASIC_AUTH" \
-    --fail-with-body \
+    --fail-with-body\
     -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app" \
-    -H "Accept: application/json" \
     -F "file=@$APP_PATH"
 )
 echo "uploaded app: $BS_APP_UPLOAD_RESPONSE"
@@ -68,8 +66,7 @@ BS_TEST_UPLOAD_RESPONSE=$(
   curl -u "$BROWSERSTACK_BASIC_AUTH" \
     --fail-with-body \
     -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/test-suite" \
-    -H "Accept: application/json" \
-    -F "file=@$TEST_PATH" 
+    -F "file=@$TEST_PATH"
 )
 echo "uploaded test: $BS_TEST_UPLOAD_RESPONSE"
 BS_TEST_URL=$(echo BS_TEST_UPLOAD_RESPONSE | jq -r .test_suite_url)
@@ -89,6 +86,7 @@ echo "PAYLOAD: $PAYLOAD"
 
 RES=$(
   curl -u "cameronmcloughli_ydF6Jb:oMLRqvyc1xpc6zuxFy3D" \
+    --fail-with-body \
     -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build" \
     -d "$PAYLOAD" \
     -H "Content-Type: application/json"

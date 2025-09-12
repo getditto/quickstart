@@ -168,7 +168,7 @@ void testDitto(
       },
     );
 
-const cloudUrl = String.fromEnvironment('DITTO_CLOUD_ENDPOINT');
+const apiUrl = String.fromEnvironment('DITTO_API_URL');
 const apiKey = String.fromEnvironment('DITTO_API_KEY');
 
 Future<Map<String, dynamic>> bigPeerHttpExecute(
@@ -176,9 +176,9 @@ Future<Map<String, dynamic>> bigPeerHttpExecute(
   Map<String, dynamic> arguments = const {},
 }) async {
   assert(apiKey.isNotEmpty);
-  assert(cloudUrl.isNotEmpty);
+  assert(apiUrl.isNotEmpty);
 
-  final uri = Uri.parse("$cloudUrl/api/v4/store/execute");
+  final uri = Uri.parse("$apiUrl/api/v4/store/execute");
   final response = await post(
     uri,
     body: jsonEncode({
