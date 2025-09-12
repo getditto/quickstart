@@ -214,7 +214,7 @@ const App = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container} testID="main-screen">
+    <SafeAreaView style={styles.container}>
       {!hasPermissions && (
         <View style={styles.permissionBanner}>
           <Text style={styles.permissionText}>

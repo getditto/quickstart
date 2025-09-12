@@ -25,7 +25,6 @@ const NewTaskModal: React.FC<Props> = ({ onSubmit, onClose, ...props }) => {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Add Task</Text>
           <TextInput 
-            testID="task-input"
             style={styles.input} 
             value={input} 
             onChangeText={setInput} 
@@ -33,12 +32,10 @@ const NewTaskModal: React.FC<Props> = ({ onSubmit, onClose, ...props }) => {
           />
           <Button 
             title="Add Task" 
-            testID="save-task-button"
             onPress={submit} 
           />
           <Button 
             title="Close" 
-            testID="close-modal-button"
             onPress={onClose} 
           />
         </View>

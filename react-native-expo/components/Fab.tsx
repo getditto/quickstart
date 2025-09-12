@@ -5,7 +5,6 @@ const Fab = (props: TouchableOpacityProps) => {
   return (
     <TouchableOpacity 
       style={styles.fab} 
-      testID="add-task-button"
       accessibilityLabel="Add new task"
       {...props}
     >

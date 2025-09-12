@@ -10,7 +10,6 @@ type Props = {
 const TaskDone: React.FC<Props> = ({ checked, onPress }) => {
   return (
     <BouncyCheckbox
-      testID="task-checkbox"
       style={styles.button}
       isChecked={checked}
       onPress={onPress}
