@@ -1,0 +1,310 @@
+#
+# .github/workflows/java-spring-ci.yml
+# Workflow for building and testing java-spring with BrowserStack integration
+#
+---
+name: Java Spring CI
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'java-spring/**'
+      - '.github/workflows/java-spring-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'java-spring/**'
+      - '.github/workflows/java-spring-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create .env file (root)
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Run linter (PMD + SpotBugs)
+        working-directory: java-spring
+        run: ./gradlew pmdMain pmdTest spotbugsMain
+
+  build:
+    name: Build (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 20
+    outputs:
+      test_doc_title: ${{ steps.test_doc.outputs.test_doc_title }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+
+      - name: Generate test document title
+        id: test_doc
+        run: |
+          # Create a unique GitHub test document with inverted timestamp to appear at top
+          TIMESTAMP=$(date +%s)
+          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+          DOC_ID="${INVERTED_TIMESTAMP}_java_spring_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+          DOC_TITLE="${INVERTED_TIMESTAMP}_java_spring_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+
+          echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
+          echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
+          echo "📝 Generated test document (inverted timestamp for top position)"
+          echo "📝 ID: '${DOC_ID}'"
+          echo "📝 Title: '${DOC_TITLE}'"
+          echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
+
+      - name: Create .env file (root)
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Build Spring Boot JAR
+        working-directory: java-spring
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+          DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+          DITTO_ENABLE_CLOUD_SYNC: true
+        run: ./gradlew bootJar
+
+
+      - name: Upload JAR artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-spring-jar-${{ github.run_number }}
+          path: java-spring/build/libs/*.jar
+          retention-days: 1
+
+  browserstack-test:
+    name: BrowserStack Device Testing (macos-latest)
+    runs-on: macos-latest
+    needs: build
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download JAR artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: java-spring-jar-${{ github.run_number }}
+        path: java-spring/build/libs/
+    
+    - name: Insert test document into Ditto Cloud
+      run: |
+        # Use the same document title that was generated in build job
+        DOC_TITLE="${{ needs.build.outputs.test_doc_title }}"
+        DOC_ID="$DOC_TITLE"
+        
+        echo "📝 Inserting test document that matches build-time configuration"
+        echo "📝 ID: '${DOC_ID}'"
+        echo "📝 Title: '${DOC_TITLE}'"
+        
+        # Insert document using Ditto API v4 (same as Android workflow)
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"${DOC_TITLE}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+        
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+          echo "✓ Document title: ${DOC_TITLE}"
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+    
+    - name: Create .env file (root)
+      run: |
+        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+    
+    - name: Install BrowserStack Local binary
+      run: |
+        curl -O "https://www.browserstack.com/browserstack-local/BrowserStackLocal-darwin-x64.zip"
+        unzip BrowserStackLocal-darwin-x64.zip
+        chmod +x BrowserStackLocal
+
+    - name: Start BrowserStack Local tunnel 
+      run: |
+        echo "Starting BrowserStack Local tunnel..."
+        nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          --daemon-mode > browserstack-local.log 2>&1 &
+        
+        # Wait for tunnel to establish
+        TIMEOUT=60
+        ELAPSED=0
+        
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+          if [ -f browserstack-local.log ] && grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
+            echo "BrowserStack Local tunnel established"
+            exit 0
+          fi
+          if [ -f browserstack-local.log ] && grep -q -i "error\|failed\|unable" browserstack-local.log; then
+            echo "BrowserStack Local tunnel failed:"
+            cat browserstack-local.log
+            exit 1
+          fi
+          sleep 5
+          ELAPSED=$((ELAPSED + 5))
+        done
+        
+        echo "BrowserStack Local tunnel timeout after ${TIMEOUT}s"
+        [ -f browserstack-local.log ] && cat browserstack-local.log
+        exit 1
+    
+    - name: Create BrowserStack config
+      working-directory: java-spring
+      run: |
+        cat > browserstack.yml << EOF
+        userName: ${{ secrets.BROWSERSTACK_USERNAME }}
+        accessKey: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        projectName: Ditto Java Spring Tasks
+        buildName: Java Spring Selenium Tests #${{ github.run_number }}
+        platforms:
+          - os: Windows
+            osVersion: 11
+            browserName: Chrome
+            browserVersion: latest
+        browserstackLocal: true
+        debug: true
+        video: true
+        parallelsPerPlatform: 1
+        EOF
+    
+    - name: Start Spring Boot app in background
+      working-directory: java-spring
+      run: |
+        nohup java -jar build/libs/*.jar \
+          --server.port=8080 \
+          --spring.profiles.active=test > app.log 2>&1 &
+        echo $! > app.pid
+        
+        # Wait for application to be ready
+        echo "Waiting for Spring Boot app to start..."
+        for i in {1..30}; do
+          if curl -f http://localhost:8080 >/dev/null 2>&1; then
+            echo "Spring Boot app is ready"
+            break
+          fi
+          sleep 2
+        done
+    
+    - name: Execute Selenium tests on BrowserStack cloud browsers  
+      working-directory: java-spring
+      env:
+        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        BROWSERSTACK_LOCAL: true
+        TEST_TASK_TITLE: ${{ needs.build.outputs.test_doc_title }}
+        GITHUB_TEST_DOC_ID: ${{ needs.build.outputs.test_doc_title }}
+      run: |
+        TITLE="${{ needs.build.outputs.test_doc_title }}"
+        
+        # Run only the BrowserStack test method, not all test methods
+        ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
+          -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
+          -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
+          -DBROWSERSTACK_LOCAL=true \
+          -DTEST_TASK_TITLE="$TITLE" \
+          -DGITHUB_TEST_DOC_ID="$TITLE" \
+          --info
+    
+    - name: Stop Spring Boot app
+      if: always()
+      working-directory: java-spring
+      run: |
+        if [ -f app.pid ]; then
+          kill $(cat app.pid) || true
+          rm app.pid
+        fi
+    
+    - name: Stop BrowserStack Local tunnel
+      if: always()
+      run: pkill -f "BrowserStackLocal" || true
+    
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: browserstack-test-reports-${{ github.run_number }}
+        path: java-spring/build/reports/tests/
+        retention-days: 1
+    
+    - name: Upload app logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: spring-boot-logs-${{ github.run_number }}
+        path: |
+          java-spring/app.log
+          browserstack-local.log
+        retention-days: 1
