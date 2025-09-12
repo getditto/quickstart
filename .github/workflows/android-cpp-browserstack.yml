@@ -21,6 +21,23 @@ on:
       - 'android-cpp/**'
       - '.github/workflows/android-cpp-browserstack.yml'
   workflow_dispatch:  # Allow manual trigger
+    inputs:
+      websocket_url:
+        description: 'Custom Ditto websocket URL (optional, defaults to secret)'
+        required: false
+        type: string
+      app_id:
+        description: 'Custom Ditto app ID (optional, defaults to secret)'
+        required: false
+        type: string
+      playground_token:
+        description: 'Custom Ditto playground token (optional, defaults to secret)'
+        required: false
+        type: string
+      auth_url:
+        description: 'Custom Ditto auth URL (optional, defaults to secret)'
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -49,10 +66,10 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+          echo "DITTO_APP_ID=${{ github.event.inputs.app_id || secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ github.event.inputs.playground_token || secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ github.event.inputs.auth_url || secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ github.event.inputs.websocket_url || secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
