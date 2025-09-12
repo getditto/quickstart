@@ -3,11 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from 'react
 
 const Fab = (props: TouchableOpacityProps) => {
   return (
-    <TouchableOpacity 
-      style={styles.fab} 
-      accessibilityLabel="Add new task"
-      {...props}
-    >
+    <TouchableOpacity style={styles.fab} {...props}>
       <Text style={styles.fabText}>+</Text>
     </TouchableOpacity>
   );

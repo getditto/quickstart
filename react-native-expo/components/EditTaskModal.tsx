@@ -36,7 +36,6 @@ const EditTaskModal: React.FC<Props> = ({ task, onSubmit, onClose, ...props }) =
             value={input}
             onChangeText={setInput}
             autoFocus
-            selectTextOnFocus
           />
           <Button title="Save" onPress={submit} />
           <Button title="Cancel" onPress={onClose} />
