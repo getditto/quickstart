@@ -1,4 +1,4 @@
-appId: com.dittoreactnativesampleapp
+appId: com.anonymous.reactnativeexpo
 tags:
   - "smoke"
   - "task-verification"
@@ -8,7 +8,7 @@ tags:
 # Usage: maestro test -e TASK_TO_FIND="My Task" 01-app-launch-and-seeded-tasks.yaml
 
 - launchApp:
-    appId: com.dittoreactnativesampleapp
+    appId: com.anonymous.reactnativeexpo
 
 # Handle permission dialogs if they appear
 - runFlow:
@@ -25,3 +25,6 @@ tags:
 # Using a simple assertion that should definitely fail for non-existent tasks
 - assertVisible:
     text: "${MAESTRO_TASK_TO_FIND}"
+
+# Sleep for 3 seconds to visually see the task in the UI
+- sleep: 3000
