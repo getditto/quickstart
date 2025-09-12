@@ -19,10 +19,16 @@ class AppViewModel(
     fun onStartApp() {
         viewModelScope.launch {
             createDittoUseCase.invoke()
+            
+            // Always start sync by default for better testing and user experience
+            setSyncStatusUseCase.invoke(true)
+            
+            // Still respect persisted preferences if they exist
             val isPersistedSyncEnabled = getPersistedSyncStatusUseCase.invoke()
-
-            if (isPersistedSyncEnabled) {
-                setSyncStatusUseCase.invoke(true)
+            
+            if (!isPersistedSyncEnabled) {
+                // If user had previously disabled sync, respect that
+                setSyncStatusUseCase.invoke(false)
             }
         }
     }

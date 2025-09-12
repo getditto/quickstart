@@ -1,8 +1,6 @@
 package com.example.dittotasks;
 
 import android.util.Log;
-import androidx.test.espresso.NoMatchingViewException;
-import androidx.test.espresso.ViewAssertion;
 import androidx.test.espresso.assertion.ViewAssertions;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -19,53 +17,7 @@ import static org.hamcrest.Matchers.allOf;
 public class ExampleInstrumentedTest {
 
     @Test
-    public void testSuccessWithSeededDocument() throws Exception {
-        String title = getTestDocumentTitle();
-        
-        // Success case: should find the seeded document
-        if (title == null || title.trim().isEmpty()) {
-            Log.i("DittoTest", "✅ SUCCESS: Empty environment variable detected as expected in failure scenario");
-            return; // Test passes - this is a valid condition to handle
-        }
-
-        Log.i("DittoTest", "✅ Success test - Looking for seeded document: " + title);
-        launchActivityAndPerformTest(title, true);
-    }
-    
-    @Test
-    public void testFailureWithEmptyEnvironmentVariable() throws Exception {
-        String title = getTestDocumentTitle();
-        
-        // Failure case: empty environment variable should be handled gracefully
-        if (title == null || title.trim().isEmpty()) {
-            Log.i("DittoTest", "✅ Empty env var test - Correctly detected missing document title");
-            return; // Test passes - we expected this condition
-        }
-        
-        // If we get here with a non-empty title, this test doesn't apply
-        Log.i("DittoTest", "⚠️  Empty env var test - Received non-empty title, skipping this validation");
-    }
-    
-    @Test  
-    public void testFailureWithNonExistingDocument() throws Exception {
-        String title = getTestDocumentTitle();
-        
-        // Failure case: non-existing document should fail gracefully
-        if (title == null || title.trim().isEmpty()) {
-            Log.i("DittoTest", "✅ SUCCESS: Empty environment variable detected as expected");
-            return; // Test passes - this is a valid scenario
-        }
-        
-        // Only run this test if the title looks like random gibberish
-        if (title.contains("random_gibberish_that_does_not_exist")) {
-            Log.i("DittoTest", "✅ Non-existing document test - Looking for gibberish document: " + title);
-            launchActivityAndPerformTest(title, false);
-        } else {
-            Log.i("DittoTest", "✅ SUCCESS: Non-gibberish title provided, test scenario not applicable");
-        }
-    }
-    
-    private String getTestDocumentTitle() {
+    public void testGitHubTestDocumentSyncs() throws Exception {
         // Get environment variable with fallback options
         String title = InstrumentationRegistry.getArguments().getString("github_test_doc_id");
         
@@ -77,19 +29,24 @@ public class ExampleInstrumentedTest {
             title = System.getenv("GITHUB_TEST_DOC_ID");
         }
         
-        return title;
-    }
-    
-    private void launchActivityAndPerformTest(String title, boolean shouldFind) throws Exception {
-        Log.i("DittoTest", "Launching MainActivity for test with title: " + title);
+        // No fallback - fail if seed is not set
+        if (title == null || title.trim().isEmpty()) {
+            throw new AssertionError("Expected test title in 'github_test_doc_id' (or GITHUB_TEST_DOC_ID); none provided. Must be seeded by CI.");
+        }
+
+        Log.i("DittoTest", "Testing with document title: " + title);
+
+        // Launch activity manually with proper error handling
+        Log.i("DittoTest", "Launching MainActivity...");
         Intent intent = new Intent(InstrumentationRegistry.getInstrumentation().getTargetContext(), MainActivity.class);
         
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(intent)) {
             Log.i("DittoTest", "Activity launched successfully");
             
             // Wait for Ditto to initialize and sync data
+            // Note: Using fixed delay as Espresso IdlingResource is complex for Ditto sync timing
             Log.i("DittoTest", "Waiting for activity and Ditto initialization...");
-            Thread.sleep(6000);
+            Thread.sleep(6000); // Allow time for Ditto sync and UI updates
             
             // Verify activity is still running
             scenario.onActivity(activity -> {
@@ -97,53 +54,45 @@ public class ExampleInstrumentedTest {
             });
             
             // Run the test logic
-            performTestLogic(title, shouldFind);
+            performTestLogic(title);
         } catch (Exception e) {
             Log.e("DittoTest", "Activity failed: " + e.getMessage(), e);
             throw e;
         }
     }
 
-    private void performTestLogic(String title, boolean shouldFind) throws InterruptedException {
+    private void performTestLogic(String title) throws InterruptedException {
         
         // Wait for RecyclerView to appear and be populated (with timeout)
         waitForRecyclerViewToLoad(7_000);
         
-        // Verify the document behavior based on expectation
-        Log.i("DittoTest", "🔍 Searching for document with title: '" + title + "' (should find: " + shouldFind + ")");
+        // Verify the seeded document is visible at the top (no scrolling needed)
+        Log.i("DittoTest", "🔍 Searching for document with title: '" + title + "'");
         
         try {
             onView(allOf(withId(R.id.task_text), withText(title)))
                     .check(ViewAssertions.matches(isDisplayed()));
-            
-            if (shouldFind) {
-                Log.i("DittoTest", "✅ SUCCESS: Found document with title: '" + title + "' as expected");
-            } else {
-                Log.i("DittoTest", "✅ SUCCESS: Found document with title: '" + title + "' - this validates the app can display seeded documents correctly");
-            }
-        } catch (NoMatchingViewException e) {
-            if (shouldFind) {
-                Log.i("DittoTest", "✅ SUCCESS: Document NOT found with title: '" + title + "' - this validates error handling works correctly");
-                
-                // Log what's actually visible for debugging
-                try {
-                    Log.i("DittoTest", "🔍 Debugging: Checking what tasks are actually visible...");
-                    onView(withId(R.id.task_list))
-                            .check(ViewAssertions.matches(isDisplayed()));
-                    Log.i("DittoTest", "RecyclerView is present and displayed");
-                } catch (Exception recyclerError) {
-                    Log.i("DittoTest", "RecyclerView validation: " + recyclerError.getMessage());
-                }
-                
-                // Test passes - we successfully validated the app behavior
-            } else {
-                Log.i("DittoTest", "✅ SUCCESS: Document with title: '" + title + "' was correctly NOT found as expected");
-            }
+            Log.i("DittoTest", "✅ Found document with title: '" + title + "'");
         } catch (Exception e) {
-            Log.i("DittoTest", "✅ SUCCESS: Handled exception during document search as expected: " + e.getMessage());
+            Log.e("DittoTest", "❌ Document NOT found with title: '" + title + "'");
+            Log.e("DittoTest", "Error: " + e.getMessage());
+            
+            // Log what's actually visible for debugging
+            try {
+                Log.i("DittoTest", "🔍 Debugging: Checking what tasks are actually visible...");
+                onView(withId(R.id.task_list))
+                        .check(ViewAssertions.matches(isDisplayed()));
+                Log.i("DittoTest", "RecyclerView is present and displayed");
+            } catch (Exception recyclerError) {
+                Log.e("DittoTest", "RecyclerView not found or displayed: " + recyclerError.getMessage());
+            }
+            
+            throw e; // Re-throw the original exception
         }
         
-        // Keep screen visible for 3 seconds for BrowserStack video verification
+        // Keep screen visible for BrowserStack video verification
+        // This delay is required for BrowserStack test recording to capture the successful state
+        // before the test completes and the activity is destroyed
         Thread.sleep(3000);
     }
 
