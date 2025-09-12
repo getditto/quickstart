@@ -1,0 +1,34 @@
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cjs,js,json,ts}]
+indent_size = 2
+
+[*.sh]
+# like -i=4
+indent_style = space
+indent_size = 4
+switch_case_indent = false
+
+
+# Exclude files and directories by ensuring they are not matched by any section
+# Files like .cxx, gradlew*, and node_modules are not explicitly matched in this file.
+
+# Exclude target directory
+[!target/**]
+
+# Exclude .direnv directory
+[!.direnv/**]
+
+# Exclude Pods directory
+[!**/Pods/**]
+
+# Exclude node_modules directory
+[!**/node_modules/**]
+
