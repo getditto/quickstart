@@ -21,6 +21,7 @@ import {
   DITTO_APP_ID,
   DITTO_PLAYGROUND_TOKEN,
   DITTO_AUTH_URL,
+  DITTO_WEBSOCKET_URL,
 } from '@env';
 
 import Fab from './components/Fab';
@@ -131,6 +132,11 @@ const App = () => {
 
       ditto.current = await Ditto.open(config);
 
+      // Configure websocket URL for transport
+      ditto.current.updateTransportConfig((transportConfig) => {
+        transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+      });
+
       if (connectConfig.mode === 'server') {
         await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
           console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
@@ -187,7 +193,7 @@ const App = () => {
     (async () => {
       const granted =
         Platform.OS === 'android' ? await requestPermissions() : true;
-      
+
       setHasPermissions(granted);
       initDitto();
     })();
@@ -210,7 +216,7 @@ const App = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} testID="main-screen">
       {!hasPermissions && (
         <View style={styles.permissionBanner}>
           <Text style={styles.permissionText}>
