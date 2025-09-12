@@ -281,7 +281,6 @@ jobs:
           -F "file=@./artifacts/app-release.apk" \
           -F "custom_id=ReactNative-Android-${{ github.run_id }}")
 
-        echo "Upload response: $response"
         app_url=$(echo $response | jq -r '.app_url')
 
         # Validate API response
@@ -310,9 +309,6 @@ jobs:
 
         # Create ZIP with proper structure
         zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
-        ls -la maestro-tests.zip
-        echo "Maestro test structure:"
-        unzip -l maestro-tests.zip
 
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
@@ -427,7 +423,6 @@ jobs:
           -F "file=@./artifacts/DittoReactNativeSampleApp-unsigned.ipa" \
           -F "custom_id=ReactNative-iOS-${{ github.run_id }}")
 
-        echo "Upload response: $response"
         app_url=$(echo $response | jq -r '.app_url')
 
         # Validate API response
@@ -456,9 +451,6 @@ jobs:
 
         # Create ZIP with proper structure
         zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
-        ls -la maestro-tests.zip
-        echo "Maestro test structure:"
-        unzip -l maestro-tests.zip
 
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
@@ -468,7 +460,6 @@ jobs:
           -F "file=@react-native/maestro-tests.zip" \
           -F "custom_id=ReactNative-iOS-Tests-${{ github.run_id }}")
 
-        echo "Upload response: $response"
         test_suite_url=$(echo $response | jq -r '.test_suite_url')
         echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
 

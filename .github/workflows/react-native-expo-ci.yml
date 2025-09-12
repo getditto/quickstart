@@ -37,7 +37,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: react-native-expo
-      run: yarn install
+      run: yarn install --frozen-lockfile
 
     - name: Run linting
       working-directory: react-native-expo
@@ -61,7 +61,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: react-native-expo
-      run: yarn install
+      run: yarn install --frozen-lockfile
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -123,7 +123,7 @@ jobs:
 
     - name: Install dependencies
       working-directory: react-native-expo
-      run: yarn install
+      run: yarn install --frozen-lockfile
 
     - name: Create .env file (production credentials for builds)
       run: |
@@ -285,7 +285,6 @@ jobs:
           -F "file=@./artifacts/app-release.apk" \
           -F "custom_id=ReactNative-Expo-Android-${{ github.run_id }}")
 
-        echo "Upload response: $response"
         app_url=$(echo $response | jq -r '.app_url')
 
         # Validate API response
@@ -314,23 +313,15 @@ jobs:
 
         # Create ZIP with proper structure
         zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
-        ls -la maestro-tests.zip
-        echo "Maestro test structure:"
-        unzip -l maestro-tests.zip
 
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
       run: |
-        # Verify ZIP file exists before uploading
-        pwd
-        ls -la react-native-expo/maestro-tests.zip
-
         response=$(curl --fail-with-body -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
           -F "file=@react-native-expo/maestro-tests.zip" \
           -F "custom_id=ReactNative-Expo-Tests-${{ github.run_id }}")
 
-        echo "Upload response: $response"
         test_suite_url=$(echo $response | jq -r '.test_suite_url')
 
         # Validate API response
@@ -442,7 +433,6 @@ jobs:
           -F "file=@./artifacts/reactnativeexpo-unsigned.ipa" \
           -F "custom_id=ReactNative-Expo-iOS-${{ github.run_id }}")
 
-        echo "Upload response: $response"
         app_url=$(echo $response | jq -r '.app_url')
 
         # Validate API response
@@ -471,9 +461,6 @@ jobs:
 
         # Create ZIP with proper structure
         zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
-        ls -la maestro-tests.zip
-        echo "Maestro test structure:"
-        unzip -l maestro-tests.zip
 
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
@@ -483,7 +470,6 @@ jobs:
           -F "file=@react-native-expo/maestro-tests.zip" \
           -F "custom_id=ReactNative-Expo-iOS-Tests-${{ github.run_id }}")
 
-        echo "Upload response: $response"
         test_suite_url=$(echo $response | jq -r '.test_suite_url')
         echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
 
