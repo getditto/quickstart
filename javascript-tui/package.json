@@ -11,8 +11,8 @@
 		"start": "npm run build && node dist/cli.js",
 		"build": "babel --out-dir=dist source",
 		"dev": "babel --out-dir=dist --watch source",
-		"test": "npm run test:lint && npm run test:integration",
-		"test:lint": "prettier --check .",
+		"test": "npm run test:format && npm run test:integration",
+		"test:format": "prettier --check .",
 		"test:integration": "npm run build && GITHUB_TEST_DOC_TITLE=\"<insert-my-task-name-here>\" node tests/integration_test.js",
 		"format": "prettier --write ."
 	},

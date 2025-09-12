@@ -28,7 +28,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: javascript-tui/package-lock.json
       
@@ -38,7 +38,7 @@ jobs:
       
       - name: Run lint check
         working-directory: javascript-tui
-        run: npm run test:lint
+        run: npm run test:format
 
   build:
     name: Build
@@ -53,7 +53,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: javascript-tui/package-lock.json
       
@@ -85,7 +85,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: javascript-tui/package-lock.json
       
