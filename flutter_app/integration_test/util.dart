@@ -148,6 +148,13 @@ void testDitto(
       skip: skip,
       description,
       (tester) async {
+        assert(appID.isNotEmpty);
+        assert(token.isNotEmpty);
+        assert(authUrl.isNotEmpty);
+        assert(websocketUrl.isNotEmpty);
+        assert(apiKey.isNotEmpty);
+        assert(apiUrl.isNotEmpty);
+
         final dir = "ditto_${Random().nextInt(1 << 32)}";
         await tester.pumpWidget(
           MaterialApp(home: DittoExample(persistenceDirectory: dir)),
@@ -175,8 +182,6 @@ Future<Map<String, dynamic>> bigPeerHttpExecute(
   String query, {
   Map<String, dynamic> arguments = const {},
 }) async {
-  assert(apiKey.isNotEmpty);
-  assert(apiUrl.isNotEmpty);
 
   final uri = Uri.parse("$apiUrl/api/v4/store/execute");
   final response = await post(
