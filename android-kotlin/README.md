@@ -13,7 +13,7 @@ After you have completed the [common prerequisites] you will need the following:
 ## Documentation
 
 - [Kotlin Install Guide](https://docs.ditto.live/install-guides/kotlin)
-- [Kotlin API Reference](https://software.ditto.live/android/Ditto/4.11.1/api-reference/)
+- [Kotlin API Reference](https://software.ditto.live/android/Ditto/4.12.1/api-reference/)
 - [Kotlin SDK Release Notes](https://docs.ditto.live/release-notes/kotlin)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -55,7 +55,7 @@ Android Studio to automatically download the Ditto SDK from Maven Central and
 add it to the project:
 
 ```kotlin
-    implementation("live.ditto:ditto:4.11.1")
+    implementation("live.ditto:ditto:4.12.1")
 ```
 
 To use a newer version of the SDK, change the version number in this line.
