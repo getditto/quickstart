@@ -9,7 +9,7 @@ type Props = {
 const DittoInfo: React.FC<Props> = ({ appId, token }) => {
   return (
     <View style={styles.view}>
-      <Text style={styles.title}>Ditto Tasks</Text>
+      <Text style={styles.title}>Ditto Tasks (Expo)</Text>
       <Text style={styles.info}>{`AppID: ${appId}`}</Text>
       <Text style={styles.info}>{`Token: ${token}`}</Text>
     </View>
