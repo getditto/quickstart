@@ -1,35 +1,31 @@
+import 'dart:async';
+
 import 'package:ditto_live/ditto_live.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  //load in the .env file
-  await dotenv.load(fileName: ".env");
-  runApp(const MaterialApp(home: DittoExample()));
-}
+// These values are read from a .env file by passing `--dart-define-from-file=.env`
+const appID = String.fromEnvironment('DITTO_APP_ID');
+const token = String.fromEnvironment('DITTO_PLAYGROUND_TOKEN');
+const authUrl = String.fromEnvironment('DITTO_AUTH_URL');
+const websocketUrl = String.fromEnvironment('DITTO_WEBSOCKET_URL');
+
+void main() => runApp(const MaterialApp(home: DittoExample()));
 
 class DittoExample extends StatefulWidget {
-  const DittoExample({super.key});
+  // used for testing
+  final String? persistenceDirectory;
+  const DittoExample({super.key, this.persistenceDirectory});
 
   @override
-  State<DittoExample> createState() => _DittoExampleState();
+  State<DittoExample> createState() => DittoExampleState();
 }
 
-class _DittoExampleState extends State<DittoExample> {
-  Ditto? _ditto;
-  final appID =
-      dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
-  final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
-      (throw Exception("env not found"));
-  final authUrl = dotenv.env['DITTO_AUTH_URL'];
-  final websocketUrl =
-      dotenv.env['DITTO_WEBSOCKET_URL'] ?? (throw Exception("env not found"));
+class DittoExampleState extends State<DittoExample> {
+  Ditto? ditto;
 
   @override
   void initState() {
@@ -42,7 +38,7 @@ class _DittoExampleState extends State<DittoExample> {
   /// https://docs.ditto.live/sdk/latest/install-guides/flutter#step-3-import-and-initialize-the-ditto-sdk
   ///
   /// This function:
-  /// 1. Requests required Bluetooth and WiFi permissions on non-web platforms
+  /// 1. Requests required Bluetooth and WiFi permissions on mobile platforms
   /// 2. Initializes the Ditto SDK
   /// 3. Sets up online playground identity with the provided app ID and token
   /// 4. Enables peer-to-peer communication on non-web platforms
@@ -50,7 +46,8 @@ class _DittoExampleState extends State<DittoExample> {
   /// 6. Disables DQL strict mode
   /// 7. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
-    if (!kIsWeb) {
+    final platform = Ditto.currentPlatform;
+    if (platform case SupportedPlatform.android || SupportedPlatform.ios) {
       await [
         Permission.bluetoothConnect,
         Permission.bluetoothAdvertise,
@@ -62,13 +59,17 @@ class _DittoExampleState extends State<DittoExample> {
     await Ditto.init();
 
     final identity = OnlinePlaygroundIdentity(
-        appID: appID,
-        token: token,
-        enableDittoCloudSync:
-            false, // This is required to be set to false to use the correct URLs
-        customAuthUrl: authUrl);
+      appID: appID,
+      token: token,
+      // This is required to be set to false to use the correct URLs
+      enableDittoCloudSync: false,
+      customAuthUrl: authUrl,
+    );
 
-    final ditto = await Ditto.open(identity: identity);
+    final ditto = await Ditto.open(
+      identity: identity,
+      persistenceDirectory: widget.persistenceDirectory ?? "ditto",
+    );
 
     ditto.updateTransportConfig((config) {
       // Note: this will not enable peer-to-peer sync on the web platform
@@ -82,7 +83,7 @@ class _DittoExampleState extends State<DittoExample> {
 
     ditto.startSync();
 
-    setState(() => _ditto = ditto);
+    setState(() => this.ditto = ditto);
   }
 
   Future<void> _addTask() async {
@@ -90,7 +91,7 @@ class _DittoExampleState extends State<DittoExample> {
     if (task == null) return;
 
     // https://docs.ditto.live/sdk/latest/crud/create
-    await _ditto!.store.execute(
+    await ditto!.store.execute(
       "INSERT INTO tasks DOCUMENTS (:task)",
       arguments: {"task": task.toJson()},
     );
@@ -98,12 +99,12 @@ class _DittoExampleState extends State<DittoExample> {
 
   Future<void> _clearTasks() async {
     // https://docs.ditto.live/sdk/latest/crud/delete#evicting-data
-    await _ditto!.store.execute("EVICT FROM tasks WHERE true");
+    await ditto!.store.execute("EVICT FROM tasks WHERE true");
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_ditto == null) return _loading;
+    if (ditto == null) return _loading;
 
     return Scaffold(
       appBar: AppBar(
@@ -130,17 +131,14 @@ class _DittoExampleState extends State<DittoExample> {
 
   Widget get _loading => Scaffold(
         appBar: AppBar(title: const Text("Ditto Tasks")),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center, // Center vertically
-            crossAxisAlignment:
-                CrossAxisAlignment.center, // Center horizontally
-            children: [
-              const CircularProgressIndicator(),
-              const Text("Ensure your AppID and Token are correct"),
-              _portalInfo
-            ],
-          ),
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+          crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
+          children: [
+            const CircularProgressIndicator(),
+            const Text("Ensure your AppID and Token are correct"),
+            _portalInfo,
+          ],
         ),
       );
 
@@ -149,25 +147,25 @@ class _DittoExampleState extends State<DittoExample> {
         child: const Icon(Icons.add_task),
       );
 
-  Widget get _portalInfo => Column(children: [
+  Widget get _portalInfo => const Column(children: [
         Text("AppID: $appID"),
         Text("Token: $token"),
       ]);
 
   Widget get _syncTile => SwitchListTile(
         title: const Text("Sync Active"),
-        value: _ditto!.isSyncActive,
+        value: ditto!.isSyncActive,
         onChanged: (value) {
           if (value) {
-            setState(() => _ditto!.startSync());
+            setState(() => ditto!.startSync());
           } else {
-            setState(() => _ditto!.stopSync());
+            setState(() => ditto!.stopSync());
           }
         },
       );
 
   Widget get _tasksList => DqlBuilder(
-        ditto: _ditto!,
+        ditto: ditto!,
         query: "SELECT * FROM tasks WHERE deleted = false",
         builder: (context, result) {
           final tasks = result.items.map((r) => r.value).map(Task.fromJson);
@@ -182,7 +180,7 @@ class _DittoExampleState extends State<DittoExample> {
         onDismissed: (direction) async {
           // Use the Soft-Delete pattern
           // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
-          await _ditto!.store.execute(
+          await ditto!.store.execute(
             "UPDATE tasks SET deleted = true WHERE _id = '${task.id}'",
           );
 
@@ -195,9 +193,10 @@ class _DittoExampleState extends State<DittoExample> {
         background: _dismissibleBackground(true),
         secondaryBackground: _dismissibleBackground(false),
         child: CheckboxListTile(
+          key: ValueKey(task),
           title: Text(task.title),
           value: task.done,
-          onChanged: (value) => _ditto!.store.execute(
+          onChanged: (value) => ditto!.store.execute(
             "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",
           ),
           secondary: IconButton(
@@ -208,7 +207,7 @@ class _DittoExampleState extends State<DittoExample> {
               if (newTask == null) return;
 
               // https://docs.ditto.live/sdk/latest/crud/update
-              _ditto!.store.execute(
+              ditto!.store.execute(
                 "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
               );
             },
