@@ -4,10 +4,10 @@ import {render} from 'ink';
 import meow from 'meow';
 import App from './app.js';
 import dotenv from 'dotenv';
-import {Ditto, TransportConfig} from '@dittolive/ditto';
+import {Ditto, DittoConfig, Authenticator} from '@dittolive/ditto';
 import {temporaryDirectory} from 'tempy';
 
-const config = dotenv.config({path: '../.env'});
+dotenv.config({path: '../.env'});
 const cli = meow(
 	`
     Usage
@@ -66,18 +66,15 @@ console.log(
 	websocketURL,
 );
 
-// Create a new Ditto instance with the identity
+// Create a new Ditto instance with the DittoConfig
 // https://docs.ditto.live/sdk/latest/install-guides/nodejs#installing-the-demo-task-app
-const ditto = new Ditto(
-	{
-		type: 'onlinePlayground',
-		appID: appID,
-		token: token,
-		customAuthURL: authURL,
-		enableDittoCloudSync: false,
-	},
-	tempdir,
-);
+const connectConfig = {
+	mode: 'server',
+	url: authURL,
+};
+
+const config = new DittoConfig(appID, connectConfig, tempdir);
+const ditto = await Ditto.open(config);
 
 // Initialize transport config
 ditto.updateTransportConfig(config => {
@@ -86,6 +83,44 @@ ditto.updateTransportConfig(config => {
 
 // disable sync with v3 peers, required for DQL
 await ditto.disableSyncWithV3();
+
+// Set up authentication for server mode
+if (connectConfig.mode === 'server') {
+	await ditto.auth.setExpirationHandler(
+		async (dittoInstance, timeUntilExpiration) => {
+			console.log(
+				'Authentication expiring soon, time until expiration:',
+				timeUntilExpiration,
+			);
+
+			if (dittoInstance.auth.loginSupported) {
+				const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+				const reLoginResult = await dittoInstance.auth.login(
+					token,
+					devProvider,
+				);
+				if (reLoginResult.error) {
+					console.error('Re-authentication failed:', reLoginResult.error);
+				} else {
+					console.log(
+						'Successfully re-authenticated with info:',
+						reLoginResult,
+					);
+				}
+			}
+		},
+	);
+
+	if (ditto.auth.loginSupported) {
+		const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+		const loginResult = await ditto.auth.login(token, devProvider);
+		if (loginResult.error) {
+			console.error('Login failed:', loginResult.error);
+		} else {
+			console.log('Successfully logged in with info:', loginResult);
+		}
+	}
+}
 
 // Disable DQL strict mode
 // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
