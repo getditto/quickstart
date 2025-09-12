@@ -32,10 +32,10 @@ jobs:
           cd flutter_app
           flutter pub get
           flutter test integration_test/ditto_sync_test.dart \
-            --dart-define DITTO_APP_ID="$DITTO_API_KEY" \
-            --dart-define DITTO_PLAYGROUND_TOKEN="$DITTO_PLAYGROUND_TOKEN" \
-            --dart-define DITTO_WEBSOCKET_URL="$DITTO_WEBSOCKET_URL" \
-            --dart-define DITTO_AUTH_URL="$DITTO_AUTH_URL" \
-            --dart-define DITTO_API_URL="$DITTO_API_URL" \
-            --dart-define DITTO_API_KEY="$DITTO_API_KEY" \
+            --dart-define "DITTO_APP_ID=$DITTO_API_KEY" \
+            --dart-define "DITTO_PLAYGROUND_TOKEN=$DITTO_PLAYGROUND_TOKEN" \
+            --dart-define "DITTO_WEBSOCKET_URL=$DITTO_WEBSOCKET_URL" \
+            --dart-define "DITTO_AUTH_URL=$DITTO_AUTH_URL" \
+            --dart-define "DITTO_API_URL=$DITTO_API_URL" \
+            --dart-define "DITTO_API_KEY=$DITTO_API_KEY" \
             -d linux
