@@ -26,5 +26,5 @@ tags:
 - assertVisible:
     text: "${MAESTRO_TASK_TO_FIND}"
 
-# Sleep for 3 seconds to visually see the task in the UI
-- sleep: 3000
+# Wait for animations to settle for visual confirmation
+- waitForAnimationToEnd
