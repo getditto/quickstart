@@ -3,7 +3,6 @@
   <img src="https://github.com/user-attachments/assets/e58a4713-437a-4e21-af39-be3dcc8da814" alt="Screenshot 2" style="width: 20%;">
 </div>
 
-<!-- CI test trigger -->
 # Ditto Task Sync App
 
 A sample React Native application that lets you create tasks and sync them with the Ditto Cloud via OnlinePlayground authentication. This example is built according to the [official Ditto installation guide for React Native](https://docs.ditto.live/install-guides/react-native).
@@ -98,4 +97,3 @@ Should you encounter any issues, please refer to the [Ditto documentation](https
 
 For support or queries, reach out to us via [support@ditto.live](mailto:support@ditto.live).
 
-<!-- Force CI trigger for corrected BrowserStack API v1 -->
