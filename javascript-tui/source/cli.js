@@ -86,19 +86,30 @@ await ditto.disableSyncWithV3();
 
 // Set up authentication for server mode
 if (connectConfig.mode === 'server') {
-	await ditto.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
-		console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
+	await ditto.auth.setExpirationHandler(
+		async (dittoInstance, timeUntilExpiration) => {
+			console.log(
+				'Authentication expiring soon, time until expiration:',
+				timeUntilExpiration,
+			);
 
-		if (dittoInstance.auth.loginSupported) {
-			const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
-			const reLoginResult = await dittoInstance.auth.login(token, devProvider);
-			if (reLoginResult.error) {
-				console.error('Re-authentication failed:', reLoginResult.error);
-			} else {
-				console.log('Successfully re-authenticated with info:', reLoginResult);
+			if (dittoInstance.auth.loginSupported) {
+				const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+				const reLoginResult = await dittoInstance.auth.login(
+					token,
+					devProvider,
+				);
+				if (reLoginResult.error) {
+					console.error('Re-authentication failed:', reLoginResult.error);
+				} else {
+					console.log(
+						'Successfully re-authenticated with info:',
+						reLoginResult,
+					);
+				}
 			}
-		}
-	});
+		},
+	);
 
 	if (ditto.auth.loginSupported) {
 		const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
