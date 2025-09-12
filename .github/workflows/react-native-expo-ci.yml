@@ -155,10 +155,6 @@ jobs:
       working-directory: react-native-expo/ios
       run: pod install --repo-update
     
-    - name: Build iOS IPA
-      working-directory: react-native-expo
-      run: yarn build:ios
-    
     - name: Build iOS Archive and IPA (for BrowserStack)
       working-directory: react-native-expo
       run: |

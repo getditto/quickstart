@@ -16,7 +16,7 @@ import {
   SyncSubscription,
   TransportConfig,
 } from "@dittolive/ditto";
-import { DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN } from "@env";
+import { DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, DITTO_WEBSOCKET_URL } from "@env";
 
 import Fab from "./components/Fab";
 import NewTaskModal from "./components/NewTaskModal";
@@ -123,6 +123,9 @@ const App = () => {
         transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
         transportsConfig.peerToPeer.lan.isEnabled = true;
         transportsConfig.peerToPeer.lan.isMdnsEnabled = true;
+        
+        // Configure websocket URL for transport
+        transportsConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
 
         if (Platform.OS === "ios") {
           transportsConfig.peerToPeer.awdl.isEnabled = true;
@@ -158,14 +161,11 @@ const App = () => {
     }
   };
 
-  const [hasPermissions, setHasPermissions] = useState<boolean>(true);
-
   useEffect(() => {
     (async () => {
       const granted =
         Platform.OS === "android" ? await requestPermissions() : true;
       
-      setHasPermissions(granted);
       initDitto();
     })();
   }, []);
@@ -188,13 +188,6 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container} testID="main-screen">
-      {!hasPermissions && (
-        <View style={styles.permissionBanner}>
-          <Text style={styles.permissionText}>
-            ⚠️ Limited functionality: Grant Bluetooth & WiFi permissions for peer-to-peer sync
-          </Text>
-        </View>
-      )}
       <DittoInfo appId={identity.appID} token={identity.token} />
       <DittoSync value={syncEnabled} onChange={toggleSync} />
       <Fab onPress={() => setModalVisible(true)} />

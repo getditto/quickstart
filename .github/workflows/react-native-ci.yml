@@ -152,10 +152,6 @@ jobs:
       working-directory: react-native/ios
       run: bundle exec pod install
     
-    - name: Build iOS IPA
-      working-directory: react-native
-      run: yarn build:ios
-    
     - name: Build iOS Archive and IPA (for BrowserStack)
       working-directory: react-native
       run: |
