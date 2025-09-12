@@ -117,7 +117,8 @@ class TaskVisibilityIntegrationTest {
             Thread.currentThread().interrupt();
         }
         
-        boolean taskFound = isTaskVisibleOnPage(envTitle);
+        // TEMPORARY: Add suffix to make test fail and verify error handling
+        boolean taskFound = isTaskVisibleOnPage(envTitle + "_NONEXISTENT_SUFFIX");
         Assertions.assertTrue(taskFound, "Task should be visible in the UI: " + envTitle);
     }
 
