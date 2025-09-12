@@ -1,6 +1,6 @@
 {
-  "query": "INSERT INTO tasks DOCUMENTS (:newTask)",
-  "query_args": {
+  "statement": "INSERT INTO tasks DOCUMENTS (:newTask)",
+  "args": {
     "newTask": {
       "title": "your_title",
       "done": false,
