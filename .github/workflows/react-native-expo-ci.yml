@@ -305,9 +305,6 @@ jobs:
         rm -rf maestro-tests
         mkdir maestro-tests
 
-        # Copy main.yaml to root level (required by BrowserStack for no-execute runs)
-        cp .maestro/main.yaml maestro-tests/
-
         # Copy the specific tests to root level (as per BrowserStack requirements)
         cp .maestro/flows/01-app-launch-and-seeded-tasks-android.yaml maestro-tests/
 
@@ -464,9 +461,6 @@ jobs:
         # Create proper BrowserStack folder structure (normal parent folder, not hidden)
         rm -rf maestro-tests
         mkdir maestro-tests
-
-        # Copy main.yaml to root level (required by BrowserStack for no-execute runs)
-        cp .maestro/main.yaml maestro-tests/
 
         # Copy only iOS-specific tests to root level (avoid conflicting appIds)
         cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
