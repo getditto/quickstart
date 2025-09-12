@@ -123,20 +123,20 @@ class TaskVisibilityIntegrationTest {
 
     private boolean isTaskVisibleOnPage(String taskTitle) {
         try {
-            List<WebElement> taskElements = driver.findElements(By.xpath("//*[text()='" + taskTitle + "']"));
-            if (!taskElements.isEmpty()) {
-                return true;
-            }
+            // Use safer approach: get all text elements and filter programmatically
+            // This avoids XPath injection by not concatenating user input into XPath
+            List<WebElement> allTextElements = driver.findElements(By.xpath("//*[text()]"));
             
-            List<WebElement> partialMatches = driver.findElements(By.xpath("//*[contains(text(), '" + taskTitle + "')]"));
-            for (WebElement element : partialMatches) {
-                if (element.getText().trim().equals(taskTitle)) {
+            for (WebElement element : allTextElements) {
+                String elementText = element.getText().trim();
+                if (elementText.equals(taskTitle)) {
                     return true;
                 }
             }
             
             return false;
         } catch (Exception e) {
+            // Fallback to page source search (also safe from injection)
             String pageText = driver.getPageSource();
             return pageText.contains(taskTitle);
         }
@@ -144,16 +144,22 @@ class TaskVisibilityIntegrationTest {
 
     private void enableSyncIfDisabled() {
         try {
-            List<WebElement> syncStateElements = driver.findElements(By.xpath("//*[contains(text(), 'Sync State:')]"));
-            if (!syncStateElements.isEmpty()) {
-                String syncText = syncStateElements.get(0).getText();
-                
-                if (syncText.contains("Sync State: false")) {
-                    WebElement toggleButton = wait.until(ExpectedConditions.elementToBeClickable(
-                        By.xpath("//button[contains(text(), 'Toggle')]")));
-                    toggleButton.click();
-                    
-                    Thread.sleep(2000);
+            // Use CSS selector for more reliable element location
+            List<WebElement> allElements = driver.findElements(By.cssSelector("*"));
+            
+            for (WebElement element : allElements) {
+                String text = element.getText();
+                if (text.contains("Sync State: false")) {
+                    // Find toggle button using CSS selector instead of XPath
+                    List<WebElement> buttons = driver.findElements(By.cssSelector("button"));
+                    for (WebElement button : buttons) {
+                        if ("Toggle".equals(button.getText().trim())) {
+                            button.click();
+                            Thread.sleep(2000);
+                            return;
+                        }
+                    }
+                    break;
                 }
             }
         } catch (Exception e) {
