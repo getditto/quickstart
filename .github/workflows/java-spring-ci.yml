@@ -194,83 +194,50 @@ jobs:
 
     - name: Start BrowserStack Local tunnel 
       run: |
-        # Use direct key approach like JavaScript CI and our working local setup
-        echo "🚀 Starting BrowserStack Local tunnel with credentials..."
+        echo "Starting BrowserStack Local tunnel..."
         nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          --verbose 2 \
           --daemon-mode > browserstack-local.log 2>&1 &
         
-        # Wait for tunnel with proper verification
-        echo "Starting BrowserStack Local tunnel..."
-        TUNNEL_READY=false
-        TIMEOUT=120  # Increase timeout to 2 minutes
+        # Wait for tunnel to establish
+        TIMEOUT=60
         ELAPSED=0
         
-        while [ $ELAPSED -lt $TIMEOUT ] && [ "$TUNNEL_READY" = false ]; do
-          if [ -f browserstack-local.log ]; then
-            echo "📋 Current tunnel log (last 10 lines):"
-            tail -10 browserstack-local.log
-            
-            if grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
-              echo "✅ BrowserStack Local tunnel established successfully!"
-              TUNNEL_READY=true
-            elif grep -q -i "error\|failed\|unable" browserstack-local.log; then
-              echo "❌ BrowserStack Local tunnel encountered errors"
-              echo "Full tunnel logs:"
-              cat browserstack-local.log
-              exit 1
-            else
-              echo "⏳ Waiting for tunnel... (${ELAPSED}s elapsed)"
-              sleep 10
-              ELAPSED=$((ELAPSED + 10))
-            fi
-          else
-            echo "⏳ Waiting for log file... (${ELAPSED}s elapsed)"
-            sleep 5
-            ELAPSED=$((ELAPSED + 5))
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+          if [ -f browserstack-local.log ] && grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
+            echo "BrowserStack Local tunnel established"
+            exit 0
           fi
+          if [ -f browserstack-local.log ] && grep -q -i "error\|failed\|unable" browserstack-local.log; then
+            echo "BrowserStack Local tunnel failed:"
+            cat browserstack-local.log
+            exit 1
+          fi
+          sleep 5
+          ELAPSED=$((ELAPSED + 5))
         done
         
-        if [ "$TUNNEL_READY" = false ]; then
-          echo "❌ BrowserStack Local tunnel failed to establish within ${TIMEOUT}s"
-          echo "Full tunnel logs:"
-          cat browserstack-local.log || echo "No log file found"
-          exit 1
-        fi
-        
-        echo "🔍 Tunnel verification complete - ready for tests"
+        echo "BrowserStack Local tunnel timeout after ${TIMEOUT}s"
+        [ -f browserstack-local.log ] && cat browserstack-local.log
+        exit 1
     
     - name: Create BrowserStack config
       working-directory: java-spring
       run: |
-        # Create browserstack.yml with actual credentials
         cat > browserstack.yml << EOF
         userName: ${{ secrets.BROWSERSTACK_USERNAME }}
         accessKey: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-
         projectName: Ditto Java Spring Tasks
         buildName: Java Spring Selenium Tests #${{ github.run_number }}
-
         platforms:
           - os: Windows
             osVersion: 11
             browserName: Chrome
             browserVersion: latest
-
-        # Enable BrowserStack Local for localhost testing
         browserstackLocal: true
-
-        # Debug options
         debug: true
         video: true
-        networkLogs: true
-        consoleLogs: verbose
-        seleniumLogs: true
-
         parallelsPerPlatform: 1
         EOF
-        
-        echo "📋 BrowserStack config created with credentials"
     
     - name: Start Spring Boot app in background
       working-directory: java-spring
@@ -284,25 +251,11 @@ jobs:
         echo "Waiting for Spring Boot app to start..."
         for i in {1..30}; do
           if curl -f http://localhost:8080 >/dev/null 2>&1; then
-            echo "✓ Spring Boot app is ready at http://localhost:8080"
+            echo "Spring Boot app is ready"
             break
           fi
-          echo "Waiting... ($i/30)"
           sleep 2
         done
-    
-    - name: Wait for Ditto sync to complete
-      run: |
-        TITLE="${{ needs.build.outputs.test_doc_title }}"
-        echo "Waiting for Ditto to sync test document: $TITLE"
-        
-        # Wait for the app to sync the document from Ditto Cloud
-        echo "Giving Ditto time to sync the document from cloud..."
-        sleep 10
-        
-        # Verify task appears in the UI (synced from Ditto Cloud)
-        echo "Checking if test task synced to the app..."
-        curl -s http://localhost:8080 | grep -q "$TITLE" && echo "✓ Test task synced from Ditto Cloud" || echo "⚠ Test task not yet synced (may take longer)"
     
     - name: Execute Selenium tests on BrowserStack cloud browsers  
       working-directory: java-spring
@@ -330,18 +283,13 @@ jobs:
       working-directory: java-spring
       run: |
         if [ -f app.pid ]; then
-          PID=$(cat app.pid)
-          kill $PID || true
+          kill $(cat app.pid) || true
           rm app.pid
-          echo "✓ Stopped Spring Boot app"
         fi
     
     - name: Stop BrowserStack Local tunnel
       if: always()
-      run: |
-        echo "Stopping BrowserStack Local tunnel..."
-        pkill -f "BrowserStackLocal" || true
-        echo "BrowserStack Local tunnel stopped"
+      run: pkill -f "BrowserStackLocal" || true
     
     - name: Upload test reports
       if: always()
@@ -360,6 +308,3 @@ jobs:
           java-spring/app.log
           browserstack-local.log
         retention-days: 1
-
-
-# Force CI refresh
