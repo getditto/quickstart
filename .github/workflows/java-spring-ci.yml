@@ -3,20 +3,20 @@
 # Workflow for building and testing java-spring with BrowserStack integration
 #
 ---
-name: java-spring-ci
+name: Java Spring CI
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'java-spring/**'
-      - '.github/workflows/java-spring-ci.yml'
   push:
-    branches: [main, teodor/add-android-spring-ci]
+    branches: [ main ]
+    paths: 
+      - 'java-spring/**'
+      - '.github/workflows/java-spring-ci.yml'
+  pull_request:
+    branches: [ main ]
     paths:
       - 'java-spring/**'
       - '.github/workflows/java-spring-ci.yml'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint
+    name: Lint (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -52,7 +52,7 @@ jobs:
         run: ./gradlew pmdMain pmdTest spotbugsMain
 
   build:
-    name: Build
+    name: Build (ubuntu-latest)
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 20
@@ -114,7 +114,7 @@ jobs:
           retention-days: 1
 
   browserstack-test:
-    name: BrowserStack Device Testing
+    name: BrowserStack Device Testing (macos-latest)
     runs-on: macos-latest
     needs: build
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
@@ -240,15 +240,37 @@ jobs:
         
         echo "🔍 Tunnel verification complete - ready for tests"
     
-    - name: Configure BrowserStack test config
+    - name: Create BrowserStack config
       working-directory: java-spring
       run: |
-        # Update browserstack.yml with actual credentials (macOS sed requires backup extension)
-        sed -i '' "s/\${BROWSERSTACK_USERNAME}/${{ secrets.BROWSERSTACK_USERNAME }}/g" browserstack.yml
-        sed -i '' "s/\${BROWSERSTACK_ACCESS_KEY}/${{ secrets.BROWSERSTACK_ACCESS_KEY }}/g" browserstack.yml
+        # Create browserstack.yml with actual credentials
+        cat > browserstack.yml << EOF
+        userName: ${{ secrets.BROWSERSTACK_USERNAME }}
+        accessKey: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+
+        projectName: Ditto Java Spring Tasks
+        buildName: Java Spring Selenium Tests #${{ github.run_number }}
+
+        platforms:
+          - os: Windows
+            osVersion: 11
+            browserName: Chrome
+            browserVersion: latest
+
+        # Enable BrowserStack Local for localhost testing
+        browserstackLocal: true
+
+        # Debug options
+        debug: true
+        video: true
+        networkLogs: true
+        consoleLogs: verbose
+        seleniumLogs: true
+
+        parallelsPerPlatform: 1
+        EOF
         
-        echo "📋 BrowserStack config updated with credentials"
-        cat browserstack.yml
+        echo "📋 BrowserStack config created with credentials"
     
     - name: Start Spring Boot app in background
       working-directory: java-spring

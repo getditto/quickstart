@@ -63,17 +63,6 @@ androidComponents {
                 "Ditto Websocket URL"
             )
         )
-
-        // DITTO_ENABLE_CLOUD_SYNC: false by default, can be overridden for integration tests
-        val cloudSyncEnabled = System.getenv("DITTO_ENABLE_CLOUD_SYNC")?.toBoolean() ?: false
-        it.buildConfigFields.put(
-            "DITTO_ENABLE_CLOUD_SYNC",
-            BuildConfigField(
-                "boolean",
-                cloudSyncEnabled.toString(),
-                "Enable Ditto cloud sync (false by default, true only for integration tests)"
-            )
-        )
     }
 }
 

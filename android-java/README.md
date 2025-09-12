@@ -58,5 +58,3 @@ ditto = "4.11.1"
 ```
 
 To use a newer version of the SDK, change the version number on this line.
-# Trigger fresh CI build with updated test methods
-# Force fresh BrowserStack test run
