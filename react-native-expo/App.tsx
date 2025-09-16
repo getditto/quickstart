@@ -57,7 +57,11 @@ async function requestPermissions() {
 
 const App = () => {
   const ditto = useRef<Ditto | null>(null);
+  // https://software.ditto.live/js/Ditto/4.12.1/api-reference/classes/Logger.html#minimumLogLevel
+  // Callback won't be called for logs below this level (debug, verbose)
   Logger.minimumLogLevel = "Info";
+
+  // https://software.ditto.live/js/Ditto/4.12.1/api-reference/classes/Logger.html#setCustomLogCallback
   Logger.setCustomLogCallback((level: LogLevel, message: string) => {
     
     if(level === "Error"){
