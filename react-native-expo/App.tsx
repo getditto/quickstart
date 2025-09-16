@@ -16,6 +16,8 @@ import {
   StoreObserver,
   SyncSubscription,
   TransportConfig,
+  Logger,
+  LogLevel
 } from "@dittolive/ditto";
 import { DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN } from "@env";
 
@@ -55,6 +57,23 @@ async function requestPermissions() {
 
 const App = () => {
   const ditto = useRef<Ditto | null>(null);
+  Logger.minimumLogLevel = "Info";
+  Logger.setCustomLogCallback((level: LogLevel, message: string) => {
+    
+    if(level === "Error"){
+      console.error(`[Ditto][${level}] ${message}`);
+      return;
+    }
+    if(level === "Warning"){
+      console.warn(`[Ditto][${level}] ${message}`);
+      return;
+    }
+    else {
+      console.log(`[Ditto][${level}] ${message}`);
+    }
+    //Send to Datadog...
+  });
+
   const taskSubscription = useRef<SyncSubscription | null>(null);
   const taskObserver = useRef<StoreObserver | null>(null);
 
