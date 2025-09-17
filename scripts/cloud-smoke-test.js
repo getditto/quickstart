@@ -323,6 +323,11 @@ function main() {
   const dispatchedRuns = new Map();
   let dispatchFailures = 0;
 
+  // Get repo info once for URL generation
+  const repoInfo = JSON.parse(
+    execCommand("gh repo view --json owner,name", { silent: true })
+  );
+
   for (const workflow of workflows) {
     // Get the run count before dispatch to identify our run
     const beforeRuns = execCommand(
@@ -357,7 +362,8 @@ function main() {
 
     if (newRun) {
       dispatchedRuns.set(workflow, newRun.databaseId);
-      log(`  ✅ ${workflow} → Run #${newRun.databaseId}`, colors.green);
+      const runUrl = `https://github.com/${repoInfo.owner.login}/${repoInfo.name}/actions/runs/${newRun.databaseId}`;
+      log(`  ✅ ${workflow} → ${runUrl}`, colors.green);
     } else {
       log(`  ❌ Failed to find dispatched run for ${workflow}`, colors.red);
       dispatchFailures++;
