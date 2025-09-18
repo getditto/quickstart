@@ -19,6 +19,8 @@ public class TasksPeer : IDisposable
     
     public bool IsSyncActive => _ditto.IsSyncActive;
 
+    public Ditto Ditto => _ditto;
+
     private Ditto _ditto;
 
     /// <summary>
@@ -54,7 +56,7 @@ public class TasksPeer : IDisposable
     /// until explicitly cancelled or when the peer is disposed.
     /// </remarks>
     /// <seealso href="https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions"/>
-    private void RegisterSubscription()
+    public void RegisterSubscription()
     {
         // Register a subscription, which determines what data syncs to this peer
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
@@ -117,7 +119,7 @@ public class TasksPeer : IDisposable
     /// </summary>
     /// <returns>A task that represents the asynchronous operation.</returns>
     /// <seealso href="https://docs.ditto.live/dql/strict-mode"/>
-    private async Task DisableStrictMode()
+    public async Task DisableStrictMode()
     {
         await _ditto.Store.ExecuteAsync("ALTER SYSTEM SET DQL_STRICT_MODE = false");
     }
@@ -125,7 +127,7 @@ public class TasksPeer : IDisposable
     /// <summary>
     /// Inserts the initial tasks into the 'tasks' collection.
     /// </summary>
-    private async Task InsertInitialTasks()
+    public async Task InsertInitialTasks()
     {
         var initialTasks = new List<Dictionary<string, object>>
             {

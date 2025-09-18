@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-
 using DittoSDK;
 using Terminal.Gui;
+
+namespace DittoDotNetTasksConsole;
 
 public static class Program
 {
@@ -22,15 +24,93 @@ public static class Program
 
             using var peer = await TasksPeer.Create(appId, playgroundToken, authUrl, websocketUrl);
 
-            // Disable Ditto's standard-error logging, which would interfere
-            // with the the Terminal.Gui UI.
-            DittoLogger.SetLoggingEnabled(false);
-            RunTerminalGui(peer);
+            // Check for --test command-line option
+            if (args.Contains("--test"))
+            {
+                // Run diagnostic mode with logging enabled
+                Console.WriteLine("Running in diagnostic mode...");
+                await RunDiagnosticMode(peer);
+            }
+            else
+            {
+                // Disable Ditto's standard-error logging, which would interfere
+                // with the the Terminal.Gui UI.
+                DittoLogger.SetLoggingEnabled(false);
+                RunTerminalGui(peer);
+            }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine(ex);
         }
+    }
+
+    private static async Task RunDiagnosticMode(TasksPeer peer)
+    {
+        DittoLogger.SetMinimumLogLevel(DittoLogLevel.Error);
+
+        Console.WriteLine("=== Diagnostic Mode Started ===");
+        Console.WriteLine($"App ID: {peer.AppId}");
+        Console.WriteLine($"Sync Active: {peer.IsSyncActive}");
+        Console.WriteLine();
+
+        // Initialize and set up subscription (similar to RunTerminalGui)
+        await peer.DisableStrictMode();
+        peer.RegisterSubscription();
+        await peer.InsertInitialTasks();
+        peer.StartSync();
+
+        var observerCallCount = 0;
+        var observerTriggered = new TaskCompletionSource<bool>();
+
+        // Register an observer directly on the Ditto Store that logs the raw QueryResult
+        var observer = peer.Ditto.Store.RegisterObserver("SELECT * FROM tasks WHERE NOT deleted", (queryResult) =>
+        {
+            observerCallCount++;
+            Console.WriteLine($"[Observer Callback #{observerCallCount}] Triggered at {DateTime.Now:HH:mm:ss.fff}");
+            Console.WriteLine($"  QueryResult Item Count: {queryResult.Items.Count}");
+
+            // Print the contents of each item in the QueryResult
+            for (var i = 0; i < queryResult.Items.Count; i++)
+            {
+                var item = queryResult.Items[i];
+                Console.WriteLine($"  Item [{i}]: {item.JsonString()}");
+            }
+
+            Console.WriteLine();
+
+            // Signal that the observer has been triggered at least once
+            if (observerCallCount == 1)
+            {
+                observerTriggered.TrySetResult(true);
+            }
+        });
+
+        Console.WriteLine("Observer registered. Waiting for initial callback...");
+        Console.WriteLine();
+
+        // Wait for the observer to be triggered at least once
+        await observerTriggered.Task;
+
+        // Add a test task to trigger another observer callback
+        Console.WriteLine("Adding a test task to trigger observer...");
+        var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        var title = $"Test task created at {timestamp}";
+        await peer.AddTask(title);
+
+        // Wait for Control+C
+        var exitEvent = new ManualResetEvent(false);
+        Console.CancelKeyPress += (sender, eventArgs) => {
+            eventArgs.Cancel = true;
+            exitEvent.Set();
+        };
+        exitEvent.WaitOne();
+
+        // Call the observer's Cancel() method (equivalent to close())
+        observer.Cancel();
+        Console.WriteLine();
+        Console.WriteLine("Observer cancelled. Diagnostic mode ended.");
+        Console.WriteLine($"Total observer callbacks: {observerCallCount}");
     }
 
     private static void RunTerminalGui(TasksPeer peer)
