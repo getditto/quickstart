@@ -22,6 +22,7 @@ public static class Program
             var websocketUrl = env["DITTO_WEBSOCKET_URL"];
             var authUrl = env["DITTO_AUTH_URL"];
 
+            // TasksPeer wraps a Ditto instance with application-specific functionality
             using var peer = await TasksPeer.Create(appId, playgroundToken, authUrl, websocketUrl);
 
             // Check for --test command-line option
@@ -45,16 +46,33 @@ public static class Program
         }
     }
 
+    // Invoked by passing the `--test` command-line parameter, this function tries to reproduce
+    // customer issues instead of showing the TUI.
     private static async Task RunDiagnosticMode(TasksPeer peer)
     {
         DittoLogger.SetMinimumLogLevel(DittoLogLevel.Error);
 
         Console.WriteLine("=== Diagnostic Mode Started ===");
         Console.WriteLine($"App ID: {peer.AppId}");
-        Console.WriteLine($"Sync Active: {peer.IsSyncActive}");
         Console.WriteLine();
 
         peer.Ditto.DeviceName = "dotnet-tui Diagnostics";
+        var metadata = new Dictionary<string, object>
+        {
+            ["processID"] = System.Diagnostics.Process.GetCurrentProcess().Id,
+            ["machineName"] = Environment.MachineName,
+            ["userName"] = Environment.UserName,
+            ["osVersion"] = Environment.OSVersion.ToString(),
+            ["dotnetVersion"] = Environment.Version.ToString(),
+            ["startTime"] = DateTime.UtcNow.ToString("O"),
+            ["debugMode"] = true,
+            ["platform"] = Environment.Is64BitProcess ? "x64" : "x86",
+            ["workingDirectory"] = Environment.CurrentDirectory,
+            ["sessionID"] = Guid.NewGuid().ToString()
+        };
+        peer.Ditto.SmallPeerInfo.Metadata = metadata;
+        peer.Ditto.Presence.SetPeerMetadata(metadata);
+
         await peer.DisableStrictMode();
         await peer.InsertInitialTasks();
 
