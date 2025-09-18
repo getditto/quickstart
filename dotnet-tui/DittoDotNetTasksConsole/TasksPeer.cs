@@ -12,11 +12,11 @@ using DittoSDK;
 /// </summary>
 public class TasksPeer : IDisposable
 {
-    private const string Query = "SELECT * FROM tasks WHERE NOT deleted";
+    public const string Query = "SELECT * FROM tasks WHERE NOT deleted";
 
     public string AppId { get; private set; }
     public string PlaygroundToken { get; private set; }
-    
+
     public bool IsSyncActive => _ditto.IsSyncActive;
 
     public Ditto Ditto => _ditto;
@@ -27,9 +27,9 @@ public class TasksPeer : IDisposable
     /// Creates a new synchronizing TasksPeer instance.
     /// </summary>
     public static async Task<TasksPeer> Create(
-        string appId, 
-        string playgroundToken, 
-        string authUrl, 
+        string appId,
+        string playgroundToken,
+        string authUrl,
         string websocketUrl)
     {
         var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
@@ -37,7 +37,7 @@ public class TasksPeer : IDisposable
         peer.RegisterSubscription();
         await peer.InsertInitialTasks();
         peer.StartSync();
-        
+
         return peer;
     }
 
@@ -50,7 +50,7 @@ public class TasksPeer : IDisposable
     /// The subscription is created using the same query that filters out deleted tasks
     /// (<c>SELECT * FROM tasks WHERE NOT deleted</c>), ensuring that only active,
     /// non-deleted tasks are synchronized across the network.
-    /// 
+    ///
     /// This method should be called during peer initialization to establish the
     /// subscription before starting the sync process. The subscription remains active
     /// until explicitly cancelled or when the peer is disposed.
@@ -88,8 +88,8 @@ public class TasksPeer : IDisposable
         Directory.CreateDirectory(tempDir);
 
         var identity = DittoIdentity.OnlinePlayground(
-            appId, 
-            playgroundToken, 
+            appId,
+            playgroundToken,
             false, // This is required to be set to false to use the correct URLs
             authUrl);
 

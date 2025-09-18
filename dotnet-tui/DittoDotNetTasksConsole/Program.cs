@@ -54,17 +54,21 @@ public static class Program
         Console.WriteLine($"Sync Active: {peer.IsSyncActive}");
         Console.WriteLine();
 
-        // Initialize and set up subscription (similar to RunTerminalGui)
+        peer.Ditto.DeviceName = "dotnet-tui Diagnostics";
         await peer.DisableStrictMode();
-        peer.RegisterSubscription();
         await peer.InsertInitialTasks();
+
+        // set up two subscriptions
+        var sub1 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query);
+        var sub2 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND 1 = 1");
+
         peer.StartSync();
 
         var observerCallCount = 0;
         var observerTriggered = new TaskCompletionSource<bool>();
 
         // Register an observer directly on the Ditto Store that logs the raw QueryResult
-        var observer = peer.Ditto.Store.RegisterObserver("SELECT * FROM tasks WHERE NOT deleted", (queryResult) =>
+        var observer = peer.Ditto.Store.RegisterObserver(TasksPeer.Query, (queryResult) =>
         {
             observerCallCount++;
             Console.WriteLine($"[Observer Callback #{observerCallCount}] Triggered at {DateTime.Now:HH:mm:ss.fff}");
@@ -107,7 +111,13 @@ public static class Program
         };
         await exitTaskCompletionSource.Task;
 
+        // Clean up
+
         observer.Cancel();
+
+        sub2.Cancel();
+        sub1.Cancel();
+
         Console.WriteLine();
         Console.WriteLine("Observer cancelled. Diagnostic mode ended.");
         Console.WriteLine($"Total observer callbacks: {observerCallCount}");
