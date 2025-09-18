@@ -142,15 +142,20 @@ public static class Program
             {
                 try
                 {
+                    GC.Collect();
                     await Task.Delay(1000, cancellationTokenSource.Token);
 
                     if (subscriptionsActive)
                     {
                         // Cancel all four subscriptions
                         sub1.Cancel();
+                        sub1 = null;
                         sub2.Cancel();
+                        sub2 = null;
                         sub3.Cancel();
+                        sub3 = null;
                         sub4.Cancel();
+                        sub4 = null;
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] All 4 subscriptions cancelled");
                         subscriptionsActive = false;
                     }
