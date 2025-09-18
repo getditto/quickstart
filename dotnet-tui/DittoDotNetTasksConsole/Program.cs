@@ -75,9 +75,11 @@ public static class Program
 
         await peer.DisableStrictMode();
 
-        // set up two subscriptions
+        // set up four subscriptions
         var sub1 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query);
         var sub2 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND 1 = 1");
+        var sub3 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND done = false OR done = true");
+        var sub4 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND title IS NOT NULL");
 
         peer.StartSync();
 
@@ -120,20 +122,74 @@ public static class Program
         // await peer.AddTask(title);
 
         Console.WriteLine("Press Control+C to exit...");
+        Console.WriteLine("Subscriptions will be toggled on/off every second.");
+        Console.WriteLine();
+
         var exitTaskCompletionSource = new TaskCompletionSource<bool>();
+        var cancellationTokenSource = new CancellationTokenSource();
+
         Console.CancelKeyPress += (sender, eventArgs) => {
             Console.WriteLine("Cancellation requested.");
             eventArgs.Cancel = true;
+            cancellationTokenSource.Cancel();
             exitTaskCompletionSource.TrySetResult(true);
         };
+
+        // Start a task to toggle subscriptions every second
+        var toggleTask = Task.Run(async () => {
+            var subscriptionsActive = true;
+            while (!cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(1000, cancellationTokenSource.Token);
+
+                    if (subscriptionsActive)
+                    {
+                        // Cancel all four subscriptions
+                        sub1.Cancel();
+                        sub2.Cancel();
+                        sub3.Cancel();
+                        sub4.Cancel();
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] All 4 subscriptions cancelled");
+                        subscriptionsActive = false;
+                    }
+                    else
+                    {
+                        // Re-register all four subscriptions with the same queries
+                        sub1 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query);
+                        sub2 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND 1 = 1");
+                        sub3 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND done = false OR done = true");
+                        sub4 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND title IS NOT NULL");
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] All 4 subscriptions re-registered");
+                        subscriptionsActive = true;
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // Expected when cancellation is requested
+                    break;
+                }
+            }
+        }, cancellationTokenSource.Token);
+
         await exitTaskCompletionSource.Task;
 
-        // Clean up
+        // Wait for the toggle task to complete
+        await toggleTask;
 
+        // Clean up
         observer.Cancel();
 
-        sub2.Cancel();
-        sub1.Cancel();
+        // Cancel subscriptions if they're still active
+        if (sub1 is { IsCancelled: false })
+            sub1.Cancel();
+        if (sub2 is { IsCancelled: false })
+            sub2.Cancel();
+        if (sub3 is { IsCancelled: false })
+            sub3.Cancel();
+        if (sub4 is { IsCancelled: false })
+            sub4.Cancel();
 
         Console.WriteLine();
         Console.WriteLine("Observer cancelled. Diagnostic mode ended.");
