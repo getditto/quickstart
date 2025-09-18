@@ -74,7 +74,6 @@ public static class Program
         peer.Ditto.Presence.SetPeerMetadata(metadata);
 
         await peer.DisableStrictMode();
-        await peer.InsertInitialTasks();
 
         // set up two subscriptions
         var sub1 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query);
