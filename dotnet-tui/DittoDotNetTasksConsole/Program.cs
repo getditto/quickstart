@@ -92,21 +92,21 @@ public static class Program
         // Wait for the observer to be triggered at least once
         await observerTriggered.Task;
 
-        // Add a test task to trigger another observer callback
-        Console.WriteLine("Adding a test task to trigger observer...");
-        var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-        var title = $"Test task created at {timestamp}";
-        await peer.AddTask(title);
+        // // Add a test task to trigger another observer callback
+        // Console.WriteLine("Adding a test task to trigger observer...");
+        // var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        // var title = $"Test task created at {timestamp}";
+        // await peer.AddTask(title);
 
-        // Wait for Control+C
-        var exitEvent = new ManualResetEvent(false);
+        Console.WriteLine("Press Control+C to exit...");
+        var exitTaskCompletionSource = new TaskCompletionSource<bool>();
         Console.CancelKeyPress += (sender, eventArgs) => {
+            Console.WriteLine("Cancellation requested.");
             eventArgs.Cancel = true;
-            exitEvent.Set();
+            exitTaskCompletionSource.TrySetResult(true);
         };
-        exitEvent.WaitOne();
+        await exitTaskCompletionSource.Task;
 
-        // Call the observer's Cancel() method (equivalent to close())
         observer.Cancel();
         Console.WriteLine();
         Console.WriteLine("Observer cancelled. Diagnostic mode ended.");
