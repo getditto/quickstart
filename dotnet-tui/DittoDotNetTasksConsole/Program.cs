@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using DittoSDK;
@@ -25,12 +26,18 @@ public static class Program
             // TasksPeer wraps a Ditto instance with application-specific functionality
             using var peer = await TasksPeer.Create(appId, playgroundToken, authUrl, websocketUrl);
 
-            // Check for --test command-line option
-            if (args.Contains("--test"))
+            // Check for --observe command-line option
+            if (args.Contains("--observe"))
             {
-                // Run diagnostic mode with logging enabled
-                Console.WriteLine("Running in diagnostic mode...");
-                await RunDiagnosticMode(peer);
+                // Run observer mode with logging enabled
+                Console.WriteLine("Running in observer mode...");
+                await RunObserverMode(peer);
+            }
+            else if (args.Contains("--generate"))
+            {
+                // Run generator mode with logging enabled
+                Console.WriteLine("Running in generator mode...");
+                await RunGeneratorMode(peer);
             }
             else
             {
@@ -46,19 +53,13 @@ public static class Program
         }
     }
 
-    // Invoked by passing the `--test` command-line parameter, this function tries to reproduce
-    // customer issues instead of showing the TUI.
-    private static async Task RunDiagnosticMode(TasksPeer peer)
+    // Sets up Ditto device name and metadata for diagnostic modes
+    private static void ConfigureDittoMetadata(TasksPeer peer, string modeName)
     {
-        DittoLogger.SetMinimumLogLevel(DittoLogLevel.Error);
-
-        Console.WriteLine("=== Diagnostic Mode Started ===");
-        Console.WriteLine($"App ID: {peer.AppId}");
-        Console.WriteLine();
-
-        peer.Ditto.DeviceName = "dotnet-tui Diagnostics";
+        peer.Ditto.DeviceName = $"dotnet-tui {modeName}";
         var metadata = new Dictionary<string, object>
         {
+            ["deviceName"] = peer.Ditto.DeviceName,
             ["processID"] = System.Diagnostics.Process.GetCurrentProcess().Id,
             ["machineName"] = Environment.MachineName,
             ["userName"] = Environment.UserName,
@@ -72,6 +73,19 @@ public static class Program
         };
         peer.Ditto.SmallPeerInfo.Metadata = metadata;
         peer.Ditto.Presence.SetPeerMetadata(metadata);
+    }
+
+    // Invoked by passing the `--observe` command-line parameter, this function monitors
+    // observer behavior and subscription toggling instead of showing the TUI.
+    private static async Task RunObserverMode(TasksPeer peer)
+    {
+        DittoLogger.SetMinimumLogLevel(DittoLogLevel.Error);
+
+        Console.WriteLine("=== Observer Mode Started ===");
+        Console.WriteLine($"App ID: {peer.AppId}");
+        Console.WriteLine();
+
+        ConfigureDittoMetadata(peer, "Observer");
 
         await peer.DisableStrictMode();
 
@@ -85,6 +99,10 @@ public static class Program
 
         var observerCallCount = 0;
         var observerTriggered = new TaskCompletionSource<bool>();
+        var lastItemsJson = new List<string>();
+        var duplicateDetected = false;
+        var exitTaskCompletionSource = new TaskCompletionSource<bool>();
+        var cancellationTokenSource = new CancellationTokenSource();
 
         // Register an observer directly on the Ditto Store that logs the raw QueryResult
         var observer = peer.Ditto.Store.RegisterObserver(TasksPeer.Query, (queryResult) =>
@@ -93,12 +111,49 @@ public static class Program
             Console.WriteLine($"[Observer Callback #{observerCallCount}] Triggered at {DateTime.Now:HH:mm:ss.fff}");
             Console.WriteLine($"  QueryResult Item Count: {queryResult.Items.Count}");
 
-            // Print the contents of each item in the QueryResult
+            // Collect current items as JSON strings
+            var currentItemsJson = new List<string>();
             for (var i = 0; i < queryResult.Items.Count; i++)
             {
                 var item = queryResult.Items[i];
-                Console.WriteLine($"  Item [{i}]: {item.JsonString()}");
+                var jsonString = item.JsonString();
+                currentItemsJson.Add(jsonString);
+                Console.WriteLine($"  Item [{i}]: {jsonString}");
             }
+
+            // Sort both lists to ensure order-independent comparison
+            currentItemsJson.Sort();
+
+            // Check if this is identical to the last callback
+            if (observerCallCount > 1 && lastItemsJson.Count == currentItemsJson.Count)
+            {
+                bool isIdentical = true;
+                for (int i = 0; i < currentItemsJson.Count; i++)
+                {
+                    if (currentItemsJson[i] != lastItemsJson[i])
+                    {
+                        isIdentical = false;
+                        break;
+                    }
+                }
+
+                if (isIdentical)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("ERROR: Observer callback received identical data!");
+                    Console.WriteLine($"This is callback #{observerCallCount} with the same data as callback #{observerCallCount - 1}");
+                    Console.WriteLine("Terminating due to duplicate observer callback detection.");
+                    duplicateDetected = true;
+                    observerTriggered.TrySetResult(true);
+                    // Trigger cancellation to exit the application
+                    cancellationTokenSource.Cancel();
+                    exitTaskCompletionSource.TrySetResult(true);
+                    return;
+                }
+            }
+
+            // Store the current items for next comparison
+            lastItemsJson = new List<string>(currentItemsJson);
 
             Console.WriteLine();
 
@@ -125,9 +180,6 @@ public static class Program
         Console.WriteLine("Subscriptions will be toggled on/off every second.");
         Console.WriteLine();
 
-        var exitTaskCompletionSource = new TaskCompletionSource<bool>();
-        var cancellationTokenSource = new CancellationTokenSource();
-
         Console.CancelKeyPress += (sender, eventArgs) => {
             Console.WriteLine("Cancellation requested.");
             eventArgs.Cancel = true;
@@ -142,7 +194,6 @@ public static class Program
             {
                 try
                 {
-                    GC.Collect();
                     await Task.Delay(1000, cancellationTokenSource.Token);
 
                     if (subscriptionsActive)
@@ -156,8 +207,12 @@ public static class Program
                         sub3 = null;
                         sub4.Cancel();
                         sub4 = null;
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] All 4 subscriptions cancelled");
                         subscriptionsActive = false;
+
+                        // Remove any deleted tasks from our local store
+                        await peer.Ditto.Store.ExecuteAsync("EVICT FROM tasks WHERE deleted");
+
+                        GC.Collect();
                     }
                     else
                     {
@@ -166,7 +221,6 @@ public static class Program
                         sub2 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND 1 = 1");
                         sub3 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND done = false OR done = true");
                         sub4 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND title IS NOT NULL");
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] All 4 subscriptions re-registered");
                         subscriptionsActive = true;
                     }
                 }
@@ -197,8 +251,100 @@ public static class Program
             sub4.Cancel();
 
         Console.WriteLine();
-        Console.WriteLine("Observer cancelled. Diagnostic mode ended.");
+        Console.WriteLine("Observer cancelled. Observer mode ended.");
         Console.WriteLine($"Total observer callbacks: {observerCallCount}");
+
+        if (duplicateDetected)
+        {
+            Console.WriteLine("WARNING: Duplicate observer callback was detected during this session!");
+        }
+    }
+
+    // Invoked by passing the `--generate` command-line parameter, this function continuously
+    // generates/updates tasks in the collection instead of showing the TUI.
+    private static async Task RunGeneratorMode(TasksPeer peer)
+    {
+        DittoLogger.SetMinimumLogLevel(DittoLogLevel.Error);
+
+        Console.WriteLine("=== Generator Mode Started ===");
+        Console.WriteLine($"App ID: {peer.AppId}");
+        Console.WriteLine();
+
+        ConfigureDittoMetadata(peer, "Generator");
+
+        await peer.DisableStrictMode();
+        peer.StartSync();
+
+        Console.WriteLine("Generating 1 task per second, cycling through IDs 1-10. Press Control+C to exit...");
+        Console.WriteLine();
+
+        var exitTaskCompletionSource = new TaskCompletionSource<bool>();
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        Console.CancelKeyPress += (sender, eventArgs) => {
+            Console.WriteLine("Cancellation requested.");
+            eventArgs.Cancel = true;
+            cancellationTokenSource.Cancel();
+            exitTaskCompletionSource.TrySetResult(true);
+        };
+
+        var generationCount = 0;
+        var currentId = 1;
+
+        // Start a task to generate one task per second
+        var generatorTask = Task.Run(async () => {
+            while (!cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    // Generate a single task with the current ID
+                    var timestamp = DateTime.UtcNow.ToString("O");
+
+                    var query = $@"
+                        INSERT INTO tasks
+                        DOCUMENTS ({{
+                            '_id': '{currentId}',
+                            'title': 'Generated task {currentId} {timestamp}',
+                            'done': false,
+                            'deleted': false
+                        }})
+                        ON ID CONFLICT DO UPDATE";
+
+                    await peer.Ditto.Store.ExecuteAsync(query);
+
+                    generationCount++;
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Generated/updated task ID {currentId} (total: {generationCount})");
+
+                    // Cycle through IDs 1-10
+                    currentId++;
+                    if (currentId > 10)
+                    {
+                        currentId = 1;
+                    }
+
+                    await Task.Delay(100, cancellationTokenSource.Token);
+                }
+                catch (TaskCanceledException)
+                {
+                    // Expected when cancellation is requested
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error generating tasks: {ex.Message}");
+                }
+            }
+        }, cancellationTokenSource.Token);
+
+        await exitTaskCompletionSource.Task;
+
+        // Wait for the generator task to complete
+        await generatorTask;
+
+        Console.WriteLine();
+        Console.WriteLine("Generator mode ended.");
+        Console.WriteLine($"Total task updates: {generationCount}");
+        Console.WriteLine($"Last task ID updated: {(currentId == 1 ? 10 : currentId - 1)}");
     }
 
     private static void RunTerminalGui(TasksPeer peer)

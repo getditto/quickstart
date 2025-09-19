@@ -170,4 +170,69 @@ _ditto.Store.RegisterObserver(Query, async (queryResult) => {...});
 3. **Network disconnect/reconnect**: Test offline changes and sync convergence
 4. **Rapid updates**: Quick successive changes to the same task
 5. **Cross-platform sync**: Test with other quickstart implementations
+
+### Diagnostic Modes
+
+The application now includes specialized diagnostic modes for investigating observer behavior:
+
+#### Observer Mode (`--observe`)
+Monitors observer callback patterns and detects duplicate triggers:
+```bash
+dotnet run --observe
+```
+
+Features:
+- Logs all observer callbacks with timestamps and data
+- Detects and terminates if identical data is received in consecutive callbacks
+- Toggles 4 subscriptions on/off every second to test subscription state changes
+- Evicts deleted tasks during subscription cancellation
+- Reports total callback count and duplicate detection status
+
+#### Generator Mode (`--generate`)
+Continuously generates/updates tasks to stress-test observers:
+```bash
+dotnet run --generate
+```
+
+Features:
+- Updates 10 tasks per second with IDs "1" through "10"
+- Uses `ON ID CONFLICT DO UPDATE` to prevent collection growth
+- Sets task titles to current ISO 8601 timestamp
+- Useful for testing observer behavior under continuous data changes
+- Reports generation statistics on exit
+
+#### Implementation Details
+
+##### Duplicate Detection Algorithm
+The observer mode uses the following approach to detect duplicates:
+1. Stores JSON representation of all items from each callback
+2. Sorts items for order-independent comparison
+3. Compares with previous callback data
+4. Terminates immediately if identical data detected
+
+##### Subscription Toggling
+Observer mode tests the impact of subscription state changes:
+- Cancels all 4 subscriptions (setting references to null)
+- Evicts deleted tasks during cancellation
+- Forces garbage collection
+- Re-registers subscriptions with original queries
+- Repeats cycle every second
+
+##### Metadata Configuration
+Both diagnostic modes set comprehensive peer metadata including:
+- Device name (mode-specific)
+- Process ID, machine name, user name
+- OS version, .NET version
+- Start time (ISO 8601)
+- Platform (x64/x86)
+- Working directory
+- Unique session ID
+
+### Known Issues and Observations
+
+1. **Async Task Blocking**: Initial implementation used `ManualResetEvent.WaitOne()` which blocked async tasks. Fixed by using `TaskCompletionSource` for proper async/await pattern.
+
+2. **DQL Syntax**: DQL requires single quotes for string literals in INSERT statements, not double quotes.
+
+3. **Multiple Subscriptions**: Testing with 4 overlapping subscriptions that all match the same data to investigate if multiple subscriptions contribute to duplicate callbacks.
 - Ditto credentials are in the file ../../.env
