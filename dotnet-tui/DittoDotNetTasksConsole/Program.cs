@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using DittoSDK;
 using Terminal.Gui;
 
 namespace DittoDotNetTasksConsole;
+
+// This branch has been hacked up to try to reproduce issues reported in INCIDENT-407:
+// <https://www.notion.so/getditto/INCIDENT-407-CFA-Double-Trigger-2729d9829a3280d9957ed76a2838f780#2729d9829a3280d9957ed76a2838f780>
 
 public static class Program
 {
@@ -39,7 +41,7 @@ public static class Program
                 Console.WriteLine("Running in generator mode...");
                 await RunGeneratorMode(peer);
             }
-            else
+            else // default: TUI mode
             {
                 // Disable Ditto's standard-error logging, which would interfere
                 // with the the Terminal.Gui UI.
@@ -53,7 +55,9 @@ public static class Program
         }
     }
 
-    // Sets up Ditto device name and metadata for diagnostic modes
+    // Sets up Ditto device name and metadata for diagnostic modes.
+    //
+    // This data will be visible in the portal for a device.
     private static void ConfigureDittoMetadata(TasksPeer peer, string modeName)
     {
         peer.Ditto.DeviceName = $"dotnet-tui {modeName}";
@@ -77,6 +81,15 @@ public static class Program
 
     // Invoked by passing the `--observe` command-line parameter, this function monitors
     // observer behavior and subscription toggling instead of showing the TUI.
+    //
+    // Once per second, it either registers four subscriptions, or deregisters the four
+    // subscriptions.
+    //
+    // When the observer callback is fired, it prints the JSON data, then compares the
+    // new data with what it saw the last time it was called. If the data is the same,
+    // this is a "double-trigger" event which we are trying to reproduce.
+    //
+    // Press Ctrl-C to exit.
     private static async Task RunObserverMode(TasksPeer peer)
     {
         DittoLogger.SetMinimumLogLevel(DittoLogLevel.Error);
@@ -89,7 +102,7 @@ public static class Program
 
         await peer.DisableStrictMode();
 
-        // set up four subscriptions
+        // Set up four subscriptions which query for the same data, but are not the same
         var sub1 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query);
         var sub2 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND 1 = 1");
         var sub3 = peer.Ditto.Sync.RegisterSubscription(TasksPeer.Query + " AND done = false OR done = true");
@@ -169,12 +182,6 @@ public static class Program
 
         // Wait for the observer to be triggered at least once
         await observerTriggered.Task;
-
-        // // Add a test task to trigger another observer callback
-        // Console.WriteLine("Adding a test task to trigger observer...");
-        // var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-        // var title = $"Test task created at {timestamp}";
-        // await peer.AddTask(title);
 
         Console.WriteLine("Press Control+C to exit...");
         Console.WriteLine("Subscriptions will be toggled on/off every second.");
@@ -262,6 +269,11 @@ public static class Program
 
     // Invoked by passing the `--generate` command-line parameter, this function continuously
     // generates/updates tasks in the collection instead of showing the TUI.
+    //
+    // It inserts or updates tasks with IDs in the range 1-10. It will not grow the collection
+    // by more than 10 items, but every 100ms it will insert or update a task.
+    //
+    // Press Ctrl-C to exit.
     private static async Task RunGeneratorMode(TasksPeer peer)
     {
         DittoLogger.SetMinimumLogLevel(DittoLogLevel.Error);
