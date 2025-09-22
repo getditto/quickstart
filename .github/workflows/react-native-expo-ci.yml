@@ -96,6 +96,8 @@ jobs:
 
     - name: Build Android APK
       working-directory: react-native-expo/android
+      # Use direct gradlew instead of yarn android to generate unsigned APK required by BrowserStack
+      # yarn android creates signed builds that don't work with BrowserStack real device testing
       run: NODE_ENV=production ./gradlew assembleRelease --no-daemon --console=plain
 
     - name: Upload Android APK artifact
@@ -160,6 +162,8 @@ jobs:
       run: |
         echo "🍎 Building iOS device .ipa for BrowserStack..."
 
+        # Use direct xcodebuild instead of yarn ios to generate unsigned IPA required by BrowserStack
+        # yarn ios creates signed builds for simulators that don't work with BrowserStack real device testing
         # Build and archive iOS app for real device
         xcodebuild -workspace ios/reactnativeexpo.xcworkspace \
           -scheme reactnativeexpo \
@@ -204,7 +208,7 @@ jobs:
         retention-days: 1
 
   seed-ditto-cloud:
-    name: Seed Ditto Cloud
+    name: Create test documents in Big Peer
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 10
