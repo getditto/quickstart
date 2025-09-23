@@ -125,4 +125,6 @@ jobs:
             /p:RuntimeIdentifier=ios-arm64 \
             /p:CodesignKey="" \
             /p:CodesignProvision="" \
+            /p:CodeSigningRequired=false \
+            /p:CodeSigningAllowed=false \
             /p:ArchiveOnBuild=false
