@@ -73,7 +73,7 @@ jobs:
 
       - name: Build project
         working-directory: dotnet-tui
-        run: dotnet build --configuration Release
+        run: dotnet build DittoDotNetTasksConsole/DittoDotNetTasksConsole.csproj --configuration Release
 
   integration-test:
     name: Integration Test
@@ -134,7 +134,7 @@ jobs:
 
       - name: Build .NET application
         working-directory: dotnet-tui
-        run: dotnet build --configuration Release
+        run: dotnet build DittoDotNetTasksConsole/DittoDotNetTasksConsole.csproj --configuration Release
 
       - name: Run .NET integration tests
         working-directory: dotnet-tui
