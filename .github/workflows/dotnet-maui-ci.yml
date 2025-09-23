@@ -88,7 +88,7 @@ jobs:
       - name: Build Android APK (unsigned Release)
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet build --configuration Release --framework net9.0-android --no-restore
+          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-android --no-restore
 
   build-ios:
     name: Build iOS
@@ -121,7 +121,7 @@ jobs:
       - name: Build iOS IPA (unsigned Release)
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet build --configuration Release --framework net9.0-ios --no-restore \
+          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
             /p:RuntimeIdentifier=ios-arm64 \
             /p:CodesignKey="" \
             /p:CodesignProvision="" \
