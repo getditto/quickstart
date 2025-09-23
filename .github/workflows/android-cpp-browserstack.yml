@@ -209,20 +209,18 @@ jobs:
       id: test
       working-directory: android-cpp/QuickStartTasksCPP/appium-test
       run: |
-        # Set BrowserStack credentials
+        # Set BrowserStack credentials and configuration via environment variables
         export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+        export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
         export GITHUB_TEST_DOC_ID="${{ env.TEST_DOC_TITLE }}"
 
         echo "🚀 Starting Appium E2E tests on BrowserStack..."
         echo "📱 App: ${{ steps.upload.outputs.app_url }}"
         echo "🔍 Test Document: ${{ env.TEST_DOC_TITLE }}"
 
-        # Run tests using Gradle (which will connect to BrowserStack hub)
+        # Run tests using Gradle - BrowserStack detection via environment variables
         ../gradlew test \
-          -Dappium.server.url="https://${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}@hub-cloud.browserstack.com/wd/hub" \
-          -DGITHUB_TEST_DOC_ID="${{ env.TEST_DOC_TITLE }}" \
-          -Dapp.url="${{ steps.upload.outputs.app_url }}" \
           --console=plain \
           --no-daemon
 
