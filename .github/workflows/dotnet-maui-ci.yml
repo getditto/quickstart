@@ -48,7 +48,7 @@ jobs:
       - name: Run .NET format check
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet format --verify-no-changes --verbosity diagnostic
+          dotnet format DittoMauiTasksApp.sln --verify-no-changes --verbosity diagnostic
           if [ $? -ne 0 ]; then
             echo "❌ Code formatting issues found. Run 'dotnet format' to fix."
             exit 1
