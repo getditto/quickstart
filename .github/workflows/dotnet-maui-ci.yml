@@ -125,6 +125,7 @@ jobs:
             /p:RuntimeIdentifier=ios-arm64 \
             /p:CodesignKey="" \
             /p:CodesignProvision="" \
-            /p:MtouchArch=ARM64 \
-            /p:BuildIpa=false \
-            /p:ArchiveOnBuild=false
+            /p:IosSigningKey="" \
+            /p:IosProvisioningProfile="" \
+            /p:ArchiveOnBuild=false \
+            /p:BuildIpa=false
