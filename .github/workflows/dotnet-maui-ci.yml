@@ -32,10 +32,6 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Install .NET MAUI workload
-        run: |
-          dotnet workload install maui
-
       - name: Create test .env file
         run: |
           echo "DITTO_APP_ID=test" > .env
@@ -43,9 +39,11 @@ jobs:
           echo "DITTO_AUTH_URL=test" >> .env
           echo "DITTO_WEBSOCKET_URL=test" >> .env
 
-      - name: Restore dependencies
+      - name: Restore workloads and dependencies
         working-directory: dotnet-maui/DittoMauiTasksApp
-        run: dotnet restore
+        run: |
+          dotnet workload restore
+          dotnet restore
 
       - name: Run .NET format check
         working-directory: dotnet-maui/DittoMauiTasksApp
@@ -74,10 +72,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install .NET MAUI workload
-        run: |
-          dotnet workload install maui
-
       - name: Create .env file
         run: |
           echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
@@ -85,9 +79,11 @@ jobs:
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
-      - name: Restore dependencies
+      - name: Restore workloads and dependencies
         working-directory: dotnet-maui/DittoMauiTasksApp
-        run: dotnet restore
+        run: |
+          dotnet workload restore
+          dotnet restore
 
       - name: Build Android APK (unsigned Release)
         working-directory: dotnet-maui/DittoMauiTasksApp
@@ -109,10 +105,6 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Install .NET MAUI workload
-        run: |
-          dotnet workload install maui
-
       - name: Create .env file
         run: |
           echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
@@ -120,9 +112,11 @@ jobs:
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
-      - name: Restore dependencies
+      - name: Restore workloads and dependencies
         working-directory: dotnet-maui/DittoMauiTasksApp
-        run: dotnet restore
+        run: |
+          dotnet workload restore
+          dotnet restore
 
       - name: Build iOS IPA (unsigned Release)
         working-directory: dotnet-maui/DittoMauiTasksApp
