@@ -209,11 +209,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-android, build-ios]
     timeout-minutes: 10
+    outputs:
+      test_task_title: ${{ steps.seed-document.outputs.test_task_title }}
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Insert test document into Ditto Cloud
+      id: seed-document
       run: |
         # Create a unique GitHub test document with inverted timestamp to appear at top
         TIMESTAMP=$(date +%s)
