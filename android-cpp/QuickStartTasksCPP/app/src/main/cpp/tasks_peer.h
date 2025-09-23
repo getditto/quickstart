@@ -58,6 +58,7 @@ public:
   ///
   /// @throws TaskException if task cannot be retrieved.
   Task get_task(const std::string &task_id);
+  Task get_task_by_title(const std::string &title);
 
   /// Save task properties.
   void update_task(const Task &task);

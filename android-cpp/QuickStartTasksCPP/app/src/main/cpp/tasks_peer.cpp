@@ -57,6 +57,10 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
     auto ditto =
         make_unique<ditto::Ditto>(android_context, identity, std::move(persistence_dir));
 
+    // Enable debug logging
+    ditto::Log::set_minimum_log_level(ditto::LogLevel::debug);
+
+
     if (is_running_on_emulator) {
       // Some transports don't work correctly on emulator, so disable them.
       ditto->update_transport_config([websocket_url](ditto::TransportConfig &config) {
@@ -194,6 +198,25 @@ public:
     }
   }
 
+  Task get_task_by_title(const string &title) {
+    try {
+      lock_guard<mutex> lock(*mtx);
+      if (title.empty()) {
+        throw invalid_argument("title must not be empty");
+      }
+      const auto query = "SELECT * FROM tasks WHERE title = :title AND NOT deleted";
+      const auto result = ditto->get_store().execute(query, {{"title", title}});
+      const auto item_count = result.item_count();
+      if (item_count == 0) {
+        throw runtime_error(string("no tasks found with title \"") + title + "\"");
+      }
+      const auto task = task_from(result.get_item(0));
+      return task;
+    } catch (const exception &err) {
+      throw runtime_error("unable to retrieve task: " + string(err.what()));
+    }
+  }
+
   void update_task(const Task &task) {
     try {
       lock_guard<mutex> lock(*mtx);
@@ -263,7 +286,7 @@ public:
       function<void(const vector<string> &)> callback) {
     try {
       const auto observer = ditto->get_store().register_observer(
-          "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id",
+          "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC",
           [callback = std::move(callback)](const ditto::QueryResult &result) {
             const auto item_count = result.item_count();
             log_debug("Tasks collection updated; count=" +
@@ -302,7 +325,7 @@ public:
                                 {"title",   task.title},
                                 {"done",    task.done},
                                 {"deleted", task.deleted}};
-        const auto command = "INSERT INTO tasks INITIAL DOCUMENTS (:newTask)";
+        const auto command = "INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE";
         ditto->get_store().execute(command, {{"newTask", task_args}});
       }
     } catch (const exception &err) {
@@ -350,6 +373,10 @@ string TasksPeer::add_task(const string &title, bool done) {
 
 Task TasksPeer::get_task(const string &task_id) {
   return impl->get_task(task_id);
+}
+
+Task TasksPeer::get_task_by_title(const string &title) {
+  return impl->get_task_by_title(title);
 }
 
 void TasksPeer::update_task(const Task &task) { impl->update_task(task); }

@@ -69,6 +69,9 @@ class TasksApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Log.d(TAG, "🚀 TasksApplication.onCreate() called!")
+        Log.d(TAG, "🧪 TEST DEBUG: TasksApplication.onCreate() executing")
+        println("🧪 TEST DEBUG: TasksApplication.onCreate() executing")
         setupDitto()
     }
 
@@ -79,10 +82,17 @@ class TasksApplication : Application() {
         val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
 
         try {
+            Log.d(TAG, "🔧 Setting up Ditto with AppID: $appId")
+            Log.d(TAG, "🌐 WebSocket URL: $webSocketURL")
+            Log.d(TAG, "🏃‍♂️ Running on emulator: $isProbablyRunningOnEmulator")
+            Log.d(TAG, "🧪 TEST DEBUG: setupDitto() executing")
+            println("🧪 TEST DEBUG: setupDitto() executing")
+            
             val appContext = applicationContext()
-
             val persistenceDir = File(appContext.filesDir, "ditto")
             persistenceDir.mkdirs()
+            
+            Log.d(TAG, "📁 Persistence dir: ${persistenceDir.path}")
 
             TasksLib.initDitto(
                 appContext,
@@ -93,9 +103,15 @@ class TasksApplication : Application() {
                 authUrl,
                 webSocketURL
             )
+            Log.d(TAG, "🚀 Ditto initialized, starting sync...")
+            Log.d(TAG, "🧪 TEST DEBUG: About to call TasksLib.startSync()")
+            println("🧪 TEST DEBUG: About to call TasksLib.startSync()")
             TasksLib.startSync()
+            Log.d(TAG, "✅ Ditto sync started!")
+            Log.d(TAG, "🧪 TEST DEBUG: TasksLib.startSync() completed")
+            println("🧪 TEST DEBUG: TasksLib.startSync() completed")
         } catch (e: Exception) {
-            Log.e(TAG, "unable to initialize Ditto", e)
+            Log.e(TAG, "❌ Failed to initialize Ditto", e)
         }
     }
 }
