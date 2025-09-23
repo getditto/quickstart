@@ -125,5 +125,4 @@ jobs:
             /p:RuntimeIdentifier=iossimulator-arm64 \
             /p:ArchiveOnBuild=false \
             /p:BuildIpa=false \
-            /p:PublishTrimmed=false \
             /p:MtouchLink=None
