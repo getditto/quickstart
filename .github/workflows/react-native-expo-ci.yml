@@ -241,8 +241,9 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"text\": \"${DOC_TITLE}\",
-                \"isCompleted\": false
+                \"title\": \"${DOC_TITLE}\",
+                \"done\": false,
+                \"deleted\": false
               }
             }
           }" \
