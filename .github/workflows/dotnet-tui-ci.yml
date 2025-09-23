@@ -39,7 +39,7 @@ jobs:
       - name: Run dotnet format check
         working-directory: dotnet-tui
         run: |
-          dotnet format --verify-no-changes --verbosity diagnostic
+          dotnet format DittoDotNetTasksConsole/DittoDotNetTasksConsole.csproj --verify-no-changes --verbosity diagnostic
           if [ $? -ne 0 ]; then
             echo "❌ Code formatting issues found. Run 'dotnet format' to fix."
             exit 1
