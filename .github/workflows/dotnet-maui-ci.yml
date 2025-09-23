@@ -116,7 +116,7 @@ jobs:
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
           dotnet workload restore
-          dotnet restore
+          dotnet restore --runtime ios-arm64
 
       - name: Build iOS IPA (unsigned Release)
         working-directory: dotnet-maui/DittoMauiTasksApp
