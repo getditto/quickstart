@@ -103,14 +103,14 @@ jobs:
     
     - name: Build APKs
       working-directory: android-cpp/QuickStartTasksCPP
-      run: ./gradlew assembleRelease
+      run: ./gradlew assembleDebug
 
     - name: Upload APK artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: android-cpp-apks-${{ github.run_number }}
+        name: android-cpp-apks
         path: |
-          android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release.apk
+          android-cpp/QuickStartTasksCPP/app/build/outputs/apk/debug/app-debug.apk
         retention-days: 1
 
   browserstack-appium-test:
@@ -126,8 +126,8 @@ jobs:
     - name: Download APK artifacts
       uses: actions/download-artifact@v4
       with:
-        name: android-cpp-apks-${{ github.run_number }}
-        path: android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/
+        name: android-cpp-apks
+        path: android-cpp/QuickStartTasksCPP/app/build/outputs/apk/debug/
     
     - name: Insert test document into Ditto Cloud
       run: |
@@ -191,7 +191,7 @@ jobs:
         echo "📱 Uploading app APK to BrowserStack for Appium..."
         APP_RESPONSE=$(curl -u "$CREDS" \
           -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-          -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release.apk" \
+          -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/debug/app-debug.apk" \
           -F "custom_id=ditto-android-cpp-appium-app")
 
         APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
