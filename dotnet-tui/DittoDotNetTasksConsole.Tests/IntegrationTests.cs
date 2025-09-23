@@ -62,7 +62,7 @@ public class IntegrationTests
     {
         var envVars = new Dictionary<string, string>();
         var assembly = Assembly.GetExecutingAssembly();
-        var resourceName = "DittoDotNetTasksConsole.Tests..env";
+        var resourceName = "DittoDotNetTasksConsole.Tests.env";
 
         using var stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException($"Resource '{resourceName}' not found.");

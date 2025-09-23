@@ -90,7 +90,6 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-
       - name: Create .env file
         run: |
           echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
