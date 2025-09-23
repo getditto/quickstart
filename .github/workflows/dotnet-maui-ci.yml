@@ -116,16 +116,12 @@ jobs:
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
           dotnet workload restore
-          dotnet restore --runtime ios-arm64
+          dotnet restore --runtime iossimulator-arm64
 
-      - name: Build iOS IPA (unsigned Release)
+      - name: Build iOS Simulator (unsigned Release)
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
           dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
-            /p:RuntimeIdentifier=ios-arm64 \
-            /p:CodesignKey="" \
-            /p:CodesignProvision="" \
-            /p:IosSigningKey="" \
-            /p:IosProvisioningProfile="" \
+            /p:RuntimeIdentifier=iossimulator-arm64 \
             /p:ArchiveOnBuild=false \
             /p:BuildIpa=false
