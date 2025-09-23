@@ -32,6 +32,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Install .NET MAUI workload
+        run: |
+          dotnet workload install maui
+
       - name: Create test .env file
         run: |
           echo "DITTO_APP_ID=test" > .env
