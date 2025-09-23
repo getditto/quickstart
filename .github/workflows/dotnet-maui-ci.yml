@@ -1,0 +1,130 @@
+name: .NET MAUI CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dotnet-maui/**'
+      - '.github/workflows/dotnet-maui-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dotnet-maui/**'
+      - '.github/workflows/dotnet-maui-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Create test .env file
+        run: |
+          echo "DITTO_APP_ID=test" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
+          echo "DITTO_AUTH_URL=test" >> .env
+          echo "DITTO_WEBSOCKET_URL=test" >> .env
+
+      - name: Restore dependencies
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: dotnet restore
+
+      - name: Run .NET format check
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet format --verify-no-changes --verbosity diagnostic
+          if [ $? -ne 0 ]; then
+            echo "❌ Code formatting issues found. Run 'dotnet format' to fix."
+            exit 1
+          fi
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install .NET MAUI workload
+        run: |
+          dotnet workload install maui
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Restore dependencies
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: dotnet restore
+
+      - name: Build Android APK (unsigned Release)
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet build --configuration Release --framework net9.0-android --no-restore
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: lint
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install .NET MAUI workload
+        run: |
+          dotnet workload install maui
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Restore dependencies
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: dotnet restore
+
+      - name: Build iOS IPA (unsigned Release)
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet build --configuration Release --framework net9.0-ios --no-restore \
+            /p:RuntimeIdentifier=ios-arm64 \
+            /p:CodesignKey="" \
+            /p:CodesignProvision="" \
+            /p:ArchiveOnBuild=false
