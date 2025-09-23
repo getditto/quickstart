@@ -175,11 +175,25 @@ class AppiumE2ETest {
 
             println("🎉 Test completed successfully!")
 
+            // Mark test as passed in BrowserStack
+            try {
+                driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"passed\", \"reason\": \"Task found successfully\"}}")
+            } catch (e: Exception) {
+                println("ℹ️ Could not set BrowserStack status (not critical): ${e.message}")
+            }
+
             // Keep app visible for video recording (BrowserStack)
             Thread.sleep(3000)
 
         } catch (e: Exception) {
             println("❌ Test failed: ${e.message}")
+
+            // Mark test as failed in BrowserStack
+            try {
+                driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"failed\", \"reason\": \"${e.message}\"}}")
+            } catch (statusError: Exception) {
+                println("ℹ️ Could not set BrowserStack failed status (not critical): ${statusError.message}")
+            }
 
             // Take screenshot for debugging
             try {
