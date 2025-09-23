@@ -130,19 +130,21 @@ jobs:
         path: android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/
     
     - name: Insert test document into Ditto Cloud
+      id: seed_doc
       run: |
         # Generate test document for BrowserStack testing
         TIMESTAMP=$(date +%s)
         INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
         DOC_ID="${INVERTED_TIMESTAMP}_android_cpp_ci_test_${{ github.run_id }}_${{ github.run_number }}"
         DOC_TITLE="${INVERTED_TIMESTAMP}_android_cpp_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        
+
         echo "📝 Inserting test document for BrowserStack testing"
         echo "📝 ID: '${DOC_ID}'"
         echo "📝 Title: '${DOC_TITLE}'"
-        
+
         # Store title for later use in BrowserStack step
         echo "TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
+        echo "doc_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
         
         # Insert document using Ditto API v4 (same as other Android workflows)
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -213,11 +215,11 @@ jobs:
         export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-        export GITHUB_TEST_DOC_ID="${{ env.TEST_DOC_TITLE }}"
+        export GITHUB_TEST_DOC_ID="${{ steps.seed_doc.outputs.doc_title }}"
 
         echo "🚀 Starting Appium E2E tests on BrowserStack..."
         echo "📱 App: ${{ steps.upload.outputs.app_url }}"
-        echo "🔍 Test Document: ${{ env.TEST_DOC_TITLE }}"
+        echo "🔍 Test Document: ${{ steps.seed_doc.outputs.doc_title }}"
 
         # Run tests using Gradle - BrowserStack detection via environment variables
         ../gradlew test \
@@ -241,12 +243,12 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
-          const testDocId = '${{ env.TEST_DOC_TITLE }}';
+          const testDocId = '${{ steps.seed_doc.outputs.doc_title }}';
           const status = '${{ job.status }}';
           const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
-          
+
           const body = `## 📱 BrowserStack Test Results (Android C++)
-          
+
           **Status:** ${status === 'success' ? '✅ Passed' : '❌ Failed'}
           **Build:** [#${{ github.run_number }}](${runUrl})
           **Test Document ID:** ${testDocId || 'Not generated'}
