@@ -11,21 +11,6 @@ namespace DittoDotNetTasksConsole.Tests;
 public class IntegrationTests
 {
     [Fact]
-    public async Task TasksPeer_CanInitializeAndConnect()
-    {
-        var env = LoadEnvVariables();
-        using var peer = await TasksPeer.Create(
-            env["DITTO_APP_ID"],
-            env["DITTO_PLAYGROUND_TOKEN"],
-            env["DITTO_AUTH_URL"],
-            env["DITTO_WEBSOCKET_URL"]);
-
-        Assert.NotNull(peer);
-        Assert.Equal(env["DITTO_APP_ID"], peer.AppId);
-        Assert.Equal(env["DITTO_PLAYGROUND_TOKEN"], peer.PlaygroundToken);
-    }
-
-    [Fact]
     public async Task TasksPeer_CanSyncAndRetrieveTasks()
     {
         var env = LoadEnvVariables();
@@ -36,6 +21,10 @@ public class IntegrationTests
             env["DITTO_PLAYGROUND_TOKEN"],
             env["DITTO_AUTH_URL"],
             env["DITTO_WEBSOCKET_URL"]);
+
+        // Verify connection
+        Assert.NotNull(peer);
+        Assert.Equal(env["DITTO_APP_ID"], peer.AppId);
 
         var foundTask = false;
         var attempts = 0;
