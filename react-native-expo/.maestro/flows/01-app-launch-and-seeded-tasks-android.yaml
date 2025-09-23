@@ -21,8 +21,20 @@ tags:
 - waitForAnimationToEnd
 - waitForAnimationToEnd  # Double wait to ensure stability
 
-# Check if the specified task is visible in the task list
-# Using a simple assertion that should definitely fail for non-existent tasks
+# Scroll through the task list to find the target task
+# Try scrolling down multiple times to ensure we see all tasks
+- scroll
+- waitForAnimationToEnd
+- scroll
+- waitForAnimationToEnd
+- scroll
+- waitForAnimationToEnd
+- scroll
+- waitForAnimationToEnd
+- scroll
+- waitForAnimationToEnd
+
+# Check if the specified task is visible in the task list after scrolling
 - assertVisible:
     text: "${MAESTRO_TASK_TO_FIND}"
 

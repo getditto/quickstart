@@ -221,16 +221,13 @@ jobs:
     - name: Insert test document into Ditto Cloud
       id: seed-document
       run: |
-        # Create a unique GitHub test document with inverted timestamp to appear at top
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_ID="${INVERTED_TIMESTAMP}_expo_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_expo_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+        # Create a common test document that all RN apps will search for
+        DOC_ID="common_rn_test_task"
+        DOC_TITLE="Basic Test Task"
 
-        echo "📝 Inserting GitHub test document (inverted timestamp for top position)"
+        echo "📝 Inserting common test document for all RN apps"
         echo "📝 ID: '${DOC_ID}'"
         echo "📝 Title: '${DOC_TITLE}'"
-        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
 
         # Output the title for use in test steps
         echo "test_task_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
