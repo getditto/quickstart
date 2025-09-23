@@ -94,7 +94,7 @@ jobs:
     name: Build iOS
     runs-on: macos-latest
     needs: lint
-    timeout-minutes: 40
+    timeout-minutes: 80
 
     steps:
       - name: Checkout code
@@ -118,10 +118,11 @@ jobs:
           dotnet workload restore
           dotnet restore --runtime iossimulator-arm64
 
-      - name: Build iOS Simulator (Debug)
+      - name: Build iOS Simulator (Release)
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet build DittoMauiTasksApp.csproj --configuration Debug --framework net9.0-ios --no-restore \
+          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
             /p:RuntimeIdentifier=iossimulator-arm64 \
             /p:ArchiveOnBuild=false \
-            /p:BuildIpa=false
+            /p:BuildIpa=false \
+            /p:MtouchLink=None
