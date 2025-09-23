@@ -1,101 +1,47 @@
 # Appium E2E Tests for Android CPP Tasks App
 
-This directory contains **true Appium E2E tests** that launch the app externally (like a user would) and are fully compatible with BrowserStack.
-
-## What This Test Does
-
-- 🚀 **Launches the app externally** using Appium WebDriver (not as an instrumentation test)
-- 🔍 **Searches for a task name** provided via environment variable
-- 📱 **Works on real devices** and emulators
-- ☁️ **BrowserStack compatible** for cloud testing
-- 🎥 **Video recording** and debug logs supported
+End-to-end Appium tests that verify dynamically seeded tasks appear in the Android CPP Tasks app.
 
 ## Local Testing
 
 ### Prerequisites
-
-1. Install Appium:
 ```bash
-npm install -g appium@next
-appium driver install uiautomator2
-```
-
-2. Start Appium server:
-```bash
+npm install -g appium
 appium --port 4723
+export GITHUB_TEST_DOC_ID="Your Task Name"
 ```
 
-3. Build and install the app on your device/emulator:
+### Run Test
 ```bash
-cd ../
-./gradlew installDebug
-```
-
-### Run the test locally:
-
-```bash
-cd appium-test
-export GITHUB_TEST_DOC_ID="My Test Task"
-./gradlew test
+../gradlew test
 ```
 
 ## BrowserStack Testing
 
-### Prerequisites
-
-1. Upload your APK to BrowserStack:
+### Environment Variables
 ```bash
-curl -u "YOUR_USERNAME:YOUR_ACCESS_KEY" \
-  -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-  -F "file=@../app/build/outputs/apk/debug/app-debug.apk"
+export BROWSERSTACK_USERNAME="your-username"
+export BROWSERSTACK_ACCESS_KEY="your-access-key"
+export BROWSERSTACK_APP_URL="bs://your-app-id"
+export GITHUB_TEST_DOC_ID="Task Name to Find"
 ```
 
-2. Update `browserstack.yml` with the returned app ID
-
-3. Set BrowserStack credentials:
+### Run Test
 ```bash
-export BROWSERSTACK_USERNAME="your_username"
-export BROWSERSTACK_ACCESS_KEY="your_access_key"
+../gradlew test
 ```
 
-### Run on BrowserStack:
+## CI/CD Integration
 
-```bash
-# Using BrowserStack CLI
-npx browserstack-cypress run
+The test integrates with `.github/workflows/android-cpp-browserstack.yml`:
+1. Seeds dynamic task document to Ditto Cloud
+2. Uploads APK to BrowserStack
+3. Runs Appium test to verify seeded task appears
+4. Reports pass/fail status
 
-# Or using gradle with BrowserStack Java SDK
-./gradlew test -Dappium.server.url="https://your_username:your_access_key@hub-cloud.browserstack.com/wd/hub"
-```
+## Test Details
 
-## Environment Variables
-
-- `GITHUB_TEST_DOC_ID` - The task name to search for in the app
-- `BROWSERSTACK_USERNAME` - Your BrowserStack username
-- `BROWSERSTACK_ACCESS_KEY` - Your BrowserStack access key
-- `appium.server.url` - Appium server URL (default: http://127.0.0.1:4723)
-
-## Test Strategy
-
-The test uses multiple strategies to find the task:
-1. Exact text match: `@text='Task Name'`
-2. Contains text match: `contains(@text, 'Task Name')`
-3. Waits up to 12 seconds with 1-second retries
-4. Dumps page source for debugging if task not found
-
-## Files
-
-- `AppiumE2ETest.kt` - Main Appium test class
-- `build.gradle.kts` - Dependencies and test configuration
-- `browserstack.yml` - BrowserStack configuration
-- `README.md` - This documentation
-
-## Key Differences from Instrumentation Tests
-
-| Aspect | This Appium Test | Instrumentation Test |
-|--------|------------------|---------------------|
-| App Launch | External (like user) | Internal (test runner) |
-| Dependencies | Appium WebDriver | Android Test APIs |
-| BrowserStack | Native support | Requires adaptation |
-| Real E2E | ✅ True E2E | ❌ Component testing |
-| Cross-platform | ✅ Works anywhere | ❌ Android only |
+- **Device**: Google Pixel 7 (Android 13.0) on BrowserStack
+- **Framework**: Appium + TestNG + Kotlin
+- **Verification**: Searches for task by exact and partial text match
+- **Features**: Permission handling, BrowserStack status reporting
