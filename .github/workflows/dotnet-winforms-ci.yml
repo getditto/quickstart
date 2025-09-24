@@ -35,7 +35,7 @@ jobs:
       - name: Run dotnet-format check
         working-directory: dotnet-winforms/TasksApp
         run: |
-          dotnet format --verify-no-changes --verbosity diagnostic
+          dotnet format DittoTasksApp.sln --verify-no-changes --verbosity diagnostic
           if ($LASTEXITCODE -ne 0) {
             Write-Host "❌ Code formatting issues found. Run 'dotnet format' to fix."
             exit 1
