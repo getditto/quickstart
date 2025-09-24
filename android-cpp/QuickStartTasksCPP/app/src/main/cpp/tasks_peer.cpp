@@ -57,8 +57,6 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
     auto ditto =
         make_unique<ditto::Ditto>(android_context, identity, std::move(persistence_dir));
 
-    // Enable debug logging
-    ditto::Log::set_minimum_log_level(ditto::LogLevel::debug);
 
 
     if (is_running_on_emulator) {
