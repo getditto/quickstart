@@ -11,7 +11,6 @@ dependencies {
     implementation("org.seleniumhq.selenium:selenium-java:4.15.0")
     implementation("org.testng:testng:7.8.0")
     implementation("org.slf4j:slf4j-simple:2.0.9")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
 }
 
 tasks.test {
