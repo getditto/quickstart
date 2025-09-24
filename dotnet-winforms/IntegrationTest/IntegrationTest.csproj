@@ -19,10 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Copy .env file to output directory -->
-    <EmbeddedResource Include="../../.env">
+    <!-- Copy .env file to output directory if it exists -->
+    <Content Include="../../.env" Condition="Exists('../../.env')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
+    </Content>
   </ItemGroup>
 
 </Project>

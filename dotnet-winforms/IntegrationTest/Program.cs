@@ -83,7 +83,7 @@ class Program
             var cts = new CancellationTokenSource(maxWaitTime);
 
             // Register observer to watch for changes
-            var observer = tasksPeer.ObserveTasksCollection(async (tasks) =>
+            var observer = tasksPeer.ObserveTasksCollection((tasks) => Task.Run(() =>
             {
                 taskCount = tasks.Count;
                 var elapsed = (int)(DateTime.Now - startTime).TotalSeconds;
@@ -106,7 +106,7 @@ class Program
                         break;
                     }
                 }
-            });
+            }));
 
             // Wait for the document or timeout
             try
@@ -122,7 +122,7 @@ class Program
             }
 
             // Cleanup
-            observer?.Dispose();
+            // Note: DittoStoreObserver doesn't have a Stop/Dispose method
             tasksPeer.Dispose();
 
             if (!found)
