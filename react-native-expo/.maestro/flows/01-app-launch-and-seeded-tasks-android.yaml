@@ -18,15 +18,19 @@ tags:
 # Wait for app to load
 - waitForAnimationToEnd
 
-# Scroll until the task is visible using testID
+# Debug: Try text selector first to see if task exists
 - scrollUntilVisible:
     element:
-      id: "${MAESTRO_TASK_TO_FIND}"
+      text: "${MAESTRO_TASK_TO_FIND}"
     direction: DOWN
     timeout: 30000
     speed: 40
     visibilityPercentage: 100
 
-# Final assertion - task must be visible using id selector
+# Debug: Assert with text selector
+- assertVisible:
+    text: "${MAESTRO_TASK_TO_FIND}"
+
+# Debug: Also try testID selector
 - assertVisible:
     id: "${MAESTRO_TASK_TO_FIND}"
