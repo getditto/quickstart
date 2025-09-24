@@ -358,7 +358,7 @@ jobs:
               "Google Pixel 7-13.0"
             ],
             "execute": ["01-app-launch-and-seeded-tasks-android.yaml"],
-            "env": {
+            "setEnvVariables": {
               "MAESTRO_TASK_TO_FIND": "${{ needs.seed-ditto-cloud.outputs.test_task_title }}"
             },
             "deviceLogs": true,
