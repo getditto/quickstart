@@ -34,6 +34,35 @@ jobs:
           just --version
           just tools
 
+  rust:
+    name: Rust Quickstart
+    strategy:
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run clippy
+        run: |
+          cd rust-tui
+          cargo clippy
+
+      - name: Build project
+        run: |
+          cd rust-tui
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            export RUSTFLAGS="-C prefer-dynamic"
+          fi
+          cargo build
 
   js-web:
     name: JavaScript Web Lint (ubuntu-24.04)
