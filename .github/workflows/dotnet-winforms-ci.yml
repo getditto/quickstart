@@ -70,3 +70,81 @@ jobs:
       - name: Build application
         working-directory: dotnet-winforms/TasksApp
         run: dotnet build --configuration Release --no-restore
+
+  integration-test:
+    name: Integration Test
+    runs-on: windows-latest
+    needs: [lint, build]
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Insert test document into Ditto Cloud
+        run: |
+          $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+          $invertedTimestamp = 9999999999 - $timestamp
+          $docId = "${invertedTimestamp}_winforms_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+          $docTitle = "${invertedTimestamp}_winforms_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+
+          Write-Host "📝 Inserting test document for integration testing"
+          Write-Host "📝 ID: '$docId'"
+          Write-Host "📝 Title: '$docTitle'"
+
+          # Store title for later use in integration test
+          echo "GITHUB_TEST_DOC_TITLE=$docTitle" >> $env:GITHUB_ENV
+
+          # Prepare JSON body
+          $body = @{
+              statement = "INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE"
+              args = @{
+                  newTask = @{
+                      _id = $docId
+                      title = $docTitle
+                      done = $false
+                      deleted = $false
+                  }
+              }
+          } | ConvertTo-Json -Depth 10
+
+          # Insert document using Ditto API
+          $headers = @{
+              "Content-Type" = "application/json"
+              "Authorization" = "Bearer ${{ secrets.DITTO_API_KEY }}"
+          }
+
+          try {
+              $response = Invoke-RestMethod -Uri "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute" `
+                  -Method POST `
+                  -Headers $headers `
+                  -Body $body `
+                  -ErrorAction Stop
+
+              Write-Host "✅ Document inserted successfully"
+          } catch {
+              Write-Host "❌ Failed to insert document"
+              Write-Host "Error: $_"
+              exit 1
+          }
+
+      - name: Build and run integration test
+        working-directory: dotnet-winforms/IntegrationTest
+        env:
+          GITHUB_TEST_DOC_TITLE: ${{ env.GITHUB_TEST_DOC_TITLE }}
+        run: |
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+          dotnet run --configuration Release --no-build

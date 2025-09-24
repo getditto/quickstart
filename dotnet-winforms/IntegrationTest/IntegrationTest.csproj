@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ditto" Version="4.11.1" />
+    <PackageReference Include="System.Text.Json" Version="9.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference the shared source files from TasksApp -->
+    <Compile Include="..\TasksApp\ToDoTask.cs" Link="Shared\ToDoTask.cs" />
+    <Compile Include="..\TasksApp\TasksPeer.cs" Link="Shared\TasksPeer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copy .env file to output directory -->
+    <EmbeddedResource Include="../../.env">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
