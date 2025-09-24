@@ -1,0 +1,72 @@
+name: .NET WinForms CI
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dotnet-winforms/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dotnet-winforms/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install dotnet-format
+        run: dotnet tool install -g dotnet-format
+
+      - name: Run dotnet-format check
+        working-directory: dotnet-winforms/TasksApp
+        run: |
+          dotnet format --verify-no-changes --verbosity diagnostic
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Code formatting issues found. Run 'dotnet format' to fix."
+            exit 1
+          }
+
+  build:
+    name: Build
+    runs-on: windows-latest
+    needs: lint
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Restore dependencies
+        working-directory: dotnet-winforms/TasksApp
+        run: dotnet restore
+
+      - name: Build application
+        working-directory: dotnet-winforms/TasksApp
+        run: dotnet build --configuration Release --no-restore
