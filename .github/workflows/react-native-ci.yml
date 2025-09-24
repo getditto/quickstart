@@ -268,8 +268,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-android, seed-ditto-cloud]
     timeout-minutes: 30
-    env:
-      MAESTRO_TASK_TO_FIND: ${{ needs.seed-ditto-cloud.outputs.test_task_title }}
+    # TODO: BrowserStack Android Maestro API has environment variable bug
+    # Using sed to replace ${MAESTRO_TASK_TO_FIND} with actual task name in test files
 
     steps:
     - uses: actions/checkout@v4
@@ -307,8 +307,9 @@ jobs:
         rm -rf maestro-tests
         mkdir maestro-tests
 
-        # Copy the specific tests to root level (as per BrowserStack requirements)
-        cp .maestro/flows/01-app-launch-and-seeded-tasks-android.yaml maestro-tests/
+        # Replace MAESTRO_TASK_TO_FIND with actual seeded task name (BrowserStack Android API bug workaround)
+        sed 's/\${MAESTRO_TASK_TO_FIND}/${{ needs.seed-ditto-cloud.outputs.test_task_title }}/g' \
+          .maestro/flows/01-app-launch-and-seeded-tasks-android.yaml > maestro-tests/01-app-launch-and-seeded-tasks-android.yaml
 
         # Also create flows/ subfolder for organization
         mkdir maestro-tests/flows
@@ -348,9 +349,6 @@ jobs:
               "Google Pixel 7-13.0"
             ],
             "execute": ["01-app-launch-and-seeded-tasks-android.yaml"],
-            "env": {
-              "MAESTRO_TASK_TO_FIND": "${{ needs.seed-ditto-cloud.outputs.test_task_title }}"
-            },
             "deviceLogs": true,
             "networkLogs": true,
             "video": true
@@ -410,8 +408,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-ios, seed-ditto-cloud]
     timeout-minutes: 30
-    env:
-      MAESTRO_TASK_TO_FIND: ${{ needs.seed-ditto-cloud.outputs.test_task_title }}
 
     steps:
     - uses: actions/checkout@v4
