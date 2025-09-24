@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 using DittoSDK;
+using DittoTasksApp;
 
 /// <summary>
 /// Encapsulates use of the Ditto SDK and the 'tasks' collection.
