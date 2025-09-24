@@ -17,6 +17,8 @@ public class TasksPeer : IDisposable
 
     public string AppId { get; private set; }
     public string PlaygroundToken { get; private set; }
+    public string AuthUrl { get; private set; }
+    public string WebsocketUrl { get; private set; }
 
     public bool IsSyncActive => _ditto.IsSyncActive;
 
@@ -73,6 +75,8 @@ public class TasksPeer : IDisposable
     {
         AppId = appId;
         PlaygroundToken = playgroundToken;
+        AuthUrl = authUrl;
+        WebsocketUrl = websocketUrl;
 
         var identity = DittoIdentity.OnlinePlayground(
             appId,
