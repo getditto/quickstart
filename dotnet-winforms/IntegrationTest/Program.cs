@@ -23,9 +23,7 @@ class Program
                 return 1;
             }
 
-            // Add suffix to force failure for testing
-            expectedTitle = expectedTitle + "_NONEXISTENT_SUFFIX";
-            Console.WriteLine($"🔍 Looking for seeded document: '{expectedTitle}' (intentionally wrong for testing)");
+            Console.WriteLine($"🔍 Looking for seeded document: '{expectedTitle}'");
 
             // Load environment variables from .env file
             var envPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".env");
@@ -73,7 +71,7 @@ class Program
             Console.WriteLine("⏳ Waiting for document to sync...");
 
             // Setup variables for tracking
-            var maxWaitTime = TimeSpan.FromSeconds(10); // Reduced for testing failure case
+            var maxWaitTime = TimeSpan.FromSeconds(30);
             var startTime = DateTime.Now;
             var found = false;
             var foundTask = null as ToDoTask;
