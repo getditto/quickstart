@@ -16,7 +16,7 @@ public class TasksPeer : IDisposable
 
     public string AppId { get; private set; }
     public string PlaygroundToken { get; private set; }
-    
+
     public bool IsSyncActive => _ditto.IsSyncActive;
 
     private Ditto _ditto;
@@ -25,9 +25,9 @@ public class TasksPeer : IDisposable
     /// Creates a new synchronizing TasksPeer instance.
     /// </summary>
     public static async Task<TasksPeer> Create(
-        string appId, 
-        string playgroundToken, 
-        string authUrl, 
+        string appId,
+        string playgroundToken,
+        string authUrl,
         string websocketUrl)
     {
         var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
@@ -35,7 +35,7 @@ public class TasksPeer : IDisposable
         peer.RegisterSubscription();
         await peer.InsertInitialTasks();
         peer.StartSync();
-        
+
         return peer;
     }
 
@@ -74,8 +74,8 @@ public class TasksPeer : IDisposable
         PlaygroundToken = playgroundToken;
 
         var identity = DittoIdentity.OnlinePlayground(
-            appId, 
-            playgroundToken, 
+            appId,
+            playgroundToken,
             false, // This is required to be set to false to use the correct URLs
             authUrl);
 
