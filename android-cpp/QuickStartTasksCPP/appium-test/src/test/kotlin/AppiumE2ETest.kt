@@ -73,14 +73,14 @@ class AppiumE2ETest {
             var taskFound = false
             for (attempt in 1..10) {
                 try {
-                    val taskElement = driver.findElement(By.xpath("//*[@text='$testTaskName" + "_bollocks']"))
+                    val taskElement = driver.findElement(By.xpath("//*[@text='$testTaskName']"))
                     if (taskElement.isDisplayed) {
                         taskFound = true
                         break
                     }
                 } catch (e: Exception) {
                     try {
-                        val taskElement = driver.findElement(By.xpath("//*[contains(@text, '$testTaskName" + "_bollocks')]"))
+                        val taskElement = driver.findElement(By.xpath("//*[contains(@text, '$testTaskName')]"))
                         if (taskElement.isDisplayed) {
                             taskFound = true
                             break
