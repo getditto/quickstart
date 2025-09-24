@@ -33,7 +33,7 @@ export GITHUB_TEST_DOC_ID="Task Name to Find"
 
 ## CI/CD Integration
 
-The test integrates with `.github/workflows/android-cpp-browserstack.yml`:
+The test integrates with `.github/workflows/android-cpp-ci.yml`:
 1. Seeds dynamic task document to Ditto Cloud
 2. Uploads APK to BrowserStack
 3. Runs Appium test to verify seeded task appears

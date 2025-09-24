@@ -19,33 +19,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  android-cpp:
-    name: Android C++ Lint (ubuntu-24.04)
-    runs-on: ubuntu-24.04
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Create test .env file
-        run: |
-          sudo apt update && sudo apt install just
-          just --version
-          just tools
-          echo "DITTO_APP_ID=test" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
-          echo "DITTO_AUTH_URL=test" >> .env
-          echo "DITTO_WEBSOCKET_URL=test" >> .env
-
-      - name: Run Android linting
-        working-directory: android-cpp/QuickStartTasksCPP
-        run: ./gradlew lint
-
   rust:
     name: Rust Quickstart
     strategy:

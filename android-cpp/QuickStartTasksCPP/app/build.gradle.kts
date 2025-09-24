@@ -63,16 +63,6 @@ androidComponents {
             )
         )
 
-        // Optional test document title for E2E testing
-        val testDocTitle = prop["GITHUB_TEST_DOC_ID"] ?: ""
-        it.buildConfigFields.put(
-            "TEST_DOCUMENT_TITLE",
-            BuildConfigField(
-                "String",
-                "\"$testDocTitle\"",
-                "Test document title for E2E testing"
-            )
-        )
     }
 }
 
@@ -89,7 +79,6 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -164,13 +153,5 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.datastore.preferences)
 
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
-
     debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }

@@ -1,23 +1,14 @@
-import io.appium.java_client.AppiumDriver
 import io.appium.java_client.android.AndroidDriver
 import io.appium.java_client.android.options.UiAutomator2Options
 import org.openqa.selenium.By
-import org.openqa.selenium.WebElement
-import org.openqa.selenium.support.ui.WebDriverWait
-import org.openqa.selenium.support.ui.ExpectedConditions
 import org.testng.Assert
 import org.testng.annotations.*
 import java.net.URL
-import java.time.Duration
 
-/**
- * Appium E2E test for android-cpp Tasks app.
- * Verifies that a dynamically seeded task appears on screen.
- */
+/** Appium E2E test for android-cpp Tasks app */
 class AppiumE2ETest {
 
     private lateinit var driver: AndroidDriver
-    private lateinit var wait: WebDriverWait
 
     @BeforeMethod
     fun setUp() {
@@ -52,7 +43,6 @@ class AppiumE2ETest {
         }
 
         driver = AndroidDriver(URL(serverUrl), options)
-        wait = WebDriverWait(driver, Duration.ofSeconds(30))
     }
 
     @AfterMethod
@@ -68,7 +58,6 @@ class AppiumE2ETest {
             ?: throw IllegalStateException("GITHUB_TEST_DOC_ID environment variable not set")
 
         try {
-            // Wait for app launch and handle permission dialog
             Thread.sleep(3000)
             try {
                 val allowButton = driver.findElement(By.id("com.android.permissioncontroller:id/permission_allow_button"))
@@ -79,11 +68,8 @@ class AppiumE2ETest {
             } catch (e: Exception) {
                 // Permission dialog not found - continue
             }
-
-            // Wait for Ditto sync
             Thread.sleep(6000)
 
-            // Search for the task
             var taskFound = false
             for (attempt in 1..10) {
                 try {
@@ -109,21 +95,10 @@ class AppiumE2ETest {
                 Assert.fail("Task '$testTaskName' not found")
             }
 
-            // Set BrowserStack status
-            try {
-                driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"passed\", \"reason\": \"Task found successfully\"}}")
-            } catch (e: Exception) {
-                // Ignore BrowserStack status errors
-            }
-
-            Thread.sleep(2000)
+            driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"passed\", \"reason\": \"Task found successfully\"}}")
 
         } catch (e: Exception) {
-            try {
-                driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"failed\", \"reason\": \"${e.message}\"}}")
-            } catch (statusError: Exception) {
-                // Ignore BrowserStack status errors
-            }
+            driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"failed\", \"reason\": \"${e.message}\"}}")
             throw e
         }
     }
