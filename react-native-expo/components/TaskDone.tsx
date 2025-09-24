@@ -5,9 +5,10 @@ import BouncyCheckbox from 'react-native-bouncy-checkbox';
 type Props = {
   checked: boolean,
   onPress: () => void,
+  testID?: string,
 }
 
-const TaskDone: React.FC<Props> = ({ checked, onPress }) => {
+const TaskDone: React.FC<Props> = ({ checked, onPress, testID }) => {
   return (
     <BouncyCheckbox
       style={styles.button}
@@ -15,6 +16,7 @@ const TaskDone: React.FC<Props> = ({ checked, onPress }) => {
       onPress={onPress}
       fillColor="#7C3AED"
       useBuiltInState={false}
+      testID={testID}
     />
   );
 };

@@ -1,30 +1,32 @@
 appId: com.anonymous.reactnativeexpo
 tags:
   - "smoke"
-  - "task-verification"
 ---
-# Test: Task Visibility Verification
-# This flow launches the app and checks if a specific task is visible in the task list
-# Usage: maestro test -e TASK_TO_FIND="My Task" 01-app-launch-and-seeded-tasks.yaml
+# Simple test: Launch app and verify specific task exists using testID
+# Usage: MAESTRO_TASK_TO_FIND="Basic Test Task" maestro test 01-app-launch-and-seeded-tasks-ios.yaml
 
 - launchApp:
     appId: com.anonymous.reactnativeexpo
 
-# Handle permission dialogs if they appear
+# Handle permission dialog if it appears
 - runFlow:
     when:
       visible: "Allow"
     commands:
       - tapOn: "Allow"
 
-# Wait for the app to fully load
+# Wait for app to load
 - waitForAnimationToEnd
-- waitForAnimationToEnd  # Double wait to ensure stability
 
-# Check if the specified task is visible in the task list
-# Using a simple assertion that should definitely fail for non-existent tasks
+# Scroll until the task is visible using testID
+- scrollUntilVisible:
+    element:
+      id: "${MAESTRO_TASK_TO_FIND}"
+    direction: DOWN
+    timeout: 30000
+    speed: 40
+    visibilityPercentage: 100
+
+# Final assertion - task must be visible using id selector
 - assertVisible:
-    text: "${MAESTRO_TASK_TO_FIND}"
-
-# Wait for animations to settle for visual confirmation
-- waitForAnimationToEnd
+    id: "${MAESTRO_TASK_TO_FIND}"
