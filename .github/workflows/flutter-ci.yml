@@ -1,0 +1,218 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file for linting
+        run: |
+          echo "DITTO_APP_ID=test" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=test" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=test" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=test" >> flutter_app/.env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Check formatting
+        working-directory: flutter_app
+        run: |
+          dart format --set-exit-if-changed .
+          if [ $? -ne 0 ]; then
+            echo "❌ Code formatting issues found. Run 'dart format .' to fix."
+            exit 1
+          fi
+
+      - name: Analyze code
+        working-directory: flutter_app
+        run: flutter analyze --no-fatal-infos
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            flutter_app/.dart_tool
+            flutter_app/build
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter_app/pubspec.lock') }}
+          restore-keys: |
+            flutter-${{ runner.os }}-
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Build Android APK
+        working-directory: flutter_app
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-android-apk-${{ github.run_number }}
+          path: flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 1
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: lint
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            flutter_app/.dart_tool
+            flutter_app/build
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter_app/pubspec.lock') }}
+          restore-keys: |
+            flutter-${{ runner.os }}-
+
+      - name: Cache CocoaPods dependencies
+        uses: actions/cache@v4
+        with:
+          path: flutter_app/ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('flutter_app/ios/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        working-directory: flutter_app/ios
+        run: pod install || pod install --repo-update
+
+      - name: Build iOS (no signing)
+        working-directory: flutter_app
+        run: flutter build ios --debug --no-codesign --simulator
+
+      - name: Upload iOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-ios-build-${{ github.run_number }}
+          path: flutter_app/build/ios/iphonesimulator/
+          retention-days: 1
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=test" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=test" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=test" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=test" >> flutter_app/.env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Run tests
+        working-directory: flutter_app
+        run: |
+          if [ -d "test" ]; then
+            flutter test --coverage
+          else
+            echo "⚠️ No tests found. Skipping test execution."
+          fi
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage-${{ github.run_number }}
+          path: flutter_app/coverage/
+          retention-days: 1
