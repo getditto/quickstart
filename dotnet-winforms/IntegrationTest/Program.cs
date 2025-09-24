@@ -18,14 +18,12 @@ class Program
             var expectedTitle = Environment.GetEnvironmentVariable("GITHUB_TEST_DOC_TITLE");
             if (string.IsNullOrEmpty(expectedTitle))
             {
-                // Fallback for local testing
-                expectedTitle = $"test_doc_{DateTime.Now.Ticks}";
-                Console.WriteLine($"⚠️  No GITHUB_TEST_DOC_TITLE found, using: {expectedTitle}");
+                Console.WriteLine("❌ FAIL: Missing GITHUB_TEST_DOC_TITLE environment variable");
+                Console.WriteLine("   This test requires a document to be seeded by CI");
+                return 1;
             }
-            else
-            {
-                Console.WriteLine($"🔍 Looking for seeded document: '{expectedTitle}'");
-            }
+
+            Console.WriteLine($"🔍 Looking for seeded document: '{expectedTitle}'");
 
             // Load environment variables from .env file
             var envPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".env");
