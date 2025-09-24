@@ -19,6 +19,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  android:
+    name: Android (ubuntu-24.04)
+
+    # https://github.com/actions/runner-images#available-images
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt update && sudo apt install just
+          just --version
+          just tools
+
   rust:
     name: Rust Quickstart
     strategy:
