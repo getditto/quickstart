@@ -94,7 +94,7 @@ jobs:
     name: Build iOS
     runs-on: macos-latest
     needs: lint
-    timeout-minutes: 80
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code

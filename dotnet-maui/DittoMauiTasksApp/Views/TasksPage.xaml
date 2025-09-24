@@ -33,6 +33,7 @@
 
         <CollectionView
             x:Name="collectionView"
+            AutomationId="TasksList"
             Grid.Row="1"
             ItemsSource="{Binding Tasks}"
             SelectionMode="None">
@@ -58,6 +59,7 @@
                             Margin="16,5"
                             ColumnDefinitions="*, Auto">
                             <Label
+                                AutomationId="TaskTitleLabel"
                                 VerticalOptions="Center"
                                 Text="{Binding Title}">
                                 <Label.Style>

@@ -1,0 +1,22 @@
+userName: ${BROWSERSTACK_USERNAME}
+accessKey: ${BROWSERSTACK_ACCESS_KEY}
+
+framework: nunit
+
+platforms:
+  - deviceName: iPhone 15
+    osVersion: "17"
+    automationName: XCUITest
+
+appiumVersion: 2.0.0
+projectName: Ditto MAUI Tasks iOS
+buildName: iOS Build
+sessionName: Ditto Tasks iOS Test
+
+app: ${BROWSERSTACK_APP_ID}
+browserstackLocal: false
+
+video: true
+deviceLogs: true
+networkLogs: true
+debug: true

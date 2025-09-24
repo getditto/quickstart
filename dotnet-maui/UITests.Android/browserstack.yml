@@ -1,0 +1,22 @@
+userName: ${BROWSERSTACK_USERNAME}
+accessKey: ${BROWSERSTACK_ACCESS_KEY}
+
+framework: nunit
+
+platforms:
+  - deviceName: Google Pixel 8
+    osVersion: "14"
+    automationName: UIAutomator2
+
+appiumVersion: 2.0.0
+projectName: Ditto MAUI Tasks Android
+buildName: Android Build
+sessionName: Ditto Tasks Android Test
+
+app: ${BROWSERSTACK_APP_ID}
+browserstackLocal: false
+
+video: true
+deviceLogs: true
+networkLogs: true
+debug: true
