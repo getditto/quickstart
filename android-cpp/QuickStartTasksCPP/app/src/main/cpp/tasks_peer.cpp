@@ -198,24 +198,6 @@ public:
     }
   }
 
-  Task get_task_by_title(const string &title) {
-    try {
-      lock_guard<mutex> lock(*mtx);
-      if (title.empty()) {
-        throw invalid_argument("title must not be empty");
-      }
-      const auto query = "SELECT * FROM tasks WHERE title = :title AND NOT deleted";
-      const auto result = ditto->get_store().execute(query, {{"title", title}});
-      const auto item_count = result.item_count();
-      if (item_count == 0) {
-        throw runtime_error(string("no tasks found with title \"") + title + "\"");
-      }
-      const auto task = task_from(result.get_item(0));
-      return task;
-    } catch (const exception &err) {
-      throw runtime_error("unable to retrieve task: " + string(err.what()));
-    }
-  }
 
   void update_task(const Task &task) {
     try {
@@ -375,9 +357,6 @@ Task TasksPeer::get_task(const string &task_id) {
   return impl->get_task(task_id);
 }
 
-Task TasksPeer::get_task_by_title(const string &title) {
-  return impl->get_task_by_title(title);
-}
 
 void TasksPeer::update_task(const Task &task) { impl->update_task(task); }
 

@@ -47,7 +47,6 @@ object TasksLib {
 
     external fun createTask(title: String, done: Boolean)
     external fun getTaskWithId(taskId: String): Task
-    external fun getTaskWithTitle(title: String): Task
     external fun updateTask(taskId: String, title: String, done: Boolean)
     external fun toggleDoneState(taskId: String)
     external fun deleteTask(taskId: String)

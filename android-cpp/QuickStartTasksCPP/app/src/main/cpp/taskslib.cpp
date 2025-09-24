@@ -202,25 +202,6 @@ Java_live_ditto_quickstart_tasks_TasksLib_getTaskWithId(JNIEnv *env, jobject thi
   }
 }
 
-extern "C"
-JNIEXPORT jobject JNICALL
-Java_live_ditto_quickstart_tasks_TasksLib_getTaskWithTitle(JNIEnv *env, jobject thiz, jstring title) {
-  __android_log_print(ANDROID_LOG_DEBUG, TAG, "getTaskWithTitle");
-  try {
-    std::lock_guard<std::recursive_mutex> lock(mtx);
-    if (!peer) {
-      throw_java_illegal_state_exception(env, "TasksLib has not been initialized");
-      return nullptr;
-    }
-    auto title_str = jstring_to_string(env, title);
-    auto task = peer->get_task_by_title(title_str);
-    return native_task_to_java_task(env, task);
-  } catch (const std::exception &err) {
-    __android_log_print(ANDROID_LOG_ERROR, TAG, "getTaskWithTitle failed: %s", err.what());
-    throw_java_exception(env, err.what());
-    return nullptr;
-  }
-}
 
 extern "C"
 JNIEXPORT void JNICALL
