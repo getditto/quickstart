@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" 
+          package="live.ditto.quickstart.mauitasksapp.uitests"
+          android:versionCode="1" 
+          android:versionName="1.0">
+
+    <!-- Target and minimum SDK versions -->
+    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34" />
+
+    <!-- Permissions required for Ditto synchronization testing -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    
+    <!-- Bluetooth permissions for Ditto P2P -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    
+    <!-- Android 12+ Bluetooth permissions -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" 
+                     android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    
+    <!-- Nearby devices permission for Android 13+ -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" 
+                     android:usesPermissionFlags="neverForLocation" />
+
+    <!-- Test instrumentation permissions -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    
+    <!-- BrowserStack test automation permissions -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+
+    <!-- Hardware features -->
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+
+    <application 
+        android:label="DittoMauiTasksApp.UITests"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:allowBackup="true"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:testOnly="true">
+
+        <!-- Main test activity -->
+        <activity 
+            android:name=".MainActivity"
+            android:label="DittoMauiTasksApp.UITests"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Test instrumentation -->
+        <instrumentation 
+            android:name="androidx.test.runner.AndroidJUnitRunner"
+            android:targetPackage="live.ditto.quickstart.mauitasksapp.uitests"
+            android:label="DittoMauiTasksApp UI Tests" />
+
+        <!-- BrowserStack test automation service -->
+        <service 
+            android:name="com.browserstack.appium.TestService"
+            android:enabled="true"
+            android:exported="true" />
+
+        <!-- Ditto background service for testing -->
+        <service 
+            android:name="live.ditto.DittoSyncService"
+            android:enabled="true"
+            android:foregroundServiceType="dataSync" />
+
+    </application>
+
+</manifest>
