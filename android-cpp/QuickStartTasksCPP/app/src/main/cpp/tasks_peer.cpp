@@ -1,6 +1,6 @@
 #include "tasks_peer.h"
-#include "tasks_log.h"
 #include "join_string_values.h"
+#include "tasks_log.h"
 #include "transform_container.h"
 
 #include "Ditto.h"
@@ -33,42 +33,40 @@ vector<string> tasks_json_from(const ditto::QueryResult &result) {
 }
 
 /// Initialize a Ditto instance.
-unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
-                                    jobject android_context,
-                                    string app_id,
-                                    string online_playground_token,
-                                    bool enable_cloud_sync,
-                                    string persistence_dir,
-                                    bool is_running_on_emulator,
-                                    string custom_url,
-                                    const string& websocket_url) {
+unique_ptr<ditto::Ditto>
+init_ditto(JNIEnv *env, jobject android_context, string app_id,
+           string online_playground_token, bool enable_cloud_sync,
+           string persistence_dir, bool is_running_on_emulator,
+           string custom_url, const string &websocket_url) {
   try {
 
     // TODO UPDATE TO USE CUSTOM URL AND WEBSOCKET
-    // Docs:  https://docs.ditto.live/sdk/latest/install-guides/cpp#importing-and-initializing-ditto
+    // Docs:
+    // https://docs.ditto.live/sdk/latest/install-guides/cpp#importing-and-initializing-ditto
 
     const auto identity = ditto::Identity::OnlinePlayground(
-        std::move(app_id),
-        std::move(online_playground_token),
-        enable_cloud_sync,                  // This is required to be set to false to use the correct URLs
-        std::move(custom_url)
-        );
+        std::move(app_id), std::move(online_playground_token),
+        enable_cloud_sync, // This is required to be set to false to use the
+                           // correct URLs
+        std::move(custom_url));
 
-    auto ditto =
-        make_unique<ditto::Ditto>(android_context, identity, std::move(persistence_dir));
+    auto ditto = make_unique<ditto::Ditto>(android_context, identity,
+                                           std::move(persistence_dir));
 
     if (is_running_on_emulator) {
       // Some transports don't work correctly on emulator, so disable them.
-      ditto->update_transport_config([websocket_url](ditto::TransportConfig &config) {
-          config.peer_to_peer.bluetooth_le.enabled = false;
-          config.peer_to_peer.wifi_aware.enabled = false;
-          config.connect.websocket_urls.insert(websocket_url);
-      });
+      ditto->update_transport_config(
+          [websocket_url](ditto::TransportConfig &config) {
+            config.peer_to_peer.bluetooth_le.enabled = false;
+            config.peer_to_peer.wifi_aware.enabled = false;
+            config.connect.websocket_urls.insert(websocket_url);
+          });
     } else {
-      ditto->update_transport_config([websocket_url](ditto::TransportConfig &config) {
-          config.enable_all_peer_to_peer();
-          config.connect.websocket_urls.insert(websocket_url);
-      });
+      ditto->update_transport_config(
+          [websocket_url](ditto::TransportConfig &config) {
+            config.enable_all_peer_to_peer();
+            config.connect.websocket_urls.insert(websocket_url);
+          });
     }
 
     // Required for compatibility with DQL.
@@ -76,7 +74,8 @@ unique_ptr<ditto::Ditto> init_ditto(JNIEnv *env,
 
     // Disable DQL strict mode
     // https://docs.ditto.live/dql/strict-mode
-    const auto result = ditto->get_store().execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+    const auto result =
+        ditto->get_store().execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
 
     return ditto;
   } catch (const exception &err) {
@@ -94,34 +93,21 @@ private:
   shared_ptr<ditto::SyncSubscription> tasks_subscription;
 
 public:
-  Impl(JNIEnv *env,
-       jobject context,
-       string app_id,
-       string online_playground_token,
-       bool enable_cloud_sync,
-       string persistence_dir,
-       bool is_running_on_emulator,
-       string custom_auth_url,
-       const string& websocket_url)
+  Impl(JNIEnv *env, jobject context, string app_id,
+       string online_playground_token, bool enable_cloud_sync,
+       string persistence_dir, bool is_running_on_emulator,
+       string custom_auth_url, const string &websocket_url)
       : mtx(new mutex()),
-        ditto(init_ditto(
-                env,
-                context,
-                std::move(app_id),
-                std::move(online_playground_token),
-                enable_cloud_sync,
-                std::move(persistence_dir),
-                is_running_on_emulator,
-                std::move(custom_auth_url),
-                websocket_url
-                )) {}
+        ditto(init_ditto(env, context, std::move(app_id),
+                         std::move(online_playground_token), enable_cloud_sync,
+                         std::move(persistence_dir), is_running_on_emulator,
+                         std::move(custom_auth_url), websocket_url)) {}
 
   ~Impl() noexcept {
     try {
       stop_sync();
     } catch (const exception &err) {
-      cerr << "Failed to destroy tasks peer instance: " +
-              string(err.what())
+      cerr << "Failed to destroy tasks peer instance: " + string(err.what())
            << endl;
     }
   }
@@ -151,9 +137,7 @@ public:
   string add_task(const string &title, bool done) {
     try {
       const json task_args = {
-          {"title",   title},
-          {"done",    done},
-          {"deleted", false}};
+          {"title", title}, {"done", done}, {"deleted", false}};
       const auto command = "INSERT INTO tasks DOCUMENTS (:newTask)";
       const auto result =
           ditto->get_store().execute(command, {{"newTask", task_args}});
@@ -204,10 +188,10 @@ public:
                         " deleted = :deleted"
                         " WHERE _id = :id";
       const auto result =
-          ditto->get_store().execute(stmt, {{"title",   task.title},
-                                            {"done",    task.done},
+          ditto->get_store().execute(stmt, {{"title", task.title},
+                                            {"done", task.done},
                                             {"deleted", task.deleted},
-                                            {"id",      task._id}});
+                                            {"id", task._id}});
       if (result.mutated_document_ids().empty()) {
         throw runtime_error("task not found with ID: " + task._id);
       }
@@ -228,8 +212,7 @@ public:
 
       const auto stmt = "UPDATE tasks SET done = :done WHERE _id = :id";
       const auto result =
-          ditto->get_store().execute(stmt, {{"done", done},
-                                            {"id",   task_id}});
+          ditto->get_store().execute(stmt, {{"done", done}, {"id", task_id}});
       log_debug("Marked task " + task_id +
                 (done ? " complete" : " incomplete"));
     } catch (const exception &err) {
@@ -259,11 +242,11 @@ public:
     }
   }
 
-  shared_ptr<ditto::StoreObserver> register_tasks_observer(
-      function<void(const vector<string> &)> callback) {
+  shared_ptr<ditto::StoreObserver>
+  register_tasks_observer(function<void(const vector<string> &)> callback) {
     try {
       const auto observer = ditto->get_store().register_observer(
-          "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id",
+          "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC",
           [callback = std::move(callback)](const ditto::QueryResult &result) {
             const auto item_count = result.item_count();
             log_debug("Tasks collection updated; count=" +
@@ -294,15 +277,16 @@ public:
           {"50191411-4C46-4940-8B72-5F8017A04FA7", "Buy groceries"},
           {"6DA283DA-8CFE-4526-A6FA-D385089364E5", "Clean the kitchen"},
           {"5303DDF8-0E72-4FEB-9E82-4B007E5797F0",
-                                                   "Schedule dentist appointment"},
+           "Schedule dentist appointment"},
           {"38411F1B-6B49-4346-90C3-0B16CE97E174", "Pay bills"}};
 
-      for (const auto &task: initial_tasks) {
-        const json task_args = {{"_id",     task._id},
-                                {"title",   task.title},
-                                {"done",    task.done},
+      for (const auto &task : initial_tasks) {
+        const json task_args = {{"_id", task._id},
+                                {"title", task.title},
+                                {"done", task.done},
                                 {"deleted", task.deleted}};
-        const auto command = "INSERT INTO tasks INITIAL DOCUMENTS (:newTask)";
+        const auto command =
+            "INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE";
         ditto->get_store().execute(command, {{"newTask", task_args}});
       }
     } catch (const exception &err) {
@@ -323,12 +307,14 @@ public:
   }
 }; // class TasksPeer::Impl
 
-TasksPeer::TasksPeer(JNIEnv *env, jobject context, string app_id, string online_playground_token,
-                     bool enable_cloud_sync, string persistence_dir, bool is_running_on_emulator,
-                     string custom_auth_url, const string& websocket_url)
-    : impl(make_unique<Impl>(env, context, std::move(app_id), std::move(online_playground_token),
-                             enable_cloud_sync, std::move(persistence_dir),
-                             is_running_on_emulator, std::move(custom_auth_url), std::move(websocket_url))) {}
+TasksPeer::TasksPeer(JNIEnv *env, jobject context, string app_id,
+                     string online_playground_token, bool enable_cloud_sync,
+                     string persistence_dir, bool is_running_on_emulator,
+                     string custom_auth_url, const string &websocket_url)
+    : impl(make_unique<Impl>(
+          env, context, std::move(app_id), std::move(online_playground_token),
+          enable_cloud_sync, std::move(persistence_dir), is_running_on_emulator,
+          std::move(custom_auth_url), std::move(websocket_url))) {}
 
 TasksPeer::~TasksPeer() noexcept {
   try {

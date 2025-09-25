@@ -14,7 +14,7 @@ class TasksListScreenViewModel : ViewModel() {
     companion object {
         private const val TAG = "TasksListScreenViewModel"
 
-        private const val QUERY = "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id"
+        private const val QUERY = "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC"
     }
 
     inner class UpdateHandler : TasksObserver {
