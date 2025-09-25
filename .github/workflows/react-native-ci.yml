@@ -309,8 +309,7 @@ jobs:
         mkdir maestro-tests
 
         # Replace MAESTRO_TASK_TO_FIND with actual seeded task name (BrowserStack Android API bug workaround)
-        # TEMP: Adding random suffix to test false positive detection
-        sed 's/\${MAESTRO_TASK_TO_FIND}/${{ needs.seed-ditto-cloud.outputs.test_task_title }}_RANDOM_SUFFIX_12345/g' \
+        sed 's/\${MAESTRO_TASK_TO_FIND}/${{ needs.seed-ditto-cloud.outputs.test_task_title }}/g' \
           .maestro/flows/01-app-launch-and-seeded-tasks-android.yaml > maestro-tests/01-app-launch-and-seeded-tasks-android.yaml
 
         # Also create flows/ subfolder for organization
@@ -486,7 +485,7 @@ jobs:
             ],
             "execute": ["01-app-launch-and-seeded-tasks-ios.yaml"],
             "setEnvVariables": {
-              "MAESTRO_TASK_TO_FIND": "${{ needs.seed-ditto-cloud.outputs.test_task_title }}_RANDOM_SUFFIX_12345"
+              "MAESTRO_TASK_TO_FIND": "${{ needs.seed-ditto-cloud.outputs.test_task_title }}"
             },
             "deviceLogs": true,
             "networkLogs": true,
