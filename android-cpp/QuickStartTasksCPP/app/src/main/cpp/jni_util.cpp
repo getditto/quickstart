@@ -34,12 +34,12 @@ void throw_java_illegal_argument_exception(JNIEnv *env, const char *msg) {
   throw_java_exception(env, msg, "java/lang/IllegalArgumentException");
 }
 
-jobjectArray strings_to_jstrings(JNIEnv *env, const std::vector<std::string> &strings) {
-  const auto count = (int) strings.size();
+jobjectArray strings_to_jstrings(JNIEnv *env,
+                                 const std::vector<std::string> &strings) {
+  const auto count = (int)strings.size();
   TempLocalRef<jclass> stringClass(env, env->FindClass("java/lang/String"));
-  jobjectArray stringArray = env->NewObjectArray(count,
-                                                 stringClass.get(),
-                                                 nullptr);
+  jobjectArray stringArray =
+      env->NewObjectArray(count, stringClass.get(), nullptr);
   for (auto i = 0; i < count; ++i) {
     TempJString js(env, strings[i]);
     env->SetObjectArrayElement(stringArray, i, js.get());
