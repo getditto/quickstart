@@ -11,9 +11,9 @@
 /android-java/           @phatblat @busec0
 /android-kotlin/         @phatblat @busec0
 /cpp-tui/                @kristopherjohnson @teodorciuraru
-/dotnet-maui/            @busec0 @phatblat
-/dotnet-tui/             @busec0 @phatblat
-/dotnet-winforms/        @busec0 @phatblat
+/dotnet-maui/            @busec0 @kristopherjohnson
+/dotnet-tui/             @busec0 @kristopherjohnson
+/dotnet-winforms/        @busec0 @kristopherjohnson
 /flutter_app/            @cameron1024 @teodorciuraru
 /java-spring/            @phatblat @busec0
 /javascript-tui/         @konstantinbe @pvditto @teodorciuraru
