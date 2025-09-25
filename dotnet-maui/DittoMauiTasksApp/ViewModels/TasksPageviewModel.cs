@@ -11,7 +11,7 @@ namespace DittoMauiTasksApp.ViewModels
 {
     public partial class TasksPageviewModel : ObservableObject
     {
-        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted";
+        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted ORDER BY ORD ASC";
 
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
@@ -253,7 +253,7 @@ namespace DittoMauiTasksApp.ViewModels
                 {
                     var newTasks = queryResult.Items.Select(d =>
                         JsonSerializer.Deserialize<DittoTask>(d.JsonString())
-                    ).OrderBy(t => t.Id).ToList();
+                    ).ToList();
 
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
