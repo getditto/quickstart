@@ -292,10 +292,7 @@ jobs:
         run: |
           dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
             /p:RuntimeIdentifier=ios-arm64 \
-            /p:CodesignKey="" \
-            /p:CodesignProvision="" \
-            /p:CodesignRequire=false \
-            /p:CodeSigningAllowed=false \
+            /p:EnableCodeSigning=false \
             /p:ArchiveOnBuild=false
 
       - name: Create iOS IPA for BrowserStack
