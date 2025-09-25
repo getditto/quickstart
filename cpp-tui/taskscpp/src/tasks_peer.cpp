@@ -48,12 +48,45 @@ static shared_ptr<ditto::Ditto>
 init_ditto(string app_id, string online_playground_token, string websocket_url,
            string auth_url, bool enable_cloud_sync, string persistence_dir) {
   try {
+    // Use the failable initializer with Ditto C++ SDK v4.12 or newer
+#if (DITTO_VERSION_MAJOR >= 5) ||                                              \
+    (DITTO_VERSION_MAJOR == 4 && DITTO_VERSION_MINOR >= 12)
+    auto config = ditto::DittoConfig::default_config()
+                      .set_database_id(std::move(app_id))
+                      .set_persistence_directory(std::move(persistence_dir))
+                      .set_server_connect(std::move(auth_url));
+    auto ditto = ditto::Ditto::open(config);
+
+    ditto->get_auth()->set_expiration_handler(
+        [login_token = std::move(online_playground_token)](
+            ditto::Ditto &ditto, uint32_t time_remaining) {
+          try {
+            log_debug("expiration handler called; time remaining = " +
+                      std::to_string(time_remaining));
+            ditto.get_auth()->login(
+                login_token, ditto::Authenticator::get_development_provider(),
+                [&](unique_ptr<string> client_info,
+                    unique_ptr<ditto::DittoError> err) {
+                  if (err != nullptr) {
+                    log_error("expiration handler: login error:" +
+                              string(err->what()));
+                  } else {
+                    log_debug("expiration handler: login succeeded");
+                  }
+                });
+          } catch (const exception &e) {
+            log_error("expiration handler: " + string(e.what()));
+          }
+        });
+#else
+    // For older Ditto SDK versions, use the constructor.
     const auto identity = ditto::Identity::OnlinePlayground(
         std::move(app_id), std::move(online_playground_token),
         enable_cloud_sync, std::move(auth_url));
 
     auto ditto =
         std::make_shared<ditto::Ditto>(identity, std::move(persistence_dir));
+#endif
 
     ditto->update_transport_config(
         [websocket_url](ditto::TransportConfig &config) {

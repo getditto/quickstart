@@ -83,6 +83,9 @@ public:
   /// Add a set of initial documents to the tasks collection.
   void insert_initial_tasks();
 
+  /// Get array of missing permissions
+  jobjectArray missing_permissions_jni_array() const;
+
 private:
   class Impl; // private implementation class ("pimpl pattern")
   std::unique_ptr<Impl> impl;
