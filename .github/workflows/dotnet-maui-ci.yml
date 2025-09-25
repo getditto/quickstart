@@ -294,6 +294,8 @@ jobs:
             /p:RuntimeIdentifier=ios-arm64 \
             /p:CodesignKey="" \
             /p:CodesignProvision="" \
+            /p:CodesignRequire=false \
+            /p:CodeSigningAllowed=false \
             /p:ArchiveOnBuild=false
 
       - name: Create iOS IPA for BrowserStack
