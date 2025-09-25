@@ -22,6 +22,7 @@ import {
   DITTO_APP_ID,
   DITTO_PLAYGROUND_TOKEN,
   DITTO_AUTH_URL,
+  DITTO_WEBSOCKET_URL,
 } from '@env';
 
 import Fab from './components/Fab';
@@ -131,6 +132,11 @@ const App = () => {
       const config = new DittoConfig(databaseId, connectConfig, 'custom-folder');
 
       ditto.current = await Ditto.open(config);
+
+      // Configure websocket URL for transport
+      ditto.current.updateTransportConfig((transportConfig) => {
+        transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+      });
 
       if (connectConfig.mode === 'server') {
         await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
