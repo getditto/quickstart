@@ -31,16 +31,21 @@ jobs:
     name: Lint (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-    
+
+    - name: Install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format
+
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
@@ -62,6 +67,18 @@ jobs:
     - name: Run Android linting
       working-directory: android-cpp/QuickStartTasksCPP
       run: ./gradlew lint
+
+    - name: Check C++ formatting
+      working-directory: android-cpp/QuickStartTasksCPP/app/src/main/cpp
+      run: |
+        echo "Checking C++ code formatting with clang-format..."
+        find . -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
+        if [ $? -eq 0 ]; then
+          echo "✅ C++ code formatting check passed"
+        else
+          echo "❌ C++ code formatting issues found. Run clang-format to fix."
+          exit 1
+        fi
 
   build:
     name: Build APK
