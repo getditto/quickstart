@@ -11,7 +11,7 @@ namespace DittoMauiTasksApp.ViewModels
 {
     public partial class TasksPageviewModel : ObservableObject
     {
-        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id ASC";
+        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC";
 
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
