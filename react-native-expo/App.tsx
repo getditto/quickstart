@@ -198,8 +198,8 @@ const App = () => {
   }, []);
 
   const renderItem = ({ item }: { item: Task }) => (
-    <View key={item.id} style={styles.taskContainer} testID={`task-container-${item.title}`}>
-      <TaskDone checked={item.done} onPress={() => toggleTask(item)} testID={`task-checkbox-${item.title}`} />
+    <View key={item.id} style={styles.taskContainer}>
+      <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
       <Text style={styles.taskTitle} onLongPress={() => setEditingTask(item)} testID={item.title}>
         {item.title}
       </Text>
