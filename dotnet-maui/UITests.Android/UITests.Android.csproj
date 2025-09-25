@@ -10,6 +10,15 @@
 
   <!-- Using direct BrowserStack REST API approach like other apps in this repo -->
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="NUnit" Version="4.2.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Appium.WebDriver" Version="5.2.0" />
+  </ItemGroup>
+
   <!-- Force copy Appium.Net.dll to test output directory for VSTest -->
   <ItemGroup>
     <None Include="$(NuGetPackageRoot)appium.webdriver/5.2.0/lib/net6.0/Appium.Net.dll">

@@ -12,23 +12,42 @@ public class iOSTaskSearchTests : TaskSearchTests
     {
         var options = new AppiumOptions();
 
-        // Platform capabilities
-        options.PlatformName = "iOS";
-        options.AutomationName = "XCUITest";
+        // Check if running on BrowserStack
+        var browserstackUsername = Environment.GetEnvironmentVariable("BROWSERSTACK_USERNAME");
+        var browserstackAccessKey = Environment.GetEnvironmentVariable("BROWSERSTACK_ACCESS_KEY");
+        var browserstackApp = Environment.GetEnvironmentVariable("BROWSERSTACK_APP_ID");
 
-        // App capabilities - use the built .app
-        options.App = Path.Combine(GetAppPath(), "DittoMauiTasksApp.app");
+        if (!string.IsNullOrEmpty(browserstackUsername) && !string.IsNullOrEmpty(browserstackAccessKey))
+        {
+            // BrowserStack capabilities for iOS
+            options.PlatformName = "iOS";
+            options.AutomationName = "XCUITest";
+            options.DeviceName = "iPhone 15";
+            options.PlatformVersion = "17.0";
+            options.App = browserstackApp ?? GetAppPath();
+            options.AddAdditionalAppiumOption("project", "Ditto .NET MAUI");
+            options.AddAdditionalAppiumOption("build", "Appium E2E Tests");
+            options.AddAdditionalAppiumOption("name", "iOS Task Search Tests");
 
-        // iOS Simulator capabilities - automatically detect booted simulator
-        var (deviceName, platformVersion) = GetFirstBootedSimulator();
-        Console.WriteLine($"Using booted simulator: {deviceName} ({platformVersion})");
-        options.DeviceName = deviceName;
-        options.PlatformVersion = platformVersion;
+            var uri = new Uri($"https://{browserstackUsername}:{browserstackAccessKey}@hub-cloud.browserstack.com/wd/hub");
+            return new IOSDriver(uri, options);
+        }
+        else
+        {
+            // Local testing capabilities
+            options.PlatformName = "iOS";
+            options.AutomationName = "XCUITest";
 
-        // Optional capabilities
-        options.AddAdditionalAppiumOption("newCommandTimeout", 300);
+            // App capabilities - use the built .app
+            options.App = Path.Combine(GetAppPath(), "DittoMauiTasksApp.app");
 
-        return new IOSDriver(new Uri("http://127.0.0.1:4723"), options);
+            // iOS Simulator capabilities - automatically detect booted simulator
+            var (deviceName, platformVersion) = GetFirstBootedSimulator();
+            options.DeviceName = deviceName;
+            options.PlatformVersion = platformVersion;
+            options.AddAdditionalAppiumOption("newCommandTimeout", 300);
+            return new IOSDriver(new Uri("http://127.0.0.1:4723"), options);
+        }
     }
 
     private string GetAppPath()
@@ -43,7 +62,6 @@ public class iOSTaskSearchTests : TaskSearchTests
             appPath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Debug", "net9.0-ios", "iossimulator-x64");
         }
 
-        Console.WriteLine($"Looking for .app in: {appPath}");
         return appPath;
     }
 

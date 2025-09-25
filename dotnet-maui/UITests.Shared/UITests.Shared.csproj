@@ -27,6 +27,8 @@
     <!-- Exclude Windows-specific dependencies that cause VSTest issues on macOS -->
     <PackageReference Include="System.Drawing.Common" Version="8.0.8" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Win32.SystemEvents" Version="8.0.0" ExcludeAssets="runtime" />
+    <!-- Add Newtonsoft.Json to fix missing dependency issue -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
 </Project>

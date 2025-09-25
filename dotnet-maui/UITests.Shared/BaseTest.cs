@@ -16,43 +16,33 @@ public abstract class BaseTest
     [OneTimeSetUp]
     public void OneTimeSetUp()
     {
-        // Hook AssemblyResolve to handle missing Appium.Net.dll
         if (!_assemblyResolveHooked)
         {
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAppiumAssembly;
             _assemblyResolveHooked = true;
-            Console.WriteLine("AssemblyResolve hook registered for Appium dependencies");
         }
     }
 
     private static Assembly? ResolveAppiumAssembly(object? sender, ResolveEventArgs args)
     {
         var assemblyName = new AssemblyName(args.Name);
-        Console.WriteLine($"AssemblyResolve: Looking for {assemblyName.Name}");
 
-        // Handle Appium.Net assembly specifically
         if (assemblyName.Name == "Appium.Net")
         {
-            // Look in NuGet packages folder
             var nugetPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 ".nuget", "packages", "appium.webdriver", "5.2.0", "lib", "net6.0", "Appium.Net.dll");
 
             if (File.Exists(nugetPath))
             {
-                Console.WriteLine($"✓ Loading Appium.Net.dll from: {nugetPath}");
                 return Assembly.LoadFrom(nugetPath);
             }
 
-            // Fallback: look in current directory
             var localPath = Path.Combine(AppContext.BaseDirectory, "Appium.Net.dll");
             if (File.Exists(localPath))
             {
-                Console.WriteLine($"✓ Loading Appium.Net.dll from: {localPath}");
                 return Assembly.LoadFrom(localPath);
             }
-
-            Console.WriteLine($"❌ Could not find Appium.Net.dll in expected locations");
         }
 
         return null;
@@ -62,6 +52,67 @@ public abstract class BaseTest
     public void SetUp()
     {
         App = CreateDriver();
+
+        // Handle permission dialogs on app startup
+        HandlePermissionDialogs();
+    }
+
+    private void HandlePermissionDialogs()
+    {
+        try
+        {
+            Thread.Sleep(2000);
+            var isIOS = App.GetType().Name.Contains("IOSDriver");
+
+            if (isIOS)
+            {
+                var iOSButtons = new[] { "Allow", "OK", "Allow While Using App", "Allow Once" };
+
+                for (int dialogRound = 1; dialogRound <= 2; dialogRound++)
+                {
+                    foreach (var buttonText in iOSButtons)
+                    {
+                        try
+                        {
+                            var allowButton = App.FindElement(MobileBy.XPath($"//XCUIElementTypeButton[@name='{buttonText}']"));
+                            if (allowButton.Displayed)
+                            {
+                                allowButton.Click();
+                                Thread.Sleep(3000);
+                                break;
+                            }
+                        }
+                        catch
+                        {
+                        }
+                    }
+                    Thread.Sleep(1000);
+                }
+            }
+            else
+            {
+                var androidButtons = new[] { "Allow", "ALLOW", "OK", "Accept" };
+
+                foreach (var buttonText in androidButtons)
+                {
+                    try
+                    {
+                        var allowButton = App.FindElement(MobileBy.XPath($"//android.widget.Button[@text='{buttonText}']"));
+                        if (allowButton.Displayed)
+                        {
+                            allowButton.Click();
+                            Thread.Sleep(1000);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+        catch
+        {
+        }
     }
 
     [TearDown]

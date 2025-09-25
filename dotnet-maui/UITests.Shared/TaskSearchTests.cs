@@ -11,7 +11,6 @@ public abstract class TaskSearchTests : BaseTest
     [Test]
     public void CanFindTaskByTitle()
     {
-        // Get the expected task title from environment variable
         var expectedTaskTitle = Environment.GetEnvironmentVariable("EXPECTED_TASK_TITLE");
 
         if (string.IsNullOrEmpty(expectedTaskTitle))
@@ -20,80 +19,69 @@ public abstract class TaskSearchTests : BaseTest
             return;
         }
 
-        Console.WriteLine($"Looking for task with title: {expectedTaskTitle}");
-
-        // Wait for the tasks list to be visible
-        var wait = new WebDriverWait(App, TimeSpan.FromSeconds(30));
+        var isBrowserStack = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BROWSERSTACK_USERNAME"));
 
         try
         {
-            var tasksList = wait.Until(driver =>
-                driver.FindElement(MobileBy.Id("TasksList")));
+            // Wait for app to load and sync - longer for BrowserStack
+            var waitTime = isBrowserStack ? 15000 : 6000;
+            Thread.Sleep(waitTime);
 
-            Console.WriteLine("Tasks list found, waiting for sync...");
-
-            // Wait a bit for sync to complete
-            Thread.Sleep(3000);
-
-            // Look for task title labels within the tasks list
             var taskFound = false;
-            var maxAttempts = 10;
-            var attempt = 0;
 
-            while (!taskFound && attempt < maxAttempts)
+            for (int attempt = 1; attempt <= 10; attempt++)
             {
                 try
                 {
-                    // Find all task title labels
+                    // Find all TaskTitleLabel elements using AutomationId (works on both iOS and Android)
                     var taskLabels = App.FindElements(MobileBy.Id("TaskTitleLabel"));
-
-                    Console.WriteLine($"Found {taskLabels.Count} task labels on attempt {attempt + 1}");
 
                     foreach (var label in taskLabels)
                     {
                         try
                         {
-                            var labelText = label.Text;
-                            Console.WriteLine($"Checking task: '{labelText}'");
-
-                            if (labelText.Contains(expectedTaskTitle))
+                            if (label.Text.Contains(expectedTaskTitle) && label.Displayed)
                             {
-                                Console.WriteLine($"✓ Found matching task: {labelText}");
                                 taskFound = true;
                                 break;
                             }
                         }
-                        catch (Exception ex)
+                        catch
                         {
-                            Console.WriteLine($"Error reading label text: {ex.Message}");
+                            // Label not accessible, continue
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error finding task labels on attempt {attempt + 1}: {ex.Message}");
-                }
 
-                if (!taskFound)
+                    if (taskFound)
+                        break;
+                }
+                catch
                 {
-                    attempt++;
-                    Thread.Sleep(2000); // Wait 2 seconds between attempts
+                    Thread.Sleep(1000);
                 }
             }
 
-            // Assert that we found the expected task
-            Assert.That(taskFound, Is.True,
-                $"Could not find task with title containing '{expectedTaskTitle}' after {maxAttempts} attempts");
+            if (!taskFound)
+            {
+                if (isBrowserStack)
+                {
+                    App.ExecuteScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"failed\", \"reason\": \"Task not found\"}}");
+                }
+                Assert.Fail($"Task '{expectedTaskTitle}' not found");
+            }
 
-            Console.WriteLine($"✓ Test passed: Successfully found task with title containing '{expectedTaskTitle}'");
-        }
-        catch (WebDriverTimeoutException)
-        {
-            Assert.Fail("Tasks list was not found within timeout period. App may not have loaded correctly.");
+            if (isBrowserStack)
+            {
+                App.ExecuteScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"passed\", \"reason\": \"Task found successfully\"}}");
+            }
         }
         catch (Exception ex)
         {
-            Assert.Fail($"Unexpected error during test: {ex.Message}");
+            if (isBrowserStack)
+            {
+                App.ExecuteScript($"browserstack_executor: {{\"action\": \"setSessionStatus\", \"arguments\": {{\"status\": \"failed\", \"reason\": \"{ex.Message}\"}}}}");
+            }
+            Assert.Fail($"Test failed: {ex.Message}");
         }
     }
 }

@@ -10,19 +10,40 @@ public class AndroidTaskSearchTests : TaskSearchTests
     {
         var options = new AppiumOptions();
 
-        // Platform capabilities
-        options.PlatformName = "Android";
-        options.AutomationName = "UIAutomator2";
+        // Check if running on BrowserStack
+        var browserstackUsername = Environment.GetEnvironmentVariable("BROWSERSTACK_USERNAME");
+        var browserstackAccessKey = Environment.GetEnvironmentVariable("BROWSERSTACK_ACCESS_KEY");
+        var browserstackApp = Environment.GetEnvironmentVariable("BROWSERSTACK_APP_ID");
 
-        // App capabilities - use the built APK
-        options.App = GetAppPath();
+        if (!string.IsNullOrEmpty(browserstackUsername) && !string.IsNullOrEmpty(browserstackAccessKey))
+        {
+            // BrowserStack capabilities - match android-cpp pattern exactly
+            options.PlatformName = "Android";
+            options.AutomationName = "UiAutomator2";
+            options.DeviceName = "Google Pixel 7";
+            options.PlatformVersion = "13.0";
+            options.App = browserstackApp ?? GetAppPath();
+            options.AddAdditionalAppiumOption("project", "Ditto .NET MAUI");
+            options.AddAdditionalAppiumOption("build", "Appium E2E Tests");
+            options.AddAdditionalAppiumOption("name", "Task Search Tests");
 
-        // Optional capabilities for local testing
-        options.AddAdditionalAppiumOption("appWaitActivity", "crc647fcdc6dfabca042e.MainActivity");
-        options.AddAdditionalAppiumOption("newCommandTimeout", 300);
-        options.AddAdditionalAppiumOption("autoGrantPermissions", true);
+            var uri = new Uri($"https://{browserstackUsername}:{browserstackAccessKey}@hub-cloud.browserstack.com/wd/hub");
+            return new AndroidDriver(uri, options);
+        }
+        else
+        {
+            // Local testing capabilities
+            options.PlatformName = "Android";
+            options.AutomationName = "UIAutomator2";
+            options.App = GetAppPath();
 
-        return new AndroidDriver(new Uri("http://127.0.0.1:4723"), options);
+            // Optional capabilities for local testing
+            options.AddAdditionalAppiumOption("appWaitActivity", "crc647fcdc6dfabca042e.MainActivity");
+            options.AddAdditionalAppiumOption("newCommandTimeout", 300);
+            options.AddAdditionalAppiumOption("autoGrantPermissions", true);
+
+            return new AndroidDriver(new Uri("http://127.0.0.1:4723"), options);
+        }
     }
 
     private string GetAppPath()
@@ -34,15 +55,12 @@ public class AndroidTaskSearchTests : TaskSearchTests
         var releasePath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Release", "net9.0-android", apkFileName);
         if (File.Exists(releasePath))
         {
-            Console.WriteLine($"Found APK at: {releasePath}");
             return releasePath;
         }
 
-        // Fallback to debug directory
         var debugPath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Debug", "net9.0-android", apkFileName);
         if (File.Exists(debugPath))
         {
-            Console.WriteLine($"Found APK at: {debugPath}");
             return debugPath;
         }
 

@@ -13,7 +13,7 @@ projectName: Ditto MAUI Tasks Android
 buildName: Android Build
 sessionName: Ditto Tasks Android Test
 
-app: ${BROWSERSTACK_APP_ID}
+app: ../DittoMauiTasksApp/bin/Release/net9.0-android/publish/live.ditto.quickstart.mauitasksapp-Signed.apk
 browserstackLocal: false
 
 video: true
