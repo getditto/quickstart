@@ -216,3 +216,125 @@ jobs:
           name: flutter-coverage-${{ github.run_number }}
           path: flutter_app/coverage/
           retention-days: 1
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [build-android]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Insert test document into Ditto Cloud
+        id: seed-data
+        run: |
+          # Generate unique document ID using run ID and number
+          DOC_ID="ci-test-flutter-${{ github.run_id }}-${{ github.run_number }}"
+          DOC_TITLE="Flutter CI Test ${{ github.run_number }}"
+
+          echo "📝 Inserting test document:"
+          echo "📝 ID: ${DOC_ID}"
+          echo "📝 Title: ${DOC_TITLE}"
+
+          # Insert document using Ditto API v4
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"text\": \"${DOC_TITLE}\",
+                  \"isCompleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+          # Extract HTTP status code and response body
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          # Check if insertion was successful
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
+            echo "✓ Document title: ${DOC_TITLE}"
+            echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
+            echo "test_doc_title=${DOC_TITLE}" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run integration test on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          arch: x86_64
+          profile: Nexus 6
+          script: |
+            cd flutter_app
+            flutter test integration_test/integration_test.dart --dart-define=TASK_TO_FIND="${{ env.GITHUB_TEST_DOC_TITLE }}"
+
+      - name: Clean up test document
+        if: always()
+        run: |
+          DOC_TITLE="${{ steps.seed-data.outputs.test_doc_title }}"
+          DOC_ID="ci-test-flutter-${{ github.run_id }}-${{ github.run_number }}"
+
+          if [ -n "$DOC_TITLE" ]; then
+            echo "🧹 Cleaning up test document: ${DOC_ID}"
+
+            # Delete document using Ditto API v4
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"DELETE FROM tasks WHERE _id = :id\",
+                \"args\": {
+                  \"id\": \"${DOC_ID}\"
+                }
+              }" \
+            "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 204 ]; then
+              echo "✓ Successfully cleaned up test document"
+            else
+              echo "⚠️ Failed to clean up test document (HTTP $HTTP_CODE)"
+            fi
+          fi
