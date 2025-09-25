@@ -100,7 +100,8 @@ namespace DittoTasksApp
         private void tsbEdit_Click(object sender, EventArgs e)
         {
             var todoItem = (ToDoTask?)lvTasks.CheckedItems[0].Tag;
-            if (todoItem != null) {
+            if (todoItem != null)
+            {
                 var editForm = new ToDoTaskEditorForm(_tasksPeer, todoItem);
                 editForm.Owner = this;
                 editForm.ShowDialog();
@@ -181,7 +182,5 @@ namespace DittoTasksApp
             }
 
         }
-
- 
     }
 }

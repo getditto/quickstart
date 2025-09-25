@@ -43,9 +43,9 @@ namespace DittoTasksApp
             {
                 await _tasksPeer.AddTask(tbName.Text);
                 CloseForm();
-
-            } else {
-                
+            }
+            else
+            {
                 await _tasksPeer.UpdateTaskTitle(_task.Id, tbName.Text);
                 await _tasksPeer.UpdateTaskDone(_task.Id, cbIsCompleted.Checked);
                 CloseForm();
