@@ -1,0 +1,123 @@
+name: Update Ditto SDK Versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "SDK version to update to"
+        required: true
+        type: string
+        default: "4.12.0"
+
+jobs:
+  update-sdk-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: |
+            react-native/package-lock.json
+            react-native-expo/package-lock.json
+            javascript-tui/package-lock.json
+            javascript-web/package-lock.json
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "stable"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup CocoaPods
+        run: |
+          sudo gem install cocoapods
+          pod --version
+
+      - name: Update SDK versions and lockfiles
+        run: node scripts/bump-versions.js -t "${{ github.event.inputs.version }}"
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Create branch and commit changes
+        id: create-branch
+        run: |
+          BRANCH_NAME="sdk-update-${{ github.event.inputs.version }}-$(date +%Y%m%d-%H%M%S)"
+          echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          git checkout -b "$BRANCH_NAME"
+          git add -A
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "chore: update Ditto SDK to version ${{ github.event.inputs.version }}"
+            
+            git push origin "$BRANCH_NAME"
+            echo "has-changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Draft Pull Request
+        if: steps.create-branch.outputs.has-changes == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "chore: update Ditto SDK to version ${{ github.event.inputs.version }}" \
+            --body "$(cat <<'EOF'
+          Updates all quickstart applications to use Ditto SDK version ${{ github.event.inputs.version }}
+
+          - Updates lockfiles where possible
+          - Excludes Kotlin Multiplatform (not yet on synchronized releases)
+
+          ## Updated Apps
+
+          - android-kotlin: Updated ditto version to ${{ github.event.inputs.version }}
+          - android-java: Updated ditto version to ${{ github.event.inputs.version }}
+          - android-cpp: Updated live.ditto:ditto-cpp to ${{ github.event.inputs.version }}
+          - dotnet-maui: Updated Ditto to ${{ github.event.inputs.version }}
+          - dotnet-tui: Updated Ditto to ${{ github.event.inputs.version }}
+          - dotnet-winforms: Updated Ditto to ${{ github.event.inputs.version }}
+          - flutter_app: Updated ditto_live to ^${{ github.event.inputs.version }}
+          - java-spring: Updated both ditto-java and ditto-binaries to ${{ github.event.inputs.version }}
+          - javascript-tui: Updated @dittolive/ditto to ^${{ github.event.inputs.version }}
+          - javascript-web: Updated @dittolive/ditto to ^${{ github.event.inputs.version }}
+          - react-native: Updated @dittolive/ditto to ${{ github.event.inputs.version }}
+          - react-native-expo: Updated @dittolive/ditto to ${{ github.event.inputs.version }}
+          - rust-tui: Updated dittolive-ditto to ${{ github.event.inputs.version }}
+          EOF
+          )" \
+            --draft \
+            --head "${{ steps.create-branch.outputs.branch-name }}" \
+            --base main
+
+      - name: Output PR URL
+        if: steps.create-branch.outputs.has-changes == 'true'
+        run: |
+          PR_URL=$(gh pr view "${{ steps.create-branch.outputs.branch-name }}" --json url -q .url)
+          echo "Created draft PR: $PR_URL"
