@@ -339,53 +339,34 @@ jobs:
     steps:
       - name: Report Results
         run: |
-          echo "## 📱 .NET MAUI Build and Test Results"
-          echo ""
-          echo "### Job Results:"
-          echo "- **Lint**: ${{ needs.lint.result }}"
-          echo "- **Build Android**: ${{ needs.build-android.result }}"
-          echo "- **Build iOS**: ${{ needs.build-ios.result }}"
-          echo "- **BrowserStack Android**: ${{ needs.browserstack-android.result }}"
-          echo "- **BrowserStack iOS**: ${{ needs.browserstack-ios.result }}"
-          echo ""
+          echo "## 📱 .NET MAUI CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Android | ${{ needs.build-android.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build iOS | ${{ needs.build-ios.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack Android | ${{ needs.browserstack-android.result == 'success' && '✅ Passed' || (needs.browserstack-android.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack iOS | ${{ needs.browserstack-ios.result == 'success' && '✅ Passed' || (needs.browserstack-ios.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Check results
-          if [[ "${{ needs.lint.result }}" != "success" ]]; then
-            echo "❌ **Linting failed** - Code formatting issues found"
-          fi
-
-          if [[ "${{ needs.build-android.result }}" != "success" ]]; then
-            echo "❌ **Android build failed** - Check build logs"
-          fi
-
-          if [[ "${{ needs.build-ios.result }}" != "success" ]]; then
-            echo "❌ **iOS build failed** - Check build logs"
-          fi
-
-          if [[ "${{ needs.browserstack-android.result }}" == "success" && "${{ needs.browserstack-ios.result }}" == "success" ]]; then
-            echo "✅ **Full pipeline success!**"
-            echo "   - ✅ Code formatting validated"
-            echo "   - ✅ Android and iOS builds succeeded"
-            echo "   - ✅ BrowserStack real device testing passed on both platforms"
-            echo "   - ✅ End-to-end Ditto Cloud sync validated"
-            echo "   - 🚀 **Build artifacts reused efficiently** - No double rebuilding"
-          elif [[ "${{ needs.browserstack-android.result }}" == "failure" || "${{ needs.browserstack-ios.result }}" == "failure" ]]; then
-            echo "❌ **BrowserStack testing failed** - Check test logs for details"
-          elif [[ "${{ needs.browserstack-android.result }}" == "skipped" || "${{ needs.browserstack-ios.result }}" == "skipped" ]]; then
-            echo "⚠️ **BrowserStack testing skipped** - Tests only run on push or PR events"
-          fi
-
-          # Overall status
-          echo ""
-          if [[ "${{ needs.lint.result }}" == "success" && \
-                "${{ needs.build-android.result }}" == "success" && \
-                "${{ needs.build-ios.result }}" == "success" ]]; then
-            echo "🎉 **Core pipeline successful!** Apps build and pass quality checks."
-            if [[ "${{ needs.browserstack-android.result }}" == "success" && \
-                  "${{ needs.browserstack-ios.result }}" == "success" ]]; then
-              echo "🚀 **BrowserStack integration validated!** Real device testing works end-to-end on both platforms."
-            fi
-          else
-            echo "⚠️ Core pipeline has issues - check failed jobs above."
+          # Check core build results
+          if [[ "${{ needs.lint.result }}" != "success" ]] || \
+             [[ "${{ needs.build-android.result }}" != "success" ]] || \
+             [[ "${{ needs.build-ios.result }}" != "success" ]]; then
+            echo "❌ Core builds or linting failed" >> $GITHUB_STEP_SUMMARY
             exit 1
+          else
+            echo "✅ All core builds and linting passed successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Testing results summary
+            if [[ "${{ needs.browserstack-android.result }}" == "success" && "${{ needs.browserstack-ios.result }}" == "success" ]]; then
+              echo "✅ BrowserStack testing passed on both Android and iOS devices!" >> $GITHUB_STEP_SUMMARY
+              echo "🚀 Build artifacts were reused efficiently - no double rebuilding" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ needs.browserstack-android.result }}" == "skipped" || "${{ needs.browserstack-ios.result }}" == "skipped" ]]; then
+              echo "⚠️ BrowserStack testing was skipped (only runs on push or PR events)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⚠️ Core builds passed but BrowserStack testing had issues. Check test logs above." >> $GITHUB_STEP_SUMMARY
+            fi
           fi
