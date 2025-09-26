@@ -272,6 +272,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-android, seed-ditto-cloud]
     timeout-minutes: 30
+    outputs:
+      build_id: ${{ steps.execute-tests.outputs.build_id }}
     # TODO: BrowserStack Android Maestro API environment variables don't work (confirmed by BS staff)
     # On their roadmap with estimate: Oct 2025. Will revert to setEnvVariables when ready.
     # Using sed workaround to replace ${MAESTRO_TASK_TO_FIND} with actual task name in test files
@@ -419,6 +421,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-ios, seed-ditto-cloud]
     timeout-minutes: 30
+    outputs:
+      build_id: ${{ steps.execute-tests.outputs.build_id }}
     env:
       MAESTRO_TASK_TO_FIND: ${{ needs.seed-ditto-cloud.outputs.test_task_title }}
 
@@ -552,3 +556,47 @@ jobs:
           echo "❌ Tests timed out after 20 minutes"
           exit 1
         fi
+
+  report-results:
+    name: Report BrowserStack Results
+    runs-on: ubuntu-latest
+    needs: [test-android-maestro, test-ios-maestro]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+    - name: Comment PR with BrowserStack Links
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const androidBuildId = '${{ needs.test-android-maestro.outputs.build_id }}';
+          const iosBuildId = '${{ needs.test-ios-maestro.outputs.build_id }}';
+
+          let body = '## 📱 React Native Expo - BrowserStack Maestro Test Results\n\n';
+
+          // Android results
+          body += '### Android Tests\n';
+          if (androidBuildId && androidBuildId !== 'null' && androidBuildId !== '') {
+            body += `✅ **[View Android Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/${androidBuildId})**\n`;
+            body += `Build ID: \`${androidBuildId}\`\n\n`;
+          } else {
+            body += '❌ Android tests did not produce a valid build ID\n\n';
+          }
+
+          // iOS results
+          body += '### iOS Tests\n';
+          if (iosBuildId && iosBuildId !== 'null' && iosBuildId !== '') {
+            body += `✅ **[View iOS Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/${iosBuildId})**\n`;
+            body += `Build ID: \`${iosBuildId}\`\n\n`;
+          } else {
+            body += '❌ iOS tests did not produce a valid build ID\n\n';
+          }
+
+          body += '---\n';
+          body += `🔗 [Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
