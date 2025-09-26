@@ -337,80 +337,6 @@ jobs:
     if: always()
 
     steps:
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const lintStatus = '${{ needs.lint.result }}';
-            const buildAndroidStatus = '${{ needs.build-android.result }}';
-            const buildIosStatus = '${{ needs.build-ios.result }}';
-            const bsAndroidStatus = '${{ needs.browserstack-android.result }}';
-            const bsIosStatus = '${{ needs.browserstack-ios.result }}';
-            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
-            const buildNumber = '${{ github.run_number }}';
-
-            // Build BrowserStack dashboard URL
-            const bsProjectName = encodeURIComponent('Ditto .NET MAUI');
-            const bsBuildName = encodeURIComponent(`CI Build #${buildNumber}`);
-            const bsUrl = `https://app-automate.browserstack.com/builds?project=${bsProjectName}&build=${bsBuildName}`;
-
-            // Determine overall status
-            const coreSuccess = lintStatus === 'success' &&
-                               buildAndroidStatus === 'success' &&
-                               buildIosStatus === 'success';
-            const testsSuccess = bsAndroidStatus === 'success' && bsIosStatus === 'success';
-            const overallStatus = coreSuccess && testsSuccess ? '✅ All checks passed' :
-                                 coreSuccess ? '⚠️ Builds passed, tests failed' : '❌ Build failed';
-
-            const body = `## 📱 .NET MAUI CI Results
-
-            **Overall Status:** ${overallStatus}
-            **Build:** [#${buildNumber}](${runUrl})
-
-            | Check | Status |
-            |-------|--------|
-            | Lint | ${lintStatus === 'success' ? '✅ Passed' : '❌ Failed'} |
-            | Build Android | ${buildAndroidStatus === 'success' ? '✅ Passed' : '❌ Failed'} |
-            | Build iOS | ${buildIosStatus === 'success' ? '✅ Passed' : '❌ Failed'} |
-            | BrowserStack Android | ${bsAndroidStatus === 'success' ? '✅ Passed' : bsAndroidStatus === 'skipped' ? '⏭️ Skipped' : '❌ Failed'} |
-            | BrowserStack iOS | ${bsIosStatus === 'success' ? '✅ Passed' : bsIosStatus === 'skipped' ? '⏭️ Skipped' : '❌ Failed'} |
-
-            ${(bsAndroidStatus !== 'skipped' || bsIosStatus !== 'skipped') ?
-              `### 📊 BrowserStack Dashboard\n[View test sessions →](${bsUrl})` : ''}
-
-            ${!coreSuccess ? '⚠️ **Action Required:** Check failed jobs above for details.' :
-              testsSuccess ? '✨ **Ready for review!** All checks passed successfully.' :
-              '⚠️ **Note:** Builds succeeded but some tests failed. Check BrowserStack for details.'}`;
-
-            // Find and update existing comment or create new one
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('.NET MAUI CI Results')
-            );
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: body
-              });
-            }
-
       - name: Report Results
         run: |
           echo "## 📱 .NET MAUI CI Summary" >> $GITHUB_STEP_SUMMARY
@@ -426,8 +352,17 @@ jobs:
 
           # Add BrowserStack dashboard link
           if [[ "${{ needs.browserstack-android.result }}" != "skipped" || "${{ needs.browserstack-ios.result }}" != "skipped" ]]; then
-            echo "### 📊 BrowserStack Dashboard" >> $GITHUB_STEP_SUMMARY
-            echo "[View test sessions for CI Build #${{ github.run_number }}](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📊 BrowserStack Test Sessions" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All test sessions are grouped under **CI Build #${{ github.run_number }}**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "[🔗 View BrowserStack Dashboard →](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The dashboard will show:" >> $GITHUB_STEP_SUMMARY
+            echo "- Android test session (if run)" >> $GITHUB_STEP_SUMMARY
+            echo "- iOS test session (if run)" >> $GITHUB_STEP_SUMMARY
+            echo "- Video recordings and logs for debugging" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
