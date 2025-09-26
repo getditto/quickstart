@@ -33,7 +33,6 @@
 
         <CollectionView
             x:Name="collectionView"
-            AutomationId="TasksList"
             Grid.Row="1"
             ItemsSource="{Binding Tasks}"
             SelectionMode="None">
