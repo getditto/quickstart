@@ -3,16 +3,7 @@
 ## Prerequisites
 - Xcode installed
 - iOS development environment set up
-- Apple Developer account with team configured
-- Valid provisioning profiles for iOS device testing
 - BrowserStack account with credentials
-
-## ⚠️ Important: Code Signing Required
-iOS physical device builds (required for BrowserStack) need proper code signing:
-1. Open `ios/Runner.xcworkspace` in Xcode
-2. Select Runner project → Signing & Capabilities
-3. Set your Development Team for both "Runner" and "RunnerTests" targets
-4. Ensure "Automatically manage signing" is enabled
 
 ## iOS Test Setup
 
