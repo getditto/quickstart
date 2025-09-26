@@ -693,7 +693,7 @@ jobs:
           product="build/ios_integration/Build/Products"
 
           pushd flutter_app/ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -config Flutter/Release.xcconfig -derivedDataPath $output -sdk iphoneos build-for-testing
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner -config Flutter/Release.xcconfig -derivedDataPath $output -sdk iphoneos build-for-testing -CODE_SIGN_IDENTITY="" -CODE_SIGNING_REQUIRED=NO
           popd
 
           pushd flutter_app/$product
