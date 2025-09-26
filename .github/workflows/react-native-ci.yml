@@ -270,6 +270,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       build_id: ${{ steps.execute-tests.outputs.build_id }}
+      status: ${{ job.status }}
     # TODO: BrowserStack Android Maestro API environment variables don't work (confirmed by BS staff)
     # On their roadmap with estimate: Oct 2025. Will revert to setEnvVariables when ready.
     # Using sed workaround to replace ${MAESTRO_TASK_TO_FIND} with actual task name in test files
@@ -413,6 +414,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       build_id: ${{ steps.execute-tests.outputs.build_id }}
+      status: ${{ job.status }}
 
     steps:
     - uses: actions/checkout@v4
@@ -558,28 +560,40 @@ jobs:
         script: |
           const androidBuildId = '${{ needs.test-android-maestro.outputs.build_id }}';
           const iosBuildId = '${{ needs.test-ios-maestro.outputs.build_id }}';
+          const androidStatus = '${{ needs.test-android-maestro.outputs.status }}';
+          const iosStatus = '${{ needs.test-ios-maestro.outputs.status }}';
 
           let body = '## 📱 React Native - BrowserStack Maestro Test Results\n\n';
 
           // Android results
           body += '### Android Tests\n';
           if (androidBuildId && androidBuildId !== 'null' && androidBuildId !== '') {
-            body += `✅ **[View Android Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/${androidBuildId})**\n`;
+            const statusIcon = androidStatus === 'success' ? '✅' : '❌';
+            const statusText = androidStatus === 'success' ? 'Passed' : 'Failed';
+            body += `${statusIcon} **Status:** ${statusText}\n`;
+            body += `🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/${androidBuildId})**\n`;
             body += `Build ID: \`${androidBuildId}\`\n\n`;
           } else {
-            body += '❌ Android tests did not produce a valid build ID\n\n';
+            body += '❌ **Status:** Failed (No build created)\n\n';
           }
 
           // iOS results
           body += '### iOS Tests\n';
           if (iosBuildId && iosBuildId !== 'null' && iosBuildId !== '') {
-            body += `✅ **[View iOS Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/${iosBuildId})**\n`;
+            const statusIcon = iosStatus === 'success' ? '✅' : '❌';
+            const statusText = iosStatus === 'success' ? 'Passed' : 'Failed';
+            body += `${statusIcon} **Status:** ${statusText}\n`;
+            body += `🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/${iosBuildId})**\n`;
             body += `Build ID: \`${iosBuildId}\`\n\n`;
           } else {
-            body += '❌ iOS tests did not produce a valid build ID\n\n';
+            body += '❌ **Status:** Failed (No build created)\n\n';
           }
 
+          // Summary
+          const allPassed = androidStatus === 'success' && iosStatus === 'success';
+          const summaryIcon = allPassed ? '✅' : '⚠️';
           body += '---\n';
+          body += `${summaryIcon} **Overall Result:** ${allPassed ? 'All tests passed' : 'Some tests failed'}\n`;
           body += `🔗 [Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
 
           await github.rest.issues.createComment({
