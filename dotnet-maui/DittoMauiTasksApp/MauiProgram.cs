@@ -43,11 +43,11 @@ public static class MauiProgram
         PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"];
         var authUrl = envVars["DITTO_AUTH_URL"];
         var websocketUrl = envVars["DITTO_WEBSOCKET_URL"];
-        
+
         var ditto = new Ditto(DittoIdentity
         .OnlinePlayground(
-            AppId, 
-            PlaygroundToken, 
+            AppId,
+            PlaygroundToken,
             false,  // This is required to be set to false to use the correct URLs
             authUrl), Path.Combine(FileSystem.Current.AppDataDirectory, "ditto"));
 

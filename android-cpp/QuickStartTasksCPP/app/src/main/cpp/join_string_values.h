@@ -9,7 +9,7 @@
 ///
 /// The container element type must be convertible to a string using the
 /// `std::ostream` `<<` operator.
-template<class Container>
+template <class Container>
 std::string join_string_values(const Container &c,
                                const std::string &delimiter = ",") {
   if (c.empty()) {
@@ -27,4 +27,4 @@ std::string join_string_values(const Container &c,
   return oss.str();
 }
 
-#endif //QUICKSTARTTASKSCPP_JOIN_STRING_VALUES_H
+#endif // QUICKSTARTTASKSCPP_JOIN_STRING_VALUES_H

@@ -1,0 +1,146 @@
+name: JavaScript TUI CI
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'javascript-tui/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'javascript-tui/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: javascript-tui/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: javascript-tui
+        run: npm ci
+      
+      - name: Run lint check
+        working-directory: javascript-tui
+        run: npm run test:format
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: javascript-tui/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: javascript-tui
+        run: npm ci
+      
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+      
+      - name: Build application
+        working-directory: javascript-tui
+        run: npm run build
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: javascript-tui/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: javascript-tui
+        run: npm ci
+      
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+      
+      - name: Insert test document into Ditto Cloud
+        run: |
+          TIMESTAMP=$(date +%s)
+          # Invert the timestamp to allow reverse-chronological sorting of documents by ID.
+          # 9999999999 is chosen as a far-future Unix timestamp (Sat Nov 20 2286 17:46:39 UTC),
+          # ensuring all current timestamps are less than this value.
+          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+          DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"title\": \"${DOC_TITLE}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
+          else
+            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+      
+      - name: Run integration test
+        working-directory: javascript-tui
+        env:
+          GITHUB_TEST_DOC_TITLE: ${{ env.GITHUB_TEST_DOC_TITLE }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: npm run build && node tests/integration_test.js

@@ -142,7 +142,7 @@ const TodoApp = ({ditto}) => {
 			// Register observer, which runs against the local database on this peer
 			// https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
 			const observer = ditto.store.registerObserver(
-				'SELECT * FROM tasks WHERE NOT deleted ORDER BY _id',
+				'SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC',
 				result => {
 					const tasks = result.items.map(item => item.value);
 					setTasks(tasks);
@@ -235,7 +235,7 @@ const TodoApp = ({ditto}) => {
 					const highlight = selected === i ? 'blue' : '';
 					const cursor = selected === i ? '❯ ' : '  ';
 					return (
-						<Box flexDirection="row">
+						<Box key={task._id || i} flexDirection="row">
 							<Text color={highlight}>
 								<Text>{done} </Text>
 								<Text>

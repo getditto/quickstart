@@ -25,6 +25,7 @@ heapdump.*.phd
 javacore.*.txt
 local.properties
 obj/
+bin/
 packages/
 target/
 xcuserdata

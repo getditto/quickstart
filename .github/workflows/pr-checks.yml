@@ -19,21 +19,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  android:
-    name: Android (ubuntu-24.04)
+  rust:
+    name: Rust Quickstart
+    strategy:
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
 
-    # https://github.com/actions/runner-images#available-images
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install tools
-        run: |
-          sudo apt update && sudo apt install just
-          just --version
-          just tools
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          components: rustfmt, clippy
 
+      - name: Run clippy
+        run: |
+          cd rust-tui
+          cargo clippy
+
+      - name: Build project
+        run: |
+          cd rust-tui
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            export RUSTFLAGS="-C prefer-dynamic"
+          fi
+          cargo build
 
   js-web:
     name: JavaScript Web Lint (ubuntu-24.04)
