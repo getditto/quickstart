@@ -1,27 +1,26 @@
 using UITests.Android;
 
-Console.WriteLine("🚀 Starting BrowserStack Test Runner...");
+// Log environment variables for debugging
+var expectedTitle = Environment.GetEnvironmentVariable("EXPECTED_TASK_TITLE");
+var buildName = Environment.GetEnvironmentVariable("BUILD_NAME");
+if (!string.IsNullOrEmpty(expectedTitle))
+    Console.WriteLine($"Expected task: {expectedTitle}");
+if (!string.IsNullOrEmpty(buildName))
+    Console.WriteLine($"Build: {buildName}");
 
 var testClass = new AndroidTaskSearchTests();
 
 try
 {
-    // Run OneTimeSetUp
     testClass.OneTimeSetUp();
-    Console.WriteLine("✅ OneTimeSetUp completed");
-
-    // Run SetUp
     testClass.SetUp();
-    Console.WriteLine("✅ SetUp completed");
-
-    // Run the test
     testClass.CanFindTaskByTitle();
-    Console.WriteLine("✅ Test passed!");
+    Console.WriteLine("✅ Test passed");
+    return 0;
 }
 catch (Exception ex)
 {
     Console.WriteLine($"❌ Test failed: {ex.Message}");
-    Console.WriteLine($"Stack trace: {ex.StackTrace}");
     return 1;
 }
 finally
@@ -29,13 +28,9 @@ finally
     try
     {
         testClass.TearDown();
-        Console.WriteLine("✅ TearDown completed");
     }
-    catch (Exception ex)
+    catch
     {
-        Console.WriteLine($"⚠️ Teardown warning: {ex.Message}");
+        // Ignore teardown errors
     }
 }
-
-Console.WriteLine("🎉 Test completed successfully!");
-return 0;
