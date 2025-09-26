@@ -551,78 +551,56 @@ jobs:
     name: Report BrowserStack Results
     runs-on: ubuntu-latest
     needs: [test-android-maestro, test-ios-maestro]
-    if: always() && github.event_name == 'pull_request'
+    if: always()
 
     steps:
-    - name: Comment PR with BrowserStack Links
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const androidBuildId = '${{ needs.test-android-maestro.outputs.build_id }}';
-          const iosBuildId = '${{ needs.test-ios-maestro.outputs.build_id }}';
-          const androidStatus = '${{ needs.test-android-maestro.outputs.status }}';
-          const iosStatus = '${{ needs.test-ios-maestro.outputs.status }}';
+    - name: Generate BrowserStack Summary
+      run: |
+        echo "## 📱 React Native - BrowserStack Maestro Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
 
-          let body = '## 📱 React Native - BrowserStack Maestro Test Results\n\n';
+        # Android results
+        echo "### Android Tests" >> $GITHUB_STEP_SUMMARY
+        ANDROID_BUILD_ID="${{ needs.test-android-maestro.outputs.build_id }}"
+        ANDROID_STATUS="${{ needs.test-android-maestro.outputs.status }}"
 
-          // Android results
-          body += '### Android Tests\n';
-          if (androidBuildId && androidBuildId !== 'null' && androidBuildId !== '') {
-            const statusIcon = androidStatus === 'success' ? '✅' : '❌';
-            const statusText = androidStatus === 'success' ? 'Passed' : 'Failed';
-            body += `${statusIcon} **Status:** ${statusText}\n`;
-            body += `🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/${androidBuildId})**\n`;
-            body += `Build ID: \`${androidBuildId}\`\n\n`;
-          } else {
-            body += '❌ **Status:** Failed (No build created)\n\n';
-          }
+        if [ -n "$ANDROID_BUILD_ID" ] && [ "$ANDROID_BUILD_ID" != "null" ]; then
+          if [ "$ANDROID_STATUS" = "success" ]; then
+            echo "✅ **Status:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/$ANDROID_BUILD_ID)**" >> $GITHUB_STEP_SUMMARY
+          echo "Build ID: \`$ANDROID_BUILD_ID\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Status:** Failed (No build created)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
 
-          // iOS results
-          body += '### iOS Tests\n';
-          if (iosBuildId && iosBuildId !== 'null' && iosBuildId !== '') {
-            const statusIcon = iosStatus === 'success' ? '✅' : '❌';
-            const statusText = iosStatus === 'success' ? 'Passed' : 'Failed';
-            body += `${statusIcon} **Status:** ${statusText}\n`;
-            body += `🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/${iosBuildId})**\n`;
-            body += `Build ID: \`${iosBuildId}\`\n\n`;
-          } else {
-            body += '❌ **Status:** Failed (No build created)\n\n';
-          }
+        # iOS results
+        echo "### iOS Tests" >> $GITHUB_STEP_SUMMARY
+        IOS_BUILD_ID="${{ needs.test-ios-maestro.outputs.build_id }}"
+        IOS_STATUS="${{ needs.test-ios-maestro.outputs.status }}"
 
-          // Summary
-          const allPassed = androidStatus === 'success' && iosStatus === 'success';
-          const summaryIcon = allPassed ? '✅' : '⚠️';
-          body += '---\n';
-          body += `${summaryIcon} **Overall Result:** ${allPassed ? 'All tests passed' : 'Some tests failed'}\n`;
-          body += `🔗 [Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+        if [ -n "$IOS_BUILD_ID" ] && [ "$IOS_BUILD_ID" != "null" ]; then
+          if [ "$IOS_STATUS" = "success" ]; then
+            echo "✅ **Status:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/$IOS_BUILD_ID)**" >> $GITHUB_STEP_SUMMARY
+          echo "Build ID: \`$IOS_BUILD_ID\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Status:** Failed (No build created)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
 
-          // Add unique identifier for finding/updating this comment
-          body += '\n\n<!-- browserstack-react-native-results -->';
-
-          // Find and update existing comment or create new one
-          const { data: comments } = await github.rest.issues.listComments({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: context.issue.number,
-          });
-
-          const botComment = comments.find(comment =>
-            comment.user.type === 'Bot' &&
-            comment.body.includes('<!-- browserstack-react-native-results -->')
-          );
-
-          if (botComment) {
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: botComment.id,
-              body: body
-            });
-          } else {
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
-          }
+        # Summary
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        if [ "$ANDROID_STATUS" = "success" ] && [ "$IOS_STATUS" = "success" ]; then
+          echo "✅ **Overall Result:** All tests passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ **Overall Result:** Some tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
