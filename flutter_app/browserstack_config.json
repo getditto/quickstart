@@ -1,29 +1,13 @@
 {
-  "app_path": "build/app/outputs/flutter-apk/app-debug.apk",
-  "ios_app_path": "build/ios/iphonesimulator/Runner.app",
+  "app": "bs://8bae2671832119fc62702ab110d7258777baf535",
+  "testSuite": "bs://7c105d82013828e708df2597856ae11cf607238d",
   "devices": [
-    {
-      "device": "Samsung Galaxy S23",
-      "os_version": "13.0"
-    },
-    {
-      "device": "Google Pixel 7",
-      "os_version": "13.0"
-    },
-    {
-      "device": "iPhone 15",
-      "os_version": "17"
-    },
-    {
-      "device": "iPhone 14",
-      "os_version": "16"
-    }
+    "Google Pixel 7-13.0"
   ],
-  "project": "Ditto Flutter Quickstart",
-  "build": "Integration Tests",
-  "name": "Flutter Integration Test Suite",
-  "debug": true,
-  "video": true,
-  "deviceLogs": true,
-  "networkLogs": true
+  "project": "Ditto Flutter",
+  "buildName": "flutter-integration-test",
+  "buildIdentifier": "${BUILD_NUMBER}",
+  "networkLogs": "true",
+  "deviceLogs": "true",
+  "retry": 2
 }
