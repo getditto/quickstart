@@ -35,7 +35,9 @@ void main() {
       await Future.delayed(const Duration(seconds: 5));
       await tester.pumpAndSettle();
 
-      const testTitle = 'GitHub Test Task Android CPP 1756824079138';
+      // Task name is configurable via TASK_TO_FIND environment variable
+      const testTitle = String.fromEnvironment('TASK_TO_FIND',
+          defaultValue: 'GitHub Test Task Android CPP 1756824079138');
       expect(find.text(testTitle), findsOneWidget);
     });
   });
@@ -54,11 +56,17 @@ cd android
 ```bash
 ./gradlew app:assembleDebug \
   -Ptarget="/Users/teodorc/Projects/worktrees/teodorciuraru/sdks-1611-flutter_app-add-integration-test-support/flutter_app/integration_test/app_test.dart" \
-  -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU="
+  -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,VEFTS19UT19GSU5EPUdpdEh1YiBUZXN0IFRhc2sgQW5kcm9pZCBDUFAgMTc1NjgyNDA3OTEzOA=="
 ```
 
 **Environment Variable Encoding:**
 - `INTEGRATION_TEST_MODE=true` → `SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=`
+- `TASK_TO_FIND=GitHub Test Task Android CPP 1756824079138` → `VEFTS19UT19GSU5EPUdpdEh1YiBUZXN0IFRhc2sgQW5kcm9pZCBDUFAgMTc1NjgyNDA3OTEzOA==`
+
+**To encode a custom task name:**
+```bash
+echo -n "TASK_TO_FIND=Your Task Name Here" | base64
+```
 
 ### Upload to BrowserStack
 
