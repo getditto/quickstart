@@ -58,6 +58,7 @@
                             Margin="16,5"
                             ColumnDefinitions="*, Auto">
                             <Label
+                                AutomationId="TaskTitleLabel"
                                 VerticalOptions="Center"
                                 Text="{Binding Title}">
                                 <Label.Style>
