@@ -50,7 +50,10 @@ class _DittoExampleState extends State<DittoExample> {
   /// 6. Disables DQL strict mode
   /// 7. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
-    if (!kIsWeb) {
+    // Skip permissions in test mode - they block integration tests
+    const isTestMode = bool.fromEnvironment('INTEGRATION_TEST_MODE', defaultValue: false);
+
+    if (!kIsWeb && !isTestMode) {
       await [
         Permission.bluetoothConnect,
         Permission.bluetoothAdvertise,
@@ -82,7 +85,9 @@ class _DittoExampleState extends State<DittoExample> {
 
     ditto.startSync();
 
-    setState(() => _ditto = ditto);
+    if (mounted) {
+      setState(() => _ditto = ditto);
+    }
   }
 
   Future<void> _addTask() async {
