@@ -6,6 +6,7 @@
 
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add"
+                     AutomationId="AddTaskButton"
                      Command="{Binding AddTaskCommand}"/>
     </ContentPage.ToolbarItems>
 
@@ -18,6 +19,7 @@
                 <Label Text="Sync Enabled"
                        VerticalOptions="Center"/>
                 <Switch IsToggled="{Binding IsSyncEnabled}"
+                        AutomationId="SyncSwitch"
                         VerticalOptions="Center"
                         Margin="{OnPlatform iOS='10,0,0,0', Default='0'}"/>
             </HorizontalStackLayout>
@@ -44,11 +46,13 @@
                             <SwipeItems>
                                 <SwipeItem
                                     Text="Delete"
+                                    AutomationId="DeleteSwipeItem"
                                     BackgroundColor="Red"
                                     Command="{Binding Source={x:Reference collectionView}, Path=BindingContext.DeleteTaskCommand}"
                                     CommandParameter="{Binding}" />
                                 <SwipeItem
                                     Text="Edit"
+                                    AutomationId="EditSwipeItem"
                                     BackgroundColor="Orange"
                                     Command="{Binding Source={x:Reference collectionView}, Path=BindingContext.EditTaskCommand}"
                                     CommandParameter="{Binding}" />
@@ -80,6 +84,7 @@
                                   HorizontalOptions="End"
                                   VerticalOptions="Center">
                                 <CheckBox
+                                    AutomationId="TaskCheckbox"
                                     WidthRequest="32"
                                     HeightRequest="32"
                                     IsChecked="{Binding Done}"

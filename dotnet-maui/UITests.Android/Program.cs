@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using UITests.Android;
 
 Console.WriteLine("🚀 Starting BrowserStack Test Runner...");
