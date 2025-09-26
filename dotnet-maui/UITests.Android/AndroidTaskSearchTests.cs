@@ -24,8 +24,8 @@ public class AndroidTaskSearchTests : TaskSearchTests
             options.PlatformVersion = "13.0";
             options.App = browserstackApp ?? GetAppPath();
             options.AddAdditionalAppiumOption("project", "Ditto .NET MAUI");
-            options.AddAdditionalAppiumOption("build", "Appium E2E Tests");
-            options.AddAdditionalAppiumOption("name", "Task Search Tests");
+            options.AddAdditionalAppiumOption("build", Environment.GetEnvironmentVariable("BUILD_NAME") ?? "Local Tests");
+            options.AddAdditionalAppiumOption("name", "Android Task Search Tests");
 
             var uri = new Uri($"https://{browserstackUsername}:{browserstackAccessKey}@hub-cloud.browserstack.com/wd/hub");
             return new AndroidDriver(uri, options);

@@ -350,6 +350,13 @@ jobs:
           echo "| BrowserStack iOS | ${{ needs.browserstack-ios.result == 'success' && '✅ Passed' || (needs.browserstack-ios.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
+          # Add BrowserStack dashboard link
+          if [[ "${{ needs.browserstack-android.result }}" != "skipped" || "${{ needs.browserstack-ios.result }}" != "skipped" ]]; then
+            echo "### 📊 BrowserStack Dashboard" >> $GITHUB_STEP_SUMMARY
+            echo "[View test sessions for CI Build #${{ github.run_number }}](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
           # Check core build results
           if [[ "${{ needs.lint.result }}" != "success" ]] || \
              [[ "${{ needs.build-android.result }}" != "success" ]] || \

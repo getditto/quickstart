@@ -26,7 +26,7 @@ public class iOSTaskSearchTests : TaskSearchTests
             options.PlatformVersion = "17.0";
             options.App = browserstackApp ?? GetAppPath();
             options.AddAdditionalAppiumOption("project", "Ditto .NET MAUI");
-            options.AddAdditionalAppiumOption("build", "Appium E2E Tests");
+            options.AddAdditionalAppiumOption("build", Environment.GetEnvironmentVariable("BUILD_NAME") ?? "Local Tests");
             options.AddAdditionalAppiumOption("name", "iOS Task Search Tests");
 
             var uri = new Uri($"https://{browserstackUsername}:{browserstackAccessKey}@hub-cloud.browserstack.com/wd/hub");
