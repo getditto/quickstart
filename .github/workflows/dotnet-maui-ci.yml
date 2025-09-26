@@ -90,6 +90,13 @@ jobs:
         run: |
           dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-android --no-restore
 
+      - name: Upload Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-android/live.ditto.quickstart.mauitasksapp-Signed.apk
+          retention-days: 1
+
   build-ios:
     name: Build iOS
     runs-on: macos-latest
@@ -116,13 +123,31 @@ jobs:
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
           dotnet workload restore
-          dotnet restore --runtime iossimulator-arm64
+          dotnet restore --runtime ios-arm64
 
-      - name: Build iOS Simulator (Release)
+      - name: Build iOS Device (Release for BrowserStack)
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
           dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
-            /p:RuntimeIdentifier=iossimulator-arm64
+            /p:RuntimeIdentifier=ios-arm64 \
+            /p:EnableCodeSigning=false \
+            /p:ArchiveOnBuild=false
+
+      - name: Create iOS IPA for BrowserStack
+        working-directory: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64
+        run: |
+          mkdir -p Payload
+          cp -r DittoMauiTasksApp.app Payload/
+          zip -r DittoMauiTasksApp-device.ipa Payload
+          echo "Created IPA: $(pwd)/DittoMauiTasksApp-device.ipa"
+          ls -la DittoMauiTasksApp-device.ipa
+
+      - name: Upload iOS IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa
+          retention-days: 1
 
   seed-task-data:
     name: Seed Task Data
@@ -199,36 +224,21 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Create .env file
-        run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-
-      - name: Restore workloads and dependencies
-        working-directory: dotnet-maui/DittoMauiTasksApp
-        run: |
-          dotnet workload restore
-          dotnet restore
-
-      - name: Build Android APK (Release for BrowserStack)
-        working-directory: dotnet-maui/DittoMauiTasksApp
-        run: |
-          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-android --no-restore
+      - name: Download Android APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: ./android-artifact
 
       - name: Upload Android APK to BrowserStack
         id: upload-android
         run: |
           echo "Uploading Android APK..."
-          APK_PATH="dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-android/live.ditto.quickstart.mauitasksapp-Signed.apk"
+          APK_PATH="./android-artifact/live.ditto.quickstart.mauitasksapp-Signed.apk"
 
           if [ ! -f "$APK_PATH" ]; then
             echo "Error: APK not found at $APK_PATH"
-            find dotnet-maui/DittoMauiTasksApp/bin -name "*.apk" -type f
+            find ./android-artifact -name "*.apk" -type f
             exit 1
           fi
 
@@ -275,45 +285,21 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Create .env file
-        run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-
-      - name: Restore workloads and dependencies
-        working-directory: dotnet-maui/DittoMauiTasksApp
-        run: |
-          dotnet workload restore
-          dotnet restore --runtime ios-arm64
-
-      - name: Build iOS Device (Release for BrowserStack)
-        working-directory: dotnet-maui/DittoMauiTasksApp
-        run: |
-          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
-            /p:RuntimeIdentifier=ios-arm64 \
-            /p:EnableCodeSigning=false \
-            /p:ArchiveOnBuild=false
-
-      - name: Create iOS IPA for BrowserStack
-        working-directory: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64
-        run: |
-          mkdir -p Payload
-          cp -r DittoMauiTasksApp.app Payload/
-          zip -r DittoMauiTasksApp-device.ipa Payload
-          echo "Created IPA: $(pwd)/DittoMauiTasksApp-device.ipa"
-          ls -la DittoMauiTasksApp-device.ipa
+      - name: Download iOS IPA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: ./ios-artifact
 
       - name: Upload iOS IPA to BrowserStack
         id: upload-ios
         run: |
           echo "Uploading iOS IPA..."
-          IPA_PATH="dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa"
+          IPA_PATH="./ios-artifact/DittoMauiTasksApp-device.ipa"
 
           if [ ! -f "$IPA_PATH" ]; then
             echo "Error: IPA not found at $IPA_PATH"
-            find dotnet-maui/DittoMauiTasksApp/bin -name "*.ipa" -type f
+            find ./ios-artifact -name "*.ipa" -type f
             exit 1
           fi
 
