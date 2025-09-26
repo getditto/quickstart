@@ -608,9 +608,33 @@ jobs:
           body += `${summaryIcon} **Overall Result:** ${allPassed ? 'All tests passed' : 'Some tests failed'}\n`;
           body += `🔗 [Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
 
-          await github.rest.issues.createComment({
-            issue_number: context.issue.number,
+          // Add unique identifier for finding/updating this comment
+          body += '\n\n<!-- browserstack-react-native-expo-results -->';
+
+          // Find and update existing comment or create new one
+          const { data: comments } = await github.rest.issues.listComments({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: body
+            issue_number: context.issue.number,
           });
+
+          const botComment = comments.find(comment =>
+            comment.user.type === 'Bot' &&
+            comment.body.includes('<!-- browserstack-react-native-expo-results -->')
+          );
+
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: body
+            });
+          } else {
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+          }
