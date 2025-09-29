@@ -226,42 +226,18 @@ jobs:
           path: flutter_app/coverage/
           retention-days: 1
 
-  browserstack-android:
-    name: BrowserStack Android Testing
+  seed-data:
+    name: Seed Test Data
     runs-on: ubuntu-latest
-    needs: build-android
+    needs: [build-android, build-ios]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
-    timeout-minutes: 45
+    outputs:
+      test_title: ${{ steps.seed.outputs.test_title }}
+    timeout-minutes: 5
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.x'
-          channel: 'stable'
-
-      - name: Create .env file
-        run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
-
-      - name: Get dependencies
-        working-directory: flutter_app
-        run: flutter pub get
-
       - name: Insert test document into Ditto Cloud
-        id: seed-data
+        id: seed
         run: |
           # Generate test document for BrowserStack testing
           TIMESTAMP=$(date +%s)
@@ -273,8 +249,8 @@ jobs:
           echo "📝 ID: '${DOC_ID}'"
           echo "📝 Title: '${DOC_TITLE}'"
 
-          # Store title for later use in BrowserStack step
-          echo "TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
+          # Output title for other jobs to use
+          echo "test_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
 
           # Insert document using Ditto API v4 - Flutter app uses: title, done, deleted fields
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -307,11 +283,45 @@ jobs:
 
           echo "✅ Document inserted successfully"
 
+  browserstack-android:
+    name: BrowserStack Android Testing
+    runs-on: ubuntu-latest
+    needs: [build-android, seed-data]
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
       - name: Rebuild debug APK with seeded task title
         working-directory: flutter_app/android
         run: |
-          # Encode the task title for Gradle
-          TITLE="${{ env.TEST_DOC_TITLE }}"
+          # Use the task title from seed-data job
+          TITLE="${{ needs.seed-data.outputs.test_title }}"
           ENCODED_TASK=$(echo -n "TASK_TO_FIND=$TITLE" | base64)
 
           echo "📦 Building debug APK with task title: $TITLE"
@@ -487,7 +497,7 @@ jobs:
   browserstack-ios:
     name: BrowserStack iOS Testing
     runs-on: macos-latest
-    needs: build-ios
+    needs: [build-ios, seed-data]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
 
@@ -516,57 +526,11 @@ jobs:
         working-directory: flutter_app/ios
         run: pod install || pod install --repo-update
 
-      - name: Insert test document into Ditto Cloud
-        id: seed-data
-        run: |
-          # Generate test document for BrowserStack iOS testing
-          TIMESTAMP=$(date +%s)
-          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-          DOC_ID="${INVERTED_TIMESTAMP}_flutter_ios_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-          DOC_TITLE="${INVERTED_TIMESTAMP}_flutter_ios_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-
-          echo "📝 Inserting test document for BrowserStack iOS testing"
-          echo "📝 ID: '${DOC_ID}'"
-          echo "📝 Title: '${DOC_TITLE}'"
-
-          # Store title for later use in BrowserStack step
-          echo "TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
-
-          # Insert document using Ditto API v4 - Flutter app uses: title, done, deleted fields
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H 'Content-type: application/json' \
-            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-            -d "{
-              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-              \"args\": {
-                \"newTask\": {
-                  \"_id\": \"${DOC_ID}\",
-                  \"title\": \"${DOC_TITLE}\",
-                  \"done\": false,
-                  \"deleted\": false
-                }
-              }
-            }" \
-          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-
-          # Extract HTTP status code and response body
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          echo "Response: $BODY"
-          echo "HTTP Status: $HTTP_CODE"
-
-          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
-            echo "❌ Failed to insert document. HTTP status: $HTTP_CODE"
-            exit 1
-          fi
-
-          echo "✅ Document inserted successfully"
-
       - name: Build iOS integration tests with seeded task title
         working-directory: flutter_app
         run: |
-          TITLE="${{ env.TEST_DOC_TITLE }}"
+          # Use the task title from seed-data job
+          TITLE="${{ needs.seed-data.outputs.test_title }}"
           echo "📦 Building iOS integration tests with task title: $TITLE"
 
           flutter build ios integration_test/app_test.dart --release --no-codesign \
