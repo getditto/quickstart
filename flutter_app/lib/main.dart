@@ -51,7 +51,8 @@ class _DittoExampleState extends State<DittoExample> {
   /// 7. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
     // Skip permissions in test mode - they block integration tests
-    const isTestMode = bool.fromEnvironment('INTEGRATION_TEST_MODE', defaultValue: false);
+    const isTestMode =
+        bool.fromEnvironment('INTEGRATION_TEST_MODE', defaultValue: false);
 
     if (!kIsWeb && !isTestMode) {
       await [
