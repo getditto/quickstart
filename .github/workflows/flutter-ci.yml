@@ -579,7 +579,14 @@ jobs:
           product="build/ios_integration/Build/Products"
 
           pushd flutter_app/ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -config Flutter/Release.xcconfig -derivedDataPath $output -sdk iphoneos build-for-testing -CODE_SIGN_IDENTITY="" -CODE_SIGNING_REQUIRED=NO
+          # Use automatic signing for CI
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -config Flutter/Release.xcconfig \
+            -derivedDataPath $output \
+            -sdk iphoneos \
+            build-for-testing \
+            CODE_SIGNING_ALLOWED=NO
           popd
 
           pushd flutter_app/$product
