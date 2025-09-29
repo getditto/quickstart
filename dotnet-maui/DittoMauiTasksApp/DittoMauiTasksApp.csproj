@@ -26,6 +26,13 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     </PropertyGroup>
 
+    <!-- Reduce iOS optimization for faster builds -->
+    <PropertyGroup Condition="$(TargetFramework.Contains('ios')) and '$(Configuration)' == 'Release'">
+        <TrimMode>partial</TrimMode>
+        <UseInterpreter>true</UseInterpreter>
+        <MtouchInterpreter>all</MtouchInterpreter>
+    </PropertyGroup>
+
     <ItemGroup>
         <!-- App Icon -->
         <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />

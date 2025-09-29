@@ -18,15 +18,11 @@ public:
   static std::string get_ditto_sdk_version();
 
   /// Construct a new TasksPeer object.
-  TasksPeer(JNIEnv *env,
-            jobject context,
-            std::string ditto_app_id,
-            std::string ditto_online_playground_token,
-            bool enable_cloud_sync,
-            std::string ditto_persistence_dir,
-            bool is_running_on_emulator,
+  TasksPeer(JNIEnv *env, jobject context, std::string ditto_app_id,
+            std::string ditto_online_playground_token, bool enable_cloud_sync,
+            std::string ditto_persistence_dir, bool is_running_on_emulator,
             std::string ditto_custom_auth_url,
-            const std::string& ditto_websocket_url);
+            const std::string &ditto_websocket_url);
 
   virtual ~TasksPeer() noexcept;
 
@@ -67,13 +63,14 @@ public:
 
   /// Delete the specified task from the collection.
   ///
-  /// Note that this marks the task as deleted, but the object remains in the local store.
+  /// Note that this marks the task as deleted, but the object remains in the
+  /// local store.
   void delete_task(const std::string &task_id);
 
   /// Subscribe to updates to the tasks collection.
   ///
-  /// The given callback will be invoked with a vector of strings containing JSON representations
-  /// of the elements in the tasks collection.
+  /// The given callback will be invoked with a vector of strings containing
+  /// JSON representations of the elements in the tasks collection.
   ///
   /// @returns a subscriber object that, when destroyed, will cancel the
   /// subscription.

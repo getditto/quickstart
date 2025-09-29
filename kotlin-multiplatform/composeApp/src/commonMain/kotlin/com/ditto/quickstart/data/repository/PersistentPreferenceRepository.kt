@@ -25,7 +25,8 @@ class PersistentPreferenceRepository(
     }
 
     override suspend fun getSync(): Boolean {
-        return dataStore.data.firstOrNull()?.get(syncPreferencesKey) == true
+        // Default to true for sync enabled (better for testing and user experience)
+        return dataStore.data.firstOrNull()?.get(syncPreferencesKey) ?: true
     }
 
     private fun createDataStore(
