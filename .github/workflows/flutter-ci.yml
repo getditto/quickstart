@@ -289,6 +289,8 @@ jobs:
     needs: [build-android, seed-data]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
 
     steps:
       - name: Checkout code
@@ -494,6 +496,24 @@ jobs:
             echo "⚠️  Could not parse final results"
             exit 1
           fi
+
+      - name: Add to GitHub Actions Summary
+        if: always()
+        run: |
+          BUILD_ID="${{ steps.test.outputs.build_id }}"
+          echo "### 🤖 BrowserStack Android Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **Status:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "- **Test Task:** ${{ needs.seed-data.outputs.test_title }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
   browserstack-ios:
     name: BrowserStack iOS Testing
@@ -712,38 +732,47 @@ jobs:
             exit 1
           fi
 
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const androidBuildId = '${{ needs.browserstack-android.outputs.build_id }}' || 'N/A';
-            const iosBuildId = '${{ steps.test.outputs.build_id }}' || 'N/A';
-            const status = '${{ job.status }}';
-            const docTitle = process.env.TEST_DOC_TITLE;
+      - name: Add to GitHub Actions Summary
+        if: always()
+        run: |
+          BUILD_ID="${{ steps.test.outputs.build_id }}"
+          echo "### 🍎 BrowserStack iOS Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-            let message = '## 🤖 Flutter BrowserStack Test Results\n\n';
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **Status:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
 
-            if (status === 'success') {
-              message += '✅ **All tests passed!**\n\n';
-            } else {
-              message += '❌ **Tests failed**\n\n';
-            }
+          echo "- **Test Task:** ${{ needs.seed-data.outputs.test_title }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-            message += `- **Test Document:** ${docTitle}\n`;
-            message += `- **Android Build ID:** ${androidBuildId}\n`;
-            message += `- **iOS Build ID:** ${iosBuildId}\n`;
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [browserstack-android, browserstack-ios]
+    if: always()
+    steps:
+      - name: Create Overall Summary
+        run: |
+          echo "## 📊 BrowserStack Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-            if (androidBuildId !== 'N/A') {
-              message += `- **Android Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/${androidBuildId})\n`;
-            }
-            if (iosBuildId !== 'N/A') {
-              message += `- **iOS Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/${iosBuildId})\n`;
-            }
+          # Check overall status
+          if [ "${{ needs.browserstack-android.result }}" = "success" ] && [ "${{ needs.browserstack-ios.result }}" = "success" ]; then
+            echo "🎉 **Overall Status:** All tests passed!" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.browserstack-android.result }}" = "skipped" ] || [ "${{ needs.browserstack-ios.result }}" = "skipped" ]; then
+            echo "⚠️ **Overall Status:** Some tests were skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Overall Status:** Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: message
-            });
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android:** ${{ needs.browserstack-android.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **iOS:** ${{ needs.browserstack-ios.result }}" >> $GITHUB_STEP_SUMMARY
