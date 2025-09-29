@@ -164,13 +164,22 @@ jobs:
 
       - name: Build iOS (no signing)
         working-directory: flutter_app
-        run: flutter build ios --debug --no-codesign --simulator
+        run: flutter build ios --release --no-codesign
+
+      - name: Create unsigned IPA
+        working-directory: flutter_app
+        run: |
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+          cd build/ios/iphoneos
+          zip -r Runner-unsigned.ipa Payload/
+          echo "✅ Created unsigned IPA"
 
       - name: Upload iOS build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-ios-build-${{ github.run_number }}
-          path: flutter_app/build/ios/iphonesimulator/
+          name: flutter-ios-ipa-${{ github.run_number }}
+          path: flutter_app/build/ios/iphoneos/Runner-unsigned.ipa
           retention-days: 1
 
   test:
