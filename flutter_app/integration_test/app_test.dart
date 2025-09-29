@@ -13,7 +13,8 @@ void main() {
       await dotenv.load(fileName: ".env");
     });
 
-    testWidgets('App loads and syncs with Ditto Cloud', (WidgetTester tester) async {
+    testWidgets('App loads and syncs with Ditto Cloud',
+        (WidgetTester tester) async {
       // Initialize app
       await app.main();
       await tester.pumpAndSettle(const Duration(seconds: 5));
@@ -38,7 +39,8 @@ void main() {
       const testTitle = String.fromEnvironment('TASK_TO_FIND',
           defaultValue: 'GitHub Test Task Android CPP 1756824079138');
       expect(find.text(testTitle), findsOneWidget,
-          reason: 'Should find test document with title: $testTitle synced from Ditto cloud');
+          reason:
+              'Should find test document with title: $testTitle synced from Ditto cloud');
     });
   });
 }
