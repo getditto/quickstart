@@ -505,6 +505,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Download iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-ios-ipa-${{ github.run_number }}
+          path: ios-artifacts
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -526,24 +532,23 @@ jobs:
         working-directory: flutter_app/ios
         run: pod install || pod install --repo-update
 
-      - name: Build iOS integration tests with seeded task title
+      - name: Build iOS integration test package with seeded task title
         working-directory: flutter_app
         run: |
           # Use the task title from seed-data job
           TITLE="${{ needs.seed-data.outputs.test_title }}"
-          echo "📦 Building iOS integration tests with task title: $TITLE"
+          echo "🧪 Building iOS integration test package with task title: $TITLE"
 
           flutter build ios integration_test/app_test.dart --release --no-codesign \
             --dart-define=INTEGRATION_TEST_MODE=true \
             --dart-define="TASK_TO_FIND=$TITLE"
 
-      - name: Build iOS test package
+      - name: Create iOS test package
         run: |
           output="../build/ios_integration"
           product="build/ios_integration/Build/Products"
 
           pushd flutter_app/ios
-          # Use automatic signing for CI
           xcodebuild -workspace Runner.xcworkspace \
             -scheme Runner \
             -config Flutter/Release.xcconfig \
@@ -554,16 +559,27 @@ jobs:
           popd
 
           pushd flutter_app/$product
-          # Find the xctestrun file dynamically
           XCTESTRUN_FILE=$(find . -name "*.xctestrun" -type f | head -1)
           if [ -z "$XCTESTRUN_FILE" ]; then
             echo "❌ No .xctestrun file found"
             exit 1
           fi
           echo "📦 Found xctestrun file: $XCTESTRUN_FILE"
-
-          zip -r "ios_test_package_ci.zip" "Release-iphoneos" "$XCTESTRUN_FILE"
+          zip -r "ios_test_package.zip" "Release-iphoneos" "$XCTESTRUN_FILE"
           popd
+
+      - name: Upload app IPA to BrowserStack
+        id: upload-app
+        run: |
+          echo "📤 Uploading iOS app to BrowserStack..."
+          APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@ios-artifacts/Runner-unsigned.ipa")
+
+          echo "App upload response: $APP_RESPONSE"
+          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+          echo "✅ iOS app uploaded: $APP_URL"
 
       - name: Upload test package to BrowserStack
         id: upload
