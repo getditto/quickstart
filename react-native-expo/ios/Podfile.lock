@@ -1,7 +1,7 @@
 PODS:
   - boost (1.84.0)
-  - DittoReactNative (4.12.2-rc.1):
-    - DittoReactNativeIOS (= 4.12.2-rc.1)
+  - DittoReactNative (4.12.2-rc.2):
+    - DittoReactNativeIOS (= 4.12.2-rc.2)
     - DoubleConversion
     - glog
     - hermes-engine
@@ -25,11 +25,11 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - DittoReactNativeIOS (4.12.2-rc.1)
+  - DittoReactNativeIOS (4.12.2-rc.2)
   - DoubleConversion (1.1.6)
   - EXConstants (17.1.7):
     - ExpoModulesCore
-  - Expo (53.0.22):
+  - Expo (53.0.23):
     - DoubleConversion
     - ExpoModulesCore
     - glog
@@ -66,7 +66,7 @@ PODS:
     - ExpoModulesCore
   - ExpoHaptics (14.1.4):
     - ExpoModulesCore
-  - ExpoHead (5.1.6):
+  - ExpoHead (5.1.7):
     - ExpoModulesCore
   - ExpoKeepAwake (14.1.4):
     - ExpoModulesCore
@@ -2346,17 +2346,17 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
-  DittoReactNative: 8d297dd8f3861e546df512b0426462625a105ee2
-  DittoReactNativeIOS: abbb6559963d835b75608217098777507c6164ba
+  DittoReactNative: d8144cc1282940557933004ee5efb1022c7ea994
+  DittoReactNativeIOS: 1d80958a83b48c284a1c54c55f48deca115cfaaa
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   EXConstants: 9d62a46a36eae6d28cb978efcbc68aef354d1704
-  Expo: f715b0c058ac26efde6fb3b4f18ffdd8bd933605
+  Expo: 9fd4973ed0baa42f7418917152d86b39ef466104
   ExpoAsset: 7bdbbacf4e6752ae6e3cf70555cee076f6229e6e
   ExpoBlur: 846780b2c90f59e964b9a50385d4deb67174ebfb
   ExpoFileSystem: 9681caebda23fa1b38a12a9c68b2bade7072ce20
   ExpoFont: 091a47eeaa1b30b0b760aa1d0a2e7814e8bf6fe6
   ExpoHaptics: 68c215e070f660e0a29c45dcda4f60eeff08aefb
-  ExpoHead: 5d6cc0ece4bd4c274a0e551cf5877c6d0433cec1
+  ExpoHead: 9f713d18aff5ff3579dbd6e1bd2459435826ffc4
   ExpoKeepAwake: e8dedc115d9f6f24b153ccd2d1d8efcdfd68a527
   ExpoLinking: 343a89ea864a851831fd4495e8aea01cf0f6a36f
   ExpoModulesCore: 16f74d8df26d7e4b6bf7eb3d0effaf0f15df7b80
