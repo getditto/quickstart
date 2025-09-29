@@ -226,7 +226,7 @@ jobs:
           path: flutter_app/coverage/
           retention-days: 1
 
-browserstack-android:
+  browserstack-android:
     name: BrowserStack Android Testing
     runs-on: ubuntu-latest
     needs: [lint, build-android]
