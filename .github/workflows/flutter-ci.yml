@@ -101,7 +101,7 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Build Android APK
+      - name: Build Android APK (sanity check)
         working-directory: flutter_app
         run: flutter build apk --debug
 
@@ -319,29 +319,21 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Build test APK wrapper (MUST be first)
+      - name: Build Android debug APKs with seeded task title
         working-directory: flutter_app/android
-        run: |
-          ls -la gradlew || echo "gradlew not found, checking parent"
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-          fi
-          ./gradlew app:assembleAndroidTest
-
-      - name: Build debug APK with seeded task title
-        working-directory: flutter_app
         run: |
           # Use the task title from seed-data job
           TITLE="${{ needs.seed-data.outputs.test_title }}"
           ENCODED_TASK=$(echo -n "TASK_TO_FIND=$TITLE" | base64)
+          TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
 
-          echo "📦 Building debug APK with task title: $TITLE"
-          echo "📦 Encoded as: $ENCODED_TASK"
+          echo "📦 Building Android debug APKs with task title: $TITLE"
+          echo "📦 Encoded: SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
+          echo "📦 Target: $TARGET_PATH"
 
-          cd android
           chmod +x gradlew
-          ./gradlew app:assembleDebug \
-            -Ptarget="$(pwd)/../integration_test/app_test.dart" \
+          ./gradlew assembleDebug assembleDebugAndroidTest \
+            -Ptarget="$TARGET_PATH" \
             -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
 
       - name: Upload app APK to BrowserStack
