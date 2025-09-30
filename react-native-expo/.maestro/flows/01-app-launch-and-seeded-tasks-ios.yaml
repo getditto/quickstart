@@ -8,12 +8,19 @@ tags:
 - launchApp:
     appId: com.anonymous.reactnativeexpo
 
-# Handle permission dialog if it appears
+# Handle location permission dialog if it appears
 - runFlow:
     when:
       visible: "Allow"
     commands:
       - tapOn: "Allow"
+
+# Handle Bluetooth permission dialog if it appears
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
 
 # Wait for app to load
 - waitForAnimationToEnd
