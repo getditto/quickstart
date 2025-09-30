@@ -46,8 +46,7 @@ void main() {
       const testTitle = String.fromEnvironment('TASK_TO_FIND');
 
       if (testTitle.isEmpty) {
-        throw Exception(
-            'TASK_TO_FIND environment variable must be set. '
+        throw Exception('TASK_TO_FIND environment variable must be set. '
             'Build with: --dart-define=TASK_TO_FIND=<task_title>');
       }
 
