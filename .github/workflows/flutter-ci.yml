@@ -320,7 +320,7 @@ jobs:
         run: flutter pub get
 
       - name: Rebuild debug APK with seeded task title
-        working-directory: flutter_app/android
+        working-directory: flutter_app
         run: |
           # Use the task title from seed-data job
           TITLE="${{ needs.seed-data.outputs.test_title }}"
@@ -329,13 +329,17 @@ jobs:
           echo "📦 Building debug APK with task title: $TITLE"
           echo "📦 Encoded as: $ENCODED_TASK"
 
+          cd android
+          chmod +x gradlew
           ./gradlew app:assembleDebug \
             -Ptarget="$(pwd)/../integration_test/app_test.dart" \
             -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
 
       - name: Build test APK wrapper
         working-directory: flutter_app/android
-        run: ./gradlew app:assembleAndroidTest
+        run: |
+          chmod +x gradlew
+          ./gradlew app:assembleAndroidTest
 
       - name: Upload app APK to BrowserStack
         id: upload
