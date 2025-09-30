@@ -645,7 +645,7 @@ jobs:
               \"devices\": [
                 \"iPhone 13-15\",
                 \"iPhone 14-16\",
-                \"iPhone 12-15\"
+                \"iPhone 12-17\"
               ],
               \"project\": \"Ditto Flutter\",
               \"buildName\": \"iOS Build #${{ github.run_number }}\",
