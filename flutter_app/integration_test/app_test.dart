@@ -43,8 +43,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Look for the test document that should be synced from Ditto cloud
-      const testTitle = String.fromEnvironment('TASK_TO_FIND',
-          defaultValue: 'GitHub Test Task Android CPP 1756824079138');
+      const testTitle = String.fromEnvironment('TASK_TO_FIND');
+
+      if (testTitle.isEmpty) {
+        throw Exception(
+            'TASK_TO_FIND environment variable must be set. '
+            'Build with: --dart-define=TASK_TO_FIND=<task_title>');
+      }
+
       expect(find.text(testTitle), findsOneWidget,
           reason:
               'Should find test document with title: $testTitle synced from Ditto cloud');
