@@ -79,10 +79,11 @@ class TasksApplication : Application() {
         val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
 
         try {
+            
             val appContext = applicationContext()
-
             val persistenceDir = File(appContext.filesDir, "ditto")
             persistenceDir.mkdirs()
+            
 
             TasksLib.initDitto(
                 appContext,
@@ -95,7 +96,7 @@ class TasksApplication : Application() {
             )
             TasksLib.startSync()
         } catch (e: Exception) {
-            Log.e(TAG, "unable to initialize Ditto", e)
+            Log.e(TAG, "Failed to initialize Ditto", e)
         }
     }
 }

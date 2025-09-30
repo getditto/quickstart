@@ -1,5 +1,14 @@
 # Ditto C++ Console QuickStart Tasks App
 
+## Platform Support
+
+**Linux Console Application** - Runs on modern Linux distributions with full Ditto sync capabilities:
+
+- ✅ **Linux (x64)**: Ubuntu 20.04 LTS and later
+- ✅ **Linux (AArch64)**: Ubuntu 22.04 LTS and later
+
+For Android development, see the separate `android-cpp` project.
+
 ## Prerequisites
 
 After you have completed the [common prerequisites] you will need the following:
@@ -7,11 +16,9 @@ After you have completed the [common prerequisites] you will need the following:
 - A C++ compiler (clang or gcc)
 - CMake 3.10 or later
 - Make
+- **Linux operating system** (Ubuntu 20.04+ recommended)
 
-Download and unpack the C++ Ditto SDK for your platform by following the
-instructions in the [Ditto C++ Install Guide](https://docs.ditto.live/install-guides/cpp).
-Then, copy the `Ditto.h` and `libditto.a` files from the SDK into the `sdk/`
-subdirectory of this project.
+The build system will automatically download the Ditto C++ SDK when you run `make build` on Linux. No manual SDK installation is required!
 
 ## Documentation
 
@@ -27,7 +34,9 @@ Assuming you have the prerequisites installed, you can build and run the app by 
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
 2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
-3. In a shell, navigate to the `quickstart/cpp-tui/taskscpp` directory and run the command `make build` to build the C++ application.
+3. In a shell, navigate to the `quickstart/cpp-tui/taskscpp` directory and run the command `make build` to automatically download the Ditto SDK and build the C++ application.
+
+The build system will detect your Linux architecture (x86_64/arm64) and download the appropriate Ditto C++ SDK version automatically.
 
 ## Running the Application
 

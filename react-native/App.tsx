@@ -6,7 +6,6 @@ import {
   Platform,
   View,
   SafeAreaView,
-  Alert,
   FlatList,
   Button,
 } from 'react-native';
@@ -22,6 +21,7 @@ import {
   DITTO_APP_ID,
   DITTO_PLAYGROUND_TOKEN,
   DITTO_AUTH_URL,
+  DITTO_WEBSOCKET_URL,
 } from '@env';
 
 import Fab from './components/Fab';
@@ -132,6 +132,11 @@ const App = () => {
 
       ditto.current = await Ditto.open(config);
 
+      // Configure websocket URL for transport
+      ditto.current.updateTransportConfig((transportConfig) => {
+        transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+      });
+
       if (connectConfig.mode === 'server') {
         await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
           console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
@@ -167,7 +172,7 @@ const App = () => {
 
       taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
-      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted', response => {
+      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC', response => {
         const fetchedTasks: Task[] = response.items.map(doc => ({
           id: doc.value._id,
           title: doc.value.title as string,
@@ -182,25 +187,22 @@ const App = () => {
     }
   };
 
+  const [hasPermissions, setHasPermissions] = useState<boolean>(true);
+
   useEffect(() => {
     (async () => {
       const granted =
         Platform.OS === 'android' ? await requestPermissions() : true;
-      if (granted) {
-        initDitto();
-      } else {
-        Alert.alert(
-          'Permission Denied',
-          'You need to grant all permissions to use this app.',
-        );
-      }
+
+      setHasPermissions(granted);
+      initDitto();
     })();
   }, []);
 
   const renderItem = ({item}: {item: Task}) => (
     <View key={item.id} style={styles.taskContainer}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
-      <Text style={styles.taskTitle} onLongPress={() => setEditingTask(item)}>
+      <Text style={styles.taskTitle} onLongPress={() => setEditingTask(item)} testID={item.title}>
         {item.title}
       </Text>
       <View style={styles.taskButton}>
@@ -215,12 +217,18 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {!hasPermissions && (
+        <View style={styles.permissionBanner}>
+          <Text style={styles.permissionText}>
+            ⚠️ Limited functionality: Grant Bluetooth & WiFi permissions for peer-to-peer sync
+          </Text>
+        </View>
+      )}
       <DittoInfo appId={DITTO_APP_ID} token={DITTO_PLAYGROUND_TOKEN} />
       <DittoSync value={syncEnabled} onChange={toggleSync} />
       <Fab onPress={() => setModalVisible(true)} />
       <NewTaskModal
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
         onSubmit={task => {
           createTask(task);
           setModalVisible(false);
@@ -271,6 +279,20 @@ const styles = StyleSheet.create({
   taskButton: {
     flexShrink: 1,
     alignSelf: 'center',
+  },
+  permissionBanner: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#D97706',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  permissionText: {
+    color: '#92400E',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

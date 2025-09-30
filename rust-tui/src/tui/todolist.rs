@@ -64,10 +64,10 @@ pub enum TodoMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodoItem {
     #[serde(rename = "_id")]
-    id: String,
-    title: String,
-    done: bool,
-    deleted: bool,
+    pub id: String,
+    pub title: String,
+    pub done: bool,
+    pub deleted: bool,
 }
 
 impl TodoItem {

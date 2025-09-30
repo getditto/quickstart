@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Base configuration for all network communications -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <!-- Trust system CAs (default) -->
+            <certificates src="system" />
+            <!-- Trust user-added CAs (needed for BrowserStack proxy and mitmproxy) -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Specific configuration for BrowserStack and Ditto Cloud domains -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">browserstack.com</domain>
+        <domain includeSubdomains="true">percy.io</domain>
+        <domain includeSubdomains="true">cloud.ditto.live</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+    
+    <!-- Debug overrides - only active in debug builds -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

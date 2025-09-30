@@ -45,13 +45,16 @@ class DittoManager {
                 val identity = DittoIdentity.OnlinePlayground(
                     appId = DittoSecretsConfiguration.DITTO_APP_ID,
                     token = DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
+                    // Cloud sync is intentionally disabled to avoid authentication issues in test environments.
+                    // When enabled, Ditto Cloud Sync requires additional auth setup that causes certificate 
+                    // validation failures in BrowserStack. Disabling ensures sync occurs via WebSocket URLs only.
                     enableDittoCloudSync = false,
                     customAuthUrl = DittoSecretsConfiguration.DITTO_AUTH_URL,
                 )
 
                 val config = createDittoConfig(identity = identity)
 
-                DittoLogger.minimumLogLevel = DittoLogLevel.Debug
+                DittoLogger.minimumLogLevel = DittoLogLevel.Verbose
                 Ditto(config = config).apply {
                     updateTransportConfig { config ->
                         config.connect.websocketUrls.add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL)
@@ -100,7 +103,8 @@ class DittoManager {
     )
 
     suspend fun startSync() {
-        getDitto()?.startSync()
+        val ditto = getDitto() ?: return
+        ditto.startSync()
     }
 
     suspend fun stopSync() {
