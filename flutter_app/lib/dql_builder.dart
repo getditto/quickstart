@@ -22,6 +22,7 @@ class DqlBuilder extends StatefulWidget {
 }
 
 class _DqlBuilderState extends State<DqlBuilder> {
+
   // https://docs.ditto.live/sdk/latest/crud/observing-data-changes
   StoreObserver? _observer;
 
