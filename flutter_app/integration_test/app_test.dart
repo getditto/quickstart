@@ -19,6 +19,13 @@ void main() {
       await app.main();
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
+      // Tap "OK" button if Bluetooth permission dialog appears (iOS)
+      final okButton = find.text('OK');
+      if (okButton.evaluate().isNotEmpty) {
+        await tester.tap(okButton);
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+      }
+
       // Verify app title is present
       expect(find.text('Ditto Tasks'), findsOneWidget);
 
