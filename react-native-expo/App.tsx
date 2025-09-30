@@ -6,18 +6,23 @@ import {
   Platform,
   View,
   SafeAreaView,
-  Alert,
   FlatList,
   Button,
 } from "react-native";
 import {
+  Authenticator,
   Ditto,
-  IdentityOnlinePlayground,
+  DittoConfig,
+  DittoConfigConnect,
   StoreObserver,
   SyncSubscription,
-  TransportConfig,
 } from "@dittolive/ditto";
-import { DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN } from "@env";
+import {
+  DITTO_APP_ID,
+  DITTO_PLAYGROUND_TOKEN,
+  DITTO_AUTH_URL,
+  DITTO_WEBSOCKET_URL,
+} from "@env";
 
 import Fab from "./components/Fab";
 import NewTaskModal from "./components/NewTaskModal";
@@ -33,11 +38,6 @@ type Task = {
   deleted: boolean;
 };
 
-const identity: IdentityOnlinePlayground = {
-  type: "onlinePlayground",
-  appID: DITTO_APP_ID,
-  token: DITTO_PLAYGROUND_TOKEN,
-};
 
 async function requestPermissions() {
   const permissions = [
@@ -63,11 +63,14 @@ const App = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
 
+  const [hasPermissions, setHasPermissions] = useState<boolean>(true);
+
+  // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
   const toggleSync = () => {
     if (syncEnabled) {
-      ditto.current?.stopSync();
+      ditto.current?.sync.stop();
     } else {
-      ditto.current?.startSync();
+      ditto.current?.sync.start();
     }
     setSyncEnabled(!syncEnabled);
   };
@@ -116,46 +119,69 @@ const App = () => {
 
   const initDitto = async () => {
     try {
-      ditto.current = new Ditto(identity);
+      // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
+      const databaseId = DITTO_APP_ID;
+      const playgroundToken = DITTO_PLAYGROUND_TOKEN;
 
-      // Initialize transport config
-      {
-        const transportsConfig = new TransportConfig();
-        transportsConfig.peerToPeer.bluetoothLE.isEnabled = true;
-        transportsConfig.peerToPeer.lan.isEnabled = true;
-        transportsConfig.peerToPeer.lan.isMdnsEnabled = true;
+      const connectConfig: DittoConfigConnect = {
+        mode: 'server',
+        url: DITTO_AUTH_URL,
+      };
 
-        if (Platform.OS === "ios") {
-          transportsConfig.peerToPeer.awdl.isEnabled = true;
+      const config = new DittoConfig(databaseId, connectConfig, 'custom-folder');
+
+      ditto.current = await Ditto.open(config);
+
+      // Configure websocket URL for transport
+      ditto.current.updateTransportConfig((transportConfig) => {
+        transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+      });
+
+      if (connectConfig.mode === 'server') {
+        await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
+          console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
+
+          if (dittoInstance.auth.loginSupported) {
+            const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+            const reLoginResult = await dittoInstance.auth.login(playgroundToken, devProvider);
+            if (reLoginResult.error) {
+              console.error('Re-authentication failed:', reLoginResult.error);
+            } else {
+              console.log('Successfully re-authenticated with info:', reLoginResult);
+            }
+          }
+        });
+
+        if (ditto.current.auth.loginSupported) {
+          // Use the development provider constant from Ditto
+          const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+          console.log('Using development provider:', devProvider);
+
+          const loginResult = await ditto.current.auth.login(playgroundToken, devProvider);
+          if (loginResult.error) {
+            console.error('Login failed:', loginResult.error);
+          } else {
+            console.log('Successfully logged in with info:', loginResult);
+          }
         }
-        ditto.current.setTransportConfig(transportsConfig);
       }
 
-      ditto.current.startSync();
+      ditto.current.sync.start();
 
-      // Register a subscription, which determines what data syncs to this peer
-      // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-      taskSubscription.current = ditto.current.sync.registerSubscription(
-        "SELECT * FROM tasks"
-      );
+      taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
-      // Register observer, which runs against the local database on this peer
-      // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-      taskObserver.current = ditto.current.store.registerObserver(
-        "SELECT * FROM tasks WHERE NOT deleted",
-        (response) => {
-          const fetchedTasks: Task[] = response.items.map((doc) => ({
-            id: doc.value._id,
-            title: doc.value.title as string,
-            done: doc.value.done,
-            deleted: doc.value.deleted,
-          }));
+      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC', response => {
+        const fetchedTasks: Task[] = response.items.map(doc => ({
+          id: doc.value._id,
+          title: doc.value.title as string,
+          done: doc.value.done,
+          deleted: doc.value.deleted,
+        }));
 
-          setTasks(fetchedTasks);
-        }
-      );
+        setTasks(fetchedTasks);
+      });
     } catch (error) {
-      console.error("Error syncing tasks:", error);
+      console.error('Error syncing tasks:', error);
     }
   };
 
@@ -163,21 +189,16 @@ const App = () => {
     (async () => {
       const granted =
         Platform.OS === "android" ? await requestPermissions() : true;
-      if (granted) {
-        initDitto();
-      } else {
-        Alert.alert(
-          "Permission Denied",
-          "You need to grant all permissions to use this app."
-        );
-      }
+      
+      setHasPermissions(granted);
+      initDitto();
     })();
   }, []);
 
   const renderItem = ({ item }: { item: Task }) => (
     <View key={item.id} style={styles.taskContainer}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
-      <Text style={styles.taskTitle} onLongPress={() => setEditingTask(item)}>
+      <Text style={styles.taskTitle} onLongPress={() => setEditingTask(item)} testID={item.title}>
         {item.title}
       </Text>
       <View style={styles.taskButton}>
@@ -192,12 +213,18 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <DittoInfo appId={identity.appID} token={identity.token} />
+      {!hasPermissions && (
+        <View style={styles.permissionBanner}>
+          <Text style={styles.permissionText}>
+            ⚠️ Limited functionality: Grant Bluetooth & WiFi permissions for peer-to-peer sync
+          </Text>
+        </View>
+      )}
+      <DittoInfo appId={DITTO_APP_ID} token={DITTO_PLAYGROUND_TOKEN} />
       <DittoSync value={syncEnabled} onChange={toggleSync} />
       <Fab onPress={() => setModalVisible(true)} />
       <NewTaskModal
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
         onSubmit={(task) => {
           createTask(task);
           setModalVisible(false);
@@ -249,6 +276,20 @@ const styles = StyleSheet.create({
   taskButton: {
     flexShrink: 1,
     alignSelf: "center",
+  },
+  permissionBanner: {
+    backgroundColor: "#FEF3C7",
+    borderWidth: 1,
+    borderColor: "#D97706",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  permissionText: {
+    color: "#92400E",
+    fontSize: 14,
+    textAlign: "center",
+    fontWeight: "500",
   },
 });
 
