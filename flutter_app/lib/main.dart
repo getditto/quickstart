@@ -174,7 +174,7 @@ class _DittoExampleState extends State<DittoExample> {
 
   Widget get _tasksList => DqlBuilder(
         ditto: _ditto!,
-        query: "SELECT * FROM tasks WHERE deleted = false",
+        query: "SELECT * FROM tasks WHERE deleted = false ORDER BY title ASC",
         builder: (context, result) {
           final tasks = result.items.map((r) => r.value).map(Task.fromJson);
           return ListView(
