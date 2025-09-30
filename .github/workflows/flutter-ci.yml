@@ -109,7 +109,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: flutter-android-apk-${{ github.run_number }}
-          path: flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 1
 
   build-ios:
@@ -314,6 +314,17 @@ jobs:
           echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            flutter_app/android/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('flutter_app/android/gradle/wrapper/gradle-wrapper.properties', 'flutter_app/android/build.gradle.kts', 'flutter_app/android/app/build.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
       - name: Get dependencies
         working-directory: flutter_app
