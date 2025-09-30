@@ -31,10 +31,10 @@ spotbugs {
 
 dependencies {
     // ditto-java artifact includes the Java API for Ditto
-    implementation("live.ditto:ditto-java:4.12.2-rc.2")
+    implementation("com.ditto:ditto-java:5.0.0-preview.1")
 
     // This will include binaries for all the supported platforms and architectures
-    implementation("live.ditto:ditto-binaries:4.12.2-rc.2")
+    implementation("com.ditto:ditto-binaries:5.0.0-preview.1")
 
     // To reduce your module artifact's size, consider including just the necessary platforms and architectures
     /*
