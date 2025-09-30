@@ -322,7 +322,10 @@ jobs:
       - name: Build test APK wrapper (MUST be first)
         working-directory: flutter_app/android
         run: |
-          chmod +x gradlew
+          ls -la gradlew || echo "gradlew not found, checking parent"
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+          fi
           ./gradlew app:assembleAndroidTest
 
       - name: Build debug APK with seeded task title
