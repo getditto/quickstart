@@ -28,12 +28,13 @@ class KMPiOSAppiumTest {
                 setCapability("automationName", "XCUITest")
                 setCapability("autoAcceptAlerts", true)
             } else {
-                setDeviceName("iPhone 15 Simulator")
+                setDeviceName("iPhone 16 Pro")
                 setPlatformName("iOS")
-                setPlatformVersion("17.0")
+                setPlatformVersion("18.5")
                 setCapability("bundleId", "live.ditto.quickstart.QuickStartTasks")
                 setCapability("automationName", "XCUITest")
                 setCapability("autoAcceptAlerts", true)
+                setCapability("udid", "7B8D3954-463E-42AF-9C57-EF52044DE23D")
             }
         }
 
@@ -147,15 +148,18 @@ class KMPiOSAppiumTest {
                     println("⚠️ Could not retrieve page source: ${e.message}")
                 }
 
+                // Mark test as failed in BrowserStack before assertion
+                try {
+                    driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"failed\", \"reason\": \"Task '$testTaskName' not found after ${attempt} attempts over ${maxWaitSeconds}s\"}}")
+                } catch (e: Exception) {
+                    // Ignore - not running on BrowserStack
+                }
+
                 Assert.fail("Task '$testTaskName' not found after ${attempt} attempts over ${maxWaitSeconds}s")
             }
 
             // Mark test as passed in BrowserStack
-            try {
-                driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"passed\", \"reason\": \"Task found successfully after $attempt attempts\"}}")
-            } catch (e: Exception) {
-                // Ignore - not running on BrowserStack
-            }
+            driver.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"passed\", \"reason\": \"Task found successfully after $attempt attempts\"}}")
 
         } catch (e: Exception) {
             // Mark test as failed in BrowserStack
