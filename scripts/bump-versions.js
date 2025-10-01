@@ -78,11 +78,11 @@ const PROJECT_CONFIGS = [
 const LOCKFILE_COMMANDS = {
   "react-native": [
     "npm install --legacy-peer-deps",
-    "cd ios && pod update --no-repo-update && cd ..",
+    "(cd ios && pod update DittoReactNativeIOS)",
   ],
   "react-native-expo": [
     "npm install",
-    "cd ios && pod update --no-repo-update && cd ..",
+    "(cd ios && pod update DittoReactNativeIOS)",
   ],
   "javascript-tui": "npm install",
   "javascript-web": "npm install",
@@ -276,6 +276,7 @@ function updateLockfiles(updatedProjects, dryRun) {
         console.warn(
           `Warning: Failed to update lockfile for ${project}: ${error.message}`
         );
+        throw error;
       }
     }
 
