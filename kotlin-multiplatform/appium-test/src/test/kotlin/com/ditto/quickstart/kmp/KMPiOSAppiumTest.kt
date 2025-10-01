@@ -79,7 +79,34 @@ class KMPiOSAppiumTest {
                 try {
                     // Try multiple strategies to find the task in Compose Multiplatform UI
 
-                    // Strategy 1: Find by exact text match (XCUIElementTypeStaticText)
+                    // Generate the testTag that Compose uses (task_title_<sanitized_title>)
+                    val sanitizedTestTag = "task_title_${testTaskName.replace(" ", "_").replace(Regex("[^A-Za-z0-9_]"), "")}"
+
+                    // Strategy 1: Find by accessibility ID (testTag)
+                    try {
+                        val taskElement = driver.findElement(By.id(sanitizedTestTag))
+                        if (taskElement.isDisplayed) {
+                            println("✅ Found task using accessibility ID at attempt $attempt")
+                            taskFound = true
+                            break
+                        }
+                    } catch (e: Exception) {
+                        // Continue to next strategy
+                    }
+
+                    // Strategy 2: Find by accessibility ID in XPath
+                    try {
+                        val taskElement = driver.findElement(By.xpath("//*[@accessibilityId='$sanitizedTestTag']"))
+                        if (taskElement.isDisplayed) {
+                            println("✅ Found task using accessibilityId XPath at attempt $attempt")
+                            taskFound = true
+                            break
+                        }
+                    } catch (e: Exception) {
+                        // Continue to next strategy
+                    }
+
+                    // Strategy 3: Find by exact text match (XCUIElementTypeStaticText)
                     try {
                         val taskElement = driver.findElement(By.xpath("//XCUIElementTypeStaticText[@name='$testTaskName']"))
                         if (taskElement.isDisplayed) {
@@ -91,7 +118,7 @@ class KMPiOSAppiumTest {
                         // Continue to next strategy
                     }
 
-                    // Strategy 2: Find by label containing text
+                    // Strategy 4: Find by label containing text
                     try {
                         val taskElement = driver.findElement(By.xpath("//XCUIElementTypeStaticText[@label='$testTaskName']"))
                         if (taskElement.isDisplayed) {
@@ -103,11 +130,11 @@ class KMPiOSAppiumTest {
                         // Continue to next strategy
                     }
 
-                    // Strategy 3: Find any text element containing the task name
+                    // Strategy 5: Find any element with accessibilityId matching testTag
                     try {
-                        val taskElement = driver.findElement(By.xpath("//XCUIElementTypeStaticText[contains(@name, '$testTaskName') or contains(@label, '$testTaskName')]"))
+                        val taskElement = driver.findElement(By.xpath("//*[@name='$sanitizedTestTag']"))
                         if (taskElement.isDisplayed) {
-                            println("✅ Found task using partial match at attempt $attempt")
+                            println("✅ Found task using name=testTag at attempt $attempt")
                             taskFound = true
                             break
                         }
@@ -115,9 +142,9 @@ class KMPiOSAppiumTest {
                         // Continue to next strategy
                     }
 
-                    // Strategy 4: Find in any element (broader search)
+                    // Strategy 6: Find in any element (broader search)
                     try {
-                        val taskElement = driver.findElement(By.xpath("//*[contains(@name, '$testTaskName') or contains(@label, '$testTaskName')]"))
+                        val taskElement = driver.findElement(By.xpath("//*[contains(@name, '$testTaskName') or contains(@label, '$testTaskName') or @name='$sanitizedTestTag']"))
                         if (taskElement.isDisplayed) {
                             println("✅ Found task using broad search at attempt $attempt")
                             taskFound = true
