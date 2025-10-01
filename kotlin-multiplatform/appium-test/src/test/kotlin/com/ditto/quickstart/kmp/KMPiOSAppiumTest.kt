@@ -64,7 +64,24 @@ class KMPiOSAppiumTest {
         try {
             // Wait for app to launch and initialize Ditto
             println("⏳ Waiting for app to launch and Ditto to initialize...")
-            Thread.sleep(5000)
+            Thread.sleep(10000)
+
+            // Debug: Print all clickable elements
+            try {
+                println("📋 Checking all elements...")
+                val allElements = driver.findElements(By.xpath("//*[@visible='true']"))
+                println("📋 Found ${allElements.size} visible elements")
+
+                allElements.take(10).forEach { elem ->
+                    try {
+                        println("  - ${elem.tagName}: name=${elem.getAttribute("name")}, label=${elem.getAttribute("label")}, enabled=${elem.getAttribute("enabled")}")
+                    } catch (e: Exception) {
+                        println("  - ${elem.tagName}: (error reading attributes)")
+                    }
+                }
+            } catch (e: Exception) {
+                println("⚠️ Error listing elements: ${e.message}")
+            }
 
             // Wait for sync with extended timeout for BrowserStack environments
             val maxWaitSeconds = System.getenv("SYNC_MAX_WAIT_SECONDS")?.toIntOrNull() ?: 30
