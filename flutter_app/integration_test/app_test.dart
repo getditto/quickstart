@@ -50,9 +50,9 @@ void main() {
             'Build with: --dart-define=TASK_TO_FIND=<task_title>');
       }
 
-      expect(find.text('${testTitle}_randomsuffix'), findsOneWidget,
+      expect(find.text(testTitle), findsOneWidget,
           reason:
-              'Should find test document with title: ${testTitle}_randomsuffix synced from Ditto cloud');
+              'Should find test document with title: $testTitle synced from Ditto cloud');
     });
   });
 }
