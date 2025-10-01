@@ -101,8 +101,30 @@ The test uses multiple XPath strategies to find synced tasks in the Compose Mult
 
 This compensates for Compose Multiplatform's limited accessibility API exposure on iOS.
 
-## Known Issues
+## Known Issues & Important Notes
 
-- Compose Multiplatform's `testTag()` modifier doesn't bridge to iOS accessibility identifiers
-- XCUITest cannot directly see Compose test tags, hence the need for Appium with XPath searches
+### iOS Accessibility Synchronization
+
+**Critical**: Compose Multiplatform iOS accessibility tree is **only synchronized when iOS Accessibility Services are running**. This means:
+
+- ✅ **BrowserStack/Real Devices**: Works correctly - Appium activates Accessibility Services automatically
+- ⚠️ **Local Simulator Testing**: May show `accessible="false"` on all elements unless you:
+  - Enable VoiceOver on the simulator during testing
+  - Use Accessibility Inspector while running tests
+  - Connect to a real iOS device instead of simulator
+
+This is **documented behavior** in Compose Multiplatform 1.8.0+:
+> "The iOS accessibility tree is synchronized with the UI only when Accessibility Services are running."
+
+Reference: [Compose Multiplatform iOS Accessibility Documentation](https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-ios-accessibility.html)
+
+### Technical Details
+
+- Compose Multiplatform 1.6.0+ includes iOS accessibility support
+- `testTag()` correctly maps to `accessibilityIdentifier` when Accessibility Services are active
+- Version 1.8.0+ handles accessibility sync automatically (no manual configuration needed)
+- The test includes multiple search strategies (accessibility ID, text match, XPath) to handle different scenarios
+
+### Other Issues
+
 - Build memory issues may require increasing Gradle heap: `org.gradle.jvmargs=-Xmx4g` in `gradle.properties`
