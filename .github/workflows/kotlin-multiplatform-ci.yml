@@ -338,14 +338,25 @@ jobs:
     needs: [build-android, build-ios]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 5
+    outputs:
+      test_doc_id: ${{ steps.generate_doc.outputs.test_doc_id }}
 
     steps:
-    - name: Insert Android test document into Ditto Cloud
+    - name: Generate shared test document ID
+      id: generate_doc
       run: |
-        DOC_TITLE="${{ needs.build-android.outputs.test_doc_title }}"
-        DOC_ID="$DOC_TITLE"
+        TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+        DOC_ID="${INVERTED_TIMESTAMP}_kmp_ci_test_${{ github.run_id }}_${{ github.run_number }}"
 
-        echo "📝 Inserting Android test document"
+        echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
+        echo "📝 Generated shared test document ID: '${DOC_ID}'"
+
+    - name: Insert shared test document into Ditto Cloud
+      run: |
+        DOC_ID="${{ steps.generate_doc.outputs.test_doc_id }}"
+
+        echo "📝 Inserting shared test document for both Android and iOS"
         echo "📝 ID: '${DOC_ID}'"
 
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -356,7 +367,9 @@ jobs:
             \"args\": {
               \"newTask\": {
                 \"_id\": \"${DOC_ID}\",
-                \"title\": \"${DOC_TITLE}\",
+                \"text\": \"${DOC_ID}\",
+                \"title\": \"${DOC_ID}\",
+                \"isCompleted\": false,
                 \"done\": false,
                 \"deleted\": false
               }
@@ -366,36 +379,7 @@ jobs:
 
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
         if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
-          echo "Failed to insert Android document. HTTP Status: $HTTP_CODE"
-          exit 1
-        fi
-
-    - name: Insert iOS test document into Ditto Cloud
-      run: |
-        DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
-        DOC_ID="$DOC_TITLE"
-
-        echo "📝 Inserting iOS test document"
-        echo "📝 ID: '${DOC_ID}'"
-
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"text\": \"${DOC_TITLE}\",
-                \"isCompleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
-          echo "Failed to insert iOS document. HTTP Status: $HTTP_CODE"
+          echo "Failed to insert test document. HTTP Status: $HTTP_CODE"
           exit 1
         fi
 
@@ -457,8 +441,8 @@ jobs:
         fi
         
         # Create test execution request with instrumentationOptions
-        TITLE="${{ needs.build-android.outputs.test_doc_title }}"
-        
+        TITLE="${{ needs.seed-test-documents.outputs.test_doc_id }}"
+
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
           -H "Content-Type: application/json" \
@@ -608,7 +592,7 @@ jobs:
         export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-        export GITHUB_TEST_DOC_ID="${{ needs.build-ios.outputs.test_doc_title }}"
+        export GITHUB_TEST_DOC_ID="${{ needs.seed-test-documents.outputs.test_doc_id }}"
         export SYNC_MAX_WAIT_SECONDS="60"
 
         ../gradlew test --console=plain --no-daemon
