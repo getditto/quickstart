@@ -541,30 +541,23 @@ jobs:
     needs: build-ios
     if: needs.build-ios.outputs.ios-build-success == 'true' && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
     timeout-minutes: 45
-    defaults:
-      run:
-        working-directory: kotlin-multiplatform
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Setup Java for Appium test
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-        cache: 'gradle'
 
     - name: Download iOS IPA artifact
       uses: actions/download-artifact@v4
       with:
         name: ios-kmp-ipa-${{ github.run_number }}
-        path: kotlin-multiplatform/build/
+        path: ios-artifacts/
 
     - name: Insert test document into Ditto Cloud
+      id: seed_doc
       run: |
         DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
         DOC_ID="$DOC_TITLE"
+
+        echo "doc_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
 
         echo "📝 Inserting test document for iOS testing"
         echo "📝 ID: '${DOC_ID}'"
@@ -586,15 +579,16 @@ jobs:
         "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
 
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-        else
-          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
+        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+          echo "Failed to insert document. HTTP Status: $HTTP_CODE"
           exit 1
         fi
+
+    - name: Setup Java for Appium test
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
     - name: Upload IPA to BrowserStack
       id: upload
@@ -603,7 +597,7 @@ jobs:
 
         APP_RESPONSE=$(curl -u "$CREDS" \
           -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-          -F "file=@build/iosApp-unsigned.ipa" \
+          -F "file=@ios-artifacts/iosApp-unsigned.ipa" \
           -F "custom_id=ditto-kmp-ios-appium-app")
 
         APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
@@ -614,23 +608,22 @@ jobs:
           exit 1
         fi
 
-        echo "Uploaded IPA: $APP_URL"
-
     - name: Execute Appium tests on BrowserStack
+      id: test
+      working-directory: kotlin-multiplatform/appium-test
       run: |
         export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-        export GITHUB_TEST_DOC_ID="${{ needs.build-ios.outputs.test_doc_title }}"
-        export SYNC_MAX_WAIT_SECONDS="60"
+        export GITHUB_TEST_DOC_ID="${{ steps.seed_doc.outputs.doc_title }}"
 
-        ./gradlew :appium-test:test --console=plain --no-daemon --stacktrace
+        ../gradlew test --console=plain --no-daemon
 
     - name: Upload test artifacts
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: ios-test-results-${{ github.run_number }}
+        name: test-results-ios
         path: |
           kotlin-multiplatform/appium-test/build/reports/
           kotlin-multiplatform/appium-test/build/test-results/
