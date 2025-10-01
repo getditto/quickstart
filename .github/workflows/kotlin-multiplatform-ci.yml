@@ -609,6 +609,7 @@ jobs:
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
         export GITHUB_TEST_DOC_ID="${{ needs.build-ios.outputs.test_doc_title }}"
+        export SYNC_MAX_WAIT_SECONDS="60"
 
         ../gradlew test --console=plain --no-daemon
 
