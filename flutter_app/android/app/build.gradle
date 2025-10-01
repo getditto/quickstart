@@ -60,6 +60,8 @@ flutter {
 
 dependencies {
     testImplementation 'junit:junit:4.13.2'
+    // Note: androidx.test versions are constrained by Flutter's integration_test package
+    // Cannot upgrade beyond these versions due to strict version requirements
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
