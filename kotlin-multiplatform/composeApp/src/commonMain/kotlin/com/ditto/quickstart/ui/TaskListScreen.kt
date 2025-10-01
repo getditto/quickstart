@@ -21,6 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -95,6 +98,10 @@ private fun TaskItem(
             modifier = Modifier
                 .weight(1f)
                 .testTag(generateTestTag(task.title))
+                .semantics {
+                    contentDescription = task.title
+                    testTag = generateTestTag(task.title)
+                }
         )
         IconButton(onClick = onEdit) {
             Icon(
