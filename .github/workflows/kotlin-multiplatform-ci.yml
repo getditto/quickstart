@@ -332,33 +332,22 @@ jobs:
           kotlin-multiplatform/composeApp/build/compose/binaries/main/
           kotlin-multiplatform/composeApp/build/reports/tests/desktopTest/
 
-  browserstack-android:
-    name: BrowserStack Android Testing
+  seed-test-documents:
+    name: Seed Test Documents
     runs-on: ubuntu-latest
-    needs: build-android
+    needs: [build-android, build-ios]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
-    timeout-minutes: 45
-    
+    timeout-minutes: 5
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download Android APK artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: android-kmp-apks-${{ github.run_number }}
-        path: kotlin-multiplatform/composeApp/build/outputs/apk/
-    
-    - name: Insert test document into Ditto Cloud
+    - name: Insert Android test document into Ditto Cloud
       run: |
-        # Use the same document title that was built into the APK
         DOC_TITLE="${{ needs.build-android.outputs.test_doc_title }}"
         DOC_ID="$DOC_TITLE"
-        
-        echo "📝 Inserting test document that matches build-time configuration"
+
+        echo "📝 Inserting Android test document"
         echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        
-        # Insert document using Ditto API v4 (use "title" field to match KMP app)
+
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
           -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
@@ -374,20 +363,57 @@ jobs:
             }
           }" \
         "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
+
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-          echo "✓ Document title: ${DOC_TITLE}"
-        else
-          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
+        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+          echo "Failed to insert Android document. HTTP Status: $HTTP_CODE"
           exit 1
         fi
+
+    - name: Insert iOS test document into Ditto Cloud
+      run: |
+        DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
+        DOC_ID="$DOC_TITLE"
+
+        echo "📝 Inserting iOS test document"
+        echo "📝 ID: '${DOC_ID}'"
+
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"text\": \"${DOC_TITLE}\",
+                \"isCompleted\": false
+              }
+            }
+          }" \
+        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+          echo "Failed to insert iOS document. HTTP Status: $HTTP_CODE"
+          exit 1
+        fi
+
+  browserstack-android:
+    name: BrowserStack Android Testing
+    runs-on: ubuntu-latest
+    needs: [build-android, seed-test-documents]
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download Android APK artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: android-kmp-apks-${{ github.run_number }}
+        path: kotlin-multiplatform/composeApp/build/outputs/apk/
     
     - name: Upload APKs to BrowserStack
       id: upload
@@ -538,7 +564,7 @@ jobs:
   browserstack-ios:
     name: BrowserStack iOS Testing
     runs-on: ubuntu-latest
-    needs: build-ios
+    needs: [build-ios, seed-test-documents]
     if: needs.build-ios.outputs.ios-build-success == 'true' && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
     timeout-minutes: 45
 
@@ -550,39 +576,6 @@ jobs:
       with:
         name: ios-kmp-ipa-${{ github.run_number }}
         path: ios-artifacts/
-
-    - name: Insert test document into Ditto Cloud
-      id: seed_doc
-      run: |
-        DOC_TITLE="${{ needs.build-ios.outputs.test_doc_title }}"
-        DOC_ID="$DOC_TITLE"
-
-        echo "doc_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
-
-        echo "📝 Inserting test document for iOS testing"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"text\": \"${DOC_TITLE}\",
-                \"isCompleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
-          echo "Failed to insert document. HTTP Status: $HTTP_CODE"
-          exit 1
-        fi
 
     - name: Setup Java for Appium test
       uses: actions/setup-java@v4
@@ -615,7 +608,7 @@ jobs:
         export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-        export GITHUB_TEST_DOC_ID="${{ steps.seed_doc.outputs.doc_title }}"
+        export GITHUB_TEST_DOC_ID="${{ needs.build-ios.outputs.test_doc_title }}"
 
         ../gradlew test --console=plain --no-daemon
 
@@ -631,7 +624,7 @@ jobs:
   build-summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [lint, build-android, build-ios, build-desktop, browserstack-android, browserstack-ios]
+    needs: [lint, build-android, build-ios, build-desktop, seed-test-documents, browserstack-android, browserstack-ios]
     if: always()
     
     steps:
