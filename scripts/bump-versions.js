@@ -284,8 +284,10 @@ function updateFile(appDir, fileConfig, version) {
   const filePath = path.join(process.cwd(), appDir, fileConfig.path);
 
   if (!fs.existsSync(filePath)) {
-    log.warn(`File not found: ${filePath}`);
-    return false;
+    log.error(
+      `expected to find file "${fileConfig.path}" in directory "${appDir}"`
+    );
+    process.exit(1);
   }
 
   const content = fs.readFileSync(filePath, "utf8");
@@ -293,21 +295,26 @@ function updateFile(appDir, fileConfig, version) {
 
   const matches = [...content.matchAll(fileConfig.regex)];
 
-  if (matches.length > 0) {
-    newContent = newContent.replace(fileConfig.regex, (match, ...groups) => {
-      const replacement = fileConfig.replacement(match, ...groups);
-      return replacement.replace("VERSION", version);
-    });
+  if (matches.length === 0) {
+    log.error(
+      `expected to find at least one match for pattern in file "${appDir}/${fileConfig.path}"`
+    );
+    process.exit(1);
+  }
 
-    if (newContent !== content) {
-      fs.writeFileSync(filePath, newContent, "utf8");
-      log.success(
-        `Updated ${colors.dim}${appDir}/${fileConfig.path}${colors.reset} (${
-          matches.length
-        } occurrence${matches.length > 1 ? "s" : ""})`
-      );
-      return true;
-    }
+  newContent = newContent.replace(fileConfig.regex, (match, ...groups) => {
+    const replacement = fileConfig.replacement(match, ...groups);
+    return replacement.replace("VERSION", version);
+  });
+
+  if (newContent !== content) {
+    fs.writeFileSync(filePath, newContent, "utf8");
+    log.success(
+      `Updated ${colors.dim}${appDir}/${fileConfig.path}${colors.reset} (${
+        matches.length
+      } occurrence${matches.length > 1 ? "s" : ""})`
+    );
+    return true;
   }
 
   return false;
