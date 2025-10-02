@@ -66,15 +66,38 @@ class KMPiOSAppiumTest {
             println("⏳ Waiting for app to launch and Ditto to initialize...")
             Thread.sleep(10000)
 
-            // Debug: Print all clickable elements
+            // Trigger accessibility tree sync by requesting page source (for lazy loading)
             try {
-                println("📋 Checking all elements...")
-                val allElements = driver.findElements(By.xpath("//*[@visible='true']"))
-                println("📋 Found ${allElements.size} visible elements")
+                println("🔄 Triggering accessibility tree lazy sync...")
+                val initialPageSource = driver.pageSource
+                Thread.sleep(2000) // Give it time to fully sync
+                println("✓ Accessibility tree requested")
+            } catch (e: Exception) {
+                println("⚠️ Error triggering accessibility sync: ${e.message}")
+            }
 
-                allElements.take(10).forEach { elem ->
+            // Debug: Print all elements AFTER triggering sync
+            try {
+                println("📋 Checking all elements after sync trigger...")
+                val allElements = driver.findElements(By.xpath("//*"))
+                println("📋 Found ${allElements.size} total elements")
+
+                // Look specifically for accessible elements
+                val accessibleElements = allElements.filter { elem ->
                     try {
-                        println("  - ${elem.tagName}: name=${elem.getAttribute("name")}, label=${elem.getAttribute("label")}, enabled=${elem.getAttribute("enabled")}")
+                        val accessible = elem.getAttribute("accessible")
+                        val name = elem.getAttribute("name")
+                        val label = elem.getAttribute("label")
+                        accessible == "true" || !name.isNullOrEmpty() || !label.isNullOrEmpty()
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+                println("📋 Found ${accessibleElements.size} accessible/named elements")
+
+                accessibleElements.take(10).forEach { elem ->
+                    try {
+                        println("  ✓ ${elem.tagName}: name=${elem.getAttribute("name")}, label=${elem.getAttribute("label")}, accessible=${elem.getAttribute("accessible")}")
                     } catch (e: Exception) {
                         println("  - ${elem.tagName}: (error reading attributes)")
                     }
