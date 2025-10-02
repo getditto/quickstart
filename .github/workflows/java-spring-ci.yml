@@ -201,12 +201,18 @@ jobs:
     
     - name: Start Spring Boot app in background
       working-directory: java-spring
+      env:
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+        DITTO_ENABLE_CLOUD_SYNC: true
       run: |
         nohup java -jar build/libs/*.jar \
           --server.port=8080 \
           --spring.profiles.active=test > app.log 2>&1 &
         echo $! > app.pid
-        
+
         # Wait for application to be ready
         echo "Waiting for Spring Boot app to start..."
         for i in {1..30}; do
