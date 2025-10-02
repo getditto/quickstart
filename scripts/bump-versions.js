@@ -49,8 +49,9 @@ const APP_CONFIGS = {
       },
     ],
     lockCommands: [
-      "npm install --legacy-peer-deps",
+      "npm install --legacy-peer-deps --no-audit",
       "(cd ios && pod update DittoReactNativeIOS)",
+      "(cd macos && pod update DittoReactNativeIOS)",
     ],
   },
 
@@ -64,7 +65,10 @@ const APP_CONFIGS = {
         replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
       },
     ],
-    lockCommands: ["npm install", "(cd ios && pod update DittoReactNativeIOS)"],
+    lockCommands: [
+      "npm install --no-audit",
+      "(cd ios && pod update DittoReactNativeIOS)",
+    ],
   },
 
   "javascript-tui": {
@@ -157,7 +161,7 @@ const APP_CONFIGS = {
         replacement: (match, prefix) => `${prefix}^VERSION`,
       },
     ],
-    lockCommands: ["flutter pub get"],
+    lockCommands: ["flutter pub get", "(cd ios && pod update DittoFlutterIOS)"],
   },
 
   "rust-tui": {
@@ -178,6 +182,12 @@ const APP_CONFIGS = {
     files: [
       {
         path: "DittoDotNetTasksConsole/DittoDotNetTasksConsole.csproj",
+        regex:
+          /(PackageReference\s+Include=["']Ditto["']\s+Version=["'])[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["'])/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+      {
+        path: "DittoDotNetTasksConsole.Tests/DittoDotNetTasksConsole.Tests.csproj",
         regex:
           /(PackageReference\s+Include=["']Ditto["']\s+Version=["'])[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["'])/g,
         replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
@@ -340,7 +350,7 @@ function runLockCommands(appDir, commands) {
 function main() {
   const { version } = parseArgs();
 
-  log.title(`🚀 Bumping Ditto SDK to version ${version}`);
+  log.title(`🌄 Bumping Ditto SDK to version ${version}`);
 
   let totalApps = 0;
   let updatedApps = 0;
