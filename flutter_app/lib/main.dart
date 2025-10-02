@@ -58,8 +58,7 @@ class _DittoExampleState extends State<DittoExample> {
 
     // Only request permissions on mobile platforms (Android/iOS)
     // Desktop platforms (macOS, Windows, Linux) don't require these permissions
-    final isMobilePlatform =
-        !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    final isMobilePlatform = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
     if (isMobilePlatform && !isTestMode) {
       await [
         Permission.bluetoothConnect,
