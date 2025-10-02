@@ -1,7 +1,6 @@
 package com.ditto.example.spring.quickstart.service;
 
 import com.ditto.example.spring.quickstart.configuration.DittoConfigurationKeys;
-//import com.ditto.example.spring.quickstart.configuration.DittoSecretsConfiguration;
 import com.ditto.java.*;
 import com.ditto.java.serialization.DittoCborSerializable;
 import jakarta.annotation.Nonnull;
@@ -15,7 +14,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -154,7 +152,7 @@ public class DittoService implements DisposableBean {
                         if (!items.isEmpty()) {
                             newSyncState = items.get(0).getValue()
                                     .get(DITTO_SYNC_STATE_ID)
-                                    .getBoolean();
+                                    .asBoolean();
                         }
 
                         if (newSyncState) {
