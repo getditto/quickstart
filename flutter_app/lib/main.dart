@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
@@ -42,7 +44,7 @@ class _DittoExampleState extends State<DittoExample> {
   /// https://docs.ditto.live/sdk/latest/install-guides/flutter#step-3-import-and-initialize-the-ditto-sdk
   ///
   /// This function:
-  /// 1. Requests required Bluetooth and WiFi permissions on non-web platforms
+  /// 1. Requests required Bluetooth and WiFi permissions on mobile platforms (Android/iOS)
   /// 2. Initializes the Ditto SDK
   /// 3. Sets up online playground identity with the provided app ID and token
   /// 4. Enables peer-to-peer communication on non-web platforms
@@ -54,7 +56,11 @@ class _DittoExampleState extends State<DittoExample> {
     const isTestMode =
         bool.fromEnvironment('INTEGRATION_TEST_MODE', defaultValue: false);
 
-    if (!kIsWeb && !isTestMode) {
+    // Only request permissions on mobile platforms (Android/iOS)
+    // Desktop platforms (macOS, Windows, Linux) don't require these permissions
+    final isMobilePlatform =
+        !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    if (isMobilePlatform && !isTestMode) {
       await [
         Permission.bluetoothConnect,
         Permission.bluetoothAdvertise,
