@@ -5,8 +5,12 @@ on:
     branches: [main, 'sdk-*']
     paths:
       - 'swift/**'
+      - '.github/workflows/swift-ci.yml'
   push:
     branches: [main, 'sdk-*']
+    paths:
+      - 'swift/**'
+      - '.github/workflows/swift-ci.yml'
   workflow_dispatch:
 
 concurrency:
