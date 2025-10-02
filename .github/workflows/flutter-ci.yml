@@ -1,0 +1,936 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file for linting
+        run: |
+          echo "DITTO_APP_ID=test" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=test" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=test" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=test" >> flutter_app/.env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Check formatting
+        working-directory: flutter_app
+        run: |
+          dart format --set-exit-if-changed .
+          if [ $? -ne 0 ]; then
+            echo "❌ Code formatting issues found. Run 'dart format .' to fix."
+            exit 1
+          fi
+
+      - name: Analyze code
+        working-directory: flutter_app
+        run: flutter analyze --no-fatal-infos
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            flutter_app/.dart_tool
+            flutter_app/build
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter_app/pubspec.lock') }}
+          restore-keys: |
+            flutter-${{ runner.os }}-
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Build Android APK (sanity check)
+        working-directory: flutter_app
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-android-apk-${{ github.run_number }}
+          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 1
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: [lint, unit-tests]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            flutter_app/.dart_tool
+            flutter_app/build
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter_app/pubspec.lock') }}
+          restore-keys: |
+            flutter-${{ runner.os }}-
+
+      - name: Cache CocoaPods dependencies
+        uses: actions/cache@v4
+        with:
+          path: flutter_app/ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('flutter_app/ios/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        working-directory: flutter_app/ios
+        run: pod install || pod install --repo-update
+
+      - name: Build iOS (no signing)
+        working-directory: flutter_app
+        run: flutter build ios --release --no-codesign
+
+      - name: Create unsigned IPA
+        working-directory: flutter_app
+        run: |
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+          cd build/ios/iphoneos
+          zip -r Runner-unsigned.ipa Payload/
+          echo "✅ Created unsigned IPA"
+
+      - name: Upload iOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-ios-ipa-${{ github.run_number }}
+          path: flutter_app/build/ios/iphoneos/Runner-unsigned.ipa
+          retention-days: 1
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            flutter_app/.dart_tool
+            flutter_app/build
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter_app/pubspec.lock') }}
+          restore-keys: |
+            flutter-${{ runner.os }}-
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Build Web
+        working-directory: flutter_app
+        run: flutter build web --release
+
+      - name: Upload Web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-web-${{ github.run_number }}
+          path: flutter_app/build/web/
+          retention-days: 1
+
+  build-macos:
+    name: Build macOS Desktop
+    runs-on: macos-latest
+    needs: [lint, unit-tests]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            flutter_app/.dart_tool
+            flutter_app/build
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter_app/pubspec.lock') }}
+          restore-keys: |
+            flutter-${{ runner.os }}-
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Build macOS Desktop
+        working-directory: flutter_app
+        run: flutter build macos --release
+
+      - name: Upload macOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-macos-${{ github.run_number }}
+          path: flutter_app/build/macos/Build/Products/Release/
+          retention-days: 1
+
+  build-windows:
+    name: Build Windows Desktop
+    runs-on: windows-latest
+    needs: [lint, unit-tests]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\Pub\Cache
+            flutter_app\.dart_tool
+            flutter_app\build
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter_app/pubspec.lock') }}
+          restore-keys: |
+            flutter-${{ runner.os }}-
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Build Windows Desktop
+        working-directory: flutter_app
+        run: flutter build windows --release
+
+      - name: Upload Windows build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-windows-${{ github.run_number }}
+          path: flutter_app/build/windows/x64/runner/Release/
+          retention-days: 1
+
+  unit-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=test" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=test" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=test" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=test" >> flutter_app/.env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Run tests
+        working-directory: flutter_app
+        run: |
+          if [ -d "test" ]; then
+            flutter test --coverage
+          else
+            echo "⚠️ No tests found. Skipping test execution."
+          fi
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage-${{ github.run_number }}
+          path: flutter_app/coverage/
+          retention-days: 1
+
+  seed-data:
+    name: Seed Test Data
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios, build-web, build-macos, build-windows]
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    outputs:
+      test_title: ${{ steps.seed.outputs.test_title }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Insert test document into Ditto Cloud
+        id: seed
+        run: |
+          # Generate test document for BrowserStack testing
+          TIMESTAMP=$(date +%s)
+          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+          DOC_ID="${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+          DOC_TITLE="${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+
+          echo "📝 Inserting test document for BrowserStack testing"
+          echo "📝 ID: '${DOC_ID}'"
+          echo "📝 Title: '${DOC_TITLE}'"
+
+          # Output title for other jobs to use
+          echo "test_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
+
+          # Insert document using Ditto API v4 - Flutter app uses: title, done, deleted fields
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${DOC_ID}\",
+                  \"title\": \"${DOC_TITLE}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+          # Extract HTTP status code and response body
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+            echo "❌ Failed to insert document. HTTP status: $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "✅ Document inserted successfully"
+
+  browserstack-android:
+    name: BrowserStack Android Testing
+    runs-on: ubuntu-latest
+    needs: [build-android, seed-data]
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            flutter_app/android/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('flutter_app/android/gradle/wrapper/gradle-wrapper.properties', 'flutter_app/android/build.gradle.kts', 'flutter_app/android/app/build.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Build Android debug APKs with seeded task title
+        working-directory: flutter_app/android
+        run: |
+          # Use the task title from seed-data job
+          TITLE="${{ needs.seed-data.outputs.test_title }}"
+          ENCODED_TASK=$(echo -n "TASK_TO_FIND=$TITLE" | base64)
+          TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
+
+          echo "📦 Building Android debug APKs with task title: $TITLE"
+          echo "📦 Encoded: SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
+          echo "📦 Target: $TARGET_PATH"
+
+          chmod +x gradlew
+          ./gradlew assembleDebug assembleDebugAndroidTest \
+            -Ptarget="$TARGET_PATH" \
+            -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
+
+      - name: Upload app APK to BrowserStack
+        id: upload
+        run: |
+          echo "📤 Uploading app APK to BrowserStack..."
+          APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app" \
+            -F "file=@flutter_app/build/app/outputs/apk/debug/app-debug.apk")
+
+          echo "App upload response: $APP_RESPONSE"
+          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+
+          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+            echo "❌ Failed to upload app APK"
+            echo "Response: $APP_RESPONSE"
+            exit 1
+          fi
+          echo "✅ App APK uploaded: $APP_URL"
+
+      - name: Upload test suite APK to BrowserStack
+        id: upload_test
+        run: |
+          echo "📤 Uploading test suite APK to BrowserStack..."
+          TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/test-suite" \
+            -F "file=@flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk")
+
+          echo "Test suite upload response: $TEST_RESPONSE"
+          TEST_URL=$(echo "$TEST_RESPONSE" | jq -r .test_suite_url)
+          echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
+
+          if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+            echo "❌ Failed to upload test suite APK"
+            echo "Response: $TEST_RESPONSE"
+            exit 1
+          fi
+          echo "✅ Test suite APK uploaded: $TEST_URL"
+
+      - name: Execute tests on BrowserStack
+        id: test
+        run: |
+          # Validate inputs before creating test execution request
+          APP_URL="${{ steps.upload.outputs.app_url }}"
+          TEST_URL="${{ steps.upload_test.outputs.test_url }}"
+
+          echo "App URL: $APP_URL"
+          echo "Test URL: $TEST_URL"
+
+          if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+            echo "Error: No valid app URL available"
+            exit 1
+          fi
+
+          if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+            echo "Error: No valid test URL available"
+            exit 1
+          fi
+
+          # Create test execution request
+          BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"app\": \"$APP_URL\",
+              \"testSuite\": \"$TEST_URL\",
+              \"devices\": [
+                \"Google Pixel 7-13.0\",
+                \"Samsung Galaxy S23-13.0\",
+                \"Google Pixel 6-12.0\"
+              ],
+              \"project\": \"Ditto Flutter\",
+              \"buildName\": \"Android Build #${{ github.run_number }}\",
+              \"buildTag\": \"${{ github.ref_name }}\",
+              \"deviceLogs\": true,
+              \"video\": true,
+              \"networkLogs\": true
+            }")
+
+          echo "BrowserStack API Response:"
+          echo "$BUILD_RESPONSE"
+
+          BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+
+          # Check if BUILD_ID is null or empty
+          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+            echo "Error: Failed to create BrowserStack build"
+            echo "Response: $BUILD_RESPONSE"
+            exit 1
+          fi
+
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Build started with ID: $BUILD_ID"
+
+      - name: Wait for BrowserStack tests to complete
+        run: |
+          BUILD_ID="${{ steps.test.outputs.build_id }}"
+
+          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+            echo "❌ No valid BUILD_ID available"
+            exit 1
+          fi
+
+          MAX_WAIT_TIME=1200  # 20 minutes
+          CHECK_INTERVAL=30   # Check every 30 seconds
+          ELAPSED=0
+
+          echo "⏳ Waiting for test execution to complete..."
+          while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+            RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds/$BUILD_ID")
+
+            STATUS=$(echo "$RESPONSE" | jq -r .status)
+
+            if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
+              echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
+              sleep $CHECK_INTERVAL
+              ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+              continue
+            fi
+
+            echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
+
+            # Check for completion
+            if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
+              echo "✅ Build completed with status: $STATUS"
+              break
+            fi
+
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+          done
+
+          # Get final results
+          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds/$BUILD_ID")
+
+          echo "📋 Final results:"
+          echo "$FINAL_RESULT" | jq .
+
+          # Validate and check results
+          if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
+            BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+            if [ "$BUILD_STATUS" != "passed" ]; then
+              echo "❌ Tests failed with status: $BUILD_STATUS"
+
+              FAILED_DEVICES=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+              if [ -n "$FAILED_DEVICES" ]; then
+                echo "Failed on devices: $FAILED_DEVICES"
+              fi
+              exit 1
+            else
+              echo "🎉 All tests passed successfully!"
+              echo "Dashboard URL: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID"
+            fi
+          else
+            echo "⚠️  Could not parse final results"
+            exit 1
+          fi
+
+      - name: Add to GitHub Actions Summary
+        if: always()
+        run: |
+          BUILD_ID="${{ steps.test.outputs.build_id }}"
+          echo "### 🤖 BrowserStack Android Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **Status:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "- **Test Task:** ${{ needs.seed-data.outputs.test_title }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  browserstack-ios:
+    name: BrowserStack iOS Testing
+    runs-on: macos-latest
+    needs: [build-ios, seed-data]
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-ios-ipa-${{ github.run_number }}
+          path: ios-artifacts
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > flutter_app/.env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> flutter_app/.env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> flutter_app/.env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> flutter_app/.env
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        working-directory: flutter_app/ios
+        run: pod install || pod install --repo-update
+
+      - name: Build iOS integration test package with seeded task title
+        working-directory: flutter_app
+        run: |
+          # Use the task title from seed-data job
+          TITLE="${{ needs.seed-data.outputs.test_title }}"
+          echo "🧪 Building iOS integration test package with task title: $TITLE"
+
+          flutter build ios integration_test/app_test.dart --release --no-codesign \
+            --dart-define=INTEGRATION_TEST_MODE=true \
+            --dart-define="TASK_TO_FIND=$TITLE"
+
+      - name: Create iOS test package
+        run: |
+          output="../build/ios_integration"
+          product="build/ios_integration/Build/Products"
+
+          pushd flutter_app/ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -config Flutter/Release.xcconfig \
+            -derivedDataPath $output \
+            -sdk iphoneos \
+            build-for-testing \
+            CODE_SIGNING_ALLOWED=NO
+          popd
+
+          pushd flutter_app/$product
+          XCTESTRUN_FILE=$(find . -name "*.xctestrun" -type f | head -1)
+          if [ -z "$XCTESTRUN_FILE" ]; then
+            echo "❌ No .xctestrun file found"
+            exit 1
+          fi
+          echo "📦 Found xctestrun file: $XCTESTRUN_FILE"
+          zip -r "ios_test_package.zip" "Release-iphoneos" "$XCTESTRUN_FILE"
+          popd
+
+      - name: Upload app IPA to BrowserStack
+        id: upload-app
+        run: |
+          echo "📤 Uploading iOS app to BrowserStack..."
+          APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@ios-artifacts/Runner-unsigned.ipa")
+
+          echo "App upload response: $APP_RESPONSE"
+          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+          echo "✅ iOS app uploaded: $APP_URL"
+
+      - name: Upload test package to BrowserStack
+        id: upload
+        run: |
+          echo "📤 Uploading iOS test package to BrowserStack..."
+          RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/test-package" \
+            -F "file=@flutter_app/build/ios_integration/Build/Products/ios_test_package.zip")
+
+          echo "Upload response: $RESPONSE"
+          TEST_PACKAGE_URL=$(echo "$RESPONSE" | jq -r .test_package_url)
+          echo "test_package_url=$TEST_PACKAGE_URL" >> "$GITHUB_OUTPUT"
+
+          if [ "$TEST_PACKAGE_URL" = "null" ] || [ -z "$TEST_PACKAGE_URL" ]; then
+            echo "❌ Failed to upload iOS test package"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+          echo "✅ iOS test package uploaded: $TEST_PACKAGE_URL"
+
+      - name: Execute tests on BrowserStack
+        id: test
+        run: |
+          TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
+
+          echo "Test Package URL: $TEST_PACKAGE_URL"
+
+          if [ -z "$TEST_PACKAGE_URL" ] || [ "$TEST_PACKAGE_URL" = "null" ]; then
+            echo "Error: No valid test package URL available"
+            exit 1
+          fi
+
+          # Create test execution request
+          # NOTE: Flutter testing framework requires iOS 15+ due to _backtrace_async symbol
+          # See: https://developer.apple.com/documentation/os/backtrace_async
+          BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"testPackage\": \"$TEST_PACKAGE_URL\",
+              \"devices\": [
+                \"iPhone 13-15\",
+                \"iPhone 14-16\",
+                \"iPhone 12-17\"
+              ],
+              \"project\": \"Ditto Flutter\",
+              \"buildName\": \"iOS Build #${{ github.run_number }}\",
+              \"buildTag\": \"${{ github.ref_name }}\",
+              \"deviceLogs\": true,
+              \"networkLogs\": true
+            }")
+
+          echo "BrowserStack API Response:"
+          echo "$BUILD_RESPONSE"
+
+          BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+
+          # Check if BUILD_ID is null or empty
+          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+            echo "Error: Failed to create BrowserStack build"
+            echo "Response: $BUILD_RESPONSE"
+            exit 1
+          fi
+
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Build started with ID: $BUILD_ID"
+
+      - name: Wait for BrowserStack tests to complete
+        run: |
+          BUILD_ID="${{ steps.test.outputs.build_id }}"
+
+          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+            echo "❌ No valid BUILD_ID available"
+            exit 1
+          fi
+
+          MAX_WAIT_TIME=1200  # 20 minutes
+          CHECK_INTERVAL=30   # Check every 30 seconds
+          ELAPSED=0
+
+          echo "⏳ Waiting for test execution to complete..."
+          while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+            RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds/$BUILD_ID")
+
+            STATUS=$(echo "$RESPONSE" | jq -r .status)
+
+            if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
+              echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
+              sleep $CHECK_INTERVAL
+              ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+              continue
+            fi
+
+            echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
+
+            # Check for completion
+            if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
+              echo "✅ Build completed with status: $STATUS"
+              break
+            fi
+
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+          done
+
+          # Get final results
+          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds/$BUILD_ID")
+
+          echo "📋 Final results:"
+          echo "$FINAL_RESULT" | jq .
+
+          # Validate and check results
+          if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
+            BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+            if [ "$BUILD_STATUS" != "passed" ]; then
+              echo "❌ Tests failed with status: $BUILD_STATUS"
+
+              FAILED_DEVICES=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+              if [ -n "$FAILED_DEVICES" ]; then
+                echo "Failed on devices: $FAILED_DEVICES"
+              fi
+              exit 1
+            else
+              echo "🎉 All tests passed successfully!"
+              echo "Dashboard URL: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID"
+            fi
+          else
+            echo "⚠️  Could not parse final results"
+            exit 1
+          fi
+
+      - name: Add to GitHub Actions Summary
+        if: always()
+        run: |
+          BUILD_ID="${{ steps.test.outputs.build_id }}"
+          echo "### 🍎 BrowserStack iOS Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **Status:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "- **Test Task:** ${{ needs.seed-data.outputs.test_title }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [browserstack-android, browserstack-ios]
+    if: always()
+    steps:
+      - name: Create Overall Summary
+        run: |
+          echo "## 📊 BrowserStack Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check overall status
+          if [ "${{ needs.browserstack-android.result }}" = "success" ] && [ "${{ needs.browserstack-ios.result }}" = "success" ]; then
+            echo "🎉 **Overall Status:** All tests passed!" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.browserstack-android.result }}" = "skipped" ] || [ "${{ needs.browserstack-ios.result }}" = "skipped" ]; then
+            echo "⚠️ **Overall Status:** Some tests were skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Overall Status:** Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android:** ${{ needs.browserstack-android.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **iOS:** ${{ needs.browserstack-ios.result }}" >> $GITHUB_STEP_SUMMARY
