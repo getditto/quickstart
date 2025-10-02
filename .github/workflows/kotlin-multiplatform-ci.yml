@@ -72,8 +72,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: lint
-    outputs:
-      test_doc_title: ${{ steps.test_doc.outputs.document-title }}
     defaults:
       run:
         working-directory: kotlin-multiplatform
@@ -102,29 +100,19 @@ jobs:
         restore-keys: |
           gradle-${{ runner.os }}-
 
-    - name: Generate test document title
-      id: test_doc
-      uses: ./.github/actions/seed-ditto-document
-      with:
-        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-        ditto-api-url: ${{ secrets.DITTO_API_URL }}
-        app-name: 'kotlin-multiplatform'
-    
     - name: Create production .env file
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > ../.env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> ../.env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> ../.env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> ../.env
-    
+
     - name: Make gradlew executable
       run: chmod +x gradlew
-    
+
     - name: Build Android APKs
-      env:
-        TEST_DOCUMENT_TITLE: ${{ steps.test_doc.outputs.test_doc_title }}
       run: ./gradlew :composeApp:assembleDebug :composeApp:assembleDebugAndroidTest --stacktrace
-    
+
     - name: Upload APK artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -140,7 +128,6 @@ jobs:
     timeout-minutes: 30
     needs: lint
     outputs:
-      test_doc_title: ${{ steps.test_doc.outputs.document-title }}
       ios-build-success: ${{ steps.build-status.outputs.success }}
     defaults:
       run:
@@ -172,14 +159,6 @@ jobs:
         restore-keys: |
           gradle-${{ runner.os }}-
 
-    - name: Generate test document title
-      id: test_doc
-      uses: ./.github/actions/seed-ditto-document
-      with:
-        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-        ditto-api-url: ${{ secrets.DITTO_API_URL }}
-        app-name: 'kotlin-multiplatform'
-    
     - name: Write production .env
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > ../.env
@@ -322,10 +301,28 @@ jobs:
           kotlin-multiplatform/composeApp/build/compose/binaries/main/
           kotlin-multiplatform/composeApp/build/reports/tests/desktopTest/
 
+  seed-task-data:
+    name: Seed Task Data
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    timeout-minutes: 5
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    outputs:
+      test_task_title: ${{ steps.seed_task.outputs.document-title }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seed test task in Ditto Cloud
+        id: seed_task
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: 'kotlin-multiplatform'
+
   browserstack-android:
     name: BrowserStack Android Testing
     runs-on: ubuntu-latest
-    needs: build-android
+    needs: [build-android, seed-task-data]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
     
@@ -380,8 +377,8 @@ jobs:
         fi
         
         # Create test execution request with instrumentationOptions
-        TITLE="${{ needs.build-android.outputs.test_doc_title }}"
-        
+        TITLE="${{ needs.seed-task-data.outputs.test_task_title }}"
+
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
           -H "Content-Type: application/json" \
@@ -491,7 +488,7 @@ jobs:
   build-summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [lint, build-android, build-ios, build-desktop, browserstack-android]
+    needs: [lint, build-android, build-ios, build-desktop, seed-task-data, browserstack-android]
     if: always()
     
     steps:
