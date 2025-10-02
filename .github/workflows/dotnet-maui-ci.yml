@@ -149,14 +149,12 @@ jobs:
           path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa
           retention-days: 1
 
-  seed-ditto-cloud:
-    name: Seed Test Task to Ditto Cloud
+  browserstack-android:
+    name: BrowserStack Android Tests
     runs-on: ubuntu-latest
-    needs: [build-android, build-ios]
-    timeout-minutes: 5
+    needs: [build-android]
+    timeout-minutes: 30
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-    outputs:
-      test_task_title: ${{ steps.seed_task.outputs.document-title }}
 
     steps:
       - name: Checkout code
@@ -169,17 +167,6 @@ jobs:
           ditto-api-key: ${{ secrets.DITTO_API_KEY }}
           ditto-api-url: ${{ secrets.DITTO_API_URL }}
           app-name: 'dotnet-maui'
-
-  browserstack-android:
-    name: BrowserStack Android Tests
-    runs-on: ubuntu-latest
-    needs: [build-android, seed-ditto-cloud]
-    timeout-minutes: 30
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -227,20 +214,28 @@ jobs:
           BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           BROWSERSTACK_APP_ID="${{ steps.upload-android.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ needs.seed-ditto-cloud.outputs.test_task_title }}" \
+          EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
           BUILD_NAME="CI Build #${{ github.run_number }}" \
           dotnet run
 
   browserstack-ios:
     name: BrowserStack iOS Tests
     runs-on: macos-latest
-    needs: [build-ios, seed-ditto-cloud]
+    needs: [build-ios]
     timeout-minutes: 60
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Seed test task to Ditto Cloud
+        id: seed_task
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: 'dotnet-maui'
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -288,7 +283,7 @@ jobs:
           BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           BROWSERSTACK_APP_ID="${{ steps.upload-ios.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ needs.seed-ditto-cloud.outputs.test_task_title }}" \
+          EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
           BUILD_NAME="CI Build #${{ github.run_number }}" \
           dotnet run
 

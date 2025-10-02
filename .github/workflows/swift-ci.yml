@@ -215,54 +215,42 @@ jobs:
       run: |
         echo "success=true" >> $GITHUB_OUTPUT
 
-  seed-ditto-cloud:
-    name: Seed Test Task to Ditto Cloud
-    runs-on: ubuntu-latest
-    needs: [build-macos, build-ios]
-    timeout-minutes: 5
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-    outputs:
-      test_task_title: ${{ steps.seed_task.outputs.document-title }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: 'swift'
-
   browserstack:
     name: BrowserStack iOS Testing
     runs-on: macos-latest
-    needs: [build-ios, seed-ditto-cloud]
+    needs: [build-ios]
     if: needs.build-ios.outputs.ios-build-success == 'true'
     timeout-minutes: 60
     
     steps:
     - uses: actions/checkout@v4
-    
+
+    - name: Seed test task to Ditto Cloud
+      id: seed_task
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'swift'
+
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: 'latest-stable'
-    
+
     - name: Create .env file (production credentials for BrowserStack API)
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-    
+
     - name: Generate Env.swift (production for XCUITest build)
       working-directory: swift
       run: |
         chmod +x buildEnv.sh
         ./buildEnv.sh ../.env Tasks/
-    
+
     - name: Download iOS IPA Artifact
       uses: actions/download-artifact@v4
       with:
@@ -329,8 +317,8 @@ jobs:
 
     - name: Set environment variables for tests
       run: |
-        echo "GITHUB_TEST_DOC_ID=${{ needs.seed-ditto-cloud.outputs.test_task_title }}" >> $GITHUB_ENV
-        echo "GITHUB_TEST_DOC_TITLE=${{ needs.seed-ditto-cloud.outputs.test_task_title }}" >> $GITHUB_ENV
+        echo "GITHUB_TEST_DOC_ID=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
+        echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
 
     - name: Upload App and Test Bundle to BrowserStack
       id: upload

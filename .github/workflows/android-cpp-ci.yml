@@ -130,33 +130,23 @@ jobs:
           android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk
         retention-days: 1
 
-  seed-ditto-cloud:
-    name: Seed Test Task to Ditto Cloud
-    runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 5
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-    outputs:
-      test_task_title: ${{ steps.seed_task.outputs.document-title }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: 'android-cpp'
-
   browserstack-appium-test:
     name: BrowserStack Device Testing
     runs-on: ubuntu-latest
-    needs: [build, seed-ditto-cloud]
+    needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Seed test task to Ditto Cloud
+      id: seed_task
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'android-cpp'
 
     - name: Download APK artifacts
       uses: actions/download-artifact@v4
@@ -196,7 +186,7 @@ jobs:
         export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-        export GITHUB_TEST_DOC_ID="${{ needs.seed-ditto-cloud.outputs.test_task_title }}"
+        export GITHUB_TEST_DOC_ID="${{ steps.seed_task.outputs.document-title }}"
 
         ../gradlew test --console=plain --no-daemon
 
