@@ -149,8 +149,8 @@ jobs:
           path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa
           retention-days: 1
 
-  seed-task-data:
-    name: Seed Task Data
+  seed-ditto-cloud:
+    name: Seed Test Task to Ditto Cloud
     runs-on: ubuntu-latest
     needs: [build-android, build-ios]
     timeout-minutes: 5
@@ -162,7 +162,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Seed test task in Ditto Cloud
+      - name: Seed test task to Ditto Cloud
         id: seed_task
         uses: ./.github/actions/seed-ditto-document
         with:
@@ -173,7 +173,7 @@ jobs:
   browserstack-android:
     name: BrowserStack Android Tests
     runs-on: ubuntu-latest
-    needs: [build-android, seed-task-data]
+    needs: [build-android, seed-ditto-cloud]
     timeout-minutes: 30
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
 
@@ -227,14 +227,14 @@ jobs:
           BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           BROWSERSTACK_APP_ID="${{ steps.upload-android.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ needs.seed-task-data.outputs.test_task_title }}" \
+          EXPECTED_TASK_TITLE="${{ needs.seed-ditto-cloud.outputs.test_task_title }}" \
           BUILD_NAME="CI Build #${{ github.run_number }}" \
           dotnet run
 
   browserstack-ios:
     name: BrowserStack iOS Tests
     runs-on: macos-latest
-    needs: [build-ios, seed-task-data]
+    needs: [build-ios, seed-ditto-cloud]
     timeout-minutes: 60
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
 
@@ -288,7 +288,7 @@ jobs:
           BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           BROWSERSTACK_APP_ID="${{ steps.upload-ios.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ needs.seed-task-data.outputs.test_task_title }}" \
+          EXPECTED_TASK_TITLE="${{ needs.seed-ditto-cloud.outputs.test_task_title }}" \
           BUILD_NAME="CI Build #${{ github.run_number }}" \
           dotnet run
 
