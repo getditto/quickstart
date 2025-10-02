@@ -61,9 +61,9 @@ runs:
           }" \
           "https://${{ inputs.ditto-api-url }}/api/v4/store/execute")
 
-        # Extract HTTP status code and response body
+        # Extract HTTP status code and response body (portable version)
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | head -n-1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
 
         # Check if insertion was successful
         if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
