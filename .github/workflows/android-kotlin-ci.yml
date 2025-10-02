@@ -54,29 +54,27 @@ jobs:
       working-directory: android-kotlin/QuickStartTasks
       run: ./gradlew lint
 
-  build-and-test:
+  build:
     name: Build and Test
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 30
-    outputs:
-      document-title: ${{ steps.seed.outputs.document-title }}
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-    
+
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
-    
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-    
+
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
@@ -86,15 +84,7 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
-    
-    - name: Seed test document to Ditto Cloud
-      id: seed
-      uses: ./.github/actions/seed-ditto-document
-      with:
-        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-        ditto-api-url: ${{ secrets.DITTO_API_URL }}
-        app-name: 'android-kotlin'
-    
+
     - name: Build APKs
       working-directory: android-kotlin/QuickStartTasks
       env:
@@ -102,9 +92,8 @@ jobs:
         DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-        TEST_DOCUMENT_TITLE: ${{ steps.seed.outputs.document-title }}
       run: ./gradlew assembleDebug assembleDebugAndroidTest
-    
+
     - name: Run unit tests
       working-directory: android-kotlin/QuickStartTasks
       env:
@@ -113,7 +102,7 @@ jobs:
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
       run: ./gradlew test
-    
+
     - name: Upload APK artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -122,7 +111,7 @@ jobs:
           android-kotlin/QuickStartTasks/app/build/outputs/apk/debug/app-debug.apk
           android-kotlin/QuickStartTasks/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
         retention-days: 1
-    
+
     - name: Upload test reports
       if: always()
       uses: actions/upload-artifact@v4
@@ -130,11 +119,29 @@ jobs:
         name: test-reports-${{ github.run_number }}
         path: android-kotlin/QuickStartTasks/app/build/reports/
         retention-days: 1
-  
+
+  seed-ditto-cloud:
+    name: Seed Test Task to Ditto Cloud
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 5
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    outputs:
+      test_task_title: ${{ steps.seed_task.outputs.document-title }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seed test task to Ditto Cloud
+        id: seed_task
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: 'android-kotlin'
+
   browserstack-test:
     name: BrowserStack Device Testing
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: [build, seed-ditto-cloud]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
     
@@ -147,12 +154,12 @@ jobs:
         name: android-apks-${{ github.run_number }}
         path: android-kotlin/QuickStartTasks/app/build/outputs/apk/
     
-    - name: Verify test document from build job
+    - name: Verify test document from seed job
       run: |
-        # Use the same document title that was built into the APK
-        DOC_TITLE="${{ needs.build-and-test.outputs.document-title }}"
+        # Use the document title that was seeded to Ditto Cloud
+        DOC_TITLE="${{ needs.seed-ditto-cloud.outputs.test_task_title }}"
 
-        echo "📝 Using test document from build job"
+        echo "📝 Using test document from seed job"
         echo "📝 Title: '${DOC_TITLE}'"
     
     - name: Upload APKs to BrowserStack
@@ -197,7 +204,7 @@ jobs:
         fi
         
         # Create test execution request with instrumentationOptions (correct approach for Android)
-        TITLE="${{ needs.build-and-test.outputs.document-title }}"
+        TITLE="${{ needs.seed-ditto-cloud.outputs.test_task_title }}"
 
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
@@ -312,7 +319,7 @@ jobs:
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [lint, build-and-test, browserstack-test]
+    needs: [lint, build, seed-ditto-cloud, browserstack-test]
     if: always()
 
     steps:
@@ -323,7 +330,7 @@ jobs:
 
         # Overall status
         if [[ "${{ needs.lint.result }}" == "success" && \
-              "${{ needs.build-and-test.result }}" == "success" && \
+              "${{ needs.build.result }}" == "success" && \
               "${{ needs.browserstack-test.result }}" == "success" ]]; then
           echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
         else
@@ -334,7 +341,7 @@ jobs:
         echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
         echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Build and Test | ${{ needs.build-and-test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build and Test | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
         echo "| BrowserStack Tests | ${{ needs.browserstack-test.result == 'success' && '✅ Passed' || (needs.browserstack-test.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
