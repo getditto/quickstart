@@ -136,6 +136,18 @@ const APP_CONFIGS = {
     ],
   },
 
+  "cpp-tui": {
+    skip: false,
+    files: [
+      {
+        path: "taskscpp/Makefile",
+        regex: /(DITTO_SDK_VERSION \?= )[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?/g,
+        replacement: (match, prefix) => `${prefix}VERSION`,
+      },
+    ],
+    lockCommands: [],
+  },
+
   swift: {
     skip: false,
     files: [
