@@ -21,4 +21,4 @@ For more information, see - [Kotlin Multiplatform Install Guide](https://docs.di
 ## Additional Resources
 
 - [Kotlin Multiplatform Roadmap and Support Policy](https://docs.ditto.live/sdk/latest/install-guides/kotlin/multiplatform-roadmap)
-- [API Reference](https://software.ditto.live/java/ditto-java/5.0.0-preview.1/api-reference/)
+- [API Reference](https://software.ditto.live/java/ditto-java/5.0.0-preview.3/api-reference/)
