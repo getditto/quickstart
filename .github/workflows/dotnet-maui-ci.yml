@@ -156,7 +156,7 @@ jobs:
     timeout-minutes: 5
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     outputs:
-      test_task_title: ${{ steps.seed_task.outputs.test_task_title }}
+      test_task_title: ${{ steps.seed_task.outputs.document-title }}
 
     steps:
       - name: Checkout code
@@ -164,49 +164,11 @@ jobs:
 
       - name: Seed test task in Ditto Cloud
         id: seed_task
-        run: |
-          # Create a unique test document with inverted timestamp to appear at top
-          TIMESTAMP=$(date +%s)
-          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-          DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-
-          echo "📝 Inserting test document (inverted timestamp for top position)"
-          echo "📝 ID: '${DOC_ID}'"
-          echo "📝 Title: '${DOC_TITLE}'"
-          echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
-
-          # Insert document using Ditto API v4
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H 'Content-type: application/json' \
-            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-            -d "{
-              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-              \"args\": {
-                \"newTask\": {
-                  \"_id\": \"${DOC_ID}\",
-                  \"title\": \"${DOC_TITLE}\",
-                  \"done\": false,
-                  \"deleted\": false
-                }
-              }
-            }" \
-          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-
-          # Extract HTTP status code and response body
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          # Check if insertion was successful
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-            echo "✓ Document title: ${DOC_TITLE}"
-            echo "test_task_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-            echo "Response: $BODY"
-            exit 1
-          fi
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: 'dotnet-maui'
 
   browserstack-android:
     name: BrowserStack Android Tests

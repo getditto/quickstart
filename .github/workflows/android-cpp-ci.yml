@@ -146,37 +146,13 @@ jobs:
         name: android-cpp-apks
         path: android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/
     
-    - name: Insert test document into Ditto Cloud
+    - name: Seed test document to Ditto Cloud
       id: seed_doc
-      run: |
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_TITLE="${INVERTED_TIMESTAMP}_android_cpp_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-
-        echo "doc_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
-        
-        # Insert document using Ditto API v4 (same as other Android workflows)
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_TITLE}\",
-                \"title\": \"${DOC_TITLE}\",
-                \"done\": false,
-                \"deleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
-          echo "Failed to insert document. HTTP Status: $HTTP_CODE"
-          exit 1
-        fi
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'android-cpp'
 
     - name: Setup Java for Appium test
       uses: actions/setup-java@v4
@@ -210,7 +186,7 @@ jobs:
         export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-        export GITHUB_TEST_DOC_ID="${{ steps.seed_doc.outputs.doc_title }}"
+        export GITHUB_TEST_DOC_ID="${{ steps.seed_doc.outputs.document-title }}"
 
         ../gradlew test --console=plain --no-daemon
 

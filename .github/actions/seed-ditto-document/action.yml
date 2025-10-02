@@ -1,0 +1,78 @@
+name: 'Seed Ditto Test Document'
+description: 'Creates a test document in Ditto Cloud with inverted timestamp for CI testing'
+author: 'Ditto'
+
+inputs:
+  ditto-api-key:
+    description: 'Ditto API key for authentication'
+    required: true
+  ditto-api-url:
+    description: 'Ditto API URL (e.g., cloud.ditto.live)'
+    required: true
+  app-name:
+    description: 'Name of the app/platform being tested (e.g., android-kotlin, swift, etc.)'
+    required: true
+
+outputs:
+  document-id:
+    description: 'The generated document ID'
+    value: ${{ steps.seed.outputs.document_id }}
+  document-title:
+    description: 'The generated document title (same as ID)'
+    value: ${{ steps.seed.outputs.document_title }}
+  inverted-timestamp:
+    description: 'The inverted timestamp used for ordering'
+    value: ${{ steps.seed.outputs.inverted_timestamp }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate and insert test document
+      id: seed
+      shell: bash
+      run: |
+        # Generate inverted timestamp for top position in list
+        TIMESTAMP=$(date +%s)
+        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+
+        # Create unique document ID and title
+        DOC_ID="${INVERTED_TIMESTAMP}_${{ inputs.app-name }}_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+        DOC_TITLE="$DOC_ID"
+
+        echo "📝 Seeding test document to Ditto Cloud"
+        echo "📝 App: ${{ inputs.app-name }}"
+        echo "📝 ID: ${DOC_ID}"
+        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
+
+        # Insert document using Ditto API v4
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          -H 'Content-type: application/json' \
+          -H "Authorization: Bearer ${{ inputs.ditto-api-key }}" \
+          -d "{
+            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+            \"args\": {
+              \"newTask\": {
+                \"_id\": \"${DOC_ID}\",
+                \"title\": \"${DOC_TITLE}\",
+                \"done\": false,
+                \"deleted\": false
+              }
+            }
+          }" \
+          "https://${{ inputs.ditto-api-url }}/api/v4/store/execute")
+
+        # Extract HTTP status code and response body
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | head -n-1)
+
+        # Check if insertion was successful
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+          echo "✅ Successfully inserted test document"
+          echo "document_id=${DOC_ID}" >> $GITHUB_OUTPUT
+          echo "document_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
+          echo "inverted_timestamp=${INVERTED_TIMESTAMP}" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi

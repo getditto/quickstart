@@ -304,50 +304,17 @@ jobs:
         echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
     
     - name: Insert test document into Ditto Cloud
+      id: seed_document
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'swift'
+
+    - name: Set environment variables for tests
       run: |
-        # Create a unique GitHub test document with inverted timestamp to appear at top
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        
-        echo "📝 Inserting GitHub test document (inverted timestamp for top position)"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
-        
-        # Insert document using Ditto API v4 (same as JavaScript)
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"title\": \"${DOC_TITLE}\",
-                \"done\": false,
-                \"deleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-          echo "✓ Document title: ${DOC_TITLE}"
-          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
-          echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
-        else
-          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          exit 1
-        fi
+        echo "GITHUB_TEST_DOC_ID=${{ steps.seed_document.outputs.document-title }}" >> $GITHUB_ENV
+        echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_document.outputs.document-title }}" >> $GITHUB_ENV
 
     - name: Upload App and Test Bundle to BrowserStack
       id: upload

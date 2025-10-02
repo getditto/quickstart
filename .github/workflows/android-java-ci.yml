@@ -121,51 +121,13 @@ jobs:
         name: android-apks-${{ github.run_number }}
         path: android-java/app/build/outputs/apk/
     
-    - name: Insert test document into Ditto Cloud
-      run: |
-        # Generate test document for BrowserStack testing
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_ID="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        
-        echo "📝 Inserting test document for BrowserStack testing"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        
-        # Store title for later use in BrowserStack step
-        echo "TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
-        
-        # Insert document using Ditto API v4 (same as Kotlin workflow)
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"title\": \"${DOC_TITLE}\",
-                \"done\": false,
-                \"deleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-          echo "✓ Document title: ${DOC_TITLE}"
-        else
-          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          exit 1
-        fi
+    - name: Seed test document to Ditto Cloud
+      id: seed
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'android-java'
     
     - name: Upload APKs to BrowserStack
       id: upload
@@ -227,8 +189,8 @@ jobs:
         fi
         
         # Create test execution request with instrumentationOptions (same approach as Kotlin)
-        TITLE="${{ env.TEST_DOC_TITLE }}"
-        
+        TITLE="${{ steps.seed.outputs.document-title }}"
+
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
           -H "Content-Type: application/json" \

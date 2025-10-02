@@ -73,24 +73,24 @@ jobs:
     timeout-minutes: 30
     needs: lint
     outputs:
-      test_doc_title: ${{ steps.test_doc.outputs.test_doc_title }}
+      test_doc_title: ${{ steps.test_doc.outputs.document-title }}
     defaults:
       run:
         working-directory: kotlin-multiplatform
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
         cache: 'gradle'
-    
+
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
-    
+
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
@@ -101,22 +101,14 @@ jobs:
         key: gradle-${{ runner.os }}-${{ hashFiles('kotlin-multiplatform/gradle/wrapper/gradle-wrapper.properties', 'kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/gradle/libs.versions.toml') }}
         restore-keys: |
           gradle-${{ runner.os }}-
-    
+
     - name: Generate test document title
       id: test_doc
-      run: |
-        # Create a unique GitHub test document with inverted timestamp to appear at top
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_ID="${INVERTED_TIMESTAMP}_kmp_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_kmp_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        
-        echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
-        echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
-        echo "📝 Generated test document (inverted timestamp for top position)"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'kotlin-multiplatform'
     
     - name: Create production .env file
       run: |
@@ -148,27 +140,27 @@ jobs:
     timeout-minutes: 30
     needs: lint
     outputs:
-      test_doc_title: ${{ steps.test_doc.outputs.test_doc_title }}
+      test_doc_title: ${{ steps.test_doc.outputs.document-title }}
       ios-build-success: ${{ steps.build-status.outputs.success }}
     defaults:
       run:
         working-directory: kotlin-multiplatform
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
         cache: 'gradle'
-    
+
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: 'latest-stable'
-    
+
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
@@ -179,16 +171,14 @@ jobs:
         key: gradle-${{ runner.os }}-${{ hashFiles('kotlin-multiplatform/gradle/wrapper/gradle-wrapper.properties', 'kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/gradle/libs.versions.toml') }}
         restore-keys: |
           gradle-${{ runner.os }}-
-    
+
     - name: Generate test document title
       id: test_doc
-      run: |
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_ID="${INVERTED_TIMESTAMP}_kmp_ios_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_kmp_ios_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
-        echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'kotlin-multiplatform'
     
     - name: Write production .env
       run: |
@@ -341,54 +331,13 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Download Android APK artifacts
       uses: actions/download-artifact@v4
       with:
         name: android-kmp-apks-${{ github.run_number }}
         path: kotlin-multiplatform/composeApp/build/outputs/apk/
-    
-    - name: Insert test document into Ditto Cloud
-      run: |
-        # Use the same document title that was built into the APK
-        DOC_TITLE="${{ needs.build-android.outputs.test_doc_title }}"
-        DOC_ID="$DOC_TITLE"
-        
-        echo "📝 Inserting test document that matches build-time configuration"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        
-        # Insert document using Ditto API v4 (use "title" field to match KMP app)
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"title\": \"${DOC_TITLE}\",
-                \"done\": false,
-                \"deleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-          echo "✓ Document title: ${DOC_TITLE}"
-        else
-          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          exit 1
-        fi
-    
+
     - name: Upload APKs to BrowserStack
       id: upload
       run: |

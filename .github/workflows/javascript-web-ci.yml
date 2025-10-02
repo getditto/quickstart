@@ -45,41 +45,16 @@ jobs:
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
       - name: Insert test document into Ditto Cloud
+        id: seed_document
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: 'javascript-web'
+
+      - name: Set document ID for tests
         run: |
-          # Use GitHub run ID to create deterministic document ID
-          DOC_ID="github_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          
-          # Insert document using curl with correct JSON structure
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H 'Content-type: application/json' \
-            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-            -d "{
-              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-              \"args\": {
-                \"newTask\": {
-                  \"_id\": \"${DOC_ID}\",
-                  \"title\": \"GitHub Test Task ${GITHUB_RUN_ID}\",
-                  \"done\": false,
-                  \"deleted\": false
-                }
-              }
-            }" \
-          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-          
-          # Extract HTTP status code and response body
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-          
-          # Check if insertion was successful
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-            echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
-          else
-            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-            echo "Response: $BODY"
-            exit 1
-          fi
+          echo "GITHUB_TEST_DOC_ID=${{ steps.seed_document.outputs.document-title }}" >> $GITHUB_ENV
 
       - name: Install dependencies
         working-directory: javascript-web

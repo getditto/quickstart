@@ -100,47 +100,18 @@ jobs:
           echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
       
-      - name: Insert test document into Ditto Cloud
-        run: |
-          TIMESTAMP=$(date +%s)
-          # Invert the timestamp to allow reverse-chronological sorting of documents by ID.
-          # 9999999999 is chosen as a far-future Unix timestamp (Sat Nov 20 2286 17:46:39 UTC),
-          # ensuring all current timestamps are less than this value.
-          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-          DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H 'Content-type: application/json' \
-            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-            -d "{
-              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-              \"args\": {
-                \"newTask\": {
-                  \"_id\": \"${DOC_ID}\",
-                  \"title\": \"${DOC_TITLE}\",
-                  \"done\": false,
-                  \"deleted\": false
-                }
-              }
-            }" \
-          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-          
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-          
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
-          else
-            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-            echo "Response: $BODY"
-            exit 1
-          fi
+      - name: Seed test document to Ditto Cloud
+        id: seed
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: 'javascript-tui'
       
       - name: Run integration test
         working-directory: javascript-tui
         env:
-          GITHUB_TEST_DOC_TITLE: ${{ env.GITHUB_TEST_DOC_TITLE }}
+          GITHUB_TEST_DOC_TITLE: ${{ steps.seed.outputs.document-title }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: npm run build && node tests/integration_test.js

@@ -60,7 +60,7 @@ jobs:
     needs: lint
     timeout-minutes: 30
     outputs:
-      test_doc_title: ${{ steps.test_doc.outputs.test_doc_title }}
+      document-title: ${{ steps.seed.outputs.document-title }}
     
     steps:
     - uses: actions/checkout@v4
@@ -87,21 +87,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     
-    - name: Generate test document title
-      id: test_doc
-      run: |
-        # Create a unique GitHub test document with inverted timestamp to appear at top
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_ID="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_android_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-        
-        echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
-        echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
-        echo "📝 Generated test document (inverted timestamp for top position)"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
+    - name: Seed test document to Ditto Cloud
+      id: seed
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'android-kotlin'
     
     - name: Build APKs
       working-directory: android-kotlin/QuickStartTasks
@@ -110,7 +102,7 @@ jobs:
         DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
         DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
         DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
-        TEST_DOCUMENT_TITLE: ${{ steps.test_doc.outputs.test_doc_title }}
+        TEST_DOCUMENT_TITLE: ${{ steps.seed.outputs.document-title }}
       run: ./gradlew assembleDebug assembleDebugAndroidTest
     
     - name: Run unit tests
@@ -155,46 +147,13 @@ jobs:
         name: android-apks-${{ github.run_number }}
         path: android-kotlin/QuickStartTasks/app/build/outputs/apk/
     
-    - name: Insert test document into Ditto Cloud
+    - name: Verify test document from build job
       run: |
         # Use the same document title that was built into the APK
-        DOC_TITLE="${{ needs.build-and-test.outputs.test_doc_title }}"
-        DOC_ID="$DOC_TITLE"
-        
-        echo "📝 Inserting test document that matches build-time configuration"
-        echo "📝 ID: '${DOC_ID}'"
+        DOC_TITLE="${{ needs.build-and-test.outputs.document-title }}"
+
+        echo "📝 Using test document from build job"
         echo "📝 Title: '${DOC_TITLE}'"
-        
-        # Insert document using Ditto API v4 (same as Swift workflow)
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"title\": \"${DOC_TITLE}\",
-                \"done\": false,
-                \"deleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-          echo "✓ Document title: ${DOC_TITLE}"
-        else
-          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          exit 1
-        fi
     
     - name: Upload APKs to BrowserStack
       id: upload
@@ -238,8 +197,8 @@ jobs:
         fi
         
         # Create test execution request with instrumentationOptions (correct approach for Android)
-        TITLE="${{ needs.build-and-test.outputs.test_doc_title }}"
-        
+        TITLE="${{ needs.build-and-test.outputs.document-title }}"
+
         BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
           -H "Content-Type: application/json" \
