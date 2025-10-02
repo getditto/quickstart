@@ -1,7 +1,7 @@
 package com.ditto.example.spring.quickstart.service;
 
 import com.ditto.example.spring.quickstart.configuration.DittoConfigurationKeys;
-import com.ditto.example.spring.quickstart.configuration.DittoSecretsConfiguration;
+//import com.ditto.example.spring.quickstart.configuration.DittoSecretsConfiguration;
 import com.ditto.java.*;
 import com.ditto.java.serialization.DittoCborSerializable;
 import jakarta.annotation.Nonnull;
@@ -43,29 +43,39 @@ public class DittoService implements DisposableBean {
         dittoDir.mkdirs();
 
         /*
-         *  Setup Ditto Identity
+         *  Setup Ditto Config
          *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
          */
-        DittoIdentity identity = new DittoIdentity.OnlinePlayground(
-                DittoSecretsConfiguration.DITTO_APP_ID,
-                DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-                // This is required to be set to false to use the correct URLs
-                false,
-                DittoSecretsConfiguration.DITTO_AUTH_URL
-        );
 
-        DittoConfig dittoConfig = new DittoConfig.Builder(dittoDir)
-                .identity(identity)
+//        DittoConfig dittoConfig = new DittoConfig.Builder(DittoSecretsConfiguration.DITTO_APP_ID)
+//                .serverConnect(DittoSecretsConfiguration.DITTO_AUTH_URL)
+//                .build();
+
+        DittoConfig dittoConfig = new DittoConfig.Builder("755e5ea1-25f2-42a8-af99-692c53ce7c34")
+                .serverConnect("https://755e5ea1-25f2-42a8-af99-692c53ce7c34.cloud-stg.ditto.live")
                 .build();
 
-        this.ditto = new Ditto(dittoConfig);
+        this.ditto = DittoFactory.create(dittoConfig);
+
+        this.ditto.getAuth().setExpirationHandler((expiringDitto, _timeUntilExpiration) ->
+                expiringDitto.getAuth()
+//                        .login(
+//                                DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
+//                                DittoAuthenticationProvider.development()
+//                        ).thenRun(() -> { })
+                        .login(
+                                "a9bf9cf2-171a-44a3-bfd7-12a8d550d632",
+                                DittoAuthenticationProvider.development()
+                        ).thenRun(() -> { })
+        );
 
         this.ditto.setDeviceName("Spring Java");
 
         this.ditto.updateTransportConfig(transportConfig -> {
             transportConfig.connect(connect -> {
                 // Set the Ditto Websocket URL
-                connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
+//                connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
+                connect.websocketUrls().add("wss://755e5ea1-25f2-42a8-af99-692c53ce7c34.cloud-stg.ditto.live");
             });
 
             logger.info("Transport config: {}", transportConfig);
@@ -109,7 +119,7 @@ public class DittoService implements DisposableBean {
             for (DittoPeer peer : graph.getRemotePeers()) {
                 logger.info("Peer: {}", peer.getDeviceName());
                 for (DittoConnection connection : peer.getConnections()) {
-                    logger.info("\t- {} {} {}", connection.getId(), connection.getConnectionType(), connection.getApproximateDistanceInMeters());
+                    logger.info("\t- {} {}", connection.getId(), connection.getConnectionType());
                 }
             }
         });
@@ -174,7 +184,7 @@ public class DittoService implements DisposableBean {
 
         try {
             future.toCompletableFuture().join().close();
-        } catch (IOException e) {
+        } catch (DittoError e) {
             throw new RuntimeException(e);
         }
     }
