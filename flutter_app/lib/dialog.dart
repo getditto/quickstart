@@ -5,18 +5,18 @@ import 'task.dart';
 Future<Task?> showAddTaskDialog(BuildContext context, [Task? task]) =>
     showDialog<Task>(
       context: context,
-      builder: (context) => _Dialog(task),
+      builder: (context) => Dialog(task),
     );
 
-class _Dialog extends StatefulWidget {
+class Dialog extends StatefulWidget {
   final Task? taskToEdit;
-  const _Dialog(this.taskToEdit);
+  const Dialog(this.taskToEdit, {super.key});
 
   @override
-  State<_Dialog> createState() => _DialogState();
+  State<Dialog> createState() => _DialogState();
 }
 
-class _DialogState extends State<_Dialog> {
+class _DialogState extends State<Dialog> {
   late final _name = TextEditingController(text: widget.taskToEdit?.title);
   late var _done = widget.taskToEdit?.done ?? false;
 
