@@ -96,7 +96,7 @@ public class DittoTaskService {
 
     @Nonnull
     public Flux<List<Task>> observeAll() {
-        final String selectQuery = "SELECT * FROM %s WHERE NOT deleted ORDER BY title ASC".formatted(TASKS_COLLECTION_NAME);
+        final String selectQuery = "SELECT * FROM %s WHERE NOT deleted".formatted(TASKS_COLLECTION_NAME);
 
         return Flux.create(emitter -> {
             Ditto ditto = dittoService.getDitto();
@@ -115,7 +115,7 @@ public class DittoTaskService {
                     }
                     try {
                         observer.close();
-                    } catch (IOException e) {
+                    } catch (DittoError e) {
                         throw new RuntimeException(e);
                     }
                 });
