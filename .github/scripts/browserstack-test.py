@@ -21,8 +21,9 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 def wait_for_sync_document(driver, doc_id, max_wait=30):
     """Wait for a specific document to appear in the task list."""
     print(f"Waiting for document '{doc_id}' to sync...")
-    # Extract the run ID from the document ID (format: github_test_RUNID_RUNNUMBER)
-    run_id = doc_id.split("_")[2] if len(doc_id.split("_")) > 2 else doc_id
+    # Extract a unique portion from the document ID for matching
+    # Document ID format: INVERTED_TIMESTAMP_app-name_ci_test_RUNID_RUNNUMBER
+    run_id = doc_id.split("_")[3] if len(doc_id.split("_")) > 3 else doc_id
     print(f"Looking for GitHub Run ID: {run_id}")
 
     start_time = time.time()
@@ -33,12 +34,12 @@ def wait_for_sync_document(driver, doc_id, max_wait=30):
             # Use the most specific selector first
             task_elements = driver.find_elements(By.CSS_SELECTOR, "div.group span")
 
-            # Check each element for our GitHub run ID
+            # Check each element for our document ID
             for element in task_elements:
                 try:
                     element_text = element.text.strip()
-                    # Check if the run ID appears in the text and it's our GitHub test task
-                    if run_id in element_text and "GitHub Test Task" in element_text:
+                    # Check if the doc_id or run_id appears in the text
+                    if run_id in element_text or doc_id in element_text:
                         print(f"✓ Found synced document: {element_text}")
                         return True
                 except:
