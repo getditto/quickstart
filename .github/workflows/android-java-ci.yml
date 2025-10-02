@@ -126,7 +126,7 @@ jobs:
   browserstack-test:
     name: BrowserStack Device Testing
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, seed-ditto-cloud]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
     
@@ -326,7 +326,7 @@ jobs:
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [lint, build, browserstack-test]
+    needs: [browserstack-test]
     if: always()
 
     steps:

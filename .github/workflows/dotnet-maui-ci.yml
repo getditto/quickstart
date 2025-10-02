@@ -295,7 +295,7 @@ jobs:
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [lint, build-android, build-ios, browserstack-android, browserstack-ios]
+    needs: [browserstack-android, browserstack-ios]
     if: always()
 
     steps:
