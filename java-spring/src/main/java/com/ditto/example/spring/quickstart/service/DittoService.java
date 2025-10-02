@@ -1,6 +1,7 @@
 package com.ditto.example.spring.quickstart.service;
 
 import com.ditto.example.spring.quickstart.configuration.DittoConfigurationKeys;
+import com.ditto.example.spring.quickstart.configuration.DittoSecretsConfiguration;
 import com.ditto.java.*;
 import com.ditto.java.serialization.DittoCborSerializable;
 import jakarta.annotation.Nonnull;
@@ -45,24 +46,16 @@ public class DittoService implements DisposableBean {
          *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
          */
 
-//        DittoConfig dittoConfig = new DittoConfig.Builder(DittoSecretsConfiguration.DITTO_APP_ID)
-//                .serverConnect(DittoSecretsConfiguration.DITTO_AUTH_URL)
-//                .build();
-
-        DittoConfig dittoConfig = new DittoConfig.Builder("755e5ea1-25f2-42a8-af99-692c53ce7c34")
-                .serverConnect("https://755e5ea1-25f2-42a8-af99-692c53ce7c34.cloud-stg.ditto.live")
+        DittoConfig dittoConfig = new DittoConfig.Builder(DittoSecretsConfiguration.DITTO_APP_ID)
+                .serverConnect(DittoSecretsConfiguration.DITTO_AUTH_URL)
                 .build();
 
         this.ditto = DittoFactory.create(dittoConfig);
 
         this.ditto.getAuth().setExpirationHandler((expiringDitto, _timeUntilExpiration) ->
                 expiringDitto.getAuth()
-//                        .login(
-//                                DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-//                                DittoAuthenticationProvider.development()
-//                        ).thenRun(() -> { })
                         .login(
-                                "a9bf9cf2-171a-44a3-bfd7-12a8d550d632",
+                                DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
                                 DittoAuthenticationProvider.development()
                         ).thenRun(() -> { })
         );
@@ -72,8 +65,7 @@ public class DittoService implements DisposableBean {
         this.ditto.updateTransportConfig(transportConfig -> {
             transportConfig.connect(connect -> {
                 // Set the Ditto Websocket URL
-//                connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
-                connect.websocketUrls().add("wss://755e5ea1-25f2-42a8-af99-692c53ce7c34.cloud-stg.ditto.live");
+                connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
             });
 
             logger.info("Transport config: {}", transportConfig);
