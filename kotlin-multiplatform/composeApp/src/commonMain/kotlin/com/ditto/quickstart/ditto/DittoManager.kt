@@ -2,8 +2,8 @@ package com.ditto.quickstart.ditto
 
 import com.ditto.example.kotlin.quickstart.configuration.DittoSecretsConfiguration
 import com.ditto.kotlin.Ditto
+import com.ditto.kotlin.DittoAuthenticationProvider
 import com.ditto.kotlin.DittoConfig
-import com.ditto.kotlin.DittoIdentity
 import com.ditto.kotlin.DittoLog
 import com.ditto.kotlin.DittoLogLevel
 import com.ditto.kotlin.DittoLogger
@@ -11,6 +11,7 @@ import com.ditto.kotlin.DittoQueryResult
 import com.ditto.kotlin.DittoSyncSubscription
 import com.ditto.kotlin.error.DittoError
 import com.ditto.kotlin.serialization.DittoCborSerializable
+import com.ditto.quickstart.data.DittoCredentials
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -28,9 +29,11 @@ private const val TAG = "DittoManager"
  * Keeping this class inaccessible from the ViewModel, will prevent the abuse of ditto APIs like:
  * "ditto.sync", "ditto.transport", "ditto.store", etc
  *
- * Because ditto also have a "database" component, it is fine to expose this class to a Repository.
+ * Because ditto also has a "database" component, it is fine to expose this class to a Repository.
  */
-class DittoManager {
+class DittoManager(
+    val credentials: DittoCredentials
+)  {
     private val scope = CoroutineScope(SupervisorJob())
     private var createJob: Job? = null
     private var closeJob: Job? = null
@@ -42,26 +45,28 @@ class DittoManager {
         // SDKS-1294: Don't create Ditto in a scope using Dispatchers.IO
         createJob = scope.launch(Dispatchers.Default) {
             ditto = try {
-                val identity = DittoIdentity.OnlinePlayground(
-                    appId = DittoSecretsConfiguration.DITTO_APP_ID,
-                    token = DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-                    // Cloud sync is intentionally disabled to avoid authentication issues in test environments.
-                    // When enabled, Ditto Cloud Sync requires additional auth setup that causes certificate 
-                    // validation failures in BrowserStack. Disabling ensures sync occurs via WebSocket URLs only.
-                    enableDittoCloudSync = false,
-                    customAuthUrl = DittoSecretsConfiguration.DITTO_AUTH_URL,
+                val config = DittoConfig(
+                    databaseId = credentials.appId,
+                    connect = DittoConfig.Connect.Server(
+                        url = "https://${credentials.appId}.cloud.ditto.live",
+                    ),
                 )
 
-                val config = createDittoConfig(identity = identity)
-
                 DittoLogger.minimumLogLevel = DittoLogLevel.Verbose
-                Ditto(config = config).apply {
-                    updateTransportConfig { config ->
-                        config.connect.websocketUrls.add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL)
+                createDitto(
+                    config = config
+                ).apply {
+                    auth?.setExpirationHandler { ditto, secondsRemaining ->
+                        // Authenticate when a token is expiring
+                        val clientInfo = ditto.auth?.login(
+                            token = credentials.appToken,
+                            provider = DittoAuthenticationProvider.development(),
+                        )
                     }
                 }
             } catch (e: Throwable) {
                 DittoLog.e(TAG, "Failed to create Ditto instance: $e")
+                e.printStackTrace()
                 null
             }
         }
@@ -73,6 +78,25 @@ class DittoManager {
         waitForWorkInProgress()
         return ditto
     }
+
+    fun destroyDitto() {
+        closeJob = scope.launch(Dispatchers.IO) {
+            getDitto()?.stopSync()
+            getDitto()?.close()
+            ditto = null
+        }
+    }
+
+    suspend fun startSync() {
+        val ditto = getDitto() ?: return
+        ditto.startSync()
+    }
+
+    suspend fun stopSync() {
+        getDitto()?.stopSync()
+    }
+
+    suspend fun isSyncing() = getDitto()?.isSyncActive == true
 
     suspend fun executeDql(
         query: String,
@@ -97,29 +121,10 @@ class DittoManager {
     suspend fun registerObserver(
         query: String,
         arguments: DittoCborSerializable.Dictionary? = null
-    ): Flow<DittoQueryResult> = requireNotNull(getDitto()).store.registerObserver(
+    ): Flow<DittoQueryResult> = requireNotNull(getDitto()).store.observe(
         query = query,
         arguments = arguments
     )
-
-    suspend fun startSync() {
-        val ditto = getDitto() ?: return
-        ditto.startSync()
-    }
-
-    suspend fun stopSync() {
-        getDitto()?.stopSync()
-    }
-
-    suspend fun isSyncing() = getDitto()?.isSyncActive == true
-
-    fun destroyDitto() {
-        closeJob = scope.launch(Dispatchers.IO) {
-            getDitto()?.stopSync()
-            getDitto()?.close()
-            ditto = null
-        }
-    }
 
     private suspend fun waitForWorkInProgress() {
         createJob?.join()
@@ -131,6 +136,4 @@ class DittoManager {
  * Defines how to create a Ditto Config in Multiplatform, and on each platform pass the required dependencies - for
  * example, on Android we require Context.
  */
-internal expect fun createDittoConfig(
-    identity: DittoIdentity,
-): DittoConfig
+internal expect fun createDitto(config: DittoConfig): Ditto
