@@ -161,7 +161,11 @@ const APP_CONFIGS = {
         replacement: (match, prefix) => `${prefix}^VERSION`,
       },
     ],
-    lockCommands: ["flutter pub get", "(cd ios && pod update DittoFlutterIOS)"],
+    lockCommands: [
+      "flutter pub get",
+      "(cd ios && pod update DittoFlutter)",
+      "(cd macos && pod update DittoFlutter)",
+    ],
   },
 
   "rust-tui": {
