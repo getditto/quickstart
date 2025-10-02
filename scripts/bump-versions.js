@@ -289,29 +289,28 @@ function updateFile(appDir, fileConfig, version) {
   }
 
   const content = fs.readFileSync(filePath, "utf8");
-  let modified = false;
   let newContent = content;
-  let matchCount = 0;
 
   const matches = [...content.matchAll(fileConfig.regex)];
-  matchCount = matches.length;
 
   if (matches.length > 0) {
-    modified = true;
     newContent = newContent.replace(fileConfig.regex, (match, ...groups) => {
       const replacement = fileConfig.replacement(match, ...groups);
       return replacement.replace("VERSION", version);
     });
 
-    fs.writeFileSync(filePath, newContent, "utf8");
-    log.success(
-      `Updated ${colors.dim}${appDir}/${fileConfig.path}${
-        colors.reset
-      } (${matchCount} occurrence${matchCount > 1 ? "s" : ""})`
-    );
+    if (newContent !== content) {
+      fs.writeFileSync(filePath, newContent, "utf8");
+      log.success(
+        `Updated ${colors.dim}${appDir}/${fileConfig.path}${colors.reset} (${
+          matches.length
+        } occurrence${matches.length > 1 ? "s" : ""})`
+      );
+      return true;
+    }
   }
 
-  return modified;
+  return false;
 }
 
 function runLockCommands(appDir, commands) {
