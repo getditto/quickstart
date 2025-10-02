@@ -10,19 +10,28 @@
  *   -n, --dry-run        Preview changes without modifying files
  *   -h, --help           Show help
  *
- * Excludes: Kotlin Multiplatform (uses different versioning)
+ * Excludes: Kotlin Multiplatform, Java Spring (not on synchronized releases)
  */
 
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
+// File paths that match these patterns will not be processed
+const EXCLUSIONS = [
+  // Not yet on synchronized releases
+  "/kotlin-multiplatform",
+  "/java-spring",
+
+  // Common exclusions
+  "/node_modules",
+];
+
 // Configuration for different project types
 const PROJECT_CONFIGS = [
   {
     name: "JavaScript/TypeScript (package.json)",
     pattern: "**/package.json",
-    exclude: ["node_modules/**"],
     regex:
       /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
     replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
@@ -31,14 +40,12 @@ const PROJECT_CONFIGS = [
   {
     name: "Android libs.versions.toml",
     pattern: "**/libs.versions.toml",
-    exclude: ["node_modules/**"],
     regex: /(ditto\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
     replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
   },
   {
     name: "Android build.gradle.kts",
     pattern: "**/build.gradle.kts",
-    exclude: ["node_modules/**", "kotlin-multiplatform/**"],
     regex: [
       /(implementation\(["\']live\.ditto:ditto-cpp:)[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["\'])/g,
       /(implementation\(["\']com\.ditto:ditto-java:)[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["\'])/g,
@@ -49,7 +56,6 @@ const PROJECT_CONFIGS = [
   {
     name: "Flutter pubspec.yaml",
     pattern: "**/pubspec.yaml",
-    exclude: ["node_modules/**"],
     regex: /(ditto_live:\s*)[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?/g,
     replacement: (match, prefix) => `${prefix}^VERSION`,
     lockfileUpdate: ["flutter pub get"],
@@ -57,7 +63,6 @@ const PROJECT_CONFIGS = [
   {
     name: "Rust Cargo.toml",
     pattern: "**/Cargo.toml",
-    exclude: ["node_modules/**"],
     regex:
       /(dittolive-ditto\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
     replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
@@ -66,7 +71,6 @@ const PROJECT_CONFIGS = [
   {
     name: ".NET .csproj",
     pattern: "**/*.csproj",
-    exclude: ["node_modules/**"],
     regex:
       /(PackageReference\s+Include=["']Ditto["']\s+Version=["'])[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["'])/g,
     replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
@@ -106,7 +110,7 @@ Options:
 Notes:
 - Automatically detects current versions using regex patterns
 - Uses platform-specific version patterns for each project type  
-- Excludes Kotlin Multiplatform (not yet on synchronized releases)
+- Excludes Kotlin Multiplatform and Java Spring (not yet on synchronized releases)
 - Updates lockfiles automatically unless --dry-run is specified
 `);
 }
@@ -154,16 +158,11 @@ function parseArgs() {
   return config;
 }
 
-function findFiles(pattern, exclude = []) {
+function findFiles(pattern) {
   try {
     // Convert glob pattern to find pattern
     const findPattern = pattern.replace("**/", "");
     let cmd = `find . -name "${findPattern}" -type f`;
-
-    // Add exclusions
-    for (const ex of exclude) {
-      cmd += ` -not -path "./${ex}"`;
-    }
 
     const output = execSync(cmd, { encoding: "utf8" }).trim();
     return output ? output.split("\n").filter((f) => f.trim()) : [];
@@ -298,14 +297,11 @@ function main() {
   for (const config of PROJECT_CONFIGS) {
     console.log(`\nProcessing ${config.name}...`);
 
-    const files = findFiles(config.pattern, config.exclude);
+    const files = findFiles(config.pattern);
 
     for (const filePath of files) {
-      // Skip Kotlin Multiplatform
-      if (filePath.includes("kotlin-multiplatform")) {
-        console.log(
-          `\x1b[33mSkipping ${filePath} (Kotlin Multiplatform is not yet on synchronized releases)\x1b[0m`
-        );
+      // Skip excluded paths
+      if (EXCLUSIONS.some((pattern) => filePath.includes(pattern))) {
         continue;
       }
 
