@@ -52,7 +52,7 @@ public class DittoTaskService {
                             .build()
             ).toCompletableFuture().join();
 
-            boolean isDone = tasks.getItems().get(0).getValue().get("done").getBoolean();
+            boolean isDone = tasks.getItems().get(0).getValue().get("done").asBoolean();
 
             dittoService.getDitto().getStore().execute(
                     "UPDATE %s SET done = :done WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
@@ -128,10 +128,10 @@ public class DittoTaskService {
     private Task itemToTask(@Nonnull DittoQueryResultItem item) {
         DittoCborSerializable.Dictionary value = item.getValue();
         return new Task(
-                value.get("_id").getString(),
-                value.get("title").getString(),
-                value.get("done").getBoolean(),
-                value.get("deleted").getBoolean()
+                value.get("_id").asString(),
+                value.get("title").asString(),
+                value.get("done").asBoolean(),
+                value.get("deleted").asBoolean()
         );
     }
 }
