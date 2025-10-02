@@ -86,7 +86,7 @@ const App = () => {
         // Register observer, which runs against the local database on this peer
         // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
         tasksObserver.current = ditto.current.store.registerObserver<Task>(
-          'SELECT * FROM tasks WHERE deleted=false ORDER BY done',
+          'SELECT * FROM tasks WHERE deleted=false ORDER BY _id ASC',
           (results) => {
             console.log('Observer', results);
             const tasks = results.items.map((item) => item.value);
