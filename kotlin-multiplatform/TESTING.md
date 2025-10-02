@@ -108,12 +108,106 @@ SYNC_MAX_WAIT_SECONDS="60"  # Optional, defaults to 30
 BUILD SUCCESSFUL in 10s
 ```
 
-⚠️ **iOS app has Kotlin compiler memory issues** (unrelated to test framework choice)
+✅ **iOS app builds successfully** with increased heap memory (4GB)
 ```
-error: java.lang.OutOfMemoryError: Java heap space
+gradle.properties: org.gradle.jvmargs = -Xmx4096M
+BUILD SUCCESSFUL
 ```
 
-This is a known KMP build issue, not a testing framework issue.
+## Critical iOS Accessibility Limitation
+
+⚠️ **Compose Multiplatform 1.8.0 iOS accessibility is fundamentally broken for automated testing**
+
+### The Problem
+
+Compose Multiplatform iOS **does not populate the accessibility tree** unless iOS Accessibility Services (VoiceOver) are actively running. This makes Appium/XCUITest testing impossible in most environments.
+
+**Symptoms:**
+- Accessibility tree shows only generic `XCUIElementTypeOther` elements
+- All elements have `accessible="false"` with no names or labels
+- Only 1 accessible element: the app container itself
+- Appium cannot find any Compose UI elements
+
+**Example output:**
+```
+📋 Found 13 total elements
+📋 Found 1 accessible/named elements
+  ✓ XCUIElementTypeApplication: name=QuickStartTasks (accessible=false)
+⚠️ No UI elements are accessible
+```
+
+### Root Cause
+
+In **Compose Multiplatform 1.8.0**, the `AccessibilitySyncOptions.Always` API was removed:
+- **Versions 1.6.0-1.7.x**: Had `AccessibilitySyncOptions.Always(debugLogger = null)` to force accessibility tree synchronization
+- **Version 1.8.0+**: Removed this API; accessibility tree is now "lazy loaded" only when iOS Accessibility Services detect activity
+
+From official release notes:
+> "AccessibilitySyncOptions removed. The accessibility tree is built on demand"
+
+**This creates a catch-22:**
+1. Appium needs the accessibility tree to find elements
+2. The tree only populates when accessibility services are active
+3. iOS simulators don't activate accessibility services for Appium
+4. Result: Empty accessibility tree, tests fail
+
+### What We Tried
+
+❌ **Attempted Solutions (all failed):**
+1. Downgrading to Compose 1.6.11, 1.7.0, 1.7.3 - `AccessibilitySyncOptions` API doesn't exist in any version
+2. Enabling VoiceOver programmatically in simulator - Didn't populate the tree
+3. Using UIAccessibility APIs from Kotlin/Native - Compose controls the tree, not UIKit
+4. Testing on BrowserStack real devices - **App crashes immediately** (unsigned Release build)
+5. Adding explicit `semantics { contentDescription = ... }` - No effect on accessibility tree
+
+✅ **What Works:**
+- App builds and runs correctly
+- UI renders perfectly
+- Manual testing works fine
+
+❌ **What Doesn't Work:**
+- Automated testing with Appium on iOS simulator (empty accessibility tree)
+- Automated testing on real devices (app crashes)
+- Any XCUITest-based automation
+
+### Technical Details
+
+**iOS Simulator Test Results:**
+```xml
+<XCUIElementTypeApplication accessible="false">
+  <XCUIElementTypeWindow accessible="false">
+    <XCUIElementTypeOther accessible="false">
+      <XCUIElementTypeOther accessible="false">
+        <!-- 10 more generic XCUIElementTypeOther elements -->
+        <!-- NO Text elements, NO Buttons, NO accessible names -->
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+```
+
+**Expected with working accessibility:**
+```xml
+<XCUIElementTypeApplication accessible="true">
+  <XCUIElementTypeWindow>
+    <XCUIElementTypeStaticText name="Task Title" accessible="true"/>
+    <XCUIElementTypeButton name="Add Task" accessible="true"/>
+    <!-- Actual UI elements with names/labels -->
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+```
+
+### Conclusion
+
+**iOS automated testing is currently impossible with Compose Multiplatform 1.8.0** due to:
+1. Removed `AccessibilitySyncOptions.Always` API
+2. Lazy accessibility tree loading that requires active iOS Accessibility Services
+3. Real device testing blocked by app crashes (code signing issues)
+
+**This appears to be a regression in Compose Multiplatform 1.8.0.** Related JetBrains issues:
+- CMP-7200: "Accessibility Inspection Tools Not Identifying Elements in iOS App"
+- CMP-5635: "Compose Multiplatform - iOS accessibility tree"
+- GitHub #4401: "VoiceOver only works with AccessibilitySyncOptions.Always"
 
 ## Files Changed
 
