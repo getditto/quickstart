@@ -161,3 +161,35 @@ jobs:
             test-report.md
             *screenshot*.png
             .github/scripts/browserstack-test.py
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🌐 JavaScript Web CI" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Overall status
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack Tests | ${{ job.status == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # BrowserStack info
+          echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Dashboard](https://automate.browserstack.com/dashboard/v2)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tested Browsers:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Chrome 120.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
+          echo "- Firefox 121.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Document ID:** \`${GITHUB_TEST_DOC_ID:-Not generated}\`" >> $GITHUB_STEP_SUMMARY

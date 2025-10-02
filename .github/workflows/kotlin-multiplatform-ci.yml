@@ -578,3 +578,11 @@ jobs:
             echo "⚠️ Core builds passed but testing had issues. Check testing logs above." >> $GITHUB_STEP_SUMMARY
           fi
         fi
+
+        # BrowserStack link
+        if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 [View Android Test Results](https://app-automate.browserstack.com/builds?project=Ditto+Kotlin+Multiplatform&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+        fi
