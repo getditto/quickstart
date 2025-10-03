@@ -226,7 +226,7 @@ jobs:
         ditto-api-url: ${{ secrets.DITTO_API_URL }}
         app-name: 'react-native-expo'
 
-  test-android-maestro:
+  browserstack-android:
     name: Test Android - BrowserStack Maestro
     runs-on: ubuntu-latest
     needs: [build-android, seed-ditto-cloud]
@@ -384,7 +384,7 @@ jobs:
           exit 1
         fi
 
-  test-ios-maestro:
+  browserstack-ios:
     name: Test iOS - BrowserStack Maestro
     runs-on: ubuntu-latest
     needs: [build-ios, seed-ditto-cloud]
@@ -534,10 +534,10 @@ jobs:
           exit 1
         fi
 
-  report-results:
+  summary:
     name: Report BrowserStack Results
     runs-on: ubuntu-latest
-    needs: [test-android-maestro, test-ios-maestro]
+    needs: [browserstack-android, browserstack-ios]
     if: always()
 
     steps:
@@ -548,8 +548,8 @@ jobs:
 
         # Android results
         echo "### Android Tests" >> $GITHUB_STEP_SUMMARY
-        ANDROID_BUILD_ID="${{ needs.test-android-maestro.outputs.build_id }}"
-        ANDROID_STATUS="${{ needs.test-android-maestro.outputs.status }}"
+        ANDROID_BUILD_ID="${{ needs.browserstack-android.outputs.build_id }}"
+        ANDROID_STATUS="${{ needs.browserstack-android.outputs.status }}"
 
         if [ -n "$ANDROID_BUILD_ID" ] && [ "$ANDROID_BUILD_ID" != "null" ]; then
           if [ "$ANDROID_STATUS" = "success" ]; then
@@ -567,8 +567,8 @@ jobs:
 
         # iOS results
         echo "### iOS Tests" >> $GITHUB_STEP_SUMMARY
-        IOS_BUILD_ID="${{ needs.test-ios-maestro.outputs.build_id }}"
-        IOS_STATUS="${{ needs.test-ios-maestro.outputs.status }}"
+        IOS_BUILD_ID="${{ needs.browserstack-ios.outputs.build_id }}"
+        IOS_STATUS="${{ needs.browserstack-ios.outputs.status }}"
 
         if [ -n "$IOS_BUILD_ID" ] && [ "$IOS_BUILD_ID" != "null" ]; then
           if [ "$IOS_STATUS" = "success" ]; then

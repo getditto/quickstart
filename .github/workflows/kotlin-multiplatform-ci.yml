@@ -481,7 +481,7 @@ jobs:
   # FIXME: Accessibility tags were not working to detect labels on BrowserStack at time of commenting
   # browserstack-ios job removed for now
 
-  build-summary:
+  summary:
     name: Build Summary
     runs-on: ubuntu-latest
     needs: [lint, build-android, build-ios, build-desktop, browserstack-android]
