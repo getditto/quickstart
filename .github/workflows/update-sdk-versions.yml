@@ -93,23 +93,7 @@ jobs:
           Updates all quickstart applications to use Ditto SDK version ${{ github.event.inputs.version }}
 
           - Updates lockfiles where possible
-          - Excludes Kotlin Multiplatform (not yet on synchronized releases)
-
-          ## Updated Apps
-
-          - android-kotlin: Updated ditto version to ${{ github.event.inputs.version }}
-          - android-java: Updated ditto version to ${{ github.event.inputs.version }}
-          - android-cpp: Updated live.ditto:ditto-cpp to ${{ github.event.inputs.version }}
-          - dotnet-maui: Updated Ditto to ${{ github.event.inputs.version }}
-          - dotnet-tui: Updated Ditto to ${{ github.event.inputs.version }}
-          - dotnet-winforms: Updated Ditto to ${{ github.event.inputs.version }}
-          - flutter_app: Updated ditto_live to ^${{ github.event.inputs.version }}
-          - java-spring: Updated both ditto-java and ditto-binaries to ${{ github.event.inputs.version }}
-          - javascript-tui: Updated @dittolive/ditto to ^${{ github.event.inputs.version }}
-          - javascript-web: Updated @dittolive/ditto to ^${{ github.event.inputs.version }}
-          - react-native: Updated @dittolive/ditto to ${{ github.event.inputs.version }}
-          - react-native-expo: Updated @dittolive/ditto to ${{ github.event.inputs.version }}
-          - rust-tui: Updated dittolive-ditto to ${{ github.event.inputs.version }}
+          - Excludes Kotlin Multiplatform and Java Spring
           EOF
           )" \
             --draft \
