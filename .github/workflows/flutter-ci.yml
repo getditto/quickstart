@@ -515,8 +515,8 @@ jobs:
                 \"Samsung Galaxy S23-13.0\",
                 \"Google Pixel 6-12.0\"
               ],
-              \"project\": \"Ditto Flutter\",
-              \"buildName\": \"Android Build #${{ github.run_number }}\",
+              \"project\": \"QuickStart Flutter\",
+              \"buildName\": \"CI Build #${{ github.run_number }}\",
               \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,
               \"video\": true,
@@ -761,8 +761,8 @@ jobs:
                 \"iPhone 14-16\",
                 \"iPhone 12-17\"
               ],
-              \"project\": \"Ditto Flutter\",
-              \"buildName\": \"iOS Build #${{ github.run_number }}\",
+              \"project\": \"QuickStart Flutter\",
+              \"buildName\": \"CI Build #${{ github.run_number }}\",
               \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,
               \"networkLogs\": true

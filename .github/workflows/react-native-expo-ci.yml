@@ -314,8 +314,8 @@ jobs:
           -d '{
             "app": "${{ steps.upload-apk.outputs.app_url }}",
             "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
-            "project": "Ditto React Native Expo",
-            "buildName": "Build #${{ github.run_number }}",
+            "project": "QuickStart React Native Expo",
+            "buildName": "CI Build #${{ github.run_number }}",
             "buildTag": "${{ github.ref_name }}",
             "devices": [
               "Samsung Galaxy S22-12.0",
@@ -453,8 +453,8 @@ jobs:
           -d '{
             "app": "${{ steps.upload-ipa.outputs.app_url }}",
             "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
-            "project": "Ditto React Native Expo",
-            "buildName": "Build #${{ github.run_number }}",
+            "project": "QuickStart React Native Expo",
+            "buildName": "CI Build #${{ github.run_number }}",
             "buildTag": "${{ github.ref_name }}",
             "devices": [
               "iPhone 15-17.0",

@@ -380,8 +380,8 @@ jobs:
               \"Samsung Galaxy S23-13.0\",
               \"Google Pixel 6-12.0\"
             ],
-            \"project\": \"Ditto Kotlin Multiplatform\",
-            \"buildName\": \"Build #${{ github.run_number }}\",
+            \"project\": \"QuickStart Kotlin Multiplatform\",
+            \"buildName\": \"CI Build #${{ github.run_number }}\",
             \"buildTag\": \"${{ github.ref_name }}\",
             \"deviceLogs\": true,
             \"video\": true,
@@ -520,5 +520,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 [View Android Test Results](https://app-automate.browserstack.com/builds?project=Ditto+Kotlin+Multiplatform&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 [View Android Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Kotlin+Multiplatform&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
         fi

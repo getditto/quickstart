@@ -203,8 +203,8 @@ jobs:
               "Google Pixel 6-12.0",
               "OnePlus 9-11.0"
             ],
-            "project": "Ditto Android Java",
-            "buildName": "Build #${{ github.run_number }}",
+            "project": "QuickStart Android Java",
+            "buildName": "CI Build #${{ github.run_number }}",
             "buildTag": "${{ github.ref_name }}",
             "deviceLogs": true,
             "video": true,
@@ -334,7 +334,7 @@ jobs:
         if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=Ditto+Android+Java&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Android+Java&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Devices:**" >> $GITHUB_STEP_SUMMARY
           echo "- Google Pixel 8 (Android 14)" >> $GITHUB_STEP_SUMMARY

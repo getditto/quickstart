@@ -174,8 +174,8 @@ jobs:
         cat > browserstack.yml << EOF
         userName: ${{ secrets.BROWSERSTACK_USERNAME }}
         accessKey: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        projectName: Ditto Java Spring Tasks
-        buildName: Java Spring Selenium Tests #${{ github.run_number }}
+        projectName: QuickStart Java Spring
+        buildName: CI Build #${{ github.run_number }}
         platforms:
           - os: Windows
             osVersion: 11
@@ -226,7 +226,7 @@ jobs:
         ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
           -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
+          -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
           -DBROWSERSTACK_LOCAL=true \
           -DTEST_TASK_TITLE="$TITLE" \
           -DGITHUB_TEST_DOC_ID="$TITLE" \
@@ -296,7 +296,7 @@ jobs:
         if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=Ditto+Java+Spring+Tasks&build=Java+Spring+Selenium+Tests+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=QuickStart+Java+Spring&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browser:**" >> $GITHUB_STEP_SUMMARY
           echo "- Chrome Latest (Windows 11)" >> $GITHUB_STEP_SUMMARY
