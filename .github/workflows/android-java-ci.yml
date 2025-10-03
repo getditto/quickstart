@@ -211,7 +211,7 @@ jobs:
               "Google Pixel 6-12.0",
               "OnePlus 9-11.0"
             ],
-            "project": "Ditto Android Java",
+            "project": "QuickStart Android Java",
             "buildName": "Build #${{ github.run_number }}",
             "buildTag": "${{ github.ref_name }}",
             "deviceLogs": true,
