@@ -401,60 +401,65 @@ jobs:
     
     - name: Execute XCUITest on BrowserStack
       id: test
-      run: |
-        # Validate inputs
-        APP_URL="${{ steps.upload.outputs.app_url }}"
-        TEST_URL="${{ steps.upload.outputs.test_url }}"
-        
-        echo "App URL: $APP_URL"
-        echo "Test URL: $TEST_URL"
-        
-        if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
-          echo "Error: No valid app URL available"
-          exit 1
-        fi
-        
-        if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
-          echo "⚠️ No test bundle available - skipping automated testing"
-          echo "📱 App is available for manual testing in BrowserStack dashboard"
-          echo "build_id=" >> $GITHUB_OUTPUT
-          exit 0
-        fi
+      uses: nick-fields/retry@v3
+      with:
+        timeout_minutes: 15
+        max_attempts: 5
+        retry_wait_seconds: 120
+        command: |
+          # Validate inputs
+          APP_URL="${{ steps.upload.outputs.app_url }}"
+          TEST_URL="${{ steps.upload.outputs.test_url }}"
 
-        # Create XCUITest execution request using v2 API with setEnvVariables
-        BUILD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"app\": \"$APP_URL\",
-            \"testSuite\": \"$TEST_URL\",
-            \"devices\": [\"iPhone 15 Pro-17\"],
-            \"project\": \"QuickStart Swift\",
-            \"buildName\": \"CI Build #${{ github.run_number }}\",
-            \"buildTag\": \"${{ github.ref_name }}\",
-            \"deviceLogs\": true,
-            \"video\": true,
-            \"networkLogs\": true,
-            \"setEnvVariables\": {
-              \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
-              \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\",
-              \"GITHUB_TEST_DOC_TITLE\": \"${{ env.GITHUB_TEST_DOC_TITLE }}\"
-            }
-          }")
-        
-        echo "BrowserStack API Response:"
-        echo "$BUILD_RESPONSE"
-        
-        BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
-        
-        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-          echo "Error: Failed to create BrowserStack build"
-          echo "Response: $BUILD_RESPONSE"
-          exit 1
-        fi
-        
-        echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-        echo "Build started with ID: $BUILD_ID"
+          echo "App URL: $APP_URL"
+          echo "Test URL: $TEST_URL"
+
+          if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+            echo "Error: No valid app URL available"
+            exit 1
+          fi
+
+          if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+            echo "⚠️ No test bundle available - skipping automated testing"
+            echo "📱 App is available for manual testing in BrowserStack dashboard"
+            echo "build_id=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Create XCUITest execution request using v2 API with setEnvVariables
+          BUILD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"app\": \"$APP_URL\",
+              \"testSuite\": \"$TEST_URL\",
+              \"devices\": [\"iPhone 15 Pro-17\"],
+              \"project\": \"QuickStart Swift\",
+              \"buildName\": \"CI Build #${{ github.run_number }}\",
+              \"buildTag\": \"${{ github.ref_name }}\",
+              \"deviceLogs\": true,
+              \"video\": true,
+              \"networkLogs\": true,
+              \"setEnvVariables\": {
+                \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
+                \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\",
+                \"GITHUB_TEST_DOC_TITLE\": \"${{ env.GITHUB_TEST_DOC_TITLE }}\"
+              }
+            }")
+
+          echo "BrowserStack API Response:"
+          echo "$BUILD_RESPONSE"
+
+          BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+
+          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+            echo "Error: Failed to create BrowserStack build"
+            echo "Response: $BUILD_RESPONSE"
+            exit 1
+          fi
+
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Build started with ID: $BUILD_ID"
 
     - name: Wait for XCUITest to complete
       run: |

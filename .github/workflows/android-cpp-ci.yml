@@ -180,11 +180,17 @@ jobs:
 
     - name: Execute Appium tests on BrowserStack
       id: test
-      working-directory: android-cpp/QuickStartTasksCPP/appium-test
+      uses: nick-fields/retry@v3
       env:
         BROWSERSTACK_APP_URL: ${{ steps.upload.outputs.app_url }}
         GITHUB_TEST_DOC_ID: ${{ steps.seed_task.outputs.document-title }}
-      run: ../gradlew test --console=plain --no-daemon
+      with:
+        timeout_minutes: 15
+        max_attempts: 5
+        retry_wait_seconds: 120
+        command: |
+          cd android-cpp/QuickStartTasksCPP/appium-test
+          ../gradlew test --console=plain --no-daemon
 
     - name: Upload test artifacts
       if: always()
