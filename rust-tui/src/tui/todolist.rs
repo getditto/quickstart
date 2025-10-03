@@ -94,7 +94,7 @@ impl Todolist {
         // register observer for live query
         // Register observer, which runs against the local database on this peer
         let tasks_observer = ditto.store().register_observer_v2(
-            "SELECT * FROM tasks WHERE deleted=false ORDER BY _id",
+            "SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC",
             move |query_result| {
                 let docs = query_result
                     .into_iter()

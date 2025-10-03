@@ -5,8 +5,12 @@ on:
     branches: [main, 'sdk-*']
     paths:
       - 'swift/**'
+      - '.github/workflows/swift-ci.yml'
   push:
     branches: [main, 'sdk-*']
+    paths:
+      - 'swift/**'
+      - '.github/workflows/swift-ci.yml'
   workflow_dispatch:
 
 concurrency:
@@ -220,25 +224,33 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-    
+
+    - name: Seed test task to Ditto Cloud
+      id: seed_task
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'swift'
+
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: 'latest-stable'
-    
+
     - name: Create .env file (production credentials for BrowserStack API)
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-    
+
     - name: Generate Env.swift (production for XCUITest build)
       working-directory: swift
       run: |
         chmod +x buildEnv.sh
         ./buildEnv.sh ../.env Tasks/
-    
+
     - name: Download iOS IPA Artifact
       uses: actions/download-artifact@v4
       with:
@@ -302,52 +314,11 @@ jobs:
 
         echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
         echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
-    
-    - name: Insert test document into Ditto Cloud
+
+    - name: Set environment variables for tests
       run: |
-        # Create a unique GitHub test document with inverted timestamp to appear at top
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-        
-        echo "📝 Inserting GitHub test document (inverted timestamp for top position)"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
-        
-        # Insert document using Ditto API v4 (same as JavaScript)
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"title\": \"${DOC_TITLE}\",
-                \"done\": false,
-                \"deleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-          echo "✓ Document title: ${DOC_TITLE}"
-          echo "GITHUB_TEST_DOC_ID=${DOC_ID}" >> $GITHUB_ENV
-          echo "GITHUB_TEST_DOC_TITLE=${DOC_TITLE}" >> $GITHUB_ENV
-        else
-          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          exit 1
-        fi
+        echo "GITHUB_TEST_DOC_ID=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
+        echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
 
     - name: Upload App and Test Bundle to BrowserStack
       id: upload
@@ -534,60 +505,42 @@ jobs:
         fi
 
   summary:
-    name: Summary
-    runs-on: macos-latest
-    needs: [lint, build-macos, build-ios, browserstack]
+    name: CI Report
+    runs-on: ubuntu-latest
+    needs: [browserstack]
     if: always()
-    
+
     steps:
     - name: Report Results
       run: |
-        echo "## 📱 Swift Build and Test Results"
-        echo ""
-        echo "### Job Results:"
-        echo "- **Lint**: ${{ needs.lint.result }}"
-        echo "- **Build macOS**: ${{ needs.build-macos.result }}"
-        echo "- **Build iOS**: ${{ needs.build-ios.result }}"
-        echo "- **BrowserStack Test**: ${{ needs.browserstack.result }}"
-        echo ""
-        
-        # Check results
-        if [[ "${{ needs.lint.result }}" != "success" ]]; then
-          echo "❌ **Linting failed** - Code quality issues found"
-        fi
-        
-        if [[ "${{ needs.build-macos.result }}" != "success" ]]; then
-          echo "⚠️ **macOS build failed** - Platform compatibility issues"
-        fi
-        
-        if [[ "${{ needs.build-ios.result }}" != "success" ]]; then
-          echo "❌ **iOS build failed** - BrowserStack testing was skipped"
-        elif [[ "${{ needs.browserstack.result }}" == "success" ]]; then
-          echo "✅ **Full pipeline success!**"
-          echo "   - ✅ Linting passed"
-          echo "   - ✅ macOS build succeeded"
-          echo "   - ✅ iOS build succeeded"
-          echo "   - ✅ BrowserStack real device testing passed"
-          echo "   - ✅ End-to-end GitHub Actions → Ditto Cloud → BrowserStack sync validated"
-          echo "   - 🚀 **Efficient parallel builds**: macOS & iOS built simultaneously"
-        elif [[ "${{ needs.browserstack.result }}" == "failure" ]]; then
-          echo "❌ **BrowserStack testing failed** - iOS builds but cloud sync may have issues"
-        elif [[ "${{ needs.browserstack.result }}" == "skipped" ]]; then
-          echo "⚠️ **BrowserStack testing skipped** - iOS build failed"
-        fi
-        
+        echo "## 📱 Swift CI" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
         # Overall status
-        echo ""
         if [[ "${{ needs.lint.result }}" == "success" && \
-              "${{ needs.build-ios.result }}" == "success" ]]; then
-          echo "🎉 **Core pipeline successful!** iOS app builds and passes quality checks."
-          if [[ "${{ needs.build-macos.result }}" == "success" ]]; then
-            echo "🍎 **macOS compatibility confirmed!** Cross-platform builds working."
-          fi
-          if [[ "${{ needs.browserstack.result }}" == "success" ]]; then
-            echo "🚀 **BrowserStack integration validated!** Real device testing works end-to-end."
-          fi
+              "${{ needs.build-macos.result }}" == "success" && \
+              "${{ needs.build-ios.result }}" == "success" && \
+              "${{ needs.browserstack.result }}" == "success" ]]; then
+          echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
         else
-          echo "⚠️ Core pipeline has issues - check failed jobs above."
-          exit 1
+          echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build macOS | ${{ needs.build-macos.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build iOS | ${{ needs.build-ios.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| BrowserStack Tests | ${{ needs.browserstack.result == 'success' && '✅ Passed' || (needs.browserstack.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # BrowserStack link
+        if [[ "${{ needs.browserstack.result }}" != "skipped" ]]; then
+          echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🍎 [View Test Results](https://app-automate.browserstack.com/builds?project=Ditto+Swift&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
+          echo "- iPhone 15 Pro (iOS 17)" >> $GITHUB_STEP_SUMMARY
         fi

@@ -56,8 +56,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 20
-    outputs:
-      test_doc_title: ${{ steps.test_doc.outputs.test_doc_title }}
 
     steps:
       - uses: actions/checkout@v4
@@ -70,23 +68,6 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-
-
-      - name: Generate test document title
-        id: test_doc
-        run: |
-          # Create a unique GitHub test document with inverted timestamp to appear at top
-          TIMESTAMP=$(date +%s)
-          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-          DOC_ID="${INVERTED_TIMESTAMP}_java_spring_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-          DOC_TITLE="${INVERTED_TIMESTAMP}_java_spring_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-
-          echo "test_doc_id=$DOC_ID" >> $GITHUB_OUTPUT
-          echo "test_doc_title=$DOC_TITLE" >> $GITHUB_OUTPUT
-          echo "📝 Generated test document (inverted timestamp for top position)"
-          echo "📝 ID: '${DOC_ID}'"
-          echo "📝 Title: '${DOC_TITLE}'"
-          echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
 
       - name: Create .env file (root)
         run: |
@@ -116,60 +97,27 @@ jobs:
   browserstack-test:
     name: BrowserStack Device Testing (macos-latest)
     runs-on: macos-latest
-    needs: build
+    needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
     
     steps:
     - uses: actions/checkout@v4
-    
+
+    - name: Seed test task to Ditto Cloud
+      id: seed_task
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'java-spring'
+
     - name: Download JAR artifacts
       uses: actions/download-artifact@v4
       with:
         name: java-spring-jar-${{ github.run_number }}
         path: java-spring/build/libs/
-    
-    - name: Insert test document into Ditto Cloud
-      run: |
-        # Use the same document title that was generated in build job
-        DOC_TITLE="${{ needs.build.outputs.test_doc_title }}"
-        DOC_ID="$DOC_TITLE"
-        
-        echo "📝 Inserting test document that matches build-time configuration"
-        echo "📝 ID: '${DOC_ID}'"
-        echo "📝 Title: '${DOC_TITLE}'"
-        
-        # Insert document using Ditto API v4 (same as Android workflow)
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_ID}\",
-                \"title\": \"${DOC_TITLE}\",
-                \"done\": false,
-                \"deleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        # Extract HTTP status code and response body
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        BODY=$(echo "$RESPONSE" | sed '$d')
-        
-        # Check if insertion was successful
-        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-          echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-          echo "✓ Document title: ${DOC_TITLE}"
-        else
-          echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          exit 1
-        fi
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
@@ -241,12 +189,18 @@ jobs:
     
     - name: Start Spring Boot app in background
       working-directory: java-spring
+      env:
+        DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+        DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+        DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+        DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
+        DITTO_ENABLE_CLOUD_SYNC: true
       run: |
         nohup java -jar build/libs/*.jar \
           --server.port=8080 \
           --spring.profiles.active=test > app.log 2>&1 &
         echo $! > app.pid
-        
+
         # Wait for application to be ready
         echo "Waiting for Spring Boot app to start..."
         for i in {1..30}; do
@@ -257,16 +211,16 @@ jobs:
           sleep 2
         done
     
-    - name: Execute Selenium tests on BrowserStack cloud browsers  
+    - name: Execute Selenium tests on BrowserStack cloud browsers
       working-directory: java-spring
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
-        TEST_TASK_TITLE: ${{ needs.build.outputs.test_doc_title }}
-        GITHUB_TEST_DOC_ID: ${{ needs.build.outputs.test_doc_title }}
+        TEST_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
+        GITHUB_TEST_DOC_ID: ${{ steps.seed_task.outputs.document-title }}
       run: |
-        TITLE="${{ needs.build.outputs.test_doc_title }}"
+        TITLE="${{ steps.seed_task.outputs.document-title }}"
         
         # Run only the BrowserStack test method, not all test methods
         ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
@@ -308,3 +262,42 @@ jobs:
           java-spring/app.log
           browserstack-local.log
         retention-days: 1
+
+  summary:
+    name: CI Report
+    runs-on: ubuntu-latest
+    needs: [browserstack-test]
+    if: always()
+
+    steps:
+    - name: Report Results
+      run: |
+        echo "## ☕ Java Spring CI" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Overall status
+        if [[ "${{ needs.lint.result }}" == "success" && \
+              "${{ needs.build.result }}" == "success" && \
+              "${{ needs.browserstack-test.result }}" == "success" ]]; then
+          echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| BrowserStack Tests | ${{ needs.browserstack-test.result == 'success' && '✅ Passed' || (needs.browserstack-test.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # BrowserStack link
+        if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]]; then
+          echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=Ditto+Java+Spring+Tasks&build=Java+Spring+Selenium+Tests+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tested Browser:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Chrome Latest (Windows 11)" >> $GITHUB_STEP_SUMMARY
+        fi
