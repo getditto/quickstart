@@ -436,6 +436,9 @@ jobs:
     needs: [build-android, seed-data]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
+    concurrency:
+      group: browserstack-testing
+      cancel-in-progress: false
     outputs:
       build_id: ${{ steps.test.outputs.build_id }}
 
@@ -677,6 +680,9 @@ jobs:
     needs: [build-ios, seed-data]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
+    concurrency:
+      group: browserstack-testing
+      cancel-in-progress: false
 
     steps:
       - name: Checkout code

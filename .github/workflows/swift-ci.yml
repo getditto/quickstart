@@ -217,6 +217,9 @@ jobs:
     needs: [build-ios]
     if: needs.build-ios.outputs.ios-build-success == 'true'
     timeout-minutes: 60
+    concurrency:
+      group: browserstack-testing
+      cancel-in-progress: false
     
     steps:
     - uses: actions/checkout@v4

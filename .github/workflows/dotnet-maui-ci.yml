@@ -214,6 +214,9 @@ jobs:
     needs: [build-android, seed-task-data]
     timeout-minutes: 30
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    concurrency:
+      group: browserstack-testing
+      cancel-in-progress: false
 
     steps:
       - name: Checkout code
@@ -275,6 +278,9 @@ jobs:
     needs: [build-ios, seed-task-data]
     timeout-minutes: 60
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    concurrency:
+      group: browserstack-testing
+      cancel-in-progress: false
 
     steps:
       - name: Checkout code
