@@ -105,13 +105,13 @@ impl DittoAuthenticationEventHandler for AuthHandler {
             "Authentication is expiring soon: {}",
             seconds_remaining.as_secs()
         );
-        auth.login_with_token_and_feedback("full_access", "dummyProvider")
+        auth.login_with_token_and_feedback("simple-ditto", "localProvider")
             .expect("should be able to login");
     }
 
     fn authentication_required(&self, auth: dittolive_ditto::auth::DittoAuthenticator) {
         tracing::warn!("Authentication is required");
-        auth.login_with_token_and_feedback("full_access", "dummyProvider")
+        auth.login_with_token_and_feedback("simple-ditto", "localProvider")
             .expect("should be able to login");
     }
 }

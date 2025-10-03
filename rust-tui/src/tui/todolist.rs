@@ -85,6 +85,10 @@ impl Todolist {
     pub fn new(ditto: Ditto) -> Result<Self> {
         let (tasks_tx, tasks_rx) = watch::channel(Vec::new());
 
+        _ = ditto
+            .sync()
+            .register_subscription_v2("SELECT * FROM __revocation_list")?;
+
         // Register a subscription, which determines what data syncs to this peer
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
         let tasks_subscription = ditto
@@ -164,7 +168,7 @@ impl Todolist {
                     .border_type(BorderType::Rounded)
                     .title_top(Line::raw(" Tasks (j↓, k↑, ⏎ toggle done) ").left_aligned())
                     .title_top(sync_line.right_aligned())
-                    .title_bottom(" (c: create) (d: delete) (e: edit) (q: quit) "),
+                    .title_bottom(" (c: create) (d: delete) (e: edit) (r: revocations) (q: quit) "),
             );
         StatefulWidget::render(table, area, buf, &mut self.table_state);
     }
@@ -223,6 +227,10 @@ impl Todolist {
             }
             (TodoMode::Normal, key!(Char('s'))) => {
                 self.toggle_sync()?;
+            }
+            // Normal:r -> Query revocations
+            (TodoMode::Normal, key!(Char('r'))) => {
+                self.query_revocations().await?;
             }
             // Non-Normal:Esc -> Normal
             (TodoMode::CreateTask { .. } | TodoMode::EditTask { .. }, key!(Esc)) => {
@@ -290,6 +298,36 @@ impl Todolist {
         } else {
             self.ditto.start_sync()?;
         }
+        Ok(())
+    }
+
+    async fn query_revocations(&self) -> Result<()> {
+        // Query all revocations
+        let revocations = self.ditto
+            .store()
+            .collection("__revocation_list")
+            .unwrap()
+            .find_all()
+            .exec().map_err(|e| {
+                println!("Error querying revocations: {:?}", e);
+                e
+            })?;
+
+        println!("Revocations count: {}", revocations.len());
+        // tracing::info!("Revocations count: {}", revocations.len());
+
+        let result = self.ditto.store().execute_v2("SELECT * FROM __revocation_list").await.unwrap();
+        let json_item = result.get_item(0).unwrap().json_string();  
+        println!("First revocation (as JSON): {}", json_item);
+
+        // for doc in revocations {
+            // tracing::info!("Revocation: {:?}", doc);
+            // println!("Revocation: {:#?}", doc);
+            
+            // println!("Revocation ID: {}", doc.id());
+            // println!("Revocation value: {:#?}", doc.value());
+        // }
+
         Ok(())
     }
 
