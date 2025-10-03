@@ -182,7 +182,7 @@ jobs:
         with:
           username:  ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          build-name: 'Build #${{ github.run_number }}'
+          build-name: 'CI Build #${{ github.run_number }}'
           project-name: 'QuickStart .NET MAUI'
 
       - name: Upload Android APK to BrowserStack
@@ -259,7 +259,7 @@ jobs:
         with:
           username:  ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          build-name: 'Build #${{ github.run_number }}'
+          build-name: 'CI Build #${{ github.run_number }}'
           project-name: 'QuickStart .NET MAUI'
 
       - name: Upload iOS IPA to BrowserStack
