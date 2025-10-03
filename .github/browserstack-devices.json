@@ -1,61 +1,109 @@
 {
-  "android-espresso": [
-    "Google Pixel 8-14.0",
-    "Samsung Galaxy S23-13.0",
-    "Google Pixel 6-12.0",
-    "OnePlus 9-11.0"
-  ],
-  "android-espresso-compact": [
-    "Google Pixel 8-14.0",
-    "Samsung Galaxy S23-13.0",
-    "Google Pixel 6-12.0"
-  ],
-  "android-appium": [
-    "Google Pixel 7-13.0"
-  ],
-  "android-maestro": [
-    "Google Pixel 8-14.0",
-    "Samsung Galaxy S23-13.0"
-  ],
-  "ios-xcuitest": [
-    "iPhone 15-17.0",
-    "iPhone 14-16.0",
-    "iPhone 13-15.0"
-  ],
-  "ios-xcuitest-compact": [
-    "iPhone 15-17.0",
-    "iPhone 14-16.0"
-  ],
-  "ios-appium": [
-    "iPhone 15-17.0"
-  ],
-  "ios-maestro": [
-    "iPhone 15-17.0",
-    "iPhone 14-16.0"
-  ],
-  "web-selenium": [
-    {
-      "browser": "Chrome",
-      "browser_version": "120.0",
-      "os": "Windows",
-      "os_version": "11"
+  "android-cpp": {
+    "devices": ["Google Pixel 7-13.0"]
+  },
+  "android-java": {
+    "devices": [
+      "Google Pixel 8-14.0",
+      "Samsung Galaxy S23-13.0",
+      "Google Pixel 6-12.0",
+      "OnePlus 9-11.0"
+    ]
+  },
+  "android-kotlin": {
+    "devices": [
+      "Google Pixel 8-14.0",
+      "Samsung Galaxy S23-13.0",
+      "Google Pixel 6-12.0",
+      "OnePlus 9-11.0"
+    ]
+  },
+  "flutter": {
+    "android": {
+      "devices": [
+        "Google Pixel 7-13.0",
+        "Samsung Galaxy S23-13.0",
+        "Google Pixel 6-12.0"
+      ]
     },
-    {
-      "browser": "Firefox",
-      "browser_version": "121.0",
-      "os": "Windows",
-      "os_version": "11"
+    "ios": {
+      "devices": [
+        "iPhone 13-15",
+        "iPhone 14-16",
+        "iPhone 12-17"
+      ]
     }
-  ],
+  },
+  "kotlin-multiplatform": {
+    "android": {
+      "devices": [
+        "Google Pixel 8-14.0",
+        "Samsung Galaxy S23-13.0",
+        "Google Pixel 6-12.0"
+      ]
+    }
+  },
+  "react-native": {
+    "android": {
+      "devices": [
+        "Google Pixel 8-14.0",
+        "Samsung Galaxy S23-13.0"
+      ]
+    },
+    "ios": {
+      "devices": [
+        "iPhone 15-17.0",
+        "iPhone 14-16.0"
+      ]
+    }
+  },
+  "react-native-expo": {
+    "android": {
+      "devices": [
+        "Google Pixel 8-14.0",
+        "Samsung Galaxy S23-13.0"
+      ]
+    },
+    "ios": {
+      "devices": [
+        "iPhone 15-17.0",
+        "iPhone 14-16.0"
+      ]
+    }
+  },
+  "dotnet-maui": {
+    "android": {
+      "devices": [
+        "Google Pixel 8-14.0",
+        "Samsung Galaxy S23-13.0"
+      ]
+    },
+    "ios": {
+      "devices": [
+        "iPhone 15-17.0",
+        "iPhone 14-16.0"
+      ]
+    }
+  },
+  "javascript-web": {
+    "browsers": [
+      {
+        "browser": "Chrome",
+        "browser_version": "120.0",
+        "os": "Windows",
+        "os_version": "11"
+      },
+      {
+        "browser": "Firefox",
+        "browser_version": "121.0",
+        "os": "Windows",
+        "os_version": "11"
+      }
+    ]
+  },
   "_metadata": {
-    "description": "Centralized BrowserStack device configuration for CI/CD",
+    "description": "Centralized BrowserStack device configuration organized by SDK/app",
     "last_updated": "2025-10-03",
-    "notes": {
-      "android-espresso": "Full device matrix for comprehensive testing",
-      "android-espresso-compact": "Reduced set for faster feedback",
-      "android-maestro": "Devices for React Native Maestro testing",
-      "ios-maestro": "Devices for React Native Maestro testing",
-      "web-selenium": "Browsers for web application testing"
-    }
+    "structure": "Each SDK has its own configuration. Multi-platform SDKs have nested android/ios objects."
   }
 }
