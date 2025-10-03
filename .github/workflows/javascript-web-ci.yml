@@ -99,7 +99,7 @@ jobs:
           GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
         with:
           timeout_minutes: 15
-          max_attempts: 3
+          max_attempts: 5
           retry_wait_seconds: 120
           command: |
             # Install Python dependencies
