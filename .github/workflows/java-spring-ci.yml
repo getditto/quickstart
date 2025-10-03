@@ -140,7 +140,7 @@ jobs:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         build-name: 'Java Spring Selenium Tests #${{ github.run_number }}'
-        project-name: 'Ditto Java Spring Tasks'
+        project-name: 'QuickStart Java Spring'
 
     - name: BrowserStackLocal Setup
       uses: 'browserstack/github-actions/setup-local@master'

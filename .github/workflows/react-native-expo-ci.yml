@@ -253,7 +253,7 @@ jobs:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         build-name: 'Build #${{ github.run_number }}'
-        project-name: 'Ditto React Native Expo'
+        project-name: 'QuickStart React Native Expo'
 
     - name: Upload APK to BrowserStack
       id: upload-apk
@@ -410,7 +410,7 @@ jobs:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         build-name: 'Build #${{ github.run_number }}'
-        project-name: 'Ditto React Native Expo'
+        project-name: 'QuickStart React Native Expo'
 
     - name: Upload IPA to BrowserStack
       id: upload-ipa

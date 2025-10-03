@@ -166,7 +166,7 @@ jobs:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         build-name: 'Build #${{ github.run_number }}'
-        project-name: 'Ditto Android C++'
+        project-name: 'QuickStart Android C++'
 
     - name: Upload APK to BrowserStack
       id: upload

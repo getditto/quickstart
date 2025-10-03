@@ -84,7 +84,7 @@ jobs:
           username:  ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           build-name: 'Build #${{ github.run_number }}'
-          project-name: 'javascript-web-browserstack'
+          project-name: 'QuickStart JavaScript Web'
 
       - name: BrowserStackLocal Setup
         uses: 'browserstack/github-actions/setup-local@master'

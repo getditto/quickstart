@@ -331,7 +331,7 @@ jobs:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         build-name: 'Build #${{ github.run_number }}'
-        project-name: 'Ditto Kotlin Multiplatform'
+        project-name: 'QuickStart Kotlin Multiplatform'
 
     - name: Upload APKs to BrowserStack
       id: upload

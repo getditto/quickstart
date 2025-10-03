@@ -326,7 +326,7 @@ jobs:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         build-name: 'Build #${{ github.run_number }}'
-        project-name: 'Ditto Swift'
+        project-name: 'QuickStart Swift'
 
     - name: Upload App and Test Bundle to BrowserStack
       id: upload

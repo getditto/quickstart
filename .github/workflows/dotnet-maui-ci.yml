@@ -185,7 +185,7 @@ jobs:
           username:  ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           build-name: 'Build #${{ github.run_number }}'
-          project-name: 'Ditto .NET MAUI'
+          project-name: 'QuickStart .NET MAUI'
 
       - name: Upload Android APK to BrowserStack
         id: upload-android
@@ -262,7 +262,7 @@ jobs:
           username:  ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           build-name: 'Build #${{ github.run_number }}'
-          project-name: 'Ditto .NET MAUI'
+          project-name: 'QuickStart .NET MAUI'
 
       - name: Upload iOS IPA to BrowserStack
         id: upload-ios

@@ -434,7 +434,7 @@ jobs:
           username:  ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           build-name: 'Build #${{ github.run_number }}'
-          project-name: 'Ditto Flutter'
+          project-name: 'QuickStart Flutter'
 
       - name: Build Android debug APKs with seeded task title
         working-directory: flutter_app/android
@@ -682,7 +682,7 @@ jobs:
           username:  ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           build-name: 'Build #${{ github.run_number }}'
-          project-name: 'Ditto Flutter'
+          project-name: 'QuickStart Flutter'
 
       - name: Build iOS integration test package with seeded task title
         working-directory: flutter_app
