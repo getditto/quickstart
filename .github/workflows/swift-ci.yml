@@ -547,7 +547,7 @@ jobs:
         if [[ "${{ needs.browserstack.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🍎 [View Test Results](https://app-automate.browserstack.com/builds?project=Ditto+Swift&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🍎 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Swift&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
           echo "- iPhone 15 Pro (iOS 17)" >> $GITHUB_STEP_SUMMARY

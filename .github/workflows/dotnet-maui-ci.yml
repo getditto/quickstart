@@ -342,13 +342,13 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
 
             if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
-              echo "🤖 [Android Test Session](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }}&filter_duration=1&filter_test_status=ALL&filter_test_status=done&filter_test_status=error&filter_test_status=failed&filter_test_status=passed&filter_test_status=queued&filter_test_status=running&filter_test_status=skipped&filter_test_status=timedout&filter_test_status=undefined&filter_test_status=unknown&product=app-automate&sort_test_duration=-1&sort_test_status=-1&filter_device_name=Google+Pixel+7)" >> $GITHUB_STEP_SUMMARY
+              echo "🤖 [Android Test Session](https://app-automate.browserstack.com/builds?project=QuickStart+.NET+MAUI&build=CI+Build+%23${{ github.run_number }}&filter_duration=1&filter_test_status=ALL&filter_test_status=done&filter_test_status=error&filter_test_status=failed&filter_test_status=passed&filter_test_status=queued&filter_test_status=running&filter_test_status=skipped&filter_test_status=timedout&filter_test_status=undefined&filter_test_status=unknown&product=app-automate&sort_test_duration=-1&sort_test_status=-1&filter_device_name=Google+Pixel+7)" >> $GITHUB_STEP_SUMMARY
             fi
 
             if [[ "${{ needs.browserstack-ios.result }}" != "skipped" ]]; then
-              echo "🍎 [iOS Test Session](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }}&filter_duration=1&filter_test_status=ALL&filter_test_status=done&filter_test_status=error&filter_test_status=failed&filter_test_status=passed&filter_test_status=queued&filter_test_status=running&filter_test_status=skipped&filter_test_status=timedout&filter_test_status=undefined&filter_test_status=unknown&product=app-automate&sort_test_duration=-1&sort_test_status=-1&filter_device_name=iPhone+15)" >> $GITHUB_STEP_SUMMARY
+              echo "🍎 [iOS Test Session](https://app-automate.browserstack.com/builds?project=QuickStart+.NET+MAUI&build=CI+Build+%23${{ github.run_number }}&filter_duration=1&filter_test_status=ALL&filter_test_status=done&filter_test_status=error&filter_test_status=failed&filter_test_status=passed&filter_test_status=queued&filter_test_status=running&filter_test_status=skipped&filter_test_status=timedout&filter_test_status=undefined&filter_test_status=unknown&product=app-automate&sort_test_duration=-1&sort_test_status=-1&filter_device_name=iPhone+15)" >> $GITHUB_STEP_SUMMARY
             fi
 
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "[View All Sessions](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+            echo "[View All Sessions](https://app-automate.browserstack.com/builds?project=QuickStart+.NET+MAUI&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           fi

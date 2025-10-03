@@ -526,5 +526,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 [View Android Test Results](https://app-automate.browserstack.com/builds?project=Ditto+Kotlin+Multiplatform&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 [View Android Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Kotlin+Multiplatform&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
         fi
