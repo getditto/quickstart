@@ -248,7 +248,7 @@ jobs:
       with:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'Build #${{ github.run_number }}'
+        build-name: 'CI Build #${{ github.run_number }}'
         project-name: 'QuickStart React Native'
 
     - name: Upload APK to BrowserStack
@@ -310,7 +310,7 @@ jobs:
             "app": "${{ steps.upload-apk.outputs.app_url }}",
             "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
             "project": "QuickStart React Native",
-            "buildName": "Build #${{ github.run_number }}",
+            "buildName": "CI Build #${{ github.run_number }}",
             "buildTag": "${{ github.ref_name }}",
             "devices": [
               "Samsung Galaxy S22-12.0",
@@ -394,7 +394,7 @@ jobs:
       with:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'Build #${{ github.run_number }}'
+        build-name: 'CI Build #${{ github.run_number }}'
         project-name: 'QuickStart React Native'
 
     - name: Upload IPA to BrowserStack
@@ -455,7 +455,7 @@ jobs:
             "app": "${{ steps.upload-ipa.outputs.app_url }}",
             "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
             "project": "QuickStart React Native",
-            "buildName": "Build #${{ github.run_number }}",
+            "buildName": "CI Build #${{ github.run_number }}",
             "buildTag": "${{ github.ref_name }}",
             "devices": [
               "iPhone 15-17.0",

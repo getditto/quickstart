@@ -165,7 +165,7 @@ jobs:
       with:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'Build #${{ github.run_number }}'
+        build-name: 'CI Build #${{ github.run_number }}'
         project-name: 'QuickStart Android C++'
 
     - name: Upload APK to BrowserStack
@@ -234,7 +234,7 @@ jobs:
         if [[ "${{ needs.browserstack-appium-test.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Android+C%2B%2B&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Android+C%2B%2B&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
           echo "- Google Pixel 7 (Android 13.0)" >> $GITHUB_STEP_SUMMARY

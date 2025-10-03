@@ -325,7 +325,7 @@ jobs:
       with:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'Build #${{ github.run_number }}'
+        build-name: 'CI Build #${{ github.run_number }}'
         project-name: 'QuickStart Swift'
 
     - name: Upload App and Test Bundle to BrowserStack
@@ -431,8 +431,8 @@ jobs:
             \"app\": \"$APP_URL\",
             \"testSuite\": \"$TEST_URL\",
             \"devices\": [\"iPhone 15 Pro-17\"],
-            \"project\": \"Ditto Swift\",
-            \"buildName\": \"Build #${{ github.run_number }}\",
+            \"project\": \"QuickStart Swift\",
+            \"buildName\": \"CI Build #${{ github.run_number }}\",
             \"buildTag\": \"${{ github.ref_name }}\",
             \"deviceLogs\": true,
             \"video\": true,
@@ -547,7 +547,7 @@ jobs:
         if [[ "${{ needs.browserstack.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🍎 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Swift&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🍎 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Swift&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
           echo "- iPhone 15 Pro (iOS 17)" >> $GITHUB_STEP_SUMMARY

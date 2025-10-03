@@ -139,7 +139,7 @@ jobs:
       with:
         username:  ${{ secrets.BROWSERSTACK_USERNAME }}
         access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'Java Spring Selenium Tests #${{ github.run_number }}'
+        build-name: 'CI Build #${{ github.run_number }}'
         project-name: 'QuickStart Java Spring'
 
     - name: BrowserStackLocal Setup
@@ -276,7 +276,7 @@ jobs:
         if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=QuickStart+Java+Spring&build=Java+Spring+Selenium+Tests+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=QuickStart+Java+Spring&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browser:**" >> $GITHUB_STEP_SUMMARY
           echo "- Chrome Latest (Windows 11)" >> $GITHUB_STEP_SUMMARY
