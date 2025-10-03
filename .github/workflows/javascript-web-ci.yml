@@ -130,7 +130,7 @@ jobs:
           chmod 600 browserstack.yml
 
           nohup ./BrowserStackLocal --config-file ./browserstack.yml --daemon start &
-          sleep 10
+          sleep 20
           echo "BrowserStack Local tunnel established"
 
       - name: Make test script executable
