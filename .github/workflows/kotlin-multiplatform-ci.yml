@@ -2,12 +2,10 @@ name: Kotlin Multiplatform CI
 
 on:
   push:
-    branches: [ main ]
     paths:
       - 'kotlin-multiplatform/**'
       - '.github/workflows/kotlin-multiplatform-ci.yml'
   pull_request:
-    branches: [ main ]
     paths:
       - 'kotlin-multiplatform/**'
       - '.github/workflows/kotlin-multiplatform-ci.yml'

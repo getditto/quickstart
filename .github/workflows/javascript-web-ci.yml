@@ -2,19 +2,13 @@ name: javascript-web-browserstack
 
 on:
   pull_request:
-    branches:
-      - main
-      - 'sdk-*'
     paths:
       - 'javascript-web/**'
-      - '.github/workflows/javascript-web-browserstack.yml'
+      - '.github/workflows/javascript-web-ci.yml'
   push:
-    branches:
-      - main
-      - 'sdk-*'
     paths:
       - 'javascript-web/**'
-      - '.github/workflows/javascript-web-browserstack.yml'
+      - '.github/workflows/javascript-web-ci.yml'
   workflow_dispatch:
 
 concurrency:

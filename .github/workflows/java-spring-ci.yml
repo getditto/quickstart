@@ -7,12 +7,10 @@ name: Java Spring CI
 
 on:
   push:
-    branches: [ main ]
-    paths: 
+    paths:
       - 'java-spring/**'
       - '.github/workflows/java-spring-ci.yml'
   pull_request:
-    branches: [ main ]
     paths:
       - 'java-spring/**'
       - '.github/workflows/java-spring-ci.yml'

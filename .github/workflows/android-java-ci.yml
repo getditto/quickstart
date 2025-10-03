@@ -2,12 +2,10 @@ name: Android Java CI
 
 on:
   push:
-    branches: [ main ]
-    paths: 
+    paths:
       - 'android-java/**'
       - '.github/workflows/android-java-ci.yml'
   pull_request:
-    branches: [ main ]
     paths:
       - 'android-java/**'
       - '.github/workflows/android-java-ci.yml'
