@@ -124,6 +124,9 @@ jobs:
     needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
+    concurrency:
+      group: browserstack-tests
+      cancel-in-progress: false
     
     steps:
     - uses: actions/checkout@v4
@@ -299,7 +302,7 @@ jobs:
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [browserstack-test]
+    needs: [lint, build, browserstack-test]
     if: always()
 
     steps:
