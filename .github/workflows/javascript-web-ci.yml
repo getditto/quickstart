@@ -78,19 +78,19 @@ jobs:
           curl -f http://localhost:3000/ || (echo "Server failed to start" && cat server.log && exit 1)
           echo "Web server started on http://localhost:3000"
 
-      - name: Install BrowserStack Local binary
-        run: |
-          wget "https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip"
-          unzip BrowserStackLocal-linux-x64.zip
-          chmod +x BrowserStackLocal
+      - name: BrowserStack Env Setup
+        uses: 'browserstack/github-actions/setup-env@master'
+        with:
+          username:  ${{ secrets.BROWSERSTACK_USERNAME }}
+          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          build-name: 'Build #${{ github.run_number }}'
+          project-name: 'javascript-web-browserstack'
 
-          # Create config file with restricted permissions
-          echo "key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}" > browserstack.yml
-          chmod 600 browserstack.yml
-
-          nohup ./BrowserStackLocal --config-file ./browserstack.yml --daemon start &
-          sleep 10
-          echo "BrowserStack Local tunnel established"
+      - name: BrowserStackLocal Setup
+        uses: 'browserstack/github-actions/setup-local@master'
+        with:
+          local-testing: start
+          local-identifier: random
 
       - name: Make test script executable
         run: chmod +x .github/scripts/browserstack-test.py
@@ -109,9 +109,11 @@ jobs:
           # Run the test script
           python3 .github/scripts/browserstack-test.py
 
-      - name: Stop BrowserStack Local tunnel
+      - name: BrowserStackLocal Stop
         if: always()
-        run: ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
+        uses: 'browserstack/github-actions/setup-local@master'
+        with:
+          local-testing: stop
           
       - name: Generate test report
         if: always()
