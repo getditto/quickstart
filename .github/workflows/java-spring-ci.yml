@@ -134,39 +134,19 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: Install BrowserStack Local binary
-      run: |
-        curl -O "https://www.browserstack.com/browserstack-local/BrowserStackLocal-darwin-x64.zip"
-        unzip BrowserStackLocal-darwin-x64.zip
-        chmod +x BrowserStackLocal
+    - name: BrowserStack Env Setup
+      uses: 'browserstack/github-actions/setup-env@master'
+      with:
+        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
+        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        build-name: 'Java Spring Selenium Tests #${{ github.run_number }}'
+        project-name: 'Ditto Java Spring Tasks'
 
-    - name: Start BrowserStack Local tunnel 
-      run: |
-        echo "Starting BrowserStack Local tunnel..."
-        nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          --daemon-mode > browserstack-local.log 2>&1 &
-        
-        # Wait for tunnel to establish
-        TIMEOUT=60
-        ELAPSED=0
-        
-        while [ $ELAPSED -lt $TIMEOUT ]; do
-          if [ -f browserstack-local.log ] && grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
-            echo "BrowserStack Local tunnel established"
-            exit 0
-          fi
-          if [ -f browserstack-local.log ] && grep -q -i "error\|failed\|unable" browserstack-local.log; then
-            echo "BrowserStack Local tunnel failed:"
-            cat browserstack-local.log
-            exit 1
-          fi
-          sleep 5
-          ELAPSED=$((ELAPSED + 5))
-        done
-        
-        echo "BrowserStack Local tunnel timeout after ${TIMEOUT}s"
-        [ -f browserstack-local.log ] && cat browserstack-local.log
-        exit 1
+    - name: BrowserStackLocal Setup
+      uses: 'browserstack/github-actions/setup-local@master'
+      with:
+        local-testing: start
+        local-identifier: random
     
     - name: Create BrowserStack config
       working-directory: java-spring
@@ -241,9 +221,11 @@ jobs:
           rm app.pid
         fi
     
-    - name: Stop BrowserStack Local tunnel
+    - name: BrowserStackLocal Stop
       if: always()
-      run: pkill -f "BrowserStackLocal" || true
+      uses: 'browserstack/github-actions/setup-local@master'
+      with:
+        local-testing: stop
     
     - name: Upload test reports
       if: always()
@@ -258,9 +240,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: spring-boot-logs-${{ github.run_number }}
-        path: |
-          java-spring/app.log
-          browserstack-local.log
+        path: java-spring/app.log
         retention-days: 1
 
   summary:
