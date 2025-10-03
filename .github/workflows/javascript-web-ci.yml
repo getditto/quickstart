@@ -2,19 +2,13 @@ name: javascript-web-browserstack
 
 on:
   pull_request:
-    branches:
-      - main
-      - 'sdk-*'
     paths:
       - 'javascript-web/**'
-      - '.github/workflows/javascript-web-browserstack.yml'
+      - '.github/workflows/javascript-web-ci.yml'
   push:
-    branches:
-      - main
-      - 'sdk-*'
     paths:
       - 'javascript-web/**'
-      - '.github/workflows/javascript-web-browserstack.yml'
+      - '.github/workflows/javascript-web-ci.yml'
   workflow_dispatch:
 
 concurrency:
@@ -161,7 +155,7 @@ jobs:
           # BrowserStack info
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Dashboard](https://automate.browserstack.com/dashboard/v2)" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=QuickStart+JavaScript+Web&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browsers:**" >> $GITHUB_STEP_SUMMARY
           echo "- Chrome 120.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
