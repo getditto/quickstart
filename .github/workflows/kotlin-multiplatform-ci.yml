@@ -325,13 +325,19 @@ jobs:
         name: android-kmp-apks-${{ github.run_number }}
         path: kotlin-multiplatform/composeApp/build/outputs/apk/
 
+    - name: BrowserStack Env Setup
+      uses: 'browserstack/github-actions/setup-env@master'
+      with:
+        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
+        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        build-name: 'Build #${{ github.run_number }}'
+        project-name: 'Ditto Kotlin Multiplatform'
+
     - name: Upload APKs to BrowserStack
       id: upload
       run: |
-        CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-
         # 1. Upload AUT (composeApp-debug.apk)
-        APP_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
+        APP_UPLOAD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
           -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/debug/composeApp-debug.apk" \
           -F "custom_id=ditto-kotlin-multiplatform-app")
@@ -339,7 +345,7 @@ jobs:
         echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
 
         # 2. Upload Espresso test-suite (composeApp-debug-androidTest.apk)
-        TEST_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
+        TEST_UPLOAD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
           -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/androidTest/debug/composeApp-debug-androidTest.apk" \
           -F "custom_id=ditto-kotlin-multiplatform-test")
@@ -369,7 +375,7 @@ jobs:
         # Create test execution request with instrumentationOptions
         TITLE="${{ steps.seed_task.outputs.document-title }}"
 
-        BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+        BUILD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
           -H "Content-Type: application/json" \
           -d "{
@@ -424,7 +430,7 @@ jobs:
         ELAPSED=0
         
         while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          BUILD_STATUS_RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
           
           BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
@@ -448,9 +454,9 @@ jobs:
           sleep $CHECK_INTERVAL
           ELAPSED=$((ELAPSED + CHECK_INTERVAL))
         done
-        
+
         # Get final results
-        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+        FINAL_RESULT=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
         
         echo "Final build result:"

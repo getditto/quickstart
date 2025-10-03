@@ -320,31 +320,39 @@ jobs:
         echo "GITHUB_TEST_DOC_ID=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
         echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
 
+    - name: BrowserStack Env Setup
+      uses: 'browserstack/github-actions/setup-env@master'
+      with:
+        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
+        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        build-name: 'Build #${{ github.run_number }}'
+        project-name: 'Ditto Swift'
+
     - name: Upload App and Test Bundle to BrowserStack
       id: upload
       run: |
         echo "📤 Uploading iOS app and XCUITest bundle to BrowserStack..."
-        
+
         IPA_FILE="$(pwd)/Tasks-unsigned.ipa"
         TEST_BUNDLE="${{ steps.build_test_bundle.outputs.test_bundle_path }}"
-        
+
         echo "📱 App file: $IPA_FILE"
         echo "🧪 Test bundle: $TEST_BUNDLE"
-        
+
         # Validate both files exist
         if [ ! -f "$IPA_FILE" ]; then
           echo "❌ IPA file not found: $IPA_FILE"
           exit 1
         fi
-        
+
         if [ ! -f "$TEST_BUNDLE" ]; then
           echo "❌ Test bundle not found: $TEST_BUNDLE"
           exit 1
         fi
-        
+
         # Upload app to BrowserStack XCUITest v2 API
         echo "📱 Uploading app..."
-        APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+        APP_UPLOAD_RESPONSE=$(curl --fail --silent --show-error -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/app" \
           -F "file=@$IPA_FILE" \
           -F "custom_id=ditto-swift-app")
@@ -362,9 +370,9 @@ jobs:
         echo "🧪 Uploading test bundle..."
         echo "Debug: Test bundle path: $TEST_BUNDLE"
         ls -la "$TEST_BUNDLE" || echo "Test bundle file not found!"
-        
+
         # Upload with better error handling to see 422 details
-        TEST_UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+        TEST_UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/test-suite" \
           -F "file=@$TEST_BUNDLE")
 
@@ -414,9 +422,9 @@ jobs:
           echo "build_id=" >> $GITHUB_OUTPUT
           exit 0
         fi
-        
+
         # Create XCUITest execution request using v2 API with setEnvVariables
-        BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+        BUILD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
           -H "Content-Type: application/json" \
           -d "{
@@ -465,7 +473,7 @@ jobs:
         ELAPSED=0
         
         while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          BUILD_STATUS_RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
           
           BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
@@ -487,9 +495,9 @@ jobs:
           sleep $CHECK_INTERVAL
           ELAPSED=$((ELAPSED + CHECK_INTERVAL))
         done
-        
+
         # Get final results
-        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+        FINAL_RESULT=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
           "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
         
         echo "Final build result:"

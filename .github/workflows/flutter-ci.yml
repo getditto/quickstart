@@ -428,6 +428,14 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
+      - name: BrowserStack Env Setup
+        uses: 'browserstack/github-actions/setup-env@master'
+        with:
+          username:  ${{ secrets.BROWSERSTACK_USERNAME }}
+          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          build-name: 'Build #${{ github.run_number }}'
+          project-name: 'Ditto Flutter'
+
       - name: Build Android debug APKs with seeded task title
         working-directory: flutter_app/android
         run: |
@@ -449,7 +457,7 @@ jobs:
         id: upload
         run: |
           echo "📤 Uploading app APK to BrowserStack..."
-          APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          APP_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app" \
             -F "file=@flutter_app/build/app/outputs/apk/debug/app-debug.apk")
 
@@ -468,7 +476,7 @@ jobs:
         id: upload_test
         run: |
           echo "📤 Uploading test suite APK to BrowserStack..."
-          TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          TEST_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/test-suite" \
             -F "file=@flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk")
 
@@ -504,7 +512,7 @@ jobs:
           fi
 
           # Create test execution request
-          BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          BUILD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build" \
             -H "Content-Type: application/json" \
             -d "{
@@ -553,7 +561,7 @@ jobs:
 
           echo "⏳ Waiting for test execution to complete..."
           while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-            RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
               "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds/$BUILD_ID")
 
             STATUS=$(echo "$RESPONSE" | jq -r .status)
@@ -578,7 +586,7 @@ jobs:
           done
 
           # Get final results
-          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          FINAL_RESULT=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds/$BUILD_ID")
 
           echo "📋 Final results:"
@@ -668,6 +676,14 @@ jobs:
         working-directory: flutter_app/ios
         run: pod install || pod install --repo-update
 
+      - name: BrowserStack Env Setup
+        uses: 'browserstack/github-actions/setup-env@master'
+        with:
+          username:  ${{ secrets.BROWSERSTACK_USERNAME }}
+          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          build-name: 'Build #${{ github.run_number }}'
+          project-name: 'Ditto Flutter'
+
       - name: Build iOS integration test package with seeded task title
         working-directory: flutter_app
         run: |
@@ -708,7 +724,7 @@ jobs:
         id: upload-app
         run: |
           echo "📤 Uploading iOS app to BrowserStack..."
-          APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          APP_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
             -F "file=@ios-artifacts/Runner-unsigned.ipa")
 
@@ -721,7 +737,7 @@ jobs:
         id: upload
         run: |
           echo "📤 Uploading iOS test package to BrowserStack..."
-          RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/test-package" \
             -F "file=@flutter_app/build/ios_integration/Build/Products/ios_test_package.zip")
 
@@ -751,7 +767,7 @@ jobs:
           # Create test execution request
           # NOTE: Flutter testing framework requires iOS 15+ due to _backtrace_async symbol
           # See: https://developer.apple.com/documentation/os/backtrace_async
-          BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          BUILD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build" \
             -H "Content-Type: application/json" \
             -d "{
@@ -798,7 +814,7 @@ jobs:
 
           echo "⏳ Waiting for test execution to complete..."
           while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-            RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
               "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds/$BUILD_ID")
 
             STATUS=$(echo "$RESPONSE" | jq -r .status)
@@ -823,7 +839,7 @@ jobs:
           done
 
           # Get final results
-          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+          FINAL_RESULT=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
             "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds/$BUILD_ID")
 
           echo "📋 Final results:"
