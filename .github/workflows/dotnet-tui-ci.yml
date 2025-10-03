@@ -1,11 +1,9 @@
 name: .NET TUI CI
 on:
   push:
-    branches: [main]
     paths:
       - 'dotnet-tui/**'
   pull_request:
-    branches: [main]
     paths:
       - 'dotnet-tui/**'
   workflow_dispatch:
