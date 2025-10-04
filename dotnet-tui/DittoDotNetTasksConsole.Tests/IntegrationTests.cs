@@ -14,8 +14,8 @@ public class IntegrationTests
     public async Task TasksPeer_CanSyncAndRetrieveTasks()
     {
         var env = LoadEnvVariables();
-        var taskToFind = Environment.GetEnvironmentVariable("TASK_TO_FIND")
-            ?? throw new InvalidOperationException("TASK_TO_FIND environment variable is required");
+        var taskToFind = Environment.GetEnvironmentVariable("GITHUB_TEST_DOC_TITLE")
+            ?? throw new InvalidOperationException("GITHUB_TEST_DOC_TITLE environment variable is required");
 
         using var peer = await TasksPeer.Create(
             env["DITTO_APP_ID"],
