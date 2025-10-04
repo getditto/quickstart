@@ -92,7 +92,7 @@ jobs:
           path: java-spring/build/libs/*.jar
           retention-days: 1
 
-  browserstack-test:
+  browserstack:
     name: BrowserStack Device Testing (macos-latest)
     runs-on: macos-latest
     needs: [build]
@@ -132,39 +132,19 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: Install BrowserStack Local binary
-      run: |
-        curl -O "https://www.browserstack.com/browserstack-local/BrowserStackLocal-darwin-x64.zip"
-        unzip BrowserStackLocal-darwin-x64.zip
-        chmod +x BrowserStackLocal
+    - name: BrowserStack Env Setup
+      uses: 'browserstack/github-actions/setup-env@master'
+      with:
+        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
+        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        build-name: 'CI Build #${{ github.run_number }}'
+        project-name: 'QuickStart Java Spring'
 
-    - name: Start BrowserStack Local tunnel 
-      run: |
-        echo "Starting BrowserStack Local tunnel..."
-        nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          --daemon-mode > browserstack-local.log 2>&1 &
-        
-        # Wait for tunnel to establish
-        TIMEOUT=60
-        ELAPSED=0
-        
-        while [ $ELAPSED -lt $TIMEOUT ]; do
-          if [ -f browserstack-local.log ] && grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
-            echo "BrowserStack Local tunnel established"
-            exit 0
-          fi
-          if [ -f browserstack-local.log ] && grep -q -i "error\|failed\|unable" browserstack-local.log; then
-            echo "BrowserStack Local tunnel failed:"
-            cat browserstack-local.log
-            exit 1
-          fi
-          sleep 5
-          ELAPSED=$((ELAPSED + 5))
-        done
-        
-        echo "BrowserStack Local tunnel timeout after ${TIMEOUT}s"
-        [ -f browserstack-local.log ] && cat browserstack-local.log
-        exit 1
+    - name: BrowserStackLocal Setup
+      uses: 'browserstack/github-actions/setup-local@master'
+      with:
+        local-testing: start
+        local-identifier: random
     
     - name: Create BrowserStack config
       working-directory: java-spring
@@ -172,8 +152,8 @@ jobs:
         cat > browserstack.yml << EOF
         userName: ${{ secrets.BROWSERSTACK_USERNAME }}
         accessKey: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        projectName: QuickStart Java Spring
-        buildName: CI Build #${{ github.run_number }}
+        projectName: Ditto Java Spring Tasks
+        buildName: Java Spring Selenium Tests #${{ github.run_number }}
         platforms:
           - os: Windows
             osVersion: 11
@@ -210,25 +190,30 @@ jobs:
         done
     
     - name: Execute Selenium tests on BrowserStack cloud browsers
-      working-directory: java-spring
+      uses: nick-fields/retry@v3
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
         TEST_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
         GITHUB_TEST_DOC_ID: ${{ steps.seed_task.outputs.document-title }}
-      run: |
-        TITLE="${{ steps.seed_task.outputs.document-title }}"
-        
-        # Run only the BrowserStack test method, not all test methods
-        ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
-          -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
-          -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
-          -DBROWSERSTACK_LOCAL=true \
-          -DTEST_TASK_TITLE="$TITLE" \
-          -DGITHUB_TEST_DOC_ID="$TITLE" \
-          --info
+      with:
+        timeout_minutes: 15
+        max_attempts: 3
+        retry_wait_seconds: 120
+        command: |
+          cd java-spring
+          TITLE="${{ steps.seed_task.outputs.document-title }}"
+
+          # Run only the BrowserStack test method, not all test methods
+          ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
+            -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
+            -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
+            -DBROWSERSTACK_LOCAL=true \
+            -DTEST_TASK_TITLE="$TITLE" \
+            -DGITHUB_TEST_DOC_ID="$TITLE" \
+            --info
     
     - name: Stop Spring Boot app
       if: always()
@@ -239,9 +224,11 @@ jobs:
           rm app.pid
         fi
     
-    - name: Stop BrowserStack Local tunnel
+    - name: BrowserStackLocal Stop
       if: always()
-      run: pkill -f "BrowserStackLocal" || true
+      uses: 'browserstack/github-actions/setup-local@master'
+      with:
+        local-testing: stop
     
     - name: Upload test reports
       if: always()
@@ -256,15 +243,13 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: spring-boot-logs-${{ github.run_number }}
-        path: |
-          java-spring/app.log
-          browserstack-local.log
+        path: java-spring/app.log
         retention-days: 1
 
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [browserstack-test]
+    needs: [browserstack]
     if: always()
 
     steps:
@@ -276,7 +261,7 @@ jobs:
         # Overall status
         if [[ "${{ needs.lint.result }}" == "success" && \
               "${{ needs.build.result }}" == "success" && \
-              "${{ needs.browserstack-test.result }}" == "success" ]]; then
+              "${{ needs.browserstack.result }}" == "success" ]]; then
           echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
         else
           echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
@@ -287,11 +272,11 @@ jobs:
         echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
         echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
         echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| BrowserStack Tests | ${{ needs.browserstack-test.result == 'success' && '✅ Passed' || (needs.browserstack-test.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| BrowserStack Tests | ${{ needs.browserstack.result == 'success' && '✅ Passed' || (needs.browserstack.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
         # BrowserStack link
-        if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]]; then
+        if [[ "${{ needs.browserstack.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=QuickStart+Java+Spring&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
