@@ -3,7 +3,7 @@ tags:
   - "smoke"
 ---
 # Simple test: Launch app and verify specific task exists using testID
-# Usage: GITHUB_TEST_DOC_TITLE="Basic Test Task" maestro test 01-app-launch-and-seeded-tasks-ios.yaml
+# Usage: MAESTRO_TASK_TO_FIND="Basic Test Task" maestro test 01-app-launch-and-seeded-tasks-ios.yaml
 
 - launchApp:
     appId: org.reactjs.native.example.DittoReactNativeSampleApp
@@ -28,7 +28,7 @@ tags:
 # Scroll until the task is visible using testID
 - scrollUntilVisible:
     element:
-      id: "${GITHUB_TEST_DOC_TITLE}"
+      id: "${MAESTRO_TASK_TO_FIND}"
     direction: DOWN
     timeout: 30000
     speed: 40
@@ -36,4 +36,4 @@ tags:
 
 # Final assertion - task must be visible using id selector
 - assertVisible:
-    id: "${GITHUB_TEST_DOC_TITLE}"
+    id: "${MAESTRO_TASK_TO_FIND}"
