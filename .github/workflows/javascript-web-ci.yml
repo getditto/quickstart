@@ -79,7 +79,7 @@ jobs:
           path: javascript-web/dist/
           retention-days: 1
 
-  browserstack-test:
+  browserstack-web:
     name: BrowserStack Tests
     runs-on: ubuntu-latest
     needs: build
@@ -137,7 +137,7 @@ jobs:
           echo "BrowserStack Local tunnel established"
 
       - name: Make test script executable
-        run: chmod +x .github/scripts/browserstack-test.py
+        run: chmod +x .github/scripts/browserstack-web.py
 
       - name: Execute tests on BrowserStack
         env:
@@ -151,7 +151,7 @@ jobs:
           pip3 install selenium
 
           # Run the test script
-          python3 .github/scripts/browserstack-test.py
+          python3 .github/scripts/browserstack-web.py
 
       - name: Stop BrowserStack Local tunnel
         if: always()
@@ -182,7 +182,7 @@ jobs:
           # Overall status
           if [[ "${{ needs.lint.result }}" == "success" && \
                 "${{ needs.build.result }}" == "success" && \
-                "${{ needs.browserstack-test.result }}" == "success" ]]; then
+                "${{ needs.browserstack-web.result }}" == "success" ]]; then
             echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
@@ -193,7 +193,7 @@ jobs:
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| BrowserStack Tests | ${{ needs.browserstack-test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack Tests | ${{ needs.browserstack-web.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # BrowserStack info
