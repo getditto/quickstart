@@ -131,7 +131,7 @@ jobs:
           echo "BrowserStack Local tunnel established"
 
       - name: Make test script executable
-        run: chmod +x .github/scripts/browserstack-web.py
+        run: chmod +x .github/scripts/browserstack-test.py
 
       - name: Execute tests on BrowserStack
         uses: nick-fields/retry@v3
@@ -149,7 +149,7 @@ jobs:
             pip3 install selenium
 
             # Run the test script
-            python3 .github/scripts/browserstack-web.py
+            python3 .github/scripts/browserstack-test.py
 
       - name: Stop BrowserStack Local tunnel
         if: always()
