@@ -177,13 +177,6 @@ jobs:
           name: android-apk
           path: ./android-artifact
 
-      - name: BrowserStack Env Setup
-        uses: 'browserstack/github-actions/setup-env@master'
-        with:
-          username:  ${{ secrets.BROWSERSTACK_USERNAME }}
-          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          build-name: 'CI Build #${{ github.run_number }}'
-          project-name: 'QuickStart .NET MAUI'
 
       - name: Upload Android APK to BrowserStack
         id: upload-android
@@ -197,7 +190,7 @@ jobs:
             exit 1
           fi
 
-          UPLOAD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
             -F "file=@$APK_PATH" \
             -F "custom_id=ditto-dotnet-maui-android")
@@ -260,13 +253,6 @@ jobs:
           name: ios-ipa
           path: ./ios-artifact
 
-      - name: BrowserStack Env Setup
-        uses: 'browserstack/github-actions/setup-env@master'
-        with:
-          username:  ${{ secrets.BROWSERSTACK_USERNAME }}
-          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          build-name: 'CI Build #${{ github.run_number }}'
-          project-name: 'QuickStart .NET MAUI'
 
       - name: Upload iOS IPA to BrowserStack
         id: upload-ios
@@ -280,7 +266,7 @@ jobs:
             exit 1
           fi
 
-          UPLOAD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
             -F "file=@$IPA_PATH" \
             -F "custom_id=ditto-dotnet-maui-ios")

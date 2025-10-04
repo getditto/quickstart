@@ -237,18 +237,11 @@ jobs:
         name: android-apk-${{ github.run_number }}
         path: ./artifacts/
 
-    - name: BrowserStack Env Setup
-      uses: 'browserstack/github-actions/setup-env@master'
-      with:
-        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
-        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'CI Build #${{ github.run_number }}'
-        project-name: 'QuickStart React Native'
 
     - name: Upload APK to BrowserStack
       id: upload-apk
       run: |
-        response=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
           -F "file=@./artifacts/app-release.apk" \
           -F "custom_id=ReactNative-Android-${{ github.run_id }}")
@@ -302,7 +295,7 @@ jobs:
         max_attempts: 5
         retry_wait_seconds: 300
         command: |
-          response=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/android/build" \
             -H "Content-Type: application/json" \
             -d '{
@@ -332,7 +325,7 @@ jobs:
 
         # Wait for tests to complete (max 20 minutes)
         for i in {1..120}; do
-          response=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
           status=$(echo $response | jq -r '.status')
@@ -355,7 +348,7 @@ jobs:
             echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
               if [ -n "$sid" ]; then
                 echo "Session $sid details:"
-                curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+                curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
                   "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id/sessions/$sid" | jq '.'
               fi
             done
@@ -388,18 +381,11 @@ jobs:
         name: ios-ipa-${{ github.run_number }}
         path: ./artifacts/
 
-    - name: BrowserStack Env Setup
-      uses: 'browserstack/github-actions/setup-env@master'
-      with:
-        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
-        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'CI Build #${{ github.run_number }}'
-        project-name: 'QuickStart React Native'
 
     - name: Upload IPA to BrowserStack
       id: upload-ipa
       run: |
-        response=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
           -F "file=@./artifacts/DittoReactNativeSampleApp-unsigned.ipa" \
           -F "custom_id=ReactNative-iOS-${{ github.run_id }}")
@@ -436,7 +422,7 @@ jobs:
     - name: Upload Maestro test suite to BrowserStack
       id: upload-tests
       run: |
-        response=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+        response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
           -F "file=@react-native/maestro-tests.zip" \
           -F "custom_id=ReactNative-iOS-Tests-${{ github.run_id }}")
@@ -452,7 +438,7 @@ jobs:
         max_attempts: 5
         retry_wait_seconds: 300
         command: |
-          response=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/ios/build" \
             -H "Content-Type: application/json" \
             -d '{
@@ -485,7 +471,7 @@ jobs:
 
         # Wait for tests to complete (max 20 minutes)
         for i in {1..120}; do
-          response=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
           status=$(echo $response | jq -r '.status')
@@ -508,7 +494,7 @@ jobs:
             echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
               if [ -n "$sid" ]; then
                 echo "Session $sid details:"
-                curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+                curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
                   "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id/sessions/$sid" | jq '.'
               fi
             done

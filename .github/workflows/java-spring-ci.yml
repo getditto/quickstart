@@ -132,19 +132,7 @@ jobs:
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
     
-    - name: BrowserStack Env Setup
-      uses: 'browserstack/github-actions/setup-env@master'
-      with:
-        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
-        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'CI Build #${{ github.run_number }}'
-        project-name: 'QuickStart Java Spring'
 
-    - name: BrowserStackLocal Setup
-      uses: 'browserstack/github-actions/setup-local@master'
-      with:
-        local-testing: start
-        local-identifier: random
     
     - name: Create BrowserStack config
       working-directory: java-spring
@@ -224,11 +212,6 @@ jobs:
           rm app.pid
         fi
     
-    - name: BrowserStackLocal Stop
-      if: always()
-      uses: 'browserstack/github-actions/setup-local@master'
-      with:
-        local-testing: stop
     
     - name: Upload test reports
       if: always()

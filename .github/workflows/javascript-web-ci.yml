@@ -72,19 +72,7 @@ jobs:
           curl -f http://localhost:3000/ || (echo "Server failed to start" && cat server.log && exit 1)
           echo "Web server started on http://localhost:3000"
 
-      - name: BrowserStack Env Setup
-        uses: 'browserstack/github-actions/setup-env@master'
-        with:
-          username:  ${{ secrets.BROWSERSTACK_USERNAME }}
-          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          build-name: 'CI Build #${{ github.run_number }}'
-          project-name: 'QuickStart JavaScript Web'
 
-      - name: BrowserStackLocal Setup
-        uses: 'browserstack/github-actions/setup-local@master'
-        with:
-          local-testing: start
-          local-identifier: random
 
       - name: Make test script executable
         run: chmod +x .github/scripts/browserstack-test.py
@@ -108,11 +96,6 @@ jobs:
             # Run the test script
             python3 .github/scripts/browserstack-test.py
 
-      - name: BrowserStackLocal Stop
-        if: always()
-        uses: 'browserstack/github-actions/setup-local@master'
-        with:
-          local-testing: stop
           
       - name: Generate test report
         if: always()

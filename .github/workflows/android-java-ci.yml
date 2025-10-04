@@ -127,22 +127,15 @@ jobs:
         name: android-apks-${{ github.run_number }}
         path: android-java/app/build/outputs/apk/
 
-    - name: BrowserStack Env Setup
-      uses: 'browserstack/github-actions/setup-env@master'
-      with:
-        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
-        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'CI Build #${{ github.run_number }}'
-        project-name: 'QuickStart Android Java'
 
     - name: Upload APKs to BrowserStack
       id: upload
       run: |
-        CREDS="$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY"
+        CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         
         # Upload app APK
         echo "📱 Uploading app APK to BrowserStack..."
-        APP_RESPONSE=$(curl -u "$CREDS" \
+        APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
           -F "file=@android-java/app/build/outputs/apk/debug/app-debug.apk" \
           -F "custom_id=ditto-android-java-app")
@@ -159,7 +152,7 @@ jobs:
         
         # Upload test APK  
         echo "🧪 Uploading test APK to BrowserStack..."
-        TEST_RESPONSE=$(curl -u "$CREDS" \
+        TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
           -F "file=@android-java/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
           -F "custom_id=ditto-android-java-test")
@@ -202,7 +195,7 @@ jobs:
           # Create test execution request
           TITLE="${{ steps.seed_task.outputs.document-title }}"
 
-          BUILD_RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          BUILD_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST 'https://api-cloud.browserstack.com/app-automate/espresso/v2/build' \
             -H 'Content-Type: application/json' \
             -d '{
@@ -253,7 +246,7 @@ jobs:
         
         echo "⏳ Waiting for test execution to complete..."
         while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-          RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
           
           STATUS=$(echo "$RESPONSE" | jq -r .status)
@@ -278,7 +271,7 @@ jobs:
         done
         
         # Get final results
-        FINAL_RESULT=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
         
         echo "📋 Final results:"

@@ -318,13 +318,6 @@ jobs:
         echo "GITHUB_TEST_DOC_ID=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
         echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
 
-    - name: BrowserStack Env Setup
-      uses: 'browserstack/github-actions/setup-env@master'
-      with:
-        username:  ${{ secrets.BROWSERSTACK_USERNAME }}
-        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        build-name: 'CI Build #${{ github.run_number }}'
-        project-name: 'QuickStart Swift'
 
     - name: Upload App and Test Bundle to BrowserStack
       id: upload
@@ -427,7 +420,7 @@ jobs:
           fi
 
           # Create XCUITest execution request using v2 API with setEnvVariables
-          BUILD_RESPONSE=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/build" \
             -H "Content-Type: application/json" \
             -d "{
@@ -476,7 +469,7 @@ jobs:
         ELAPSED=0
         
         while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-          BUILD_STATUS_RESPONSE=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
           
           BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
@@ -500,7 +493,7 @@ jobs:
         done
 
         # Get final results
-        FINAL_RESULT=$(curl -s -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
+        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
         
         echo "Final build result:"
