@@ -143,8 +143,9 @@ jobs:
           GITHUB_TEST_DOC_ID: ${{ steps.seed_document.outputs.document-title }}
         with:
           max_attempts: 5
-          retry_wait_seconds: 300
-          command: |
+        timeout_minutes: 60
+        retry_wait_seconds: 300
+        command: |
             # Install Python dependencies
             pip3 install selenium
 

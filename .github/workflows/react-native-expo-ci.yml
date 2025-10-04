@@ -296,6 +296,7 @@ jobs:
       uses: nick-fields/retry@v3
       with:
         max_attempts: 5
+        timeout_minutes: 60
         retry_wait_seconds: 300
         command: |
           # Load devices from centralized config
@@ -446,6 +447,7 @@ jobs:
       uses: nick-fields/retry@v3
       with:
         max_attempts: 5
+        timeout_minutes: 60
         retry_wait_seconds: 300
         command: |
           # Load devices from centralized config

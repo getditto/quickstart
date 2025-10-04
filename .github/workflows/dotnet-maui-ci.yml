@@ -206,8 +206,9 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-          retry_wait_seconds: 300
-          command: |
+        timeout_minutes: 60
+        retry_wait_seconds: 300
+        command: |
             cd dotnet-maui/UITests.Android
             dotnet restore
             BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
@@ -279,8 +280,9 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-          retry_wait_seconds: 300
-          command: |
+        timeout_minutes: 60
+        retry_wait_seconds: 300
+        command: |
             cd dotnet-maui/UITests.iOS
             dotnet restore
             BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
