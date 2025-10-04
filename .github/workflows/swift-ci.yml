@@ -315,7 +315,6 @@ jobs:
     - name: Set environment variables for tests
       run: |
         echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
-        echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
 
     - name: Upload App and Test Bundle to BrowserStack
       id: upload

@@ -212,7 +212,6 @@ jobs:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
-        TEST_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
         GITHUB_TEST_DOC_TITLE: ${{ steps.seed_task.outputs.document-title }}
       with:
         max_attempts: 5
@@ -228,7 +227,6 @@ jobs:
             -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
             -DBROWSERSTACK_LOCAL=true \
-            -DTEST_TASK_TITLE="$TITLE" \
             -DGITHUB_TEST_DOC_TITLE="$TITLE" \
             --info
     
