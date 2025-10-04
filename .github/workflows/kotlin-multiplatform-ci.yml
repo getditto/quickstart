@@ -11,9 +11,6 @@ on:
       - '.github/workflows/kotlin-multiplatform-ci.yml'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   lint:
@@ -305,9 +302,6 @@ jobs:
     needs: [build-android]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
-    concurrency:
-      group: browserstack-tests
-      cancel-in-progress: false
 
     steps:
     - uses: actions/checkout@v4

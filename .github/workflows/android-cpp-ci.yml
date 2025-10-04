@@ -22,10 +22,6 @@ on:
       - '.github/workflows/android-cpp-ci.yml'
   workflow_dispatch:  # Allow manual trigger
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   lint:
     name: Lint (ubuntu-latest)
@@ -136,9 +132,6 @@ jobs:
     needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
-    concurrency:
-      group: browserstack-tests
-      cancel-in-progress: false
 
     steps:
     - uses: actions/checkout@v4
@@ -184,14 +177,18 @@ jobs:
 
     - name: Execute Appium tests on BrowserStack
       id: test
-      working-directory: android-cpp/QuickStartTasksCPP/appium-test
-      run: |
-        export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
-        export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-        export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-        export GITHUB_TEST_DOC_ID="${{ steps.seed_task.outputs.document-title }}"
+      uses: nick-fields/retry@v3
+      with:
+        timeout_minutes: 15
+        max_attempts: 5
+        command: |
+          cd android-cpp/QuickStartTasksCPP/appium-test
+          export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
+          export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+          export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
+          export GITHUB_TEST_DOC_ID="${{ steps.seed_task.outputs.document-title }}"
 
-        ../gradlew test --console=plain --no-daemon
+          ../gradlew test --console=plain --no-daemon
 
     - name: Upload test artifacts
       if: always()

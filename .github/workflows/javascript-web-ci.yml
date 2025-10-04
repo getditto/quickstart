@@ -11,9 +11,6 @@ on:
       - '.github/workflows/javascript-web-ci.yml'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   lint:
@@ -84,9 +81,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 30
-    concurrency:
-      group: browserstack-tests
-      cancel-in-progress: false
 
     steps:
       - name: Checkout code

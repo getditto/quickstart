@@ -13,9 +13,6 @@ on:
       - '.github/workflows/swift-ci.yml'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   lint:

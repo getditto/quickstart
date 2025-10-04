@@ -11,9 +11,6 @@ on:
       - '.github/workflows/flutter-ci.yml'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   lint:
@@ -377,9 +374,6 @@ jobs:
     needs: [build-android]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
-    concurrency:
-      group: browserstack-tests
-      cancel-in-progress: false
     outputs:
       build_id: ${{ steps.test.outputs.build_id }}
 
@@ -629,9 +623,6 @@ jobs:
     needs: [build-ios]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
-    concurrency:
-      group: browserstack-tests
-      cancel-in-progress: false
 
     steps:
       - name: Checkout code
