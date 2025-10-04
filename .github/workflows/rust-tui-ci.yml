@@ -1,11 +1,9 @@
 name: Rust TUI CI
 on:
   push:
-    branches: [main]
     paths:
       - 'rust-tui/**'
   pull_request:
-    branches: [main]
     paths:
       - 'rust-tui/**'
   workflow_dispatch:

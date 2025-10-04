@@ -1,11 +1,9 @@
 name: .NET WinForms CI
 on:
   push:
-    branches: [main]
     paths:
       - 'dotnet-winforms/**'
   pull_request:
-    branches: [main]
     paths:
       - 'dotnet-winforms/**'
   workflow_dispatch:

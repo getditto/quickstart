@@ -1,11 +1,9 @@
 name: C++ TUI CI
 on:
   push:
-    branches: [main]
     paths:
       - 'cpp-tui/**'
   pull_request:
-    branches: [main]
     paths:
       - 'cpp-tui/**'
   workflow_dispatch:

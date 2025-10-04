@@ -1,11 +1,9 @@
 name: JavaScript TUI CI
 on:
   push:
-    branches: [main]
     paths:
       - 'javascript-tui/**'
   pull_request:
-    branches: [main]
     paths:
       - 'javascript-tui/**'
   workflow_dispatch:

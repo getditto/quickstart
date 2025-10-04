@@ -2,12 +2,10 @@ name: .NET MAUI CI
 
 on:
   push:
-    branches: [main]
     paths:
       - 'dotnet-maui/**'
       - '.github/workflows/dotnet-maui-ci.yml'
   pull_request:
-    branches: [main]
     paths:
       - 'dotnet-maui/**'
       - '.github/workflows/dotnet-maui-ci.yml'
@@ -179,6 +177,7 @@ jobs:
           name: android-apk
           path: ./android-artifact
 
+
       - name: Upload Android APK to BrowserStack
         id: upload-android
         run: |
@@ -208,15 +207,21 @@ jobs:
           echo "Android APK uploaded: $APP_URL"
 
       - name: Run Android tests on BrowserStack
-        working-directory: dotnet-maui/UITests.Android
-        run: |
-          dotnet restore
-          BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
-          BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          BROWSERSTACK_APP_ID="${{ steps.upload-android.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
-          BUILD_NAME="CI Build #${{ github.run_number }}" \
-          dotnet run
+        uses: nick-fields/retry@v3
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BROWSERSTACK_APP_ID: ${{ steps.upload-android.outputs.app_url }}
+          EXPECTED_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
+          BUILD_NAME: "CI Build #${{ github.run_number }}"
+        with:
+          timeout_minutes: 45
+          max_attempts: 5
+          retry_wait_seconds: 300
+          command: |
+            cd dotnet-maui/UITests.Android
+            dotnet restore
+            dotnet run
 
   browserstack-ios:
     name: BrowserStack iOS Tests
@@ -248,6 +253,7 @@ jobs:
           name: ios-ipa
           path: ./ios-artifact
 
+
       - name: Upload iOS IPA to BrowserStack
         id: upload-ios
         run: |
@@ -277,15 +283,21 @@ jobs:
           echo "iOS IPA uploaded: $APP_URL"
 
       - name: Run iOS tests on BrowserStack
-        working-directory: dotnet-maui/UITests.iOS
-        run: |
-          dotnet restore
-          BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
-          BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          BROWSERSTACK_APP_ID="${{ steps.upload-ios.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
-          BUILD_NAME="CI Build #${{ github.run_number }}" \
-          dotnet run
+        uses: nick-fields/retry@v3
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BROWSERSTACK_APP_ID: ${{ steps.upload-ios.outputs.app_url }}
+          EXPECTED_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
+          BUILD_NAME: "CI Build #${{ github.run_number }}"
+        with:
+          timeout_minutes: 45
+          max_attempts: 5
+          retry_wait_seconds: 300
+          command: |
+            cd dotnet-maui/UITests.iOS
+            dotnet restore
+            dotnet run
 
   summary:
     name: CI Report
@@ -326,13 +338,13 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
 
             if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
-              echo "🤖 [Android Test Session](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }}&filter_duration=1&filter_test_status=ALL&filter_test_status=done&filter_test_status=error&filter_test_status=failed&filter_test_status=passed&filter_test_status=queued&filter_test_status=running&filter_test_status=skipped&filter_test_status=timedout&filter_test_status=undefined&filter_test_status=unknown&product=app-automate&sort_test_duration=-1&sort_test_status=-1&filter_device_name=Google+Pixel+7)" >> $GITHUB_STEP_SUMMARY
+              echo "🤖 [Android Test Session](https://app-automate.browserstack.com/builds?project=QuickStart+.NET+MAUI&build=CI+Build+%23${{ github.run_number }}&filter_duration=1&filter_test_status=ALL&filter_test_status=done&filter_test_status=error&filter_test_status=failed&filter_test_status=passed&filter_test_status=queued&filter_test_status=running&filter_test_status=skipped&filter_test_status=timedout&filter_test_status=undefined&filter_test_status=unknown&product=app-automate&sort_test_duration=-1&sort_test_status=-1&filter_device_name=Google+Pixel+7)" >> $GITHUB_STEP_SUMMARY
             fi
 
             if [[ "${{ needs.browserstack-ios.result }}" != "skipped" ]]; then
-              echo "🍎 [iOS Test Session](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }}&filter_duration=1&filter_test_status=ALL&filter_test_status=done&filter_test_status=error&filter_test_status=failed&filter_test_status=passed&filter_test_status=queued&filter_test_status=running&filter_test_status=skipped&filter_test_status=timedout&filter_test_status=undefined&filter_test_status=unknown&product=app-automate&sort_test_duration=-1&sort_test_status=-1&filter_device_name=iPhone+15)" >> $GITHUB_STEP_SUMMARY
+              echo "🍎 [iOS Test Session](https://app-automate.browserstack.com/builds?project=QuickStart+.NET+MAUI&build=CI+Build+%23${{ github.run_number }}&filter_duration=1&filter_test_status=ALL&filter_test_status=done&filter_test_status=error&filter_test_status=failed&filter_test_status=passed&filter_test_status=queued&filter_test_status=running&filter_test_status=skipped&filter_test_status=timedout&filter_test_status=undefined&filter_test_status=unknown&product=app-automate&sort_test_duration=-1&sort_test_status=-1&filter_device_name=iPhone+15)" >> $GITHUB_STEP_SUMMARY
             fi
 
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "[View All Sessions](https://app-automate.browserstack.com/builds?project=Ditto+.NET+MAUI&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+            echo "[View All Sessions](https://app-automate.browserstack.com/builds?project=QuickStart+.NET+MAUI&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
           fi

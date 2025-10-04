@@ -2,19 +2,13 @@ name: javascript-web-browserstack
 
 on:
   pull_request:
-    branches:
-      - main
-      - 'sdk-*'
     paths:
       - 'javascript-web/**'
-      - '.github/workflows/javascript-web-browserstack.yml'
+      - '.github/workflows/javascript-web-ci.yml'
   push:
-    branches:
-      - main
-      - 'sdk-*'
     paths:
       - 'javascript-web/**'
-      - '.github/workflows/javascript-web-browserstack.yml'
+      - '.github/workflows/javascript-web-ci.yml'
   workflow_dispatch:
 
 concurrency:
@@ -78,40 +72,30 @@ jobs:
           curl -f http://localhost:3000/ || (echo "Server failed to start" && cat server.log && exit 1)
           echo "Web server started on http://localhost:3000"
 
-      - name: Install BrowserStack Local binary
-        run: |
-          wget "https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip"
-          unzip BrowserStackLocal-linux-x64.zip
-          chmod +x BrowserStackLocal
 
-          # Create config file with restricted permissions
-          echo "key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}" > browserstack.yml
-          chmod 600 browserstack.yml
-
-          nohup ./BrowserStackLocal --config-file ./browserstack.yml --daemon start &
-          sleep 10
-          echo "BrowserStack Local tunnel established"
 
       - name: Make test script executable
         run: chmod +x .github/scripts/browserstack-test.py
 
       - name: Execute tests on BrowserStack
+        uses: nick-fields/retry@v3
         env:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
-        run: |
-          # Install Python dependencies
-          pip3 install selenium
+        with:
+          timeout_minutes: 45
+          max_attempts: 5
+          retry_wait_seconds: 300
+          command: |
+            # Install Python dependencies
+            pip3 install selenium
 
-          # Run the test script
-          python3 .github/scripts/browserstack-test.py
+            # Run the test script
+            python3 .github/scripts/browserstack-test.py
 
-      - name: Stop BrowserStack Local tunnel
-        if: always()
-        run: ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
           
       - name: Generate test report
         if: always()
