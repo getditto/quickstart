@@ -81,7 +81,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         // Pass environment variables to instrumentation tests
-        testInstrumentationRunnerArguments["github_test_doc_id"] = System.getenv("GITHUB_TEST_DOC_ID") ?: ""
+        testInstrumentationRunnerArguments["github_test_doc_title"] = System.getenv("GITHUB_TEST_DOC_TITLE") ?: ""
     }
 
     buildTypes {

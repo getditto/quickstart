@@ -125,7 +125,7 @@ def run_test(browser_config):
         time.sleep(3)
 
         # Check for GitHub test document
-        github_doc_id = os.environ.get("GITHUB_TEST_DOC_ID")
+        github_doc_id = os.environ.get("GITHUB_TEST_DOC_TITLE")
         if github_doc_id:
             print(f"Checking for GitHub test document: {github_doc_id}")
             if wait_for_sync_document(driver, github_doc_id):
