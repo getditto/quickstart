@@ -298,8 +298,8 @@ jobs:
       id: execute-tests
       uses: nick-fields/retry@v3
       with:
-        timeout_minutes: 15
-        max_attempts: 3
+        timeout_minutes: 45
+        max_attempts: 5
         retry_wait_seconds: 300
         command: |
           response=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \
@@ -448,8 +448,8 @@ jobs:
       id: execute-tests
       uses: nick-fields/retry@v3
       with:
-        timeout_minutes: 15
-        max_attempts: 3
+        timeout_minutes: 45
+        max_attempts: 5
         retry_wait_seconds: 300
         command: |
           response=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" \

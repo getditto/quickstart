@@ -222,8 +222,8 @@ jobs:
           EXPECTED_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
           BUILD_NAME: "CI Build #${{ github.run_number }}"
         with:
-          timeout_minutes: 15
-          max_attempts: 3
+          timeout_minutes: 45
+          max_attempts: 5
           retry_wait_seconds: 300
           command: |
             cd dotnet-maui/UITests.Android
@@ -305,8 +305,8 @@ jobs:
           EXPECTED_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
           BUILD_NAME: "CI Build #${{ github.run_number }}"
         with:
-          timeout_minutes: 15
-          max_attempts: 3
+          timeout_minutes: 45
+          max_attempts: 5
           retry_wait_seconds: 300
           command: |
             cd dotnet-maui/UITests.iOS

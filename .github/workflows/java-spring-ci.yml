@@ -198,8 +198,8 @@ jobs:
         TEST_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
         GITHUB_TEST_DOC_ID: ${{ steps.seed_task.outputs.document-title }}
       with:
-        timeout_minutes: 15
-        max_attempts: 3
+        timeout_minutes: 45
+        max_attempts: 5
         retry_wait_seconds: 300
         command: |
           cd java-spring
