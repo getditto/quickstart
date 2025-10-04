@@ -428,7 +428,7 @@ jobs:
         run: |
           # Use the task title from seed job
           TITLE="${{ steps.seed_task.outputs.document-title }}"
-          ENCODED_TASK=$(echo -n "TASK_TO_FIND=$TITLE" | base64)
+          ENCODED_TASK=$(echo -n "GITHUB_TEST_DOC_TITLE=$TITLE" | base64)
           TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
 
           echo "📦 Building Android debug APKs with task title: $TITLE"
@@ -677,7 +677,7 @@ jobs:
 
           flutter build ios integration_test/app_test.dart --release --no-codesign \
             --dart-define=INTEGRATION_TEST_MODE=true \
-            --dart-define="TASK_TO_FIND=$TITLE"
+            --dart-define="GITHUB_TEST_DOC_TITLE=$TITLE"
 
       - name: Create iOS test package
         run: |
