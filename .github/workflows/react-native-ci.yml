@@ -211,7 +211,7 @@ jobs:
       status: ${{ job.status }}
     # TODO: BrowserStack Android Maestro API environment variables don't work (confirmed by BS staff)
     # On their roadmap with estimate: Oct 2025. Will revert to setEnvVariables when ready.
-    # Using sed workaround to replace ${MAESTRO_TASK_TO_FIND} with actual task name in test files
+    # Using sed workaround to replace ${GITHUB_TEST_DOC_TITLE} with actual task name in test files
 
     steps:
     - uses: actions/checkout@v4
@@ -257,8 +257,8 @@ jobs:
         rm -rf maestro-tests
         mkdir maestro-tests
 
-        # Replace MAESTRO_TASK_TO_FIND with actual seeded task name (BrowserStack Android API bug workaround)
-        sed 's/\${MAESTRO_TASK_TO_FIND}/${{ steps.seed-document.outputs.document-title }}/g' \
+        # Replace GITHUB_TEST_DOC_TITLE with actual seeded task name (BrowserStack Android API bug workaround)
+        sed 's/\${GITHUB_TEST_DOC_TITLE}/${{ steps.seed-document.outputs.document-title }}/g' \
           .maestro/flows/01-app-launch-and-seeded-tasks-android.yaml > maestro-tests/01-app-launch-and-seeded-tasks-android.yaml
 
         # Also create flows/ subfolder for organization
@@ -457,7 +457,7 @@ jobs:
               "devices": '"$DEVICES"',
               "execute": ["01-app-launch-and-seeded-tasks-ios.yaml"],
               "setEnvVariables": {
-                "MAESTRO_TASK_TO_FIND": "${{ steps.seed-document.outputs.document-title }}"
+                "GITHUB_TEST_DOC_TITLE": "${{ steps.seed-document.outputs.document-title }}"
               },
               "deviceLogs": true,
               "networkLogs": true,
