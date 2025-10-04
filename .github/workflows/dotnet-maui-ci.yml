@@ -203,15 +203,19 @@ jobs:
           echo "Android APK uploaded: $APP_URL"
 
       - name: Run Android tests on BrowserStack
-        working-directory: dotnet-maui/UITests.Android
-        run: |
-          dotnet restore
-          BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
-          BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          BROWSERSTACK_APP_ID="${{ steps.upload-android.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
-          BUILD_NAME="CI Build #${{ github.run_number }}" \
-          dotnet run
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 5
+          command: |
+            cd dotnet-maui/UITests.Android
+            dotnet restore
+            BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
+            BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            BROWSERSTACK_APP_ID="${{ steps.upload-android.outputs.app_url }}" \
+            EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
+            BUILD_NAME="CI Build #${{ github.run_number }}" \
+            dotnet run
 
   browserstack-ios:
     name: BrowserStack iOS Tests
@@ -272,15 +276,19 @@ jobs:
           echo "iOS IPA uploaded: $APP_URL"
 
       - name: Run iOS tests on BrowserStack
-        working-directory: dotnet-maui/UITests.iOS
-        run: |
-          dotnet restore
-          BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
-          BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          BROWSERSTACK_APP_ID="${{ steps.upload-ios.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
-          BUILD_NAME="CI Build #${{ github.run_number }}" \
-          dotnet run
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 5
+          command: |
+            cd dotnet-maui/UITests.iOS
+            dotnet restore
+            BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
+            BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            BROWSERSTACK_APP_ID="${{ steps.upload-ios.outputs.app_url }}" \
+            EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
+            BUILD_NAME="CI Build #${{ github.run_number }}" \
+            dotnet run
 
   summary:
     name: CI Report
