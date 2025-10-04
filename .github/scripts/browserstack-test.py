@@ -125,7 +125,7 @@ def run_test(browser_config):
         time.sleep(3)
 
         # Check for GitHub test document
-        github_doc_id = os.environ.get("GITHUB_TEST_DOC_TITLE")
+        github_doc_id = os.environ.get("DITTO_CLOUD_TASK_TITLE")
         if github_doc_id:
             print(f"Checking for GitHub test document: {github_doc_id}")
             if wait_for_sync_document(driver, github_doc_id):
@@ -226,21 +226,13 @@ def run_test(browser_config):
 
 def main():
     """Main function to run all browser tests."""
-    # Browser configurations to test
-    browsers = [
-        {
-            "browser": "Chrome",
-            "browser_version": "120.0",
-            "os": "Windows",
-            "os_version": "11",
-        },
-        {
-            "browser": "Firefox",
-            "browser_version": "121.0",
-            "os": "Windows",
-            "os_version": "11",
-        },
-    ]
+    # Load browser configurations from centralized config
+    config_path = os.path.join(
+        os.path.dirname(__file__), "..", "browserstack-devices.json"
+    )
+    with open(config_path, "r") as f:
+        config = json.load(f)
+    browsers = config["javascript-web"]["browsers"]
 
     # Run tests on all browsers
     results = []

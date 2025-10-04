@@ -110,7 +110,7 @@ jobs:
       - name: Run .NET integration tests
         working-directory: dotnet-tui
         env:
-          GITHUB_TEST_DOC_TITLE: ${{ steps.seed.outputs.document-title }}
+          DITTO_CLOUD_TASK_TITLE: ${{ steps.seed.outputs.document-title }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: dotnet test DittoDotNetTasksConsole.Tests --configuration Release --logger "console;verbosity=detailed"

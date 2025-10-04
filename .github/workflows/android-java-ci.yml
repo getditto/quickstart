@@ -210,7 +210,7 @@ jobs:
               "autoGrantPermissions": true,
               "instrumentationLogs": true,
               "instrumentationOptions": {
-                "github_test_doc_title": "'"$TITLE"'"
+                "DITTO_CLOUD_TASK_TITLE": "'"$TITLE"'"
               }
             }')
 

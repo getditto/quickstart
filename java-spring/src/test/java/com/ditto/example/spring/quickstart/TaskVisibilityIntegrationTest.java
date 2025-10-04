@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * Integration test for Task visibility using BrowserStack.
  * Tests the web UI by checking if tasks are properly visible.
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class) 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TaskVisibilityIntegrationTest {
 
     private static WebDriver driver;
@@ -49,28 +49,28 @@ class TaskVisibilityIntegrationTest {
     private static void setupBrowserStackDriver(String username, String accessKey) {
         try {
             ChromeOptions options = new ChromeOptions();
-            
+
             Map<String, Object> bsOptions = new HashMap<>();
             bsOptions.put("sessionName", "Java Spring Task Visibility Test");
-            
+
             String bsLocal = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
             if ("true".equals(bsLocal)) {
                 bsOptions.put("local", "true");
             }
-            
+
             String buildName = System.getProperty("BROWSERSTACK_BUILD_NAME");
             if (buildName != null && !buildName.isEmpty()) {
                 bsOptions.put("buildName", buildName);
             }
-            
+
             options.setCapability("bstack:options", bsOptions);
-            
+
             RemoteWebDriver remote = new RemoteWebDriver(
-                new URL("https://" + username + ":" + accessKey + "@hub.browserstack.com/wd/hub"), 
+                new URL("https://" + username + ":" + accessKey + "@hub.browserstack.com/wd/hub"),
                 options
             );
             driver = remote;
-            
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize BrowserStack WebDriver: " + e.getMessage(), e);
         }
@@ -86,7 +86,7 @@ class TaskVisibilityIntegrationTest {
             options.addArguments("--no-sandbox");
             options.addArguments("--disable-dev-shm-usage");
             options.addArguments("--window-size=1200,800");
-            
+
             driver = new ChromeDriver(options);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize local Chrome WebDriver: " + e.getMessage(), e);
@@ -97,26 +97,26 @@ class TaskVisibilityIntegrationTest {
     @Timeout(value = 10, unit = TimeUnit.MINUTES)
     void shouldPassWithExistingTask() {
         String envTitle = firstNonEmpty(
-                System.getenv("GITHUB_TEST_DOC_TITLE"),
-                System.getProperty("GITHUB_TEST_DOC_TITLE")
+                System.getenv("DITTO_CLOUD_TASK_TITLE"),
+                System.getProperty("DITTO_CLOUD_TASK_TITLE")
         );
-        
-        Assertions.assertNotNull(envTitle, "GITHUB_TEST_DOC_TITLE must be provided for testing");
-        
+
+        Assertions.assertNotNull(envTitle, "DITTO_CLOUD_TASK_TITLE must be provided for testing");
+
         driver.get("http://localhost:8080");
         wait.until(ExpectedConditions.titleContains("Ditto"));
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("input[placeholder*='Task']")));
-        
+
         // Enable sync if disabled
         enableSyncIfDisabled();
-        
+
         // Wait for tasks to load
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        
+
         boolean taskFound = isTaskVisibleOnPage(envTitle);
         Assertions.assertTrue(taskFound, "Task should be visible in the UI: " + envTitle);
     }
@@ -126,14 +126,14 @@ class TaskVisibilityIntegrationTest {
             // Use safer approach: get all text elements and filter programmatically
             // This avoids XPath injection by not concatenating user input into XPath
             List<WebElement> allTextElements = driver.findElements(By.xpath("//*[text()]"));
-            
+
             for (WebElement element : allTextElements) {
                 String elementText = element.getText().trim();
                 if (elementText.equals(taskTitle)) {
                     return true;
                 }
             }
-            
+
             return false;
         } catch (Exception e) {
             // Fallback to page source search (also safe from injection)
@@ -146,7 +146,7 @@ class TaskVisibilityIntegrationTest {
         try {
             // Use CSS selector for more reliable element location
             List<WebElement> allElements = driver.findElements(By.cssSelector("*"));
-            
+
             for (WebElement element : allElements) {
                 String text = element.getText();
                 if (text.contains("Sync State: false")) {

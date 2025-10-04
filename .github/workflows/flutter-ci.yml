@@ -428,7 +428,7 @@ jobs:
         run: |
           # Use the task title from seed job
           TITLE="${{ steps.seed_task.outputs.document-title }}"
-          ENCODED_TASK=$(echo -n "GITHUB_TEST_DOC_TITLE=$TITLE" | base64)
+          ENCODED_TASK=$(echo -n "DITTO_CLOUD_TASK_TITLE=$TITLE" | base64)
           TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
 
           echo "📦 Building Android debug APKs with task title: $TITLE"
@@ -504,17 +504,16 @@ jobs:
             fi
 
             # Create test execution request
+            # Load devices from centralized config
+            DEVICES=$(jq -c '.flutter.android.devices' .github/browserstack-devices.json)
+
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build" \
               -H "Content-Type: application/json" \
               -d "{
                 \"app\": \"$APP_URL\",
                 \"testSuite\": \"$TEST_URL\",
-                \"devices\": [
-                  \"Google Pixel 7-13.0\",
-                  \"Samsung Galaxy S23-13.0\",
-                  \"Google Pixel 6-12.0\"
-                ],
+                \"devices\": $DEVICES,
                 \"project\": \"QuickStart Flutter\",
                 \"buildName\": \"CI Build #${{ github.run_number }}\",
                 \"buildTag\": \"${{ github.ref_name }}\",
@@ -677,7 +676,7 @@ jobs:
 
           flutter build ios integration_test/app_test.dart --release --no-codesign \
             --dart-define=INTEGRATION_TEST_MODE=true \
-            --dart-define="GITHUB_TEST_DOC_TITLE=$TITLE"
+            --dart-define="DITTO_CLOUD_TASK_TITLE=$TITLE"
 
       - name: Create iOS test package
         run: |
@@ -756,16 +755,15 @@ jobs:
             # Create test execution request
             # NOTE: Flutter testing framework requires iOS 15+ due to _backtrace_async symbol
             # See: https://developer.apple.com/documentation/os/backtrace_async
+            # Load devices from centralized config
+            DEVICES=$(jq -c '.flutter.ios.devices' .github/browserstack-devices.json)
+
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build" \
               -H "Content-Type: application/json" \
               -d "{
                 \"testPackage\": \"$TEST_PACKAGE_URL\",
-                \"devices\": [
-                  \"iPhone 13-15\",
-                  \"iPhone 14-16\",
-                  \"iPhone 12-17\"
-                ],
+                \"devices\": $DEVICES,
                 \"project\": \"QuickStart Flutter\",
                 \"buildName\": \"CI Build #${{ github.run_number }}\",
                 \"buildTag\": \"${{ github.ref_name }}\",

@@ -84,6 +84,19 @@
       ]
     }
   },
+  "swift": {
+    "devices": ["iPhone 15 Pro-17"]
+  },
+  "java-spring": {
+    "platforms": [
+      {
+        "os": "Windows",
+        "osVersion": "11",
+        "browserName": "Chrome",
+        "browserVersion": "latest"
+      }
+    ]
+  },
   "javascript-web": {
     "browsers": [
       {

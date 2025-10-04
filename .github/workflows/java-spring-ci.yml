@@ -95,7 +95,7 @@ jobs:
     needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
-    
+
     steps:
     - uses: actions/checkout@v4
 
@@ -118,33 +118,33 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-    
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-    
+
     - name: Create .env file (root)
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-    
+
     - name: Install BrowserStack Local binary
       run: |
         curl -O "https://www.browserstack.com/browserstack-local/BrowserStackLocal-darwin-x64.zip"
         unzip BrowserStackLocal-darwin-x64.zip
         chmod +x BrowserStackLocal
 
-    - name: Start BrowserStack Local tunnel 
+    - name: Start BrowserStack Local tunnel
       run: |
         echo "Starting BrowserStack Local tunnel..."
         nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           --daemon-mode > browserstack-local.log 2>&1 &
-        
+
         # Wait for tunnel to establish
         TIMEOUT=60
         ELAPSED=0
-        
+
         while [ $ELAPSED -lt $TIMEOUT ]; do
           if [ -f browserstack-local.log ] && grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
             echo "BrowserStack Local tunnel established"
@@ -158,30 +158,30 @@ jobs:
           sleep 5
           ELAPSED=$((ELAPSED + 5))
         done
-        
+
         echo "BrowserStack Local tunnel timeout after ${TIMEOUT}s"
         [ -f browserstack-local.log ] && cat browserstack-local.log
         exit 1
-    
+
     - name: Create BrowserStack config
       working-directory: java-spring
       run: |
+        # Load platforms from centralized config and convert to YAML format
+        PLATFORMS=$(jq -r '.["java-spring"].platforms[] | "  - os: \(.os)\n    osVersion: \"\(.osVersion)\"\n    browserName: \(.browserName)\n    browserVersion: \(.browserVersion)"' ../.github/browserstack-devices.json)
+
         cat > browserstack.yml << EOF
         userName: ${{ secrets.BROWSERSTACK_USERNAME }}
         accessKey: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         projectName: QuickStart Java Spring
         buildName: CI Build #${{ github.run_number }}
         platforms:
-          - os: Windows
-            osVersion: 11
-            browserName: Chrome
-            browserVersion: latest
+        $PLATFORMS
         browserstackLocal: true
         debug: true
         video: true
         parallelsPerPlatform: 1
         EOF
-    
+
     - name: Start Spring Boot app in background
       working-directory: java-spring
       env:
@@ -205,14 +205,14 @@ jobs:
           fi
           sleep 2
         done
-    
+
     - name: Execute Selenium tests on BrowserStack cloud browsers
       uses: nick-fields/retry@v3
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
-        GITHUB_TEST_DOC_TITLE: ${{ steps.seed_task.outputs.document-title }}
+        DITTO_CLOUD_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
       with:
         max_attempts: 5
         timeout_minutes: 20
@@ -227,9 +227,9 @@ jobs:
             -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
             -DBROWSERSTACK_LOCAL=true \
-            -DGITHUB_TEST_DOC_TITLE="$TITLE" \
+            -DDITTO_CLOUD_TASK_TITLE="$TITLE" \
             --info
-    
+
     - name: Stop Spring Boot app
       if: always()
       working-directory: java-spring
@@ -238,11 +238,11 @@ jobs:
           kill $(cat app.pid) || true
           rm app.pid
         fi
-    
+
     - name: Stop BrowserStack Local tunnel
       if: always()
       run: pkill -f "BrowserStackLocal" || true
-    
+
     - name: Upload test reports
       if: always()
       uses: actions/upload-artifact@v4
@@ -250,7 +250,7 @@ jobs:
         name: browserstack-test-reports-${{ github.run_number }}
         path: java-spring/build/reports/tests/
         retention-days: 1
-    
+
     - name: Upload app logs
       if: always()
       uses: actions/upload-artifact@v4

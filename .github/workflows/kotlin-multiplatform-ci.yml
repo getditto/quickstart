@@ -20,17 +20,17 @@ jobs:
     defaults:
       run:
         working-directory: kotlin-multiplatform
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
         cache: 'gradle'
-    
+
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
@@ -41,20 +41,20 @@ jobs:
         key: gradle-${{ runner.os }}-${{ hashFiles('kotlin-multiplatform/gradle/wrapper/gradle-wrapper.properties', 'kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/gradle/libs.versions.toml') }}
         restore-keys: |
           gradle-${{ runner.os }}-
-    
+
     - name: Create test .env file
       run: |
         echo "DITTO_APP_ID=test_app_id" > ../.env
         echo "DITTO_PLAYGROUND_TOKEN=test_token" >> ../.env
         echo "DITTO_AUTH_URL=https://test.com" >> ../.env
         echo "DITTO_WEBSOCKET_URL=wss://test.com" >> ../.env
-    
+
     - name: Make gradlew executable
       run: chmod +x gradlew
-    
+
     - name: Run Detekt lint
       run: ./gradlew detekt --stacktrace
-    
+
     - name: Upload Detekt reports
       uses: actions/upload-artifact@v4
       if: always()
@@ -160,15 +160,15 @@ jobs:
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> ../.env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> ../.env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> ../.env
-    
+
     - name: Make gradlew executable
       run: chmod +x gradlew
-    
+
     - name: Build KMP iOS frameworks (sim + device)
       run: |
         ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace
         ./gradlew :composeApp:linkDebugFrameworkIosArm64 --stacktrace
-    
+
     # ---- iOS app build without archive/signing (more reliable on CI) ----
     - name: Prepare Xcode container (project/workspace + CocoaPods)
       run: |
@@ -181,7 +181,7 @@ jobs:
           pod install
           cd ..
         fi
-        
+
         if [ -f "iosApp/iosApp.xcworkspace" ]; then
           echo "XCWORKSPACE=1" >> $GITHUB_ENV
           CONTAINER="iosApp/iosApp.xcworkspace"
@@ -191,19 +191,19 @@ jobs:
           CONTAINER="iosApp/iosApp.xcodeproj"
           CONTAINER_FLAG="-project"
         fi
-        
+
         echo "CONTAINER=$CONTAINER" >> $GITHUB_ENV
         echo "CONTAINER_FLAG=$CONTAINER_FLAG" >> $GITHUB_ENV
-        
+
         echo "Available schemes:"
         xcodebuild -list $CONTAINER_FLAG "$CONTAINER"
-    
+
     - name: Build device .app (no signing)
       run: |
         set -euo pipefail
         DERIVED="$PWD/build/DerivedData"
         PRODUCTS="$DERIVED/Build/Products"
-        
+
         xcodebuild \
           $CONTAINER_FLAG "$CONTAINER" \
           -scheme iosApp \
@@ -214,7 +214,7 @@ jobs:
           ENABLE_BITCODE=NO \
           ONLY_ACTIVE_ARCH=NO \
           build
-        
+
         echo "Searching for device .app…"
         APP_DIR=$(find "$PRODUCTS/Debug-iphoneos" -maxdepth 1 -type d -name "*.app" | head -1 || true)
         if [ -z "${APP_DIR:-}" ]; then
@@ -224,7 +224,7 @@ jobs:
         fi
         echo "APP_DIR=$APP_DIR" >> $GITHUB_ENV
         echo "✅ Found app: $APP_DIR"
-    
+
     - name: Create unsigned .ipa for BrowserStack
       run: |
         set -euo pipefail
@@ -233,14 +233,14 @@ jobs:
         (cd build && zip -qry iosApp-unsigned.ipa Payload && rm -rf Payload)
         test -f build/iosApp-unsigned.ipa || (echo "❌ IPA not created" && exit 1)
         ls -la build/iosApp-unsigned.ipa
-    
+
     - name: Upload iOS IPA Artifact
       uses: actions/upload-artifact@v4
       with:
         name: ios-kmp-ipa-${{ github.run_number }}
         path: kotlin-multiplatform/build/iosApp-unsigned.ipa
         retention-days: 1
-    
+
     - name: Set build status
       id: build-status
       run: echo "success=true" >> $GITHUB_OUTPUT
@@ -252,17 +252,17 @@ jobs:
     defaults:
       run:
         working-directory: kotlin-multiplatform
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
         cache: 'gradle'
-    
+
     - name: Cache Gradle dependencies
       uses: actions/cache@v4
       with:
@@ -273,20 +273,20 @@ jobs:
         key: gradle-${{ runner.os }}-${{ hashFiles('kotlin-multiplatform/gradle/wrapper/gradle-wrapper.properties', 'kotlin-multiplatform/**/*.gradle*', 'kotlin-multiplatform/gradle/libs.versions.toml') }}
         restore-keys: |
           gradle-${{ runner.os }}-
-    
+
     - name: Create test .env file
       run: |
         echo "DITTO_APP_ID=test_app_id" > ../.env
         echo "DITTO_PLAYGROUND_TOKEN=test_token" >> ../.env
         echo "DITTO_AUTH_URL=https://test.com" >> ../.env
         echo "DITTO_WEBSOCKET_URL=wss://test.com" >> ../.env
-    
+
     - name: Make gradlew executable
       run: chmod +x gradlew
-    
+
     - name: Build Desktop application
       run: ./gradlew :composeApp:packageDistributionForCurrentOS --stacktrace
-    
+
     - name: Upload Desktop build outputs
       uses: actions/upload-artifact@v4
       if: always()
@@ -340,7 +340,7 @@ jobs:
           -F "custom_id=ditto-kotlin-multiplatform-test")
         TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
         echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
-    
+
     - name: Execute tests on BrowserStack
       id: test
       uses: nick-fields/retry@v3
@@ -369,16 +369,16 @@ jobs:
           # Create test execution request with instrumentationOptions
           TITLE="${{ steps.seed_task.outputs.document-title }}"
 
+          # Load devices from centralized config
+          DEVICES=$(jq -c '.["kotlin-multiplatform"].android.devices' .github/browserstack-devices.json)
+
           BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
             -H "Content-Type: application/json" \
             -d "{
               \"app\": \"$APP_URL\",
               \"testSuite\": \"$TEST_URL\",
-              \"devices\": [
-                \"Google Pixel 8-14.0\",
-                \"Samsung Galaxy S23-13.0\"
-              ],
+              \"devices\": $DEVICES,
               \"project\": \"QuickStart Kotlin Multiplatform\",
               \"buildName\": \"CI Build #${{ github.run_number }}\",
               \"buildTag\": \"${{ github.ref_name }}\",
@@ -389,7 +389,7 @@ jobs:
               \"acceptInsecureCerts\": true,
               \"enableWebsocketTunneling\": true,
               \"instrumentationOptions\": {
-                \"github_test_doc_title\": \"$TITLE\"
+                \"DITTO_CLOUD_TASK_TITLE\": \"$TITLE\"
               }
             }")
 
@@ -407,27 +407,27 @@ jobs:
 
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "Build started with ID: $BUILD_ID"
-    
+
     - name: Wait for BrowserStack tests to complete
       run: |
         BUILD_ID="${{ steps.test.outputs.build_id }}"
-        
+
         # Validate BUILD_ID before proceeding
         if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
           echo "Error: No valid BUILD_ID available. Skipping test monitoring."
           exit 1
         fi
-        
+
         MAX_WAIT_TIME=1080  # 18 minutes
         CHECK_INTERVAL=30   # Check every 30 seconds
         ELAPSED=0
-        
+
         while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
           BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
-          
+
           BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
-          
+
           # Check for API errors
           if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
             echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
@@ -435,26 +435,26 @@ jobs:
             ELAPSED=$((ELAPSED + CHECK_INTERVAL))
             continue
           fi
-          
+
           echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
-          
+
           # Check for completion states
           if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
             echo "Build completed with status: $BUILD_STATUS"
             break
           fi
-          
+
           sleep $CHECK_INTERVAL
           ELAPSED=$((ELAPSED + CHECK_INTERVAL))
         done
-        
+
         # Get final results
         FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
-        
+
         echo "Final build result:"
         echo "$FINAL_RESULT" | jq .
-        
+
         # Check if we got valid results
         if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
           # Check if the overall build passed
@@ -479,7 +479,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, build-android, build-ios, build-desktop, browserstack-android]
     if: always()
-    
+
     steps:
     - name: Check build results
       run: |
@@ -494,7 +494,7 @@ jobs:
         echo "| Android BrowserStack | ${{ needs.browserstack-android.result == 'success' && '✅ Passed' || (needs.browserstack-android.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
         echo "| iOS BrowserStack | ⏭️ Skipped (Temporarily Disabled) |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         # Check core build results
         if [[ "${{ needs.lint.result }}" != "success" ]] || \
            [[ "${{ needs.build-android.result }}" != "success" ]] || \
@@ -505,7 +505,7 @@ jobs:
         else
           echo "✅ All core builds passed successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Testing results summary
           if [[ "${{ needs.browserstack-android.result }}" == "success" ]]; then
             echo "✅ Android BrowserStack testing passed. iOS BrowserStack testing temporarily disabled." >> $GITHUB_STEP_SUMMARY

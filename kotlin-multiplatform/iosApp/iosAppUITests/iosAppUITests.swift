@@ -4,8 +4,8 @@ final class iosAppUITests: XCTestCase {
 
     func testGitHubSeededDocumentSync() throws {
         // Get the exact document title that must be provided via environment variable
-        let expectedTitle = ProcessInfo.processInfo.environment["GITHUB_TEST_DOC_TITLE"] ?? ""
-        
+        let expectedTitle = ProcessInfo.processInfo.environment["DITTO_CLOUD_TASK_TITLE"] ?? ""
+
         let app = XCUIApplication()
         app.launch()
 
@@ -17,7 +17,7 @@ final class iosAppUITests: XCTestCase {
         let githubRunNumber = ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
 
         guard !expectedTitle.isEmpty else {
-            XCTFail("Missing GITHUB_TEST_DOC_TITLE - expected exact document title from GitHub Actions")
+            XCTFail("Missing DITTO_CLOUD_TASK_TITLE - expected exact document title from GitHub Actions")
             return
         }
 
@@ -38,7 +38,7 @@ final class iosAppUITests: XCTestCase {
             // at the time of implementation. Using generic element detection instead of
             // accessibility identifiers or labels. Future improvement could investigate
             // proper accessibility support for Compose Multiplatform iOS targets.
-            
+
             // For KMP Compose UI, look for LazyColumn items or similar
             // This may need adjustment based on your actual Compose UI structure
             let scrollViews = app.scrollViews
@@ -73,22 +73,22 @@ final class iosAppUITests: XCTestCase {
                             // Brief pause to allow text expansion
                             usleep(200000) // 0.2 seconds
                         }
-                        
+
                         let label = textElement.label
-                        
+
                         // Also check the value property in case it contains full text
                         let value = textElement.value as? String ?? ""
 
                         // Check both label and value for matches
                         let textToCheck = [label, value].filter { !$0.isEmpty }
-                        
+
                         for text in textToCheck {
                             if text == expectedTitle {
                                 found = true
                                 break
                             }
                         }
-                        
+
                         if found { break }
                     }
                 }

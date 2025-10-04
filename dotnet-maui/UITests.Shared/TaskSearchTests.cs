@@ -11,11 +11,11 @@ public abstract class TaskSearchTests : BaseTest
     [Test]
     public void CanFindTaskByTitle()
     {
-        var expectedTaskTitle = Environment.GetEnvironmentVariable("GITHUB_TEST_DOC_TITLE");
+        var expectedTaskTitle = Environment.GetEnvironmentVariable("DITTO_CLOUD_TASK_TITLE");
 
         if (string.IsNullOrEmpty(expectedTaskTitle))
         {
-            Assert.Fail("GITHUB_TEST_DOC_TITLE environment variable is not set or empty");
+            Assert.Fail("DITTO_CLOUD_TASK_TITLE environment variable is not set or empty");
             return;
         }
 
