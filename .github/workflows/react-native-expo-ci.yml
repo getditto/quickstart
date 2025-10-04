@@ -298,6 +298,10 @@ jobs:
         max_attempts: 5
         retry_wait_seconds: 300
         command: |
+          # Load devices from centralized config
+          DEVICES=$(jq -c '.["react-native-expo"].android.devices' .github/browserstack-devices.json)
+          echo "Loaded devices: $DEVICES"
+
           response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/android/build" \
             -H "Content-Type: application/json" \
@@ -307,10 +311,7 @@ jobs:
               "project": "QuickStart React Native Expo",
               "buildName": "CI Build #${{ github.run_number }}",
               "buildTag": "${{ github.ref_name }}",
-              "devices": [
-                "Samsung Galaxy S22-12.0",
-                "Google Pixel 7-13.0"
-              ],
+              "devices": '"$DEVICES"',
               "execute": ["01-app-launch-and-seeded-tasks-android.yaml"],
               "deviceLogs": true,
               "networkLogs": true,
@@ -447,6 +448,10 @@ jobs:
         max_attempts: 5
         retry_wait_seconds: 300
         command: |
+          # Load devices from centralized config
+          DEVICES=$(jq -c '.["react-native-expo"].ios.devices' .github/browserstack-devices.json)
+          echo "Loaded devices: $DEVICES"
+
           response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/ios/build" \
             -H "Content-Type: application/json" \
@@ -456,10 +461,7 @@ jobs:
               "project": "QuickStart React Native Expo",
               "buildName": "CI Build #${{ github.run_number }}",
               "buildTag": "${{ github.ref_name }}",
-              "devices": [
-                "iPhone 15-17.0",
-                "iPhone 14-16.0"
-              ],
+              "devices": '"$DEVICES"',
               "execute": ["01-app-launch-and-seeded-tasks-ios.yaml"],
               "setEnvVariables": {
                 "MAESTRO_TASK_TO_FIND": "${{ steps.seed-document.outputs.document-title }}"
