@@ -480,58 +480,62 @@ jobs:
 
       - name: Execute tests on BrowserStack
         id: test
-        run: |
-          # Validate inputs before creating test execution request
-          APP_URL="${{ steps.upload.outputs.app_url }}"
-          TEST_URL="${{ steps.upload_test.outputs.test_url }}"
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 300
+          command: |
+            # Validate inputs before creating test execution request
+            APP_URL="${{ steps.upload.outputs.app_url }}"
+            TEST_URL="${{ steps.upload_test.outputs.test_url }}"
 
-          echo "App URL: $APP_URL"
-          echo "Test URL: $TEST_URL"
+            echo "App URL: $APP_URL"
+            echo "Test URL: $TEST_URL"
 
-          if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
-            echo "Error: No valid app URL available"
-            exit 1
-          fi
+            if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+              echo "Error: No valid app URL available"
+              exit 1
+            fi
 
-          if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
-            echo "Error: No valid test URL available"
-            exit 1
-          fi
+            if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
+              echo "Error: No valid test URL available"
+              exit 1
+            fi
 
-          # Create test execution request
-          BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"app\": \"$APP_URL\",
-              \"testSuite\": \"$TEST_URL\",
-              \"devices\": [
-                \"Google Pixel 7-13.0\",
-                \"Samsung Galaxy S23-13.0\",
-                \"Google Pixel 6-12.0\"
-              ],
-              \"project\": \"QuickStart Flutter\",
-              \"buildName\": \"CI Build #${{ github.run_number }}\",
-              \"buildTag\": \"${{ github.ref_name }}\",
-              \"deviceLogs\": true,
-              \"video\": true,
-              \"networkLogs\": true
-            }")
+            # Create test execution request
+            BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"app\": \"$APP_URL\",
+                \"testSuite\": \"$TEST_URL\",
+                \"devices\": [
+                  \"Google Pixel 7-13.0\",
+                  \"Samsung Galaxy S23-13.0\",
+                  \"Google Pixel 6-12.0\"
+                ],
+                \"project\": \"QuickStart Flutter\",
+                \"buildName\": \"CI Build #${{ github.run_number }}\",
+                \"buildTag\": \"${{ github.ref_name }}\",
+                \"deviceLogs\": true,
+                \"video\": true,
+                \"networkLogs\": true
+              }")
 
-          echo "BrowserStack API Response:"
-          echo "$BUILD_RESPONSE"
+            echo "BrowserStack API Response:"
+            echo "$BUILD_RESPONSE"
 
-          BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+            BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
 
-          # Check if BUILD_ID is null or empty
-          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-            echo "Error: Failed to create BrowserStack build"
-            echo "Response: $BUILD_RESPONSE"
-            exit 1
-          fi
+            # Check if BUILD_ID is null or empty
+            if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+              echo "Error: Failed to create BrowserStack build"
+              echo "Response: $BUILD_RESPONSE"
+              exit 1
+            fi
 
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "Build started with ID: $BUILD_ID"
+            echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+            echo "Build started with ID: $BUILD_ID"
 
       - name: Wait for BrowserStack tests to complete
         run: |
@@ -733,50 +737,54 @@ jobs:
 
       - name: Execute tests on BrowserStack
         id: test
-        run: |
-          TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 300
+          command: |
+            TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
 
-          echo "Test Package URL: $TEST_PACKAGE_URL"
+            echo "Test Package URL: $TEST_PACKAGE_URL"
 
-          if [ -z "$TEST_PACKAGE_URL" ] || [ "$TEST_PACKAGE_URL" = "null" ]; then
-            echo "Error: No valid test package URL available"
-            exit 1
-          fi
+            if [ -z "$TEST_PACKAGE_URL" ] || [ "$TEST_PACKAGE_URL" = "null" ]; then
+              echo "Error: No valid test package URL available"
+              exit 1
+            fi
 
-          # Create test execution request
-          # NOTE: Flutter testing framework requires iOS 15+ due to _backtrace_async symbol
-          # See: https://developer.apple.com/documentation/os/backtrace_async
-          BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"testPackage\": \"$TEST_PACKAGE_URL\",
-              \"devices\": [
-                \"iPhone 13-15\",
-                \"iPhone 14-16\",
-                \"iPhone 12-17\"
-              ],
-              \"project\": \"QuickStart Flutter\",
-              \"buildName\": \"CI Build #${{ github.run_number }}\",
-              \"buildTag\": \"${{ github.ref_name }}\",
-              \"deviceLogs\": true,
-              \"networkLogs\": true
-            }")
+            # Create test execution request
+            # NOTE: Flutter testing framework requires iOS 15+ due to _backtrace_async symbol
+            # See: https://developer.apple.com/documentation/os/backtrace_async
+            BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"testPackage\": \"$TEST_PACKAGE_URL\",
+                \"devices\": [
+                  \"iPhone 13-15\",
+                  \"iPhone 14-16\",
+                  \"iPhone 12-17\"
+                ],
+                \"project\": \"QuickStart Flutter\",
+                \"buildName\": \"CI Build #${{ github.run_number }}\",
+                \"buildTag\": \"${{ github.ref_name }}\",
+                \"deviceLogs\": true,
+                \"networkLogs\": true
+              }")
 
-          echo "BrowserStack API Response:"
-          echo "$BUILD_RESPONSE"
+            echo "BrowserStack API Response:"
+            echo "$BUILD_RESPONSE"
 
-          BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+            BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
 
-          # Check if BUILD_ID is null or empty
-          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-            echo "Error: Failed to create BrowserStack build"
-            echo "Response: $BUILD_RESPONSE"
-            exit 1
-          fi
+            # Check if BUILD_ID is null or empty
+            if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+              echo "Error: Failed to create BrowserStack build"
+              echo "Response: $BUILD_RESPONSE"
+              exit 1
+            fi
 
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "Build started with ID: $BUILD_ID"
+            echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+            echo "Build started with ID: $BUILD_ID"
 
       - name: Wait for BrowserStack tests to complete
         run: |

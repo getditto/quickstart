@@ -179,8 +179,8 @@ jobs:
       id: test
       uses: nick-fields/retry@v3
       with:
-        timeout_minutes: 15
         max_attempts: 5
+          retry_wait_seconds: 300
         command: |
           cd android-cpp/QuickStartTasksCPP/appium-test
           export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"

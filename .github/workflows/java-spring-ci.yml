@@ -207,25 +207,29 @@ jobs:
         done
     
     - name: Execute Selenium tests on BrowserStack cloud browsers
-      working-directory: java-spring
+      uses: nick-fields/retry@v3
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
         TEST_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
         GITHUB_TEST_DOC_ID: ${{ steps.seed_task.outputs.document-title }}
-      run: |
-        TITLE="${{ steps.seed_task.outputs.document-title }}"
-        
-        # Run only the BrowserStack test method, not all test methods
-        ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
-          -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
-          -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
-          -DBROWSERSTACK_LOCAL=true \
-          -DTEST_TASK_TITLE="$TITLE" \
-          -DGITHUB_TEST_DOC_ID="$TITLE" \
-          --info
+      with:
+        max_attempts: 5
+        retry_wait_seconds: 300
+        command: |
+          cd java-spring
+          TITLE="${{ steps.seed_task.outputs.document-title }}"
+
+          # Run only the BrowserStack test method, not all test methods
+          ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
+            -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
+            -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
+            -DBROWSERSTACK_LOCAL=true \
+            -DTEST_TASK_TITLE="$TITLE" \
+            -DGITHUB_TEST_DOC_ID="$TITLE" \
+            --info
     
     - name: Stop Spring Boot app
       if: always()

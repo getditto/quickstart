@@ -205,8 +205,8 @@ jobs:
       - name: Run Android tests on BrowserStack
         uses: nick-fields/retry@v3
         with:
-          timeout_minutes: 15
           max_attempts: 5
+          retry_wait_seconds: 300
           command: |
             cd dotnet-maui/UITests.Android
             dotnet restore
@@ -278,8 +278,8 @@ jobs:
       - name: Run iOS tests on BrowserStack
         uses: nick-fields/retry@v3
         with:
-          timeout_minutes: 15
           max_attempts: 5
+          retry_wait_seconds: 300
           command: |
             cd dotnet-maui/UITests.iOS
             dotnet restore
