@@ -213,10 +213,10 @@ jobs:
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
         TEST_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
-        GITHUB_TEST_DOC_ID: ${{ steps.seed_task.outputs.document-title }}
+        GITHUB_TEST_DOC_TITLE: ${{ steps.seed_task.outputs.document-title }}
       with:
         max_attempts: 5
-        timeout_minutes: 60
+        timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
           cd java-spring
@@ -229,7 +229,7 @@ jobs:
             -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
             -DBROWSERSTACK_LOCAL=true \
             -DTEST_TASK_TITLE="$TITLE" \
-            -DGITHUB_TEST_DOC_ID="$TITLE" \
+            -DGITHUB_TEST_DOC_TITLE="$TITLE" \
             --info
     
     - name: Stop Spring Boot app

@@ -483,7 +483,7 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-        timeout_minutes: 60
+        timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
             # Validate inputs before creating test execution request
@@ -547,7 +547,7 @@ jobs:
             exit 1
           fi
 
-          MAX_WAIT_TIME=1800  # 30 minutes
+          MAX_WAIT_TIME=1080  # 18 minutes
           CHECK_INTERVAL=30   # Check every 30 seconds
           ELAPSED=0
 
@@ -741,7 +741,7 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-        timeout_minutes: 60
+        timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
             TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
@@ -797,7 +797,7 @@ jobs:
             exit 1
           fi
 
-          MAX_WAIT_TIME=1800  # 30 minutes
+          MAX_WAIT_TIME=1080  # 18 minutes
           CHECK_INTERVAL=30   # Check every 30 seconds
           ELAPSED=0
 

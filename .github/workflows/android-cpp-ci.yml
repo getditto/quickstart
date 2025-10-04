@@ -180,14 +180,14 @@ jobs:
       uses: nick-fields/retry@v3
       with:
         max_attempts: 5
-        timeout_minutes: 60
+        timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
           cd android-cpp/QuickStartTasksCPP/appium-test
           export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
           export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
           export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-          export GITHUB_TEST_DOC_ID="${{ steps.seed_task.outputs.document-title }}"
+          export GITHUB_TEST_DOC_TITLE="${{ steps.seed_task.outputs.document-title }}"
 
           ../gradlew test --console=plain --no-daemon
 

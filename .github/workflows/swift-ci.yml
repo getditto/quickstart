@@ -314,7 +314,7 @@ jobs:
 
     - name: Set environment variables for tests
       run: |
-        echo "GITHUB_TEST_DOC_ID=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
+        echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
         echo "GITHUB_TEST_DOC_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
 
     - name: Upload App and Test Bundle to BrowserStack
@@ -395,7 +395,7 @@ jobs:
       uses: nick-fields/retry@v3
       with:
         max_attempts: 5
-        timeout_minutes: 60
+        timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
           # Validate inputs
@@ -462,7 +462,7 @@ jobs:
           exit 0
         fi
         
-        MAX_WAIT_TIME=1800  # 30 minutes
+        MAX_WAIT_TIME=1080  # 18 minutes
         CHECK_INTERVAL=30   # Check every 30 seconds
         ELAPSED=0
         
