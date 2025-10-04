@@ -495,7 +495,7 @@ jobs:
         with:
           timeout_minutes: 15
           max_attempts: 3
-          retry_wait_seconds: 120
+          retry_wait_seconds: 300
           command: |
             # Validate inputs before creating test execution request
             APP_URL="${{ steps.upload.outputs.app_url }}"
@@ -761,7 +761,7 @@ jobs:
         with:
           timeout_minutes: 15
           max_attempts: 3
-          retry_wait_seconds: 120
+          retry_wait_seconds: 300
           command: |
             TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
 

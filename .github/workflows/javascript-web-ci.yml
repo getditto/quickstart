@@ -100,7 +100,7 @@ jobs:
         with:
           timeout_minutes: 15
           max_attempts: 3
-          retry_wait_seconds: 120
+          retry_wait_seconds: 300
           command: |
             # Install Python dependencies
             pip3 install selenium
