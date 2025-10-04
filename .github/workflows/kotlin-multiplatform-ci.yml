@@ -390,7 +390,7 @@ jobs:
             \"acceptInsecureCerts\": true,
             \"enableWebsocketTunneling\": true,
             \"instrumentationOptions\": {
-              \"github_test_doc_title\": \"$TITLE\"
+              \"github_test_doc_id\": \"$TITLE\"
             }
           }")
         

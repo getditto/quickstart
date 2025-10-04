@@ -170,7 +170,7 @@ jobs:
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [browserstack-test]
+    needs: [lint, build, browserstack-web]
     if: always()
 
     steps:
