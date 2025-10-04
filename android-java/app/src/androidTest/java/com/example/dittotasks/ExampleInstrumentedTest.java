@@ -19,19 +19,19 @@ public class ExampleInstrumentedTest {
     @Test
     public void testGitHubTestDocumentSyncs() throws Exception {
         // Get environment variable with fallback options
-        String title = InstrumentationRegistry.getArguments().getString("github_test_doc_id");
+        String title = InstrumentationRegistry.getArguments().getString("github_test_doc_title");
         
         // Try multiple fallback sources
         if (title == null || title.trim().isEmpty()) {
-            title = System.getProperty("GITHUB_TEST_DOC_ID");
+            title = System.getProperty("GITHUB_TEST_DOC_TITLE");
         }
         if (title == null || title.trim().isEmpty()) {
-            title = System.getenv("GITHUB_TEST_DOC_ID");
+            title = System.getenv("GITHUB_TEST_DOC_TITLE");
         }
         
         // No fallback - fail if seed is not set
         if (title == null || title.trim().isEmpty()) {
-            throw new AssertionError("Expected test title in 'github_test_doc_id' (or GITHUB_TEST_DOC_ID); none provided. Must be seeded by CI.");
+            throw new AssertionError("Expected test title in 'github_test_doc_title' (or GITHUB_TEST_DOC_TITLE); none provided. Must be seeded by CI.");
         }
 
         Log.i("DittoTest", "Testing with document title: " + title);

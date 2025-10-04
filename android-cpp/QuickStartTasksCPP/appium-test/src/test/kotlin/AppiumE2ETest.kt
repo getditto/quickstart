@@ -54,8 +54,8 @@ class AppiumE2ETest {
 
     @Test
     fun testTaskFromEnvironmentVariableAppears() {
-        val testTaskName = System.getenv("GITHUB_TEST_DOC_ID")
-            ?: throw IllegalStateException("GITHUB_TEST_DOC_ID environment variable not set")
+        val testTaskName = System.getenv("GITHUB_TEST_DOC_TITLE")
+            ?: throw IllegalStateException("GITHUB_TEST_DOC_TITLE environment variable not set")
 
         try {
             Thread.sleep(3000)

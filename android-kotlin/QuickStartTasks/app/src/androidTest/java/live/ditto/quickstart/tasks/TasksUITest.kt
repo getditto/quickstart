@@ -22,7 +22,7 @@ class TasksUITest {
     fun testDocumentSyncAndVerification() {
         // Get test document title from BrowserStack instrumentationOptions, BuildConfig, or fallback
         val args = InstrumentationRegistry.getArguments()
-        val fromInstrumentation = args?.getString("github_test_doc_id")
+        val fromInstrumentation = args?.getString("github_test_doc_title")
         val fromBuildConfig = try { 
             BuildConfig.TEST_DOCUMENT_TITLE 
         } catch (e: NoSuchFieldError) { 
@@ -33,7 +33,7 @@ class TasksUITest {
         
         val testDocumentTitle = fromInstrumentation?.takeIf { it.isNotEmpty() }
             ?: fromBuildConfig?.takeIf { it.isNotEmpty() }
-            ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'github_test_doc_id' or BuildConfig.TEST_DOCUMENT_TITLE")
+            ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'github_test_doc_title' or BuildConfig.TEST_DOCUMENT_TITLE")
         
         try {
             // Wait for app initialization and Ditto sync with intelligent polling

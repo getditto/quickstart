@@ -97,11 +97,11 @@ class TaskVisibilityIntegrationTest {
     @Timeout(value = 10, unit = TimeUnit.MINUTES)
     void shouldPassWithExistingTask() {
         String envTitle = firstNonEmpty(
-                System.getenv("GITHUB_TEST_DOC_ID"),
-                System.getProperty("GITHUB_TEST_DOC_ID")
+                System.getenv("GITHUB_TEST_DOC_TITLE"),
+                System.getProperty("GITHUB_TEST_DOC_TITLE")
         );
         
-        Assertions.assertNotNull(envTitle, "GITHUB_TEST_DOC_ID must be provided for testing");
+        Assertions.assertNotNull(envTitle, "GITHUB_TEST_DOC_TITLE must be provided for testing");
         
         driver.get("http://localhost:8080");
         wait.until(ExpectedConditions.titleContains("Ditto"));
