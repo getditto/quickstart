@@ -460,7 +460,7 @@ jobs:
           exit 0
         fi
         
-        MAX_WAIT_TIME=900  # 15 minutes
+        MAX_WAIT_TIME=1800  # 30 minutes
         CHECK_INTERVAL=30   # Check every 30 seconds
         ELAPSED=0
         

@@ -237,7 +237,7 @@ jobs:
           exit 1
         fi
         
-        MAX_WAIT_TIME=1200  # 20 minutes
+        MAX_WAIT_TIME=1800  # 30 minutes
         CHECK_INTERVAL=30   # Check every 30 seconds
         ELAPSED=0
         
