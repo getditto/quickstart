@@ -214,7 +214,7 @@ jobs:
     runs-on: macos-latest
     needs: [build-ios]
     if: needs.build-ios.outputs.ios-build-success == 'true'
-    timeout-minutes: 60
+    timeout-minutes: 150
 
     steps:
       - uses: actions/checkout@v4

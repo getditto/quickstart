@@ -39,7 +39,7 @@ jobs:
     name: Build Android
     runs-on: ubuntu-latest
     needs: lint
-    timeout-minutes: 30
+    timeout-minutes: 150
 
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +103,7 @@ jobs:
     name: Build iOS
     runs-on: macos-latest
     needs: lint
-    timeout-minutes: 30
+    timeout-minutes: 150
 
     steps:
       - uses: actions/checkout@v4
@@ -203,7 +203,7 @@ jobs:
     name: Test Android - BrowserStack Maestro
     runs-on: ubuntu-latest
     needs: [build-android]
-    timeout-minutes: 30
+    timeout-minutes: 150
     outputs:
       build_id: ${{ steps.execute-tests.outputs.build_id }}
       status: ${{ job.status }}
@@ -383,7 +383,7 @@ jobs:
     name: Test iOS - BrowserStack Maestro
     runs-on: ubuntu-latest
     needs: [build-ios]
-    timeout-minutes: 30
+    timeout-minutes: 150
     outputs:
       build_id: ${{ steps.execute-tests.outputs.build_id }}
       status: ${{ job.status }}

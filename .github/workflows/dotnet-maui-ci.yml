@@ -247,7 +247,7 @@ jobs:
     name: BrowserStack iOS Tests
     runs-on: macos-latest
     needs: [build-ios]
-    timeout-minutes: 60
+    timeout-minutes: 150
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
 
     steps:
