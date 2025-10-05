@@ -183,10 +183,15 @@ jobs:
         timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
+          # Load device from centralized config
+          DEVICE=$(jq -r '.["android-cpp"].devices[0]' .github/browserstack-devices.json)
+          echo "Using device: $DEVICE"
+
           cd android-cpp/QuickStartTasksCPP/appium-test
           export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
           export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
           export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
+          export BROWSERSTACK_DEVICE="$DEVICE"
           export DITTO_CLOUD_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}"
 
           ../gradlew test --console=plain --no-daemon

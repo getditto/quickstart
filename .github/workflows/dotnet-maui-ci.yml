@@ -206,14 +206,19 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-        timeout_minutes: 20
-        retry_wait_seconds: 300
-        command: |
+          timeout_minutes: 20
+          retry_wait_seconds: 300
+          command: |
+            # Load device from centralized config
+            DEVICE=$(jq -r '.["dotnet-maui"].android.devices[0]' .github/browserstack-devices.json)
+            echo "Using Android device: $DEVICE"
+
             cd dotnet-maui/UITests.Android
             dotnet restore
             BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             BROWSERSTACK_APP_ID="${{ steps.upload-android.outputs.app_url }}" \
+            BROWSERSTACK_DEVICE="$DEVICE" \
             DITTO_CLOUD_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
             BUILD_NAME="CI Build #${{ github.run_number }}" \
             dotnet run
@@ -280,14 +285,19 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-        timeout_minutes: 20
-        retry_wait_seconds: 300
-        command: |
+          timeout_minutes: 20
+          retry_wait_seconds: 300
+          command: |
+            # Load device from centralized config
+            DEVICE=$(jq -r '.["dotnet-maui"].ios.devices[0]' .github/browserstack-devices.json)
+            echo "Using iOS device: $DEVICE"
+
             cd dotnet-maui/UITests.iOS
             dotnet restore
             BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             BROWSERSTACK_APP_ID="${{ steps.upload-ios.outputs.app_url }}" \
+            BROWSERSTACK_DEVICE="$DEVICE" \
             DITTO_CLOUD_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
             BUILD_NAME="CI Build #${{ github.run_number }}" \
             dotnet run

@@ -16,9 +16,15 @@ class AppiumE2ETest {
 
         val options = UiAutomator2Options().apply {
             if (isBrowserStack) {
+                // Load device config from environment (set by workflow from browserstack-devices.json)
+                val deviceString = System.getenv("BROWSERSTACK_DEVICE") ?: "Google Pixel 7-13.0"
+                val deviceParts = deviceString.split("-")
+                val deviceName = deviceParts[0]
+                val platformVersion = deviceParts.getOrElse(1) { "13.0" }
+
                 setPlatformName("Android")
-                setDeviceName("Google Pixel 7")
-                setPlatformVersion("13.0")
+                setDeviceName(deviceName)
+                setPlatformVersion(platformVersion)
                 setCapability("app", System.getenv("BROWSERSTACK_APP_URL"))
                 setCapability("project", "Ditto SDK Android CPP")
                 setCapability("build", "Appium E2E Tests")
