@@ -130,14 +130,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: "android-cpp"
-
       - name: Download APK artifacts
         uses: actions/download-artifact@v4
         with:
@@ -168,7 +160,7 @@ jobs:
             exit 1
           fi
 
-      - name: Execute Appium tests on BrowserStack
+      - name: Seed and execute Appium tests on BrowserStack
         id: test
         uses: nick-fields/retry@v3
         with:
@@ -176,16 +168,31 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 300
           command: |
+            # Seed test task to Ditto Cloud inline
+            echo "Seeding test task to Ditto Cloud..."
+            SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\": \"E2E Test Task - android-cpp - $(date +%s)\", \"isCompleted\": false}")
+
+            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+              echo "Error: Failed to seed task"
+              exit 1
+            fi
+            echo "Seeded task: $TASK_TITLE"
+
             # Load device from centralized config
             DEVICE=$(jq -r '.["android-cpp"].devices[0]' .github/browserstack-devices.json)
             echo "Using device: $DEVICE"
 
+            # Execute tests
             cd android-cpp/QuickStartTasksCPP/appium-test
             export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
             export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
             export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
             export BROWSERSTACK_DEVICE="$DEVICE"
-            export DITTO_CLOUD_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}"
+            export DITTO_CLOUD_TASK_TITLE="$TASK_TITLE"
 
             ../gradlew test --console=plain --no-daemon
 
