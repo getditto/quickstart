@@ -219,14 +219,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: "swift"
-
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -309,10 +301,6 @@ jobs:
           echo "test_bundle_path=$OUT_ZIP" >> "$GITHUB_OUTPUT"
           echo "✅ XCUITest test-suite zip ready: $OUT_ZIP"
 
-      - name: Set environment variables for tests
-        run: |
-          echo "DITTO_CLOUD_TASK_TITLE=${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_ENV
-
       - name: Upload App and Test Bundle to BrowserStack
         id: upload
         run: |
@@ -386,7 +374,7 @@ jobs:
           echo "📱 App URL: $APP_URL"
           echo "🧪 Test URL: $TEST_URL"
 
-      - name: Execute and wait for XCUITest
+      - name: Seed and execute XCUITests on BrowserStack
         id: test
         uses: nick-fields/retry@v3
         with:
@@ -394,6 +382,20 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 300
           command: |
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\": \"E2E Test Task - swift - $(date +%s)\", \"isCompleted\": false}")
+
+            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+              echo "Error: Failed to seed task"
+              exit 1
+            fi
+            echo "Seeded task: $TASK_TITLE"
+
             # Validate inputs
             APP_URL="${{ steps.upload.outputs.app_url }}"
             TEST_URL="${{ steps.upload.outputs.test_url }}"
@@ -412,7 +414,7 @@ jobs:
               exit 0
             fi
 
-            # Create XCUITest execution request using v2 API with setEnvVariables
+            # Execute tests
             # Load devices from centralized config
             DEVICES=$(jq -c '.swift.devices' .github/browserstack-devices.json)
 
@@ -432,7 +434,7 @@ jobs:
                 \"setEnvVariables\": {
                   \"GITHUB_RUN_ID\": \"${{ github.run_id }}\",
                   \"GITHUB_RUN_NUMBER\": \"${{ github.run_number }}\",
-                  \"DITTO_CLOUD_TASK_TITLE\": \"${{ env.DITTO_CLOUD_TASK_TITLE }}\"
+                  \"DITTO_CLOUD_TASK_TITLE\": \"$TASK_TITLE\"
                 }
               }")
 

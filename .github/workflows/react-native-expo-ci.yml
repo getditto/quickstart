@@ -214,79 +214,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Seed test task to Ditto Cloud
-        id: seed-document
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: "react-native-expo"
-
       - name: Download Android APK
         uses: actions/download-artifact@v4
         with:
           name: expo-android-apk-${{ github.run_number }}
           path: ./artifacts/
 
-      - name: Upload APK to BrowserStack
-        id: upload-apk
-        run: |
-          response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
-            -F "file=@./artifacts/app-release.apk" \
-            -F "custom_id=ReactNative-Expo-Android-${{ github.run_id }}")
-
-          app_url=$(echo $response | jq -r '.app_url')
-
-          # Validate API response
-          if [ -z "$app_url" ] || [ "$app_url" = "null" ]; then
-            echo "❌ Failed to get app_url from upload response"
-            echo "Response: $response"
-            exit 1
-          fi
-
-          echo "✅ APK uploaded successfully: $app_url"
-          echo "app_url=$app_url" >> $GITHUB_OUTPUT
-
-      - name: Create Maestro test suite ZIP
-        run: |
-          cd react-native-expo
-          # Create proper BrowserStack folder structure (normal parent folder, not hidden)
-          rm -rf maestro-tests
-          mkdir maestro-tests
-
-          # Replace MAESTRO_DITTO_CLOUD_TASK_TITLE with actual seeded task name (BrowserStack Android API bug workaround)
-          sed 's/\${MAESTRO_DITTO_CLOUD_TASK_TITLE}/${{ steps.seed-document.outputs.document-title }}/g' \
-            .maestro/flows/01-app-launch-and-seeded-tasks-android.yaml > maestro-tests/01-app-launch-and-seeded-tasks-android.yaml
-
-          # Also create flows/ subfolder for organization
-          mkdir maestro-tests/flows
-          cp .maestro/flows/01-app-launch-and-seeded-tasks-android.yaml maestro-tests/flows/
-
-          # Create ZIP with proper structure
-          zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
-
-      - name: Upload Maestro test suite to BrowserStack
-        id: upload-tests
-        run: |
-          response=$(curl --fail-with-body -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
-            -F "file=@react-native-expo/maestro-tests.zip" \
-            -F "custom_id=ReactNative-Expo-Tests-${{ github.run_id }}")
-
-          test_suite_url=$(echo $response | jq -r '.test_suite_url')
-
-          # Validate API response
-          if [ -z "$test_suite_url" ] || [ "$test_suite_url" = "null" ]; then
-            echo "❌ Failed to get test_suite_url from upload response"
-            echo "Response: $response"
-            exit 1
-          fi
-
-          echo "✅ Test suite uploaded successfully: $test_suite_url"
-          echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
-
-      - name: Execute and wait for Maestro tests on BrowserStack (Parallel)
+      - name: Seed, create test suite, upload, and execute Android Maestro tests
         id: execute-tests
         uses: nick-fields/retry@v3
         with:
@@ -294,6 +228,68 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 300
           command: |
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\": \"E2E Test Task - react-native-expo - $(date +%s)\", \"isCompleted\": false}")
+
+            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+              echo "Error: Failed to seed task"
+              exit 1
+            fi
+            echo "Seeded task: $TASK_TITLE"
+
+            # Upload APK to BrowserStack
+            echo "Uploading APK to BrowserStack..."
+            response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
+              -F "file=@./artifacts/app-release.apk" \
+              -F "custom_id=ReactNative-Expo-Android-${{ github.run_id }}")
+
+            APP_URL=$(echo $response | jq -r '.app_url')
+            if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+              echo "Error: Failed to upload APK"
+              echo "Response: $response"
+              exit 1
+            fi
+            echo "APK uploaded: $APP_URL"
+
+            # Create Maestro test suite ZIP with sed replacement
+            cd react-native-expo
+            rm -rf maestro-tests
+            mkdir maestro-tests
+
+            # Replace MAESTRO_DITTO_CLOUD_TASK_TITLE with actual seeded task name (BrowserStack Android API bug workaround)
+            sed "s/\${MAESTRO_DITTO_CLOUD_TASK_TITLE}/$TASK_TITLE/g" \
+              .maestro/flows/01-app-launch-and-seeded-tasks-android.yaml > maestro-tests/01-app-launch-and-seeded-tasks-android.yaml
+
+            # Also create flows/ subfolder for organization
+            mkdir maestro-tests/flows
+            cp maestro-tests/01-app-launch-and-seeded-tasks-android.yaml maestro-tests/flows/
+
+            # Create ZIP with proper structure
+            zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
+            cd ..
+
+            # Upload Maestro test suite to BrowserStack
+            echo "Uploading test suite to BrowserStack..."
+            response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
+              -F "file=@react-native-expo/maestro-tests.zip" \
+              -F "custom_id=ReactNative-Expo-Tests-${{ github.run_id }}")
+
+            TEST_SUITE_URL=$(echo $response | jq -r '.test_suite_url')
+            if [ -z "$TEST_SUITE_URL" ] || [ "$TEST_SUITE_URL" = "null" ]; then
+              echo "Error: Failed to upload test suite"
+              echo "Response: $response"
+              exit 1
+            fi
+            echo "Test suite uploaded: $TEST_SUITE_URL"
+
+            # Execute tests
             # Load devices from centralized config
             DEVICES=$(jq -c '.["react-native-expo"].android.devices' .github/browserstack-devices.json)
             echo "Loaded devices: $DEVICES"
@@ -301,18 +297,18 @@ jobs:
             response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/android/build" \
               -H "Content-Type: application/json" \
-              -d '{
-                "app": "${{ steps.upload-apk.outputs.app_url }}",
-                "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
-                "project": "QuickStart React Native Expo",
-                "buildName": "CI Build #${{ github.run_number }}",
-                "buildTag": "${{ github.ref_name }}",
-                "devices": '"$DEVICES"',
-                "execute": ["01-app-launch-and-seeded-tasks-android.yaml"],
-                "deviceLogs": true,
-                "networkLogs": true,
-                "video": true
-              }')
+              -d "{
+                \"app\": \"$APP_URL\",
+                \"testSuite\": \"$TEST_SUITE_URL\",
+                \"project\": \"QuickStart React Native Expo\",
+                \"buildName\": \"CI Build #${{ github.run_number }}\",
+                \"buildTag\": \"${{ github.ref_name }}\",
+                \"devices\": $DEVICES,
+                \"execute\": [\"01-app-launch-and-seeded-tasks-android.yaml\"],
+                \"deviceLogs\": true,
+                \"networkLogs\": true,
+                \"video\": true
+              }")
 
             echo "Execution response: $response"
             build_id=$(echo $response | jq -r '.build_id')
@@ -370,69 +366,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Seed test task to Ditto Cloud
-        id: seed-document
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: "react-native-expo"
-
       - name: Download iOS IPA
         uses: actions/download-artifact@v4
         with:
           name: expo-ios-ipa-${{ github.run_number }}
           path: ./artifacts/
 
-      - name: Upload IPA to BrowserStack
-        id: upload-ipa
-        run: |
-          response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
-            -F "file=@./artifacts/reactnativeexpo-unsigned.ipa" \
-            -F "custom_id=ReactNative-Expo-iOS-${{ github.run_id }}")
-
-          app_url=$(echo $response | jq -r '.app_url')
-
-          # Validate API response
-          if [ -z "$app_url" ] || [ "$app_url" = "null" ]; then
-            echo "❌ Failed to get app_url from upload response"
-            echo "Response: $response"
-            exit 1
-          fi
-
-          echo "✅ IPA uploaded successfully: $app_url"
-          echo "app_url=$app_url" >> $GITHUB_OUTPUT
-
-      - name: Create Maestro test suite ZIP
-        run: |
-          cd react-native-expo
-          # Create proper BrowserStack folder structure (normal parent folder, not hidden)
-          rm -rf maestro-tests
-          mkdir maestro-tests
-
-          # Copy only iOS-specific tests to root level (avoid conflicting appIds)
-          cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
-
-          # Also create flows/ subfolder for organization
-          mkdir maestro-tests/flows
-          cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/flows/
-
-          # Create ZIP with proper structure
-          zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
-
-      - name: Upload Maestro test suite to BrowserStack
-        id: upload-tests
-        run: |
-          response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
-            -F "file=@react-native-expo/maestro-tests.zip" \
-            -F "custom_id=ReactNative-Expo-iOS-Tests-${{ github.run_id }}")
-
-          test_suite_url=$(echo $response | jq -r '.test_suite_url')
-          echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
-
-      - name: Execute and wait for Maestro tests on BrowserStack (Parallel)
+      - name: Seed, upload, and execute iOS Maestro tests on BrowserStack
         id: execute-tests
         uses: nick-fields/retry@v3
         with:
@@ -440,6 +380,67 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 300
           command: |
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\": \"E2E Test Task - react-native-expo - $(date +%s)\", \"isCompleted\": false}")
+
+            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+              echo "Error: Failed to seed task"
+              exit 1
+            fi
+            echo "Seeded task: $TASK_TITLE"
+
+            # Upload IPA to BrowserStack
+            echo "Uploading IPA to BrowserStack..."
+            response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/app" \
+              -F "file=@./artifacts/reactnativeexpo-unsigned.ipa" \
+              -F "custom_id=ReactNative-Expo-iOS-${{ github.run_id }}")
+
+            APP_URL=$(echo $response | jq -r '.app_url')
+            if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
+              echo "Error: Failed to upload IPA"
+              echo "Response: $response"
+              exit 1
+            fi
+            echo "IPA uploaded: $APP_URL"
+
+            # Create Maestro test suite ZIP
+            cd react-native-expo
+            rm -rf maestro-tests
+            mkdir maestro-tests
+
+            # Copy only iOS-specific tests to root level
+            cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/
+
+            # Also create flows/ subfolder for organization
+            mkdir maestro-tests/flows
+            cp .maestro/flows/01-app-launch-and-seeded-tasks-ios.yaml maestro-tests/flows/
+
+            # Create ZIP with proper structure
+            zip -r maestro-tests.zip maestro-tests -x "*.DS_Store"
+            cd ..
+
+            # Upload Maestro test suite to BrowserStack
+            echo "Uploading test suite to BrowserStack..."
+            response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/test-suite" \
+              -F "file=@react-native-expo/maestro-tests.zip" \
+              -F "custom_id=ReactNative-Expo-iOS-Tests-${{ github.run_id }}")
+
+            TEST_SUITE_URL=$(echo $response | jq -r '.test_suite_url')
+            if [ -z "$TEST_SUITE_URL" ] || [ "$TEST_SUITE_URL" = "null" ]; then
+              echo "Error: Failed to upload test suite"
+              echo "Response: $response"
+              exit 1
+            fi
+            echo "Test suite uploaded: $TEST_SUITE_URL"
+
+            # Execute tests
             # Load devices from centralized config
             DEVICES=$(jq -c '.["react-native-expo"].ios.devices' .github/browserstack-devices.json)
             echo "Loaded devices: $DEVICES"
@@ -447,21 +448,21 @@ jobs:
             response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/ios/build" \
               -H "Content-Type: application/json" \
-              -d '{
-                "app": "${{ steps.upload-ipa.outputs.app_url }}",
-                "testSuite": "${{ steps.upload-tests.outputs.test_suite_url }}",
-                "project": "QuickStart React Native Expo",
-                "buildName": "CI Build #${{ github.run_number }}",
-                "buildTag": "${{ github.ref_name }}",
-                "devices": '"$DEVICES"',
-                "execute": ["01-app-launch-and-seeded-tasks-ios.yaml"],
-                "setEnvVariables": {
-                  "MAESTRO_DITTO_CLOUD_TASK_TITLE": "${{ steps.seed-document.outputs.document-title }}"
+              -d "{
+                \"app\": \"$APP_URL\",
+                \"testSuite\": \"$TEST_SUITE_URL\",
+                \"project\": \"QuickStart React Native Expo\",
+                \"buildName\": \"CI Build #${{ github.run_number }}\",
+                \"buildTag\": \"${{ github.ref_name }}\",
+                \"devices\": $DEVICES,
+                \"execute\": [\"01-app-launch-and-seeded-tasks-ios.yaml\"],
+                \"setEnvVariables\": {
+                  \"MAESTRO_DITTO_CLOUD_TASK_TITLE\": \"$TASK_TITLE\"
                 },
-                "deviceLogs": true,
-                "networkLogs": true,
-                "video": true
-              }')
+                \"deviceLogs\": true,
+                \"networkLogs\": true,
+                \"video\": true
+              }")
 
             echo "Execution response: $response"
             build_id=$(echo $response | jq -r '.build_id')
