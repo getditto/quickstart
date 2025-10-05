@@ -3,14 +3,13 @@ name: JavaScript Web CI
 on:
   push:
     paths:
-      - 'javascript-web/**'
-      - '.github/workflows/javascript-web-ci.yml'
+      - "javascript-web/**"
+      - ".github/workflows/javascript-web-ci.yml"
   pull_request:
     paths:
-      - 'javascript-web/**'
-      - '.github/workflows/javascript-web-ci.yml'
+      - "javascript-web/**"
+      - ".github/workflows/javascript-web-ci.yml"
   workflow_dispatch:
-
 
 jobs:
   lint:
@@ -25,8 +24,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: javascript-web/package-lock.json
 
       - name: Install dependencies
@@ -50,8 +49,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: javascript-web/package-lock.json
 
       - name: Create .env file
@@ -92,12 +91,12 @@ jobs:
         with:
           ditto-api-key: ${{ secrets.DITTO_API_KEY }}
           ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: 'javascript-web'
+          app-name: "javascript-web"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -146,11 +145,11 @@ jobs:
         timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
-            # Install Python dependencies
-            pip3 install selenium
+          # Install Python dependencies
+          pip3 install selenium
 
-            # Run the test script
-            python3 .github/scripts/browserstack-test.py
+          # Run the test script
+          python3 .github/scripts/browserstack-test.py
 
       - name: Stop BrowserStack Local tunnel
         if: always()

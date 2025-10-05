@@ -3,14 +3,13 @@ name: .NET MAUI CI
 on:
   push:
     paths:
-      - 'dotnet-maui/**'
-      - '.github/workflows/dotnet-maui-ci.yml'
+      - "dotnet-maui/**"
+      - ".github/workflows/dotnet-maui-ci.yml"
   pull_request:
     paths:
-      - 'dotnet-maui/**'
-      - '.github/workflows/dotnet-maui-ci.yml'
+      - "dotnet-maui/**"
+      - ".github/workflows/dotnet-maui-ci.yml"
   workflow_dispatch:
-
 
 jobs:
   lint:
@@ -25,7 +24,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
 
       - name: Create test .env file
         run: |
@@ -62,7 +61,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -105,7 +104,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
 
       - name: Create .env file
         run: |
@@ -161,12 +160,12 @@ jobs:
         with:
           ditto-api-key: ${{ secrets.DITTO_API_KEY }}
           ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: 'dotnet-maui'
+          app-name: "dotnet-maui"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
 
       - name: Download Android APK artifact
         uses: actions/download-artifact@v4
@@ -240,12 +239,12 @@ jobs:
         with:
           ditto-api-key: ${{ secrets.DITTO_API_KEY }}
           ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: 'dotnet-maui'
+          app-name: "dotnet-maui"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
 
       - name: Download iOS IPA artifact
         uses: actions/download-artifact@v4

@@ -9,18 +9,18 @@ on:
   pull_request:
     branches:
       - main
-      - 'sdk-*'
+      - "sdk-*"
     paths:
-      - 'android-cpp/**'
-      - '.github/workflows/android-cpp-ci.yml'
+      - "android-cpp/**"
+      - ".github/workflows/android-cpp-ci.yml"
   push:
     branches:
       - main
-      - 'sdk-*'
+      - "sdk-*"
     paths:
-      - 'android-cpp/**'
-      - '.github/workflows/android-cpp-ci.yml'
-  workflow_dispatch:  # Allow manual trigger
+      - "android-cpp/**"
+      - ".github/workflows/android-cpp-ci.yml"
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
   lint:
@@ -29,52 +29,52 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-    - name: Install clang-format
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang-format
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
 
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-          android-cpp/.gradle
-        key: gradle-${{ runner.os }}-${{ hashFiles('android-cpp/QuickStartTasksCPP/gradle/wrapper/gradle-wrapper.properties', 'android-cpp/QuickStartTasksCPP/**/*.gradle*') }}
-        restore-keys: |
-          gradle-${{ runner.os }}-
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android-cpp/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('android-cpp/QuickStartTasksCPP/gradle/wrapper/gradle-wrapper.properties', 'android-cpp/QuickStartTasksCPP/**/*.gradle*') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
-    - name: Create test .env file
-      run: |
-        echo "DITTO_APP_ID=test" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
-        echo "DITTO_AUTH_URL=test" >> .env
-        echo "DITTO_WEBSOCKET_URL=test" >> .env
+      - name: Create test .env file
+        run: |
+          echo "DITTO_APP_ID=test" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
+          echo "DITTO_AUTH_URL=test" >> .env
+          echo "DITTO_WEBSOCKET_URL=test" >> .env
 
-    - name: Run Android linting
-      working-directory: android-cpp/QuickStartTasksCPP
-      run: ./gradlew lint
+      - name: Run Android linting
+        working-directory: android-cpp/QuickStartTasksCPP
+        run: ./gradlew lint
 
-    - name: Check C++ formatting
-      working-directory: android-cpp/QuickStartTasksCPP/app/src/main/cpp
-      run: |
-        echo "Checking C++ code formatting with clang-format..."
-        find . -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
-        if [ $? -eq 0 ]; then
-          echo "✅ C++ code formatting check passed"
-        else
-          echo "❌ C++ code formatting issues found. Run clang-format to fix."
-          exit 1
-        fi
+      - name: Check C++ formatting
+        working-directory: android-cpp/QuickStartTasksCPP/app/src/main/cpp
+        run: |
+          echo "Checking C++ code formatting with clang-format..."
+          find . -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
+          if [ $? -eq 0 ]; then
+            echo "✅ C++ code formatting check passed"
+          else
+            echo "❌ C++ code formatting issues found. Run clang-format to fix."
+            exit 1
+          fi
 
   build:
     name: Build APK
@@ -83,48 +83,48 @@ jobs:
     timeout-minutes: 20
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-    - name: Cache Gradle dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-    - name: Create .env file
-      run: |
-        echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-        echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-        echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-        echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
-    - name: Build APK
-      working-directory: android-cpp/QuickStartTasksCPP
-      run: ./gradlew assembleRelease
+      - name: Build APK
+        working-directory: android-cpp/QuickStartTasksCPP
+        run: ./gradlew assembleRelease
 
-    - name: Upload APK artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-cpp-apks
-        path: |
-          android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk
-        retention-days: 1
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-cpp-apks
+          path: |
+            android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 1
 
   browserstack-android:
     name: BrowserStack Android Testing
@@ -134,76 +134,75 @@ jobs:
     timeout-minutes: 45
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Seed test task to Ditto Cloud
-      id: seed_task
-      uses: ./.github/actions/seed-ditto-document
-      with:
-        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-        ditto-api-url: ${{ secrets.DITTO_API_URL }}
-        app-name: 'android-cpp'
+      - name: Seed test task to Ditto Cloud
+        id: seed_task
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: "android-cpp"
 
-    - name: Download APK artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: android-cpp-apks
-        path: android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-cpp-apks
+          path: android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/
 
-    - name: Setup Java for Appium test
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Setup Java for Appium test
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
+      - name: Upload APK to BrowserStack
+        id: upload
+        run: |
+          CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
 
-    - name: Upload APK to BrowserStack
-      id: upload
-      run: |
-        CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+          APP_RESPONSE=$(curl -u "$CREDS" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk" \
+            -F "custom_id=ditto-android-cpp-appium-app")
 
-        APP_RESPONSE=$(curl -u "$CREDS" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-          -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk" \
-          -F "custom_id=ditto-android-cpp-appium-app")
+          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
 
-        APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
-        echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+            echo "Failed to upload app APK"
+            exit 1
+          fi
 
-        if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-          echo "Failed to upload app APK"
-          exit 1
-        fi
+      - name: Execute Appium tests on BrowserStack
+        id: test
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          timeout_minutes: 20
+          retry_wait_seconds: 300
+          command: |
+            # Load device from centralized config
+            DEVICE=$(jq -r '.["android-cpp"].devices[0]' .github/browserstack-devices.json)
+            echo "Using device: $DEVICE"
 
-    - name: Execute Appium tests on BrowserStack
-      id: test
-      uses: nick-fields/retry@v3
-      with:
-        max_attempts: 5
-        timeout_minutes: 20
-        retry_wait_seconds: 300
-        command: |
-          # Load device from centralized config
-          DEVICE=$(jq -r '.["android-cpp"].devices[0]' .github/browserstack-devices.json)
-          echo "Using device: $DEVICE"
+            cd android-cpp/QuickStartTasksCPP/appium-test
+            export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
+            export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+            export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
+            export BROWSERSTACK_DEVICE="$DEVICE"
+            export DITTO_CLOUD_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}"
 
-          cd android-cpp/QuickStartTasksCPP/appium-test
-          export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
-          export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-          export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-          export BROWSERSTACK_DEVICE="$DEVICE"
-          export DITTO_CLOUD_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}"
+            ../gradlew test --console=plain --no-daemon
 
-          ../gradlew test --console=plain --no-daemon
-
-    - name: Upload test artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: |
-          android-cpp/QuickStartTasksCPP/app/build/outputs/apk/
-          android-cpp/QuickStartTasksCPP/appium-test/build/reports/
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            android-cpp/QuickStartTasksCPP/app/build/outputs/apk/
+            android-cpp/QuickStartTasksCPP/appium-test/build/reports/
 
   summary:
     name: CI Report
@@ -212,34 +211,34 @@ jobs:
     if: always()
 
     steps:
-    - name: Report Results
-      run: |
-        echo "## 📱 Android C++ CI" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        # Overall status
-        if [[ "${{ needs.lint.result }}" == "success" && \
-              "${{ needs.build.result }}" == "success" && \
-              "${{ needs.browserstack-android.result }}" == "success" ]]; then
-          echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
-        fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| BrowserStack Tests | ${{ needs.browserstack-android.result == 'success' && '✅ Passed' || (needs.browserstack-android.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        # BrowserStack link
-        if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
-          echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+      - name: Report Results
+        run: |
+          echo "## 📱 Android C++ CI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Android+C%2B%2B&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+
+          # Overall status
+          if [[ "${{ needs.lint.result }}" == "success" && \
+                "${{ needs.build.result }}" == "success" && \
+                "${{ needs.browserstack-android.result }}" == "success" ]]; then
+            echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Google Pixel 7 (Android 13.0)" >> $GITHUB_STEP_SUMMARY
-        fi
+
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack Tests | ${{ needs.browserstack-android.result == 'success' && '✅ Passed' || (needs.browserstack-android.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # BrowserStack link
+          if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
+            echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Android+C%2B%2B&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Google Pixel 7 (Android 13.0)" >> $GITHUB_STEP_SUMMARY
+          fi
