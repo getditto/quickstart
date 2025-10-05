@@ -359,7 +359,7 @@ jobs:
         command: |
           # Seed test task to Ditto Cloud
           echo "Seeding test task to Ditto Cloud..."
-          SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+          SEED_RESPONSE=$(curl -sL -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
             -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d "{\"text\": \"E2E Test Task - kotlin-multiplatform - $(date +%s)\", \"isCompleted\": false}")
