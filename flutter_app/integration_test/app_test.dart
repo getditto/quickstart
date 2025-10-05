@@ -46,7 +46,8 @@ void main() {
       const testTitle = String.fromEnvironment('DITTO_CLOUD_TASK_TITLE');
 
       if (testTitle.isEmpty) {
-        throw Exception('DITTO_CLOUD_TASK_TITLE environment variable must be set. '
+        throw Exception(
+            'DITTO_CLOUD_TASK_TITLE environment variable must be set. '
             'Build with: --dart-define=DITTO_CLOUD_TASK_TITLE=<task_title>');
       }
 
