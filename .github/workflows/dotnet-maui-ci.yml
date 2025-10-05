@@ -154,14 +154,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: "dotnet-maui"
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -201,24 +193,39 @@ jobs:
           echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
           echo "Android APK uploaded: $APP_URL"
 
-      - name: Run Android tests on BrowserStack
+      - name: Seed and execute Android tests on BrowserStack
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
           timeout_minutes: 20
           retry_wait_seconds: 300
           command: |
+            # Seed test task to Ditto Cloud inline
+            echo "Seeding test task to Ditto Cloud..."
+            SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\": \"E2E Test Task - dotnet-maui - $(date +%s)\", \"isCompleted\": false}")
+
+            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+              echo "Error: Failed to seed task"
+              exit 1
+            fi
+            echo "Seeded task: $TASK_TITLE"
+
             # Load device from centralized config
             DEVICE=$(jq -r '.["dotnet-maui"].android.devices[0]' .github/browserstack-devices.json)
             echo "Using Android device: $DEVICE"
 
+            # Execute tests
             cd dotnet-maui/UITests.Android
             dotnet restore
             BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             BROWSERSTACK_APP_ID="${{ steps.upload-android.outputs.app_url }}" \
             BROWSERSTACK_DEVICE="$DEVICE" \
-            DITTO_CLOUD_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
+            DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             BUILD_NAME="CI Build #${{ github.run_number }}" \
             dotnet run
 
@@ -232,14 +239,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: "dotnet-maui"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -280,24 +279,39 @@ jobs:
           echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
           echo "iOS IPA uploaded: $APP_URL"
 
-      - name: Run iOS tests on BrowserStack
+      - name: Seed and execute iOS tests on BrowserStack
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
           timeout_minutes: 20
           retry_wait_seconds: 300
           command: |
+            # Seed test task to Ditto Cloud inline
+            echo "Seeding test task to Ditto Cloud..."
+            SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\": \"E2E Test Task - dotnet-maui - $(date +%s)\", \"isCompleted\": false}")
+
+            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+              echo "Error: Failed to seed task"
+              exit 1
+            fi
+            echo "Seeded task: $TASK_TITLE"
+
             # Load device from centralized config
             DEVICE=$(jq -r '.["dotnet-maui"].ios.devices[0]' .github/browserstack-devices.json)
             echo "Using iOS device: $DEVICE"
 
+            # Execute tests
             cd dotnet-maui/UITests.iOS
             dotnet restore
             BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             BROWSERSTACK_APP_ID="${{ steps.upload-ios.outputs.app_url }}" \
             BROWSERSTACK_DEVICE="$DEVICE" \
-            DITTO_CLOUD_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
+            DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             BUILD_NAME="CI Build #${{ github.run_number }}" \
             dotnet run
 
