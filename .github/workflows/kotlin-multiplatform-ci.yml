@@ -351,8 +351,7 @@ jobs:
       uses: nick-fields/retry@v3
       with:
         max_attempts: 5
-        timeout_minutes: 20
-        retry_wait_seconds: 600
+        retry_wait_seconds: 300
         command: |
           # Seed test task to Ditto Cloud
           echo "Seeding test task to Ditto Cloud..."
