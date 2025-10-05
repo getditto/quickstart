@@ -224,6 +224,7 @@ jobs:
             # Seed test task to Ditto Cloud
             echo "Seeding test task to Ditto Cloud..."
             TIMESTAMP=$(date +%s)
+            INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
             SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
               -H 'Content-type: application/json' \
               -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
@@ -231,8 +232,8 @@ jobs:
                 \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
                 \"args\": {
                   \"newTask\": {
-                    \"_id\": \"react-native_\${TIMESTAMP}\",
-                    \"title\": \"E2E Test Task - react-native - \${TIMESTAMP}\",
+                    \"_id\": \"\${INVERTED_TIMESTAMP}_react-native_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"title\": \"\${INVERTED_TIMESTAMP}_react-native_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
                     \"done\": false,
                     \"deleted\": false
                   }
@@ -244,7 +245,7 @@ jobs:
             BODY=$(echo "$SEED_RESPONSE" | sed '$d')
 
             if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-              TASK_TITLE="E2E Test Task - react-native - ${TIMESTAMP}"
+              TASK_TITLE="${INVERTED_TIMESTAMP}_react-native_ci_test_${{ github.run_id }}_${{ github.run_number }}"
               echo "Seeded task: $TASK_TITLE"
             else
               echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
@@ -389,6 +390,7 @@ jobs:
             # Seed test task to Ditto Cloud
             echo "Seeding test task to Ditto Cloud..."
             TIMESTAMP=$(date +%s)
+            INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
             SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
               -H 'Content-type: application/json' \
               -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
@@ -396,8 +398,8 @@ jobs:
                 \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
                 \"args\": {
                   \"newTask\": {
-                    \"_id\": \"react-native_\${TIMESTAMP}\",
-                    \"title\": \"E2E Test Task - react-native - \${TIMESTAMP}\",
+                    \"_id\": \"\${INVERTED_TIMESTAMP}_react-native_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"title\": \"\${INVERTED_TIMESTAMP}_react-native_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
                     \"done\": false,
                     \"deleted\": false
                   }
@@ -409,7 +411,7 @@ jobs:
             BODY=$(echo "$SEED_RESPONSE" | sed '$d')
 
             if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-              TASK_TITLE="E2E Test Task - react-native - ${TIMESTAMP}"
+              TASK_TITLE="${INVERTED_TIMESTAMP}_react-native_ci_test_${{ github.run_id }}_${{ github.run_number }}"
               echo "Seeded task: $TASK_TITLE"
             else
               echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
