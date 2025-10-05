@@ -5,12 +5,6 @@ on:
     paths:
       - "javascript-web/**"
       - ".github/workflows/javascript-web-ci.yml"
-  push:
-    branches:
-      - main
-    paths:
-      - "javascript-web/**"
-      - ".github/workflows/javascript-web-ci.yml"
   workflow_dispatch:
 
 jobs:
