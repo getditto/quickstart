@@ -51,6 +51,10 @@ class TaskVisibilityIntegrationTest {
             ChromeOptions options = new ChromeOptions();
 
             Map<String, Object> bsOptions = new HashMap<>();
+            bsOptions.put("os", "Windows");
+            bsOptions.put("osVersion", "11");
+            bsOptions.put("browserName", "Chrome");
+            bsOptions.put("browserVersion", "latest");
             bsOptions.put("sessionName", "Java Spring Task Visibility Test");
 
             String bsLocal = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
