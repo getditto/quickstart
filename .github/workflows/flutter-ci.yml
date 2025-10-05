@@ -501,7 +501,7 @@ jobs:
         with:
           max_attempts: 5
           timeout_minutes: 20
-          retry_wait_seconds: 300
+          retry_wait_seconds: 600
           command: |
             # Load devices from centralized config
             DEVICES=$(jq -c '.flutter.android.devices' .github/browserstack-devices.json)
@@ -518,7 +518,8 @@ jobs:
                 \"buildTag\": \"${{ github.ref_name }}\",
                 \"deviceLogs\": true,
                 \"video\": true,
-                \"networkLogs\": true
+                \"networkLogs\": true,
+                \"autoGrantPermissions\": true
               }")
 
             echo "BrowserStack API Response:"
@@ -731,7 +732,7 @@ jobs:
         with:
           max_attempts: 5
           timeout_minutes: 20
-          retry_wait_seconds: 300
+          retry_wait_seconds: 600
           command: |
             TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
 
@@ -758,7 +759,8 @@ jobs:
                 \"buildName\": \"CI Build #${{ github.run_number }}\",
                 \"buildTag\": \"${{ github.ref_name }}\",
                 \"deviceLogs\": true,
-                \"networkLogs\": true
+                \"networkLogs\": true,
+                \"autoGrantPermissions\": true
               }")
 
             echo "BrowserStack API Response:"
