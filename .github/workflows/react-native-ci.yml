@@ -282,7 +282,7 @@ jobs:
           -F "custom_id=ReactNative-Tests-${{ github.run_id }}")
         echo "test_suite_url=$(echo "$response" | jq -r '.test_suite_url')" >> $GITHUB_OUTPUT
 
-    - name: Execute Maestro tests on BrowserStack (Parallel)
+    - name: Execute and wait for Maestro tests on BrowserStack (Parallel)
       id: execute-tests
       uses: nick-fields/retry@v3
       with:
@@ -433,7 +433,7 @@ jobs:
         test_suite_url=$(echo $response | jq -r '.test_suite_url')
         echo "test_suite_url=$test_suite_url" >> $GITHUB_OUTPUT
 
-    - name: Execute Maestro tests on BrowserStack (Parallel)
+    - name: Execute and wait for Maestro tests on BrowserStack (Parallel)
       id: execute-tests
       uses: nick-fields/retry@v3
       with:

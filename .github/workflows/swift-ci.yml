@@ -389,7 +389,7 @@ jobs:
         echo "📱 App URL: $APP_URL"
         echo "🧪 Test URL: $TEST_URL"
 
-    - name: Execute XCUITest on BrowserStack
+    - name: Execute and wait for XCUITest
       id: test
       uses: nick-fields/retry@v3
       with:
@@ -451,7 +451,7 @@ jobs:
             exit 1
           fi
 
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          # BUILD_ID stored in variable for wait logic below
           echo "Build started with ID: $BUILD_ID"
 
     - name: Wait for XCUITest to complete

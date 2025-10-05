@@ -478,7 +478,7 @@ jobs:
           fi
           echo "✅ Test suite APK uploaded: $TEST_URL"
 
-      - name: Execute tests on BrowserStack
+      - name: Execute and wait for BrowserStack tests
         id: test
         uses: nick-fields/retry@v3
         with:
@@ -534,7 +534,7 @@ jobs:
               exit 1
             fi
 
-            echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+            # BUILD_ID stored in variable for wait logic below
             echo "Build started with ID: $BUILD_ID"
 
       - name: Wait for BrowserStack tests to complete
@@ -735,7 +735,7 @@ jobs:
           fi
           echo "✅ iOS test package uploaded: $TEST_PACKAGE_URL"
 
-      - name: Execute tests on BrowserStack
+      - name: Execute and wait for BrowserStack tests
         id: test
         uses: nick-fields/retry@v3
         with:
@@ -783,7 +783,7 @@ jobs:
               exit 1
             fi
 
-            echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+            # BUILD_ID stored in variable for wait logic below
             echo "Build started with ID: $BUILD_ID"
 
       - name: Wait for BrowserStack tests to complete
