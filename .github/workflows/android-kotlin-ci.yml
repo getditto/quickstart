@@ -5,6 +5,10 @@ on:
     paths:
       - "android-kotlin/**"
       - ".github/workflows/android-kotlin-ci.yml"
+  push:
+    paths:
+      - "android-kotlin/**"
+      - ".github/workflows/android-kotlin-ci.yml"
   workflow_dispatch:
 
 jobs:
