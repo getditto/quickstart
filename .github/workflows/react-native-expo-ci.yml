@@ -226,7 +226,7 @@ jobs:
         with:
           max_attempts: 5
           timeout_minutes: 20
-          retry_wait_seconds: 300
+          retry_wait_seconds: 600
           command: |
             # Seed test task to Ditto Cloud
             echo "Seeding test task to Ditto Cloud..."
@@ -330,6 +330,13 @@ jobs:
 
             echo "Execution response: $response"
             build_id=$(echo $response | jq -r '.build_id')
+
+            if [ "$build_id" = "null" ] || [ -z "$build_id" ]; then
+              echo "❌ Failed to create BrowserStack build"
+              echo "Response: $response"
+              exit 1
+            fi
+
             echo "BrowserStack Build ID: $build_id"
 
             # Wait for test completion and get results
@@ -396,7 +403,7 @@ jobs:
         with:
           max_attempts: 5
           timeout_minutes: 20
-          retry_wait_seconds: 300
+          retry_wait_seconds: 600
           command: |
             # Seed test task to Ditto Cloud
             echo "Seeding test task to Ditto Cloud..."
@@ -502,6 +509,13 @@ jobs:
 
             echo "Execution response: $response"
             build_id=$(echo $response | jq -r '.build_id')
+
+            if [ "$build_id" = "null" ] || [ -z "$build_id" ]; then
+              echo "❌ Failed to create BrowserStack build"
+              echo "Response: $response"
+              exit 1
+            fi
+
             echo "BrowserStack Build ID: $build_id"
 
             # Wait for test completion and get results

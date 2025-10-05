@@ -380,7 +380,7 @@ jobs:
         with:
           max_attempts: 5
           timeout_minutes: 20
-          retry_wait_seconds: 300
+          retry_wait_seconds: 600
           command: |
             # Seed test task to Ditto Cloud
             echo "Seeding test task to Ditto Cloud..."
@@ -517,7 +517,7 @@ jobs:
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [browserstack]
+    needs: [lint, build-macos, build-ios, browserstack]
     if: always()
 
     steps:
