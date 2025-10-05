@@ -227,17 +227,34 @@ jobs:
           command: |
             # Seed test task to Ditto Cloud
             echo "Seeding test task to Ditto Cloud..."
-            SEED_RESPONSE=$(curl -sL -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
-              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
-              -H "Content-Type: application/json" \
-              -d "{\"text\": \"E2E Test Task - react-native - $(date +%s)\", \"isCompleted\": false}")
+            TIMESTAMP=$(date +%s)
+            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+                \"args\": {
+                  \"newTask\": {
+                    \"_id\": \"react-native_\${TIMESTAMP}\",
+                    \"title\": \"E2E Test Task - react-native - \${TIMESTAMP}\",
+                    \"done\": false,
+                    \"deleted\": false
+                  }
+                }
+              }" \
+              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
 
-            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
-            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
-              echo "Error: Failed to seed task"
+            HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+            BODY=$(echo "$SEED_RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              TASK_TITLE="E2E Test Task - react-native - ${TIMESTAMP}"
+              echo "Seeded task: $TASK_TITLE"
+            else
+              echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
+              echo "Response: $BODY"
               exit 1
             fi
-            echo "Seeded task: $TASK_TITLE"
 
             # Upload APK to BrowserStack
             echo "Uploading APK to BrowserStack..."
@@ -375,17 +392,34 @@ jobs:
           command: |
             # Seed test task to Ditto Cloud
             echo "Seeding test task to Ditto Cloud..."
-            SEED_RESPONSE=$(curl -sL -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
-              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
-              -H "Content-Type: application/json" \
-              -d "{\"text\": \"E2E Test Task - react-native - $(date +%s)\", \"isCompleted\": false}")
+            TIMESTAMP=$(date +%s)
+            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+                \"args\": {
+                  \"newTask\": {
+                    \"_id\": \"react-native_\${TIMESTAMP}\",
+                    \"title\": \"E2E Test Task - react-native - \${TIMESTAMP}\",
+                    \"done\": false,
+                    \"deleted\": false
+                  }
+                }
+              }" \
+              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
 
-            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
-            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
-              echo "Error: Failed to seed task"
+            HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+            BODY=$(echo "$SEED_RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              TASK_TITLE="E2E Test Task - react-native - ${TIMESTAMP}"
+              echo "Seeded task: $TASK_TITLE"
+            else
+              echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
+              echo "Response: $BODY"
               exit 1
             fi
-            echo "Seeded task: $TASK_TITLE"
 
             # Upload IPA to BrowserStack
             echo "Uploading IPA to BrowserStack..."
