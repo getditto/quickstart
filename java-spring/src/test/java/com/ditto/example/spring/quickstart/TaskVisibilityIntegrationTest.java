@@ -1,5 +1,7 @@
 package com.ditto.example.spring.quickstart;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
@@ -9,7 +11,10 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -51,10 +56,13 @@ class TaskVisibilityIntegrationTest {
             ChromeOptions options = new ChromeOptions();
 
             Map<String, Object> bsOptions = new HashMap<>();
-            bsOptions.put("os", "Windows");
-            bsOptions.put("osVersion", "11");
-            bsOptions.put("browserName", "Chrome");
-            bsOptions.put("browserVersion", "latest");
+
+            // Read platform configuration from browserstack-devices.json
+            Map<String, String> platformConfig = loadBrowserStackPlatformConfig();
+            bsOptions.put("os", platformConfig.get("os"));
+            bsOptions.put("osVersion", platformConfig.get("osVersion"));
+            bsOptions.put("browserName", platformConfig.get("browserName"));
+            bsOptions.put("browserVersion", platformConfig.get("browserVersion"));
             bsOptions.put("sessionName", "Java Spring Task Visibility Test");
 
             String bsLocal = firstNonEmpty(System.getProperty("BROWSERSTACK_LOCAL"), System.getenv("BROWSERSTACK_LOCAL"));
@@ -77,6 +85,30 @@ class TaskVisibilityIntegrationTest {
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize BrowserStack WebDriver: " + e.getMessage(), e);
+        }
+    }
+
+    private static Map<String, String> loadBrowserStackPlatformConfig() {
+        try {
+            // Path to browserstack-devices.json relative to project root
+            File configFile = Paths.get("..", ".github", "browserstack-devices.json").toFile();
+            if (!configFile.exists()) {
+                throw new RuntimeException("browserstack-devices.json not found at: " + configFile.getAbsolutePath());
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(configFile);
+            JsonNode javaPlatform = root.get("java-spring").get("platforms").get(0);
+
+            Map<String, String> config = new HashMap<>();
+            config.put("os", javaPlatform.get("os").asText());
+            config.put("osVersion", javaPlatform.get("osVersion").asText());
+            config.put("browserName", javaPlatform.get("browserName").asText());
+            config.put("browserVersion", javaPlatform.get("browserVersion").asText());
+
+            return config;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load BrowserStack platform configuration: " + e.getMessage(), e);
         }
     }
 
