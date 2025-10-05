@@ -380,14 +380,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: "flutter"
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -422,62 +414,7 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Build Android debug APKs with seeded task title
-        working-directory: flutter_app/android
-        run: |
-          # Use the task title from seed job
-          TITLE="${{ steps.seed_task.outputs.document-title }}"
-          ENCODED_TASK=$(echo -n "DITTO_CLOUD_TASK_TITLE=$TITLE" | base64)
-          TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
-
-          echo "📦 Building Android debug APKs with task title: $TITLE"
-          echo "📦 Encoded: SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
-          echo "📦 Target: $TARGET_PATH"
-
-          chmod +x gradlew
-          ./gradlew assembleDebug assembleDebugAndroidTest \
-            -Ptarget="$TARGET_PATH" \
-            -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
-
-      - name: Upload app APK to BrowserStack
-        id: upload
-        run: |
-          echo "📤 Uploading app APK to BrowserStack..."
-          APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app" \
-            -F "file=@flutter_app/build/app/outputs/apk/debug/app-debug.apk")
-
-          echo "App upload response: $APP_RESPONSE"
-          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
-          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
-
-          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "❌ Failed to upload app APK"
-            echo "Response: $APP_RESPONSE"
-            exit 1
-          fi
-          echo "✅ App APK uploaded: $APP_URL"
-
-      - name: Upload test suite APK to BrowserStack
-        id: upload_test
-        run: |
-          echo "📤 Uploading test suite APK to BrowserStack..."
-          TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/test-suite" \
-            -F "file=@flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk")
-
-          echo "Test suite upload response: $TEST_RESPONSE"
-          TEST_URL=$(echo "$TEST_RESPONSE" | jq -r .test_suite_url)
-          echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
-
-          if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
-            echo "❌ Failed to upload test suite APK"
-            echo "Response: $TEST_RESPONSE"
-            exit 1
-          fi
-          echo "✅ Test suite APK uploaded: $TEST_URL"
-
-      - name: Execute and wait for BrowserStack tests
+      - name: Seed, build, upload, and execute Android tests on BrowserStack
         id: test
         uses: nick-fields/retry@v3
         with:
@@ -485,22 +422,59 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 300
           command: |
-            # Validate inputs before creating test execution request
-            APP_URL="${{ steps.upload.outputs.app_url }}"
-            TEST_URL="${{ steps.upload_test.outputs.test_url }}"
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\": \"E2E Test Task - flutter - $(date +%s)\", \"isCompleted\": false}")
 
-            echo "App URL: $APP_URL"
-            echo "Test URL: $TEST_URL"
-
-            if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
-              echo "Error: No valid app URL available"
+            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+              echo "Error: Failed to seed task"
               exit 1
             fi
+            echo "Seeded task: $TASK_TITLE"
 
-            if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
-              echo "Error: No valid test URL available"
+            # Build Android debug APKs with seeded task title
+            echo "Building Android debug APKs with task title: $TASK_TITLE"
+            cd flutter_app/android
+            ENCODED_TASK=$(echo -n "DITTO_CLOUD_TASK_TITLE=$TASK_TITLE" | base64)
+            TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
+
+            chmod +x gradlew
+            ./gradlew assembleDebug assembleDebugAndroidTest \
+              -Ptarget="$TARGET_PATH" \
+              -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
+            cd ../..
+
+            # Upload app APK to BrowserStack
+            echo "Uploading app APK to BrowserStack..."
+            APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app" \
+              -F "file=@flutter_app/build/app/outputs/apk/debug/app-debug.apk")
+
+            APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+            if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+              echo "Error: Failed to upload app APK"
+              echo "Response: $APP_RESPONSE"
               exit 1
             fi
+            echo "App APK uploaded: $APP_URL"
+
+            # Upload test suite APK to BrowserStack
+            echo "Uploading test suite APK to BrowserStack..."
+            TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/test-suite" \
+              -F "file=@flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk")
+
+            TEST_URL=$(echo "$TEST_RESPONSE" | jq -r .test_suite_url)
+            if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+              echo "Error: Failed to upload test suite APK"
+              echo "Response: $TEST_RESPONSE"
+              exit 1
+            fi
+            echo "Test suite APK uploaded: $TEST_URL"
 
             # Create test execution request
             # Load devices from centralized config

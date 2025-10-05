@@ -85,14 +85,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Seed test task to Ditto Cloud
-        id: seed_document
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: "javascript-web"
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -132,24 +124,40 @@ jobs:
       - name: Make test script executable
         run: chmod +x .github/scripts/browserstack-test.py
 
-      - name: Execute tests on BrowserStack
+      - name: Seed and execute tests on BrowserStack
         uses: nick-fields/retry@v3
         env:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           GITHUB_RUN_ID: ${{ github.run_id }}
-          DITTO_CLOUD_TASK_TITLE: ${{ steps.seed_document.outputs.document-title }}
         with:
           max_attempts: 5
-        timeout_minutes: 20
-        retry_wait_seconds: 300
-        command: |
-          # Install Python dependencies
-          pip3 install selenium
+          timeout_minutes: 20
+          retry_wait_seconds: 300
+          command: |
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+              -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"text\": \"E2E Test Task - javascript-web - $(date +%s)\", \"isCompleted\": false}")
 
-          # Run the test script
-          python3 .github/scripts/browserstack-test.py
+            TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+            if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+              echo "Error: Failed to seed task"
+              exit 1
+            fi
+            echo "Seeded task: $TASK_TITLE"
+
+            # Set environment variable for Python script
+            export DITTO_CLOUD_TASK_TITLE="$TASK_TITLE"
+
+            # Install Python dependencies
+            pip3 install selenium
+
+            # Run the test script
+            python3 .github/scripts/browserstack-test.py
 
       - name: Stop BrowserStack Local tunnel
         if: always()

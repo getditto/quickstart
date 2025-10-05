@@ -306,42 +306,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Seed test task to Ditto Cloud
-      id: seed_task
-      uses: ./.github/actions/seed-ditto-document
-      with:
-        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-        ditto-api-url: ${{ secrets.DITTO_API_URL }}
-        app-name: 'kotlin-multiplatform'
-
     - name: Download Android APK artifacts
       uses: actions/download-artifact@v4
       with:
         name: android-kmp-apks-${{ github.run_number }}
         path: kotlin-multiplatform/composeApp/build/outputs/apk/
 
-    - name: Upload APKs to BrowserStack
-      id: upload
-      run: |
-        CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-
-        # 1. Upload AUT (composeApp-debug.apk)
-        APP_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
-          -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/debug/composeApp-debug.apk" \
-          -F "custom_id=ditto-kotlin-multiplatform-app")
-        APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
-        echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
-
-        # 2. Upload Espresso test-suite (composeApp-debug-androidTest.apk)
-        TEST_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
-          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
-          -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/androidTest/debug/composeApp-debug-androidTest.apk" \
-          -F "custom_id=ditto-kotlin-multiplatform-test")
-        TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
-        echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
-
-    - name: Execute and wait for BrowserStack tests
+    - name: Seed, upload, and execute tests on BrowserStack
       id: test
       uses: nick-fields/retry@v3
       with:
@@ -349,26 +320,52 @@ jobs:
         timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
-          # Validate inputs before creating test execution request
-          APP_URL="${{ steps.upload.outputs.app_url }}"
-          TEST_URL="${{ steps.upload.outputs.test_url }}"
+          # Seed test task to Ditto Cloud
+          echo "Seeding test task to Ditto Cloud..."
+          SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+            -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"E2E Test Task - kotlin-multiplatform - $(date +%s)\", \"isCompleted\": false}")
 
-          echo "App URL: $APP_URL"
-          echo "Test URL: $TEST_URL"
-
-          if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
-            echo "Error: No valid app URL available"
+          TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+          if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+            echo "Error: Failed to seed task"
             exit 1
           fi
+          echo "Seeded task: $TASK_TITLE"
 
-          if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
-            echo "Error: No valid test URL available"
+          # Upload APKs to BrowserStack
+          CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+
+          # Upload app APK
+          echo "Uploading app APK to BrowserStack..."
+          APP_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
+            -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/debug/composeApp-debug.apk" \
+            -F "custom_id=ditto-kotlin-multiplatform-app")
+          APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
+          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+            echo "Error: Failed to upload app APK"
+            echo "Response: $APP_UPLOAD_RESPONSE"
             exit 1
           fi
+          echo "App APK uploaded: $APP_URL"
+
+          # Upload test APK
+          echo "Uploading test APK to BrowserStack..."
+          TEST_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
+            -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/androidTest/debug/composeApp-debug-androidTest.apk" \
+            -F "custom_id=ditto-kotlin-multiplatform-test")
+          TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
+          if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+            echo "Error: Failed to upload test APK"
+            echo "Response: $TEST_UPLOAD_RESPONSE"
+            exit 1
+          fi
+          echo "Test APK uploaded: $TEST_URL"
 
           # Create test execution request with instrumentationOptions
-          TITLE="${{ steps.seed_task.outputs.document-title }}"
-
           # Load devices from centralized config
           DEVICES=$(jq -c '.["kotlin-multiplatform"].android.devices' .github/browserstack-devices.json)
 
@@ -389,7 +386,7 @@ jobs:
               \"acceptInsecureCerts\": true,
               \"enableWebsocketTunneling\": true,
               \"instrumentationOptions\": {
-                \"DITTO_CLOUD_TASK_TITLE\": \"$TITLE\"
+                \"DITTO_CLOUD_TASK_TITLE\": \"$TASK_TITLE\"
               }
             }")
 

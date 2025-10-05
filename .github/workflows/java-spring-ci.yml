@@ -99,14 +99,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Seed test task to Ditto Cloud
-      id: seed_task
-      uses: ./.github/actions/seed-ditto-document
-      with:
-        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-        ditto-api-url: ${{ secrets.DITTO_API_URL }}
-        app-name: 'java-spring'
-
     - name: Download JAR artifacts
       uses: actions/download-artifact@v4
       with:
@@ -206,28 +198,39 @@ jobs:
           sleep 2
         done
 
-    - name: Execute Selenium tests on BrowserStack cloud browsers
+    - name: Seed and execute Selenium tests on BrowserStack cloud browsers
       uses: nick-fields/retry@v3
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
-        DITTO_CLOUD_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
       with:
         max_attempts: 5
         timeout_minutes: 20
         retry_wait_seconds: 300
         command: |
-          cd java-spring
-          TITLE="${{ steps.seed_task.outputs.document-title }}"
+          # Seed test task to Ditto Cloud
+          echo "Seeding test task to Ditto Cloud..."
+          SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
+            -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"E2E Test Task - java-spring - $(date +%s)\", \"isCompleted\": false}")
 
-          # Run only the BrowserStack test method, not all test methods
+          TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
+          if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
+            echo "Error: Failed to seed task"
+            exit 1
+          fi
+          echo "Seeded task: $TASK_TITLE"
+
+          # Run BrowserStack Selenium tests
+          cd java-spring
           ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
             -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
             -DBROWSERSTACK_LOCAL=true \
-            -DDITTO_CLOUD_TASK_TITLE="$TITLE" \
+            -DDITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             --info
 
     - name: Stop Spring Boot app
