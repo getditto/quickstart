@@ -29,7 +29,7 @@ public class AndroidTaskSearchTests : TaskSearchTests
             options.DeviceName = deviceName;
             options.PlatformVersion = platformVersion;
             options.App = browserstackApp ?? GetAppPath();
-            options.AddAdditionalAppiumOption("project", "Ditto .NET MAUI");
+            options.AddAdditionalAppiumOption("project", "QuickStart .NET MAUI");
             options.AddAdditionalAppiumOption("build", Environment.GetEnvironmentVariable("BUILD_NAME") ?? "Local Tests");
             options.AddAdditionalAppiumOption("name", "Android Task Search Tests");
 

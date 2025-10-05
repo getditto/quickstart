@@ -26,8 +26,8 @@ class AppiumE2ETest {
                 setDeviceName(deviceName)
                 setPlatformVersion(platformVersion)
                 setCapability("app", System.getenv("BROWSERSTACK_APP_URL"))
-                setCapability("project", "Ditto SDK Android CPP")
-                setCapability("build", "Appium E2E Tests")
+                setCapability("project", "QuickStart Android C++")
+                setCapability("build", "CI Build #${System.getenv("GITHUB_RUN_NUMBER") ?: "Local"}")
                 setCapability("name", "Task Sync Verification")
                 setCapability("automationName", "UiAutomator2")
             } else {
