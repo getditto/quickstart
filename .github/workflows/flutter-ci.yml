@@ -423,9 +423,11 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{\"text\": \"E2E Test Task - flutter - $(date +%s)\", \"isCompleted\": false}")
 
+          echo "API Response: $SEED_RESPONSE"
           TASK_TITLE=$(echo "$SEED_RESPONSE" | jq -r '.text')
           if [ "$TASK_TITLE" = "null" ] || [ -z "$TASK_TITLE" ]; then
             echo "Error: Failed to seed task"
+            echo "Response was: $SEED_RESPONSE"
             exit 1
           fi
           echo "task_title=$TASK_TITLE" >> "$GITHUB_OUTPUT"
