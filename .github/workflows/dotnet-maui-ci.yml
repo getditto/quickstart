@@ -165,7 +165,31 @@ jobs:
           name: android-apk
           path: ./android-artifact
 
-      - name: Seed, upload, and execute Android tests on BrowserStack
+      - name: Upload APK to BrowserStack
+        id: upload
+        run: |
+          echo "Uploading Android APK to BrowserStack..."
+          APK_PATH="./android-artifact/live.ditto.quickstart.mauitasksapp-Signed.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: APK not found at $APK_PATH"
+            find ./android-artifact -name "*.apk" -type f
+            exit 1
+          fi
+
+          UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@$APK_PATH" \
+            -F "custom_id=ditto-dotnet-maui-android")
+
+          APP_URL=$(echo "$UPLOAD_RESPONSE" | jq -r .app_url)
+          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+            echo "Error: Failed to upload APK"
+            exit 1
+          fi
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+          echo "Android APK uploaded: $APP_URL"
+
+      - name: Seed and execute Android tests on BrowserStack
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
@@ -186,27 +210,6 @@ jobs:
             fi
             echo "Seeded task: $TASK_TITLE"
 
-            # Upload APK to BrowserStack
-            echo "Uploading Android APK to BrowserStack..."
-            APK_PATH="./android-artifact/live.ditto.quickstart.mauitasksapp-Signed.apk"
-            if [ ! -f "$APK_PATH" ]; then
-              echo "Error: APK not found at $APK_PATH"
-              find ./android-artifact -name "*.apk" -type f
-              exit 1
-            fi
-
-            UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-              -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-              -F "file=@$APK_PATH" \
-              -F "custom_id=ditto-dotnet-maui-android")
-
-            APP_URL=$(echo "$UPLOAD_RESPONSE" | jq -r .app_url)
-            if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-              echo "Error: Failed to upload APK"
-              exit 1
-            fi
-            echo "Android APK uploaded: $APP_URL"
-
             # Load device from centralized config
             DEVICE=$(jq -r '.["dotnet-maui"].android.devices[0]' .github/browserstack-devices.json)
             echo "Using Android device: $DEVICE"
@@ -216,7 +219,7 @@ jobs:
             dotnet restore
             BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            BROWSERSTACK_APP_ID="$APP_URL" \
+            BROWSERSTACK_APP_ID="${{ steps.upload.outputs.app_url }}" \
             BROWSERSTACK_DEVICE="$DEVICE" \
             DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             BUILD_NAME="CI Build #${{ github.run_number }}" \
@@ -244,7 +247,31 @@ jobs:
           name: ios-ipa
           path: ./ios-artifact
 
-      - name: Seed, upload, and execute iOS tests on BrowserStack
+      - name: Upload IPA to BrowserStack
+        id: upload
+        run: |
+          echo "Uploading iOS IPA to BrowserStack..."
+          IPA_PATH="./ios-artifact/DittoMauiTasksApp-device.ipa"
+          if [ ! -f "$IPA_PATH" ]; then
+            echo "Error: IPA not found at $IPA_PATH"
+            find ./ios-artifact -name "*.ipa" -type f
+            exit 1
+          fi
+
+          UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@$IPA_PATH" \
+            -F "custom_id=ditto-dotnet-maui-ios")
+
+          APP_URL=$(echo "$UPLOAD_RESPONSE" | jq -r .app_url)
+          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+            echo "Error: Failed to upload IPA"
+            exit 1
+          fi
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+          echo "iOS IPA uploaded: $APP_URL"
+
+      - name: Seed and execute iOS tests on BrowserStack
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
@@ -265,27 +292,6 @@ jobs:
             fi
             echo "Seeded task: $TASK_TITLE"
 
-            # Upload IPA to BrowserStack
-            echo "Uploading iOS IPA to BrowserStack..."
-            IPA_PATH="./ios-artifact/DittoMauiTasksApp-device.ipa"
-            if [ ! -f "$IPA_PATH" ]; then
-              echo "Error: IPA not found at $IPA_PATH"
-              find ./ios-artifact -name "*.ipa" -type f
-              exit 1
-            fi
-
-            UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-              -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-              -F "file=@$IPA_PATH" \
-              -F "custom_id=ditto-dotnet-maui-ios")
-
-            APP_URL=$(echo "$UPLOAD_RESPONSE" | jq -r .app_url)
-            if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-              echo "Error: Failed to upload IPA"
-              exit 1
-            fi
-            echo "iOS IPA uploaded: $APP_URL"
-
             # Load device from centralized config
             DEVICE=$(jq -r '.["dotnet-maui"].ios.devices[0]' .github/browserstack-devices.json)
             echo "Using iOS device: $DEVICE"
@@ -295,7 +301,7 @@ jobs:
             dotnet restore
             BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            BROWSERSTACK_APP_ID="$APP_URL" \
+            BROWSERSTACK_APP_ID="${{ steps.upload.outputs.app_url }}" \
             BROWSERSTACK_DEVICE="$DEVICE" \
             DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             BUILD_NAME="CI Build #${{ github.run_number }}" \

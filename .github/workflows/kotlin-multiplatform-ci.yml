@@ -312,7 +312,44 @@ jobs:
         name: android-kmp-apks-${{ github.run_number }}
         path: kotlin-multiplatform/composeApp/build/outputs/apk/
 
-    - name: Seed, upload, and execute tests on BrowserStack
+    - name: Upload APKs to BrowserStack
+      id: upload
+      run: |
+        CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+
+        # Upload app APK
+        echo "Uploading app APK to BrowserStack..."
+        APP_RESPONSE=$(curl -u "$CREDS" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
+          -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/debug/composeApp-debug.apk" \
+          -F "custom_id=ditto-kotlin-multiplatform-app")
+
+        APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+        if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+          echo "Error: Failed to upload app APK"
+          echo "Response: $APP_RESPONSE"
+          exit 1
+        fi
+        echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+        echo "App APK uploaded: $APP_URL"
+
+        # Upload test APK
+        echo "Uploading test APK to BrowserStack..."
+        TEST_RESPONSE=$(curl -u "$CREDS" \
+          -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
+          -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/androidTest/debug/composeApp-debug-androidTest.apk" \
+          -F "custom_id=ditto-kotlin-multiplatform-test")
+
+        TEST_URL=$(echo "$TEST_RESPONSE" | jq -r .test_suite_url)
+        if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+          echo "Error: Failed to upload test APK"
+          echo "Response: $TEST_RESPONSE"
+          exit 1
+        fi
+        echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
+        echo "Test APK uploaded: $TEST_URL"
+
+    - name: Seed and execute tests on BrowserStack
       id: test
       uses: nick-fields/retry@v3
       with:
@@ -334,38 +371,6 @@ jobs:
           fi
           echo "Seeded task: $TASK_TITLE"
 
-          # Upload APKs to BrowserStack
-          CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-
-          # Upload app APK
-          echo "Uploading app APK to BrowserStack..."
-          APP_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
-            -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/debug/composeApp-debug.apk" \
-            -F "custom_id=ditto-kotlin-multiplatform-app")
-          APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | jq -r .app_url)
-          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "Error: Failed to upload app APK"
-            echo "Response: $APP_UPLOAD_RESPONSE"
-            exit 1
-          fi
-          echo "App APK uploaded: $APP_URL"
-
-          # Upload test APK
-          echo "Uploading test APK to BrowserStack..."
-          TEST_UPLOAD_RESPONSE=$(curl -u "$CREDS" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
-            -F "file=@kotlin-multiplatform/composeApp/build/outputs/apk/androidTest/debug/composeApp-debug-androidTest.apk" \
-            -F "custom_id=ditto-kotlin-multiplatform-test")
-          TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
-          if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
-            echo "Error: Failed to upload test APK"
-            echo "Response: $TEST_UPLOAD_RESPONSE"
-            exit 1
-          fi
-          echo "Test APK uploaded: $TEST_URL"
-
-          # Create test execution request with instrumentationOptions
           # Load devices from centralized config
           DEVICES=$(jq -c '.["kotlin-multiplatform"].android.devices' .github/browserstack-devices.json)
 
@@ -373,8 +378,8 @@ jobs:
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
             -H "Content-Type: application/json" \
             -d "{
-              \"app\": \"$APP_URL\",
-              \"testSuite\": \"$TEST_URL\",
+              \"app\": \"${{ steps.upload.outputs.app_url }}\",
+              \"testSuite\": \"${{ steps.upload.outputs.test_url }}\",
               \"devices\": $DEVICES,
               \"project\": \"QuickStart Kotlin Multiplatform\",
               \"buildName\": \"CI Build #${{ github.run_number }}\",
