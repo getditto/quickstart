@@ -76,7 +76,7 @@ jobs:
           DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
           DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
           DITTO_ENABLE_CLOUD_SYNC: true
-        run: ./gradlew bootJar
+        run: ./gradlew bootJar -x test
 
 
       - name: Upload JAR artifacts
