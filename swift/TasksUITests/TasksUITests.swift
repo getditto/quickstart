@@ -17,8 +17,8 @@ final class TasksUITests: XCTestCase {
 
         app.launch()
 
-        // Trigger the interruption monitor by interacting with the app
-        app.tap()
+        // Wait a moment for permission dialog to appear and be handled
+        sleep(2)
 
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30),
                       "App should launch successfully")
