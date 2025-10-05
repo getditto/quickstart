@@ -312,52 +312,47 @@ jobs:
 
           echo "Execution response: $response"
           build_id=$(echo $response | jq -r '.build_id')
-          echo "build_id=$build_id" >> $GITHUB_OUTPUT
           echo "BrowserStack Build ID: $build_id"
 
-    - name: Wait for test completion and get results
-      run: |
-        build_id="${{ steps.execute-tests.outputs.build_id }}"
+          # Wait for test completion and get results
+          for i in {1..120}; do
+            response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
-        # Wait for tests to complete (max 20 minutes)
-        for i in {1..120}; do
-          response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
+            status=$(echo $response | jq -r '.status')
+            echo "Test status: $status (attempt $i/120)"
 
-          status=$(echo $response | jq -r '.status')
-          echo "Test status: $status (attempt $i/120)"
+            if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
+              echo "Tests completed with status: $status"
+              echo $response | jq '.'
 
-          if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
-            echo "Tests completed with status: $status"
-            echo $response | jq '.'
-
-            if [ "$status" = "failed" ]; then
-              echo "❌ Android Maestro tests failed!"
-              exit 1
-            else
-              echo "✅ Android Maestro tests passed!"
-            fi
-            break
-          elif [ "$status" = "error" ]; then
-            echo "❌ BrowserStack reported build error. Fetching session details..."
-            echo $response | jq '.'
-            echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
-              if [ -n "$sid" ]; then
-                echo "Session $sid details:"
-                curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-                  "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id/sessions/$sid" | jq '.'
+              if [ "$status" = "failed" ]; then
+                echo "❌ Android Maestro tests failed!"
+                exit 1
+              else
+                echo "✅ Android Maestro tests passed!"
               fi
-            done
+              break
+            elif [ "$status" = "error" ]; then
+              echo "❌ BrowserStack reported build error. Fetching session details..."
+              echo $response | jq '.'
+              echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
+                if [ -n "$sid" ]; then
+                  echo "Session $sid details:"
+                  curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+                    "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id/sessions/$sid" | jq '.'
+                fi
+              done
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          if [ $i -eq 120 ]; then
+            echo "❌ Tests timed out after 20 minutes"
             exit 1
           fi
-
-          sleep 10
-        done
-
-        if [ $i -eq 120 ]; then
-          echo "❌ Tests timed out after 20 minutes"
-          exit 1
-        fi
 
   browserstack-ios:
     name: Test iOS - BrowserStack Maestro
@@ -466,52 +461,47 @@ jobs:
 
           echo "Execution response: $response"
           build_id=$(echo $response | jq -r '.build_id')
-          echo "build_id=$build_id" >> $GITHUB_OUTPUT
           echo "BrowserStack Build ID: $build_id"
 
-    - name: Wait for test completion and get results
-      run: |
-        build_id="${{ steps.execute-tests.outputs.build_id }}"
+          # Wait for test completion and get results
+          for i in {1..120}; do
+            response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
-        # Wait for tests to complete (max 20 minutes)
-        for i in {1..120}; do
-          response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
+            status=$(echo $response | jq -r '.status')
+            echo "Test status: $status (attempt $i/120)"
 
-          status=$(echo $response | jq -r '.status')
-          echo "Test status: $status (attempt $i/120)"
+            if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
+              echo "Tests completed with status: $status"
+              echo $response | jq '.'
 
-          if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
-            echo "Tests completed with status: $status"
-            echo $response | jq '.'
-
-            if [ "$status" = "failed" ]; then
-              echo "❌ iOS Maestro tests failed!"
-              exit 1
-            else
-              echo "✅ iOS Maestro tests passed!"
-            fi
-            break
-          elif [ "$status" = "error" ]; then
-            echo "❌ BrowserStack reported build error. Fetching session details..."
-            echo $response | jq '.'
-            echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
-              if [ -n "$sid" ]; then
-                echo "Session $sid details:"
-                curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-                  "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id/sessions/$sid" | jq '.'
+              if [ "$status" = "failed" ]; then
+                echo "❌ iOS Maestro tests failed!"
+                exit 1
+              else
+                echo "✅ iOS Maestro tests passed!"
               fi
-            done
+              break
+            elif [ "$status" = "error" ]; then
+              echo "❌ BrowserStack reported build error. Fetching session details..."
+              echo $response | jq '.'
+              echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
+                if [ -n "$sid" ]; then
+                  echo "Session $sid details:"
+                  curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+                    "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id/sessions/$sid" | jq '.'
+                fi
+              done
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          if [ $i -eq 120 ]; then
+            echo "❌ Tests timed out after 20 minutes"
             exit 1
           fi
-
-          sleep 10
-        done
-
-        if [ $i -eq 120 ]; then
-          echo "❌ Tests timed out after 20 minutes"
-          exit 1
-        fi
 
   summary:
     name: CI Report

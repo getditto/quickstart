@@ -412,7 +412,6 @@ jobs:
           if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
             echo "⚠️ No test bundle available - skipping automated testing"
             echo "📱 App is available for manual testing in BrowserStack dashboard"
-            echo "build_id=" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -451,62 +450,52 @@ jobs:
             exit 1
           fi
 
-          # BUILD_ID stored in variable for wait logic below
           echo "Build started with ID: $BUILD_ID"
 
-    - name: Wait for XCUITest to complete
-      run: |
-        BUILD_ID="${{ steps.test.outputs.build_id }}"
+          # Wait for XCUITest to complete
+          MAX_WAIT_TIME=1080  # 18 minutes
+          CHECK_INTERVAL=30   # Check every 30 seconds
+          ELAPSED=0
 
-        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-          echo "⚠️ No BUILD_ID available - automated testing was skipped"
-          echo "📱 App upload completed for manual testing"
-          exit 0
-        fi
+          while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+            BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
 
-        MAX_WAIT_TIME=1080  # 18 minutes
-        CHECK_INTERVAL=30   # Check every 30 seconds
-        ELAPSED=0
+            BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
 
-        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
+            if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
+              echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+              sleep $CHECK_INTERVAL
+              ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+              continue
+            fi
 
-          BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
+            echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
 
-          if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
-            echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+            if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
+              echo "Build completed with status: $BUILD_STATUS"
+              break
+            fi
+
             sleep $CHECK_INTERVAL
             ELAPSED=$((ELAPSED + CHECK_INTERVAL))
-            continue
+          done
+
+          # Get final results
+          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
+
+          echo "Final build result:"
+          echo "$FINAL_RESULT" | jq .
+
+          # Check final status
+          BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+          if [ "$BUILD_STATUS" != "passed" ]; then
+            echo "Build failed with status: $BUILD_STATUS"
+            exit 1
+          else
+            echo "All tests passed successfully!"
           fi
-
-          echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
-
-          if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
-            echo "Build completed with status: $BUILD_STATUS"
-            break
-          fi
-
-          sleep $CHECK_INTERVAL
-          ELAPSED=$((ELAPSED + CHECK_INTERVAL))
-        done
-
-        # Get final results
-        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          "https://api-cloud.browserstack.com/app-automate/xcuitest/v2/builds/$BUILD_ID")
-
-        echo "Final build result:"
-        echo "$FINAL_RESULT" | jq .
-
-        # Check final status
-        BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
-        if [ "$BUILD_STATUS" != "passed" ]; then
-          echo "Build failed with status: $BUILD_STATUS"
-          exit 1
-        else
-          echo "All tests passed successfully!"
-        fi
 
   summary:
     name: CI Report

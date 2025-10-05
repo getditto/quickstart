@@ -483,9 +483,9 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-        timeout_minutes: 20
-        retry_wait_seconds: 300
-        command: |
+          timeout_minutes: 20
+          retry_wait_seconds: 300
+          command: |
             # Validate inputs before creating test execution request
             APP_URL="${{ steps.upload.outputs.app_url }}"
             TEST_URL="${{ steps.upload_test.outputs.test_url }}"
@@ -534,74 +534,65 @@ jobs:
               exit 1
             fi
 
-            # BUILD_ID stored in variable for wait logic below
             echo "Build started with ID: $BUILD_ID"
 
-      - name: Wait for BrowserStack tests to complete
-        run: |
-          BUILD_ID="${{ steps.test.outputs.build_id }}"
+            # Wait for BrowserStack tests to complete
+            MAX_WAIT_TIME=1080  # 18 minutes
+            CHECK_INTERVAL=30   # Check every 30 seconds
+            ELAPSED=0
 
-          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-            echo "❌ No valid BUILD_ID available"
-            exit 1
-          fi
+            echo "⏳ Waiting for test execution to complete..."
+            while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+              RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+                "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds/$BUILD_ID")
 
-          MAX_WAIT_TIME=1080  # 18 minutes
-          CHECK_INTERVAL=30   # Check every 30 seconds
-          ELAPSED=0
+              STATUS=$(echo "$RESPONSE" | jq -r .status)
 
-          echo "⏳ Waiting for test execution to complete..."
-          while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-            RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-              "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds/$BUILD_ID")
+              if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
+                echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
+                sleep $CHECK_INTERVAL
+                ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+                continue
+              fi
 
-            STATUS=$(echo "$RESPONSE" | jq -r .status)
+              echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
 
-            if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
-              echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
+              # Check for completion
+              if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
+                echo "✅ Build completed with status: $STATUS"
+                break
+              fi
+
               sleep $CHECK_INTERVAL
               ELAPSED=$((ELAPSED + CHECK_INTERVAL))
-              continue
-            fi
+            done
 
-            echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
+            # Get final results
+            FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds/$BUILD_ID")
 
-            # Check for completion
-            if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
-              echo "✅ Build completed with status: $STATUS"
-              break
-            fi
+            echo "📋 Final results:"
+            echo "$FINAL_RESULT" | jq .
 
-            sleep $CHECK_INTERVAL
-            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
-          done
+            # Validate and check results
+            if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
+              BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+              if [ "$BUILD_STATUS" != "passed" ]; then
+                echo "❌ Tests failed with status: $BUILD_STATUS"
 
-          # Get final results
-          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/builds/$BUILD_ID")
-
-          echo "📋 Final results:"
-          echo "$FINAL_RESULT" | jq .
-
-          # Validate and check results
-          if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
-            BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
-            if [ "$BUILD_STATUS" != "passed" ]; then
-              echo "❌ Tests failed with status: $BUILD_STATUS"
-
-              FAILED_DEVICES=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
-              if [ -n "$FAILED_DEVICES" ]; then
-                echo "Failed on devices: $FAILED_DEVICES"
+                FAILED_DEVICES=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+                if [ -n "$FAILED_DEVICES" ]; then
+                  echo "Failed on devices: $FAILED_DEVICES"
+                fi
+                exit 1
+              else
+                echo "🎉 All tests passed successfully!"
+                echo "Dashboard URL: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID"
               fi
-              exit 1
             else
-              echo "🎉 All tests passed successfully!"
-              echo "Dashboard URL: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID"
+              echo "⚠️  Could not parse final results"
+              exit 1
             fi
-          else
-            echo "⚠️  Could not parse final results"
-            exit 1
-          fi
 
       - name: Add to GitHub Actions Summary
         if: always()
@@ -740,9 +731,9 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-        timeout_minutes: 20
-        retry_wait_seconds: 300
-        command: |
+          timeout_minutes: 20
+          retry_wait_seconds: 300
+          command: |
             TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
 
             echo "Test Package URL: $TEST_PACKAGE_URL"
@@ -783,74 +774,65 @@ jobs:
               exit 1
             fi
 
-            # BUILD_ID stored in variable for wait logic below
             echo "Build started with ID: $BUILD_ID"
 
-      - name: Wait for BrowserStack tests to complete
-        run: |
-          BUILD_ID="${{ steps.test.outputs.build_id }}"
+            # Wait for BrowserStack tests to complete
+            MAX_WAIT_TIME=1080  # 18 minutes
+            CHECK_INTERVAL=30   # Check every 30 seconds
+            ELAPSED=0
 
-          if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-            echo "❌ No valid BUILD_ID available"
-            exit 1
-          fi
+            echo "⏳ Waiting for test execution to complete..."
+            while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+              RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+                "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds/$BUILD_ID")
 
-          MAX_WAIT_TIME=1080  # 18 minutes
-          CHECK_INTERVAL=30   # Check every 30 seconds
-          ELAPSED=0
+              STATUS=$(echo "$RESPONSE" | jq -r .status)
 
-          echo "⏳ Waiting for test execution to complete..."
-          while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-            RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-              "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds/$BUILD_ID")
+              if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
+                echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
+                sleep $CHECK_INTERVAL
+                ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+                continue
+              fi
 
-            STATUS=$(echo "$RESPONSE" | jq -r .status)
+              echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
 
-            if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
-              echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
+              # Check for completion
+              if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
+                echo "✅ Build completed with status: $STATUS"
+                break
+              fi
+
               sleep $CHECK_INTERVAL
               ELAPSED=$((ELAPSED + CHECK_INTERVAL))
-              continue
-            fi
+            done
 
-            echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
+            # Get final results
+            FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds/$BUILD_ID")
 
-            # Check for completion
-            if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
-              echo "✅ Build completed with status: $STATUS"
-              break
-            fi
+            echo "📋 Final results:"
+            echo "$FINAL_RESULT" | jq .
 
-            sleep $CHECK_INTERVAL
-            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
-          done
+            # Validate and check results
+            if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
+              BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+              if [ "$BUILD_STATUS" != "passed" ]; then
+                echo "❌ Tests failed with status: $BUILD_STATUS"
 
-          # Get final results
-          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/builds/$BUILD_ID")
-
-          echo "📋 Final results:"
-          echo "$FINAL_RESULT" | jq .
-
-          # Validate and check results
-          if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
-            BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
-            if [ "$BUILD_STATUS" != "passed" ]; then
-              echo "❌ Tests failed with status: $BUILD_STATUS"
-
-              FAILED_DEVICES=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
-              if [ -n "$FAILED_DEVICES" ]; then
-                echo "Failed on devices: $FAILED_DEVICES"
+                FAILED_DEVICES=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+                if [ -n "$FAILED_DEVICES" ]; then
+                  echo "Failed on devices: $FAILED_DEVICES"
+                fi
+                exit 1
+              else
+                echo "🎉 All tests passed successfully!"
+                echo "Dashboard URL: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID"
               fi
-              exit 1
             else
-              echo "🎉 All tests passed successfully!"
-              echo "Dashboard URL: https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID"
+              echo "⚠️  Could not parse final results"
+              exit 1
             fi
-          else
-            echo "⚠️  Could not parse final results"
-            exit 1
-          fi
 
       - name: Add to GitHub Actions Summary
         if: always()
