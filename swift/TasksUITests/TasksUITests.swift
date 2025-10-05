@@ -4,7 +4,21 @@ final class TasksUITests: XCTestCase {
 
     func testDidFindOnlyGitHubSeededDocument() throws {
         let app = XCUIApplication()
+
+        // Handle permission dialogs that may appear
+        addUIInterruptionMonitor(withDescription: "Local Network Permission") { alert in
+            let allowButton = alert.buttons["Allow"]
+            if allowButton.exists {
+                allowButton.tap()
+                return true
+            }
+            return false
+        }
+
         app.launch()
+
+        // Trigger the interruption monitor by interacting with the app
+        app.tap()
 
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30),
                       "App should launch successfully")
