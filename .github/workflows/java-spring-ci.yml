@@ -203,7 +203,8 @@ jobs:
         BROWSERSTACK_LOCAL: true
       with:
         max_attempts: 5
-        retry_wait_seconds: 300
+        timeout_minutes: 20
+        retry_wait_seconds: 600
         command: |
           # Seed test task to Ditto Cloud
           echo "Seeding test task to Ditto Cloud..."

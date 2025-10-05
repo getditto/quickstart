@@ -500,7 +500,8 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-          retry_wait_seconds: 300
+          timeout_minutes: 20
+          retry_wait_seconds: 600
           command: |
             # Load devices from centralized config
             DEVICES=$(jq -c '.flutter.android.devices' .github/browserstack-devices.json)
@@ -730,7 +731,8 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           max_attempts: 5
-          retry_wait_seconds: 300
+          timeout_minutes: 20
+          retry_wait_seconds: 600
           command: |
             TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
 
