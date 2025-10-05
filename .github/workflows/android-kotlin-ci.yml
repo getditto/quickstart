@@ -6,6 +6,8 @@ on:
       - "android-kotlin/**"
       - ".github/workflows/android-kotlin-ci.yml"
   push:
+    branches:
+      - main
     paths:
       - "android-kotlin/**"
       - ".github/workflows/android-kotlin-ci.yml"

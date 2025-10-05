@@ -6,6 +6,8 @@ on:
       - "dotnet-maui/**"
       - ".github/workflows/dotnet-maui-ci.yml"
   push:
+    branches:
+      - main
     paths:
       - "dotnet-maui/**"
       - ".github/workflows/dotnet-maui-ci.yml"

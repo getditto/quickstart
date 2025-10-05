@@ -11,6 +11,8 @@ on:
       - "android-cpp/**"
       - ".github/workflows/android-cpp-ci.yml"
   push:
+    branches:
+      - main
     paths:
       - "android-cpp/**"
       - ".github/workflows/android-cpp-ci.yml"

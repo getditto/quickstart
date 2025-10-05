@@ -7,6 +7,8 @@ name: Java Spring CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'java-spring/**'
       - '.github/workflows/java-spring-ci.yml'

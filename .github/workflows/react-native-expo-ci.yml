@@ -6,6 +6,8 @@ on:
       - "react-native-expo/**"
       - ".github/workflows/react-native-expo-ci.yml"
   push:
+    branches:
+      - main
     paths:
       - "react-native-expo/**"
       - ".github/workflows/react-native-expo-ci.yml"

@@ -6,6 +6,8 @@ on:
       - "flutter_app/**"
       - ".github/workflows/flutter-ci.yml"
   push:
+    branches:
+      - main
     paths:
       - "flutter_app/**"
       - ".github/workflows/flutter-ci.yml"

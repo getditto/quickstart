@@ -2,6 +2,8 @@ name: Android Java CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'android-java/**'
       - '.github/workflows/android-java-ci.yml'

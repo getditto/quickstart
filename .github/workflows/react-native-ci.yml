@@ -6,6 +6,8 @@ on:
       - "react-native/**"
       - ".github/workflows/react-native-ci.yml"
   push:
+    branches:
+      - main
     paths:
       - "react-native/**"
       - ".github/workflows/react-native-ci.yml"

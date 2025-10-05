@@ -6,6 +6,8 @@ on:
       - "swift/**"
       - ".github/workflows/swift-ci.yml"
   push:
+    branches:
+      - main
     paths:
       - "swift/**"
       - ".github/workflows/swift-ci.yml"
