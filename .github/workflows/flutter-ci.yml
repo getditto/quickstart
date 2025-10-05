@@ -423,8 +423,8 @@ jobs:
               \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
               \"args\": {
                 \"newTask\": {
-                  \"_id\": \"\${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
-                  \"title\": \"\${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                  \"_id\": \"${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                  \"title\": \"${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
                   \"done\": false,
                   \"deleted\": false
                 }
