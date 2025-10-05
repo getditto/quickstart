@@ -116,6 +116,12 @@
   "_metadata": {
     "description": "Centralized BrowserStack device configuration organized by SDK/app",
     "last_updated": "2025-10-03",
-    "structure": "Each SDK has its own configuration. Multi-platform SDKs have nested android/ios objects."
+    "structure": "Each SDK has its own configuration. Multi-platform SDKs have nested android/ios objects.",
+    "device_format_docs": {
+      "mobile_devices": "https://www.browserstack.com/docs/app-automate/api-reference/appium/devices",
+      "desktop_browsers": "https://www.browserstack.com/docs/automate/api-reference/selenium/list-of-browsers-and-platforms",
+      "format_mobile": "Device Name-OS Version (e.g., 'Google Pixel 7-13.0', 'iPhone 15-17')",
+      "format_desktop": "Separate fields: os, osVersion, browserName, browserVersion"
+    }
   }
 }
