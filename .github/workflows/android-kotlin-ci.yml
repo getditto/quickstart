@@ -160,7 +160,7 @@ jobs:
         TEST_URL=$(echo "$TEST_UPLOAD_RESPONSE" | jq -r .test_suite_url)
         echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
 
-    - name: Execute tests on BrowserStack
+    - name: Execute and wait for BrowserStack tests
       id: test
       uses: nick-fields/retry@v3
       with:
@@ -222,79 +222,68 @@ jobs:
             exit 1
           fi
 
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "Build started with ID: $BUILD_ID"
 
-    - name: Wait for BrowserStack tests to complete
-      run: |
-        BUILD_ID="${{ steps.test.outputs.build_id }}"
+          # Wait for BrowserStack tests to complete
+          MAX_WAIT_TIME=1080  # 18 minutes
+          CHECK_INTERVAL=30   # Check every 30 seconds
+          ELAPSED=0
 
-        # Validate BUILD_ID before proceeding
-        if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
-          echo "Error: No valid BUILD_ID available. Skipping test monitoring."
-          exit 1
-        fi
+          while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+            BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
 
-        MAX_WAIT_TIME=1080  # 18 minutes
-        CHECK_INTERVAL=30   # Check every 30 seconds
-        ELAPSED=0
+            BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
 
-        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
-          BUILD_STATUS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
-
-          BUILD_STATUS=$(echo "$BUILD_STATUS_RESPONSE" | jq -r .status)
-
-          # Check for API errors
-          if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
-            echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
-            sleep $CHECK_INTERVAL
-            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
-            continue
-          fi
-
-          echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
-          echo "Full response: $BUILD_STATUS_RESPONSE"
-
-          # Check for completion states - BrowserStack uses different status values
-          if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
-            echo "Build completed with status: $BUILD_STATUS"
-            break
-          fi
-
-          sleep $CHECK_INTERVAL
-          ELAPSED=$((ELAPSED + CHECK_INTERVAL))
-        done
-
-        # Get final results
-        FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
-
-        echo "Final build result:"
-        echo "$FINAL_RESULT" | jq .
-
-        # Check if we got valid results
-        if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
-          # Check if the overall build passed
-          BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
-          if [ "$BUILD_STATUS" != "passed" ]; then
-            echo "Build failed with status: $BUILD_STATUS"
-
-            # Check each device for failures
-            FAILED_TESTS=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
-
-            if [ -n "$FAILED_TESTS" ]; then
-              echo "Tests failed on devices: $FAILED_TESTS"
+            # Check for API errors
+            if [ "$BUILD_STATUS" = "null" ] || [ -z "$BUILD_STATUS" ]; then
+              echo "Error getting build status. Response: $BUILD_STATUS_RESPONSE"
+              sleep $CHECK_INTERVAL
+              ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+              continue
             fi
 
-            exit 1
+            echo "Build status: $BUILD_STATUS (elapsed: ${ELAPSED}s)"
+
+            # Check for completion states - BrowserStack uses different status values
+            if [ "$BUILD_STATUS" = "done" ] || [ "$BUILD_STATUS" = "failed" ] || [ "$BUILD_STATUS" = "error" ] || [ "$BUILD_STATUS" = "passed" ] || [ "$BUILD_STATUS" = "completed" ]; then
+              echo "Build completed with status: $BUILD_STATUS"
+              break
+            fi
+
+            sleep $CHECK_INTERVAL
+            ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+          done
+
+          # Get final results
+          FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+
+          echo "Final build result:"
+          echo "$FINAL_RESULT" | jq .
+
+          # Check if we got valid results
+          if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
+            # Check if the overall build passed
+            BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+            if [ "$BUILD_STATUS" != "passed" ]; then
+              echo "Build failed with status: $BUILD_STATUS"
+
+              # Check each device for failures
+              FAILED_TESTS=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+
+              if [ -n "$FAILED_TESTS" ]; then
+                echo "Tests failed on devices: $FAILED_TESTS"
+              fi
+
+              exit 1
+            else
+              echo "All tests passed successfully!"
+            fi
           else
-            echo "All tests passed successfully!"
+            echo "Warning: Could not parse final results"
+            echo "Raw response: $FINAL_RESULT"
           fi
-        else
-          echo "Warning: Could not parse final results"
-          echo "Raw response: $FINAL_RESULT"
-        fi
 
   summary:
     name: CI Report
