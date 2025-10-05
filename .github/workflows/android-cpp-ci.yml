@@ -142,25 +142,7 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Upload APK to BrowserStack
-        id: upload
-        run: |
-          CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-
-          APP_RESPONSE=$(curl -u "$CREDS" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
-            -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk" \
-            -F "custom_id=ditto-android-cpp-appium-app")
-
-          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
-          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
-
-          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "Failed to upload app APK"
-            exit 1
-          fi
-
-      - name: Seed and execute Appium tests on BrowserStack
+      - name: Seed, upload, and execute Appium tests on BrowserStack
         id: test
         uses: nick-fields/retry@v3
         with:
@@ -168,7 +150,7 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 300
           command: |
-            # Seed test task to Ditto Cloud inline
+            # Seed test task to Ditto Cloud
             echo "Seeding test task to Ditto Cloud..."
             SEED_RESPONSE=$(curl -s -X POST "${{ secrets.DITTO_API_URL }}/api/v1/collections/tasks/documents" \
               -H "X-DITTO-API-KEY: ${{ secrets.DITTO_API_KEY }}" \
@@ -182,6 +164,21 @@ jobs:
             fi
             echo "Seeded task: $TASK_TITLE"
 
+            # Upload APK to BrowserStack
+            echo "Uploading APK to BrowserStack..."
+            CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+            APP_RESPONSE=$(curl -u "$CREDS" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+              -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk" \
+              -F "custom_id=ditto-android-cpp-appium-app")
+
+            APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+            if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+              echo "Error: Failed to upload APK"
+              exit 1
+            fi
+            echo "APK uploaded: $APP_URL"
+
             # Load device from centralized config
             DEVICE=$(jq -r '.["android-cpp"].devices[0]' .github/browserstack-devices.json)
             echo "Using device: $DEVICE"
@@ -190,7 +187,7 @@ jobs:
             cd android-cpp/QuickStartTasksCPP/appium-test
             export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
             export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-            export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
+            export BROWSERSTACK_APP_URL="$APP_URL"
             export BROWSERSTACK_DEVICE="$DEVICE"
             export DITTO_CLOUD_TASK_TITLE="$TASK_TITLE"
 
