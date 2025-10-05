@@ -1,11 +1,11 @@
 name: .NET MAUI CI
 
 on:
-  push:
+  pull_request:
     paths:
       - "dotnet-maui/**"
       - ".github/workflows/dotnet-maui-ci.yml"
-  pull_request:
+  push:
     paths:
       - "dotnet-maui/**"
       - ".github/workflows/dotnet-maui-ci.yml"

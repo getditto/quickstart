@@ -1,10 +1,6 @@
 name: Android Kotlin CI
 
 on:
-  push:
-    paths:
-      - "android-kotlin/**"
-      - ".github/workflows/android-kotlin-ci.yml"
   pull_request:
     paths:
       - "android-kotlin/**"

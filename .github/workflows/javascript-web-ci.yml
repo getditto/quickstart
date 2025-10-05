@@ -1,10 +1,6 @@
 name: JavaScript Web CI
 
 on:
-  push:
-    paths:
-      - "javascript-web/**"
-      - ".github/workflows/javascript-web-ci.yml"
   pull_request:
     paths:
       - "javascript-web/**"

@@ -2,17 +2,13 @@ name: React Native CI
 
 on:
   pull_request:
-    branches:
-      - main
-      - "sdk-*"
     paths:
       - "react-native/**"
+      - ".github/workflows/react-native-ci.yml"
   push:
-    branches:
-      - main
-      - "sdk-*"
     paths:
       - "react-native/**"
+      - ".github/workflows/react-native-ci.yml"
   workflow_dispatch:
 
 jobs:

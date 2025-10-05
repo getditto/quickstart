@@ -7,20 +7,14 @@ name: Android C++ CI
 
 on:
   pull_request:
-    branches:
-      - main
-      - "sdk-*"
     paths:
       - "android-cpp/**"
       - ".github/workflows/android-cpp-ci.yml"
   push:
-    branches:
-      - main
-      - "sdk-*"
     paths:
       - "android-cpp/**"
       - ".github/workflows/android-cpp-ci.yml"
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   lint:
