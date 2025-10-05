@@ -1,8 +1,5 @@
 name: C++ TUI CI
 on:
-  push:
-    paths:
-      - 'cpp-tui/**'
   pull_request:
     paths:
       - 'cpp-tui/**'

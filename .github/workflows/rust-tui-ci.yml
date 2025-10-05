@@ -1,8 +1,5 @@
 name: Rust TUI CI
 on:
-  push:
-    paths:
-      - 'rust-tui/**'
   pull_request:
     paths:
       - 'rust-tui/**'

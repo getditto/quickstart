@@ -1,8 +1,5 @@
 name: .NET WinForms CI
 on:
-  push:
-    paths:
-      - 'dotnet-winforms/**'
   pull_request:
     paths:
       - 'dotnet-winforms/**'

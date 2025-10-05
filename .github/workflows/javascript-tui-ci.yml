@@ -1,8 +1,5 @@
 name: JavaScript TUI CI
 on:
-  push:
-    paths:
-      - 'javascript-tui/**'
   pull_request:
     paths:
       - 'javascript-tui/**'

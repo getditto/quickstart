@@ -1,8 +1,5 @@
 name: .NET TUI CI
 on:
-  push:
-    paths:
-      - 'dotnet-tui/**'
   pull_request:
     paths:
       - 'dotnet-tui/**'
