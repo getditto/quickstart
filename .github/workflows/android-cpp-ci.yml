@@ -133,50 +133,26 @@ jobs:
   browserstack-appium-test:
     name: BrowserStack Device Testing
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 45
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
+    - name: Seed test task to Ditto Cloud
+      id: seed_task
+      uses: ./.github/actions/seed-ditto-document
+      with:
+        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+        ditto-api-url: ${{ secrets.DITTO_API_URL }}
+        app-name: 'android-cpp'
+
     - name: Download APK artifacts
       uses: actions/download-artifact@v4
       with:
         name: android-cpp-apks
         path: android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/
-    
-    - name: Insert test document into Ditto Cloud
-      id: seed_doc
-      run: |
-        TIMESTAMP=$(date +%s)
-        INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-        DOC_TITLE="${INVERTED_TIMESTAMP}_android_cpp_ci_test_${{ github.run_id }}_${{ github.run_number }}"
-
-        echo "doc_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
-        
-        # Insert document using Ditto API v4 (same as other Android workflows)
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-          -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-          -d "{
-            \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-            \"args\": {
-              \"newTask\": {
-                \"_id\": \"${DOC_TITLE}\",
-                \"title\": \"${DOC_TITLE}\",
-                \"done\": false,
-                \"deleted\": false
-              }
-            }
-          }" \
-        "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-        
-        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-        if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
-          echo "Failed to insert document. HTTP Status: $HTTP_CODE"
-          exit 1
-        fi
 
     - name: Setup Java for Appium test
       uses: actions/setup-java@v4
@@ -210,7 +186,7 @@ jobs:
         export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
         export BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
         export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
-        export GITHUB_TEST_DOC_ID="${{ steps.seed_doc.outputs.doc_title }}"
+        export GITHUB_TEST_DOC_ID="${{ steps.seed_task.outputs.document-title }}"
 
         ../gradlew test --console=plain --no-daemon
 
@@ -223,34 +199,41 @@ jobs:
           android-cpp/QuickStartTasksCPP/app/build/outputs/apk/
           android-cpp/QuickStartTasksCPP/appium-test/build/reports/
 
-    - name: Comment PR with results
-      if: github.event_name == 'pull_request' && always()
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const testDocId = '${{ steps.seed_doc.outputs.doc_title }}';
-          const status = '${{ job.status }}';
-          const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+  summary:
+    name: CI Report
+    runs-on: ubuntu-latest
+    needs: [browserstack-appium-test]
+    if: always()
 
-          const body = `## 📱 BrowserStack Test Results (Android C++)
+    steps:
+    - name: Report Results
+      run: |
+        echo "## 📱 Android C++ CI" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
 
-          **Status:** ${status === 'success' ? '✅ Passed' : '❌ Failed'}
-          **Build:** [#${{ github.run_number }}](${runUrl})
-          **Test Document ID:** ${testDocId || 'Not generated'}
-          
-          ### Tested Devices:
-          - Google Pixel 7 (Android 13.0)
-          
-          ### Test Verification:
-          - ✅ Lint check completed
-          - ✅ APK build successful
-          - ✅ Test document seeded to Ditto Cloud
-          - ${status === 'success' ? '✅' : '❌'} Integration test verification on BrowserStack
-          `;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: body
-          });
+        # Overall status
+        if [[ "${{ needs.lint.result }}" == "success" && \
+              "${{ needs.build.result }}" == "success" && \
+              "${{ needs.browserstack-appium-test.result }}" == "success" ]]; then
+          echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| BrowserStack Tests | ${{ needs.browserstack-appium-test.result == 'success' && '✅ Passed' || (needs.browserstack-appium-test.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # BrowserStack link
+        if [[ "${{ needs.browserstack-appium-test.result }}" != "skipped" ]]; then
+          echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=Ditto+Android+C%2B%2B&build=Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Google Pixel 7 (Android 13.0)" >> $GITHUB_STEP_SUMMARY
+        fi
