@@ -461,6 +461,8 @@ jobs:
             TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
 
             chmod +x gradlew
+            # Clean build to ensure dart-defines are picked up
+            ./gradlew clean
             ./gradlew assembleDebug assembleDebugAndroidTest \
               -Ptarget="$TARGET_PATH" \
               -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
