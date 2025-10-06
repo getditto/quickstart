@@ -675,7 +675,7 @@ jobs:
       - name: Download iOS IPA
         uses: actions/download-artifact@v4
         with:
-          name: flutter-ios-ipa
+          name: flutter-ios-ipa-${{ github.run_number }}
           path: flutter_app/build/ios/ipa/
 
       - name: Setup Flutter
