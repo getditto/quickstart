@@ -8,14 +8,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import live.ditto.Ditto
 import live.ditto.DittoIdentity
-import live.ditto.DittoLogLevel
-import live.ditto.DittoLogger
 import live.ditto.android.DefaultAndroidDittoDependencies
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
-import live.ditto.transports.DittoTransportConfig
 
 class TasksApplication : Application() {
-
 
     // Create a CoroutineScope
     // Use SupervisorJob so if one coroutine launched in this scope fails, it doesn't cancel the scope
@@ -36,7 +32,7 @@ class TasksApplication : Application() {
     init {
         instance = this
     }
-    
+
     override fun onCreate() {
         super.onCreate()
         ioScope.launch {
