@@ -460,6 +460,10 @@ jobs:
             ENCODED_TASK=$(echo -n "DITTO_CLOUD_TASK_TITLE=$TASK_TITLE" | base64)
             TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
 
+            echo "DEBUG: TASK_TITLE=$TASK_TITLE"
+            echo "DEBUG: ENCODED_TASK=$ENCODED_TASK"
+            echo "DEBUG: Decoded: $(echo "$ENCODED_TASK" | base64 -d)"
+
             chmod +x gradlew
             ./gradlew assembleDebug assembleDebugAndroidTest \
               -Ptarget="$TARGET_PATH" \
@@ -679,6 +683,8 @@ jobs:
 
             # Build iOS integration test with seeded task title
             echo "🧪 Building iOS integration test package with task title: $TASK_TITLE"
+            echo "DEBUG iOS: TASK_TITLE=$TASK_TITLE"
+            echo "DEBUG iOS: dart-define=DITTO_CLOUD_TASK_TITLE=$TASK_TITLE"
             cd flutter_app
             flutter build ios integration_test/app_test.dart --release --no-codesign \
               --dart-define=INTEGRATION_TEST_MODE=true \
