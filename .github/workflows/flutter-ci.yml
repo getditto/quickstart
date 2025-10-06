@@ -437,7 +437,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug assembleDebugAndroidTest \
             -Ptarget="$TARGET_PATH" \
-            -Pdart-defines="$ENCODED_TASK"
+            -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
 
       - name: Upload app APK to BrowserStack
         id: upload
@@ -697,6 +697,7 @@ jobs:
           echo "🧪 Building iOS integration test package with task title: $TITLE"
 
           flutter build ios integration_test/app_test.dart --release --no-codesign \
+            --dart-define=INTEGRATION_TEST_MODE=true \
             --dart-define="TASK_TO_FIND=$TITLE"
 
       - name: Create iOS test package
