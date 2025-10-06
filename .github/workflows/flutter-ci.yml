@@ -456,9 +456,17 @@ jobs:
 
             # Build Android debug APKs with seeded task title
             echo "Building Android debug APKs with task title: $TASK_TITLE"
+            echo "DEBUG: TASK_TITLE=$TASK_TITLE"
+
             cd flutter_app/android
             ENCODED_TASK=$(echo -n "DITTO_CLOUD_TASK_TITLE=$TASK_TITLE" | base64)
             TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
+
+            echo "DEBUG: ENCODED_TASK=$ENCODED_TASK"
+            echo "DEBUG: Decoding ENCODED_TASK:"
+            echo "$ENCODED_TASK" | base64 -d
+            echo ""
+            echo "DEBUG: Full dart-defines string: SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
 
             chmod +x gradlew
             # Clean build to ensure dart-defines are picked up
