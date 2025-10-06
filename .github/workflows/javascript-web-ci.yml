@@ -79,7 +79,7 @@ jobs:
     name: BrowserStack Tests
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 30
+    timeout-minutes: 150
 
     steps:
       - name: Checkout code

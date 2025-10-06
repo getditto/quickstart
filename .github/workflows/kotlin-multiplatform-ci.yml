@@ -468,6 +468,14 @@ jobs:
             BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
             if [ "$BUILD_STATUS" != "passed" ]; then
               echo "Build failed with status: $BUILD_STATUS"
+
+              # Check each device for failures
+              FAILED_TESTS=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+
+              if [ -n "$FAILED_TESTS" ]; then
+                echo "Tests failed on devices: $FAILED_TESTS"
+              fi
+
               exit 1
             else
               echo "All tests passed successfully!"

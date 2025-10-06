@@ -34,6 +34,7 @@ public class iOSTaskSearchTests : TaskSearchTests
             options.AddAdditionalAppiumOption("project", "QuickStart .NET MAUI");
             options.AddAdditionalAppiumOption("build", Environment.GetEnvironmentVariable("BUILD_NAME") ?? "Local Tests");
             options.AddAdditionalAppiumOption("name", "iOS Task Search Tests");
+            options.AddAdditionalAppiumOption("autoGrantPermissions", true);
 
             var uri = new Uri($"https://{browserstackUsername}:{browserstackAccessKey}@hub-cloud.browserstack.com/wd/hub");
             return new IOSDriver(uri, options);

@@ -516,7 +516,7 @@ jobs:
                 \"app\": \"$APP_URL\",
                 \"testSuite\": \"$TEST_URL\",
                 \"devices\": $DEVICES,
-                \"project\": \"Ditto Flutter\",
+                \"project\": \"QuickStart Flutter\",
                 \"buildName\": \"Android Build #${{ github.run_number }}\",
                 \"buildTag\": \"${{ github.ref_name }}\",
                 \"deviceLogs\": true,
@@ -541,7 +541,7 @@ jobs:
             echo "Build started with ID: $BUILD_ID"
 
             # Wait for tests to complete
-            MAX_WAIT_TIME=1200  # 20 minutes
+            MAX_WAIT_TIME=1080  # 18 minutes
             CHECK_INTERVAL=30   # Check every 30 seconds
             ELAPSED=0
 

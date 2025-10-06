@@ -333,12 +333,12 @@ jobs:
             echo "BrowserStack Build ID: $build_id"
 
             # Wait for test completion and get results
-            for i in {1..120}; do
+            for i in {1..108}; do
               response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
                 "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
               status=$(echo $response | jq -r '.status')
-              echo "Test status: $status (attempt $i/120)"
+              echo "Test status: $status (attempt $i/108)"
 
               if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
                 echo "Tests completed with status: $status"
@@ -367,8 +367,8 @@ jobs:
               sleep 10
             done
 
-            if [ $i -eq 120 ]; then
-              echo "❌ Tests timed out after 20 minutes"
+            if [ $i -eq 108 ]; then
+              echo "❌ Tests timed out after 18 minutes"
               exit 1
             fi
 
@@ -512,12 +512,12 @@ jobs:
             echo "BrowserStack Build ID: $build_id"
 
             # Wait for test completion and get results
-            for i in {1..120}; do
+            for i in {1..108}; do
               response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
                 "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
               status=$(echo $response | jq -r '.status')
-              echo "Test status: $status (attempt $i/120)"
+              echo "Test status: $status (attempt $i/108)"
 
               if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
                 echo "Tests completed with status: $status"
@@ -546,8 +546,8 @@ jobs:
               sleep 10
             done
 
-            if [ $i -eq 120 ]; then
-              echo "❌ Tests timed out after 20 minutes"
+            if [ $i -eq 108 ]; then
+              echo "❌ Tests timed out after 18 minutes"
               exit 1
             fi
 
