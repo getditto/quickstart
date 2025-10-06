@@ -550,9 +550,26 @@ jobs:
                 continue
               fi
 
-              echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
+              # Check device statuses - if all devices are done, we're done
+              DEVICE_STATUSES=$(echo "$RESPONSE" | jq -r '.devices[]?.sessions[]?.status' 2>/dev/null)
+              if [ -n "$DEVICE_STATUSES" ]; then
+                ALL_DONE=true
+                while IFS= read -r dev_status; do
+                  if [[ ! "$dev_status" =~ ^(passed|failed|error|done)$ ]]; then
+                    ALL_DONE=false
+                    break
+                  fi
+                done <<< "$DEVICE_STATUSES"
 
-              # Check for completion
+                if [ "$ALL_DONE" = true ]; then
+                  echo "✅ All devices completed (${ELAPSED}s elapsed)"
+                  break
+                fi
+              fi
+
+              echo "📊 Build Status: $STATUS (${ELAPSED}s elapsed)"
+
+              # Check for build-level completion as fallback
               if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
                 echo "✅ Build completed with status: $STATUS"
                 break
@@ -687,22 +704,20 @@ jobs:
               --dart-define="DITTO_CLOUD_TASK_TITLE=$TASK_TITLE"
 
             # Create iOS test package
-            cd ..
-            output="flutter_app/build/ios_integration"
-            product="$output/Build/Products"
+            output="../build/ios_integration"
+            product="build/ios_integration/Build/Products"
 
-            pushd flutter_app/ios
+            pushd ios
             xcodebuild -workspace Runner.xcworkspace \
               -scheme Runner \
               -config Flutter/Release.xcconfig \
-              -derivedDataPath "../../build/ios_integration" \
+              -derivedDataPath $output \
               -sdk iphoneos \
               build-for-testing \
               CODE_SIGNING_ALLOWED=NO
             popd
 
-            # Create test package zip from xctestrun and app bundle
-            pushd "$product" || exit 1
+            pushd $product
             XCTESTRUN_FILE=$(find . -name "*.xctestrun" -type f | head -1)
             if [ -z "$XCTESTRUN_FILE" ]; then
               echo "❌ No .xctestrun file found"
@@ -716,7 +731,7 @@ jobs:
             echo "📤 Uploading iOS test package to BrowserStack..."
             TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/test-package" \
-              -F "file=@flutter_app/build/ios_integration/Build/Products/ios_test_package.zip")
+              -F "file=@$product/ios_test_package.zip")
 
             echo "Upload response: $TEST_RESPONSE"
             TEST_PACKAGE_URL=$(echo "$TEST_RESPONSE" | jq -r .test_package_url)
