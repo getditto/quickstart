@@ -513,7 +513,8 @@ jobs:
               \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,
               \"video\": true,
-              \"networkLogs\": true
+              \"networkLogs\": true,
+              \"autoGrantPermissions\": true
             }")
 
           echo "BrowserStack API Response:"
