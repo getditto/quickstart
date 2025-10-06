@@ -761,8 +761,8 @@ jobs:
             # Create test execution request
             # NOTE: Flutter testing framework requires iOS 15+ due to _backtrace_async symbol
             # See: https://developer.apple.com/documentation/os/backtrace_async
-            # Load devices from centralized config
-            DEVICES=$(jq -c '.flutter.ios.devices' .github/browserstack-devices.json)
+            # Load devices from centralized config (we're in flutter_app dir)
+            DEVICES=$(jq -c '.flutter.ios.devices' ../.github/browserstack-devices.json)
 
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build" \
