@@ -24,12 +24,16 @@ import com.ditto.quickstart.data.dto.UpdateTaskDoneDto
 import com.ditto.quickstart.data.dto.UpdateTaskTitleDto
 import com.ditto.quickstart.ditto.DittoManager
 
+private const val SUBSCRIPTION_QUERY_SELECT_TASKS = """
+SELECT * FROM tasks WHERE NOT deleted
+"""
+
 private const val QUERY_SELECT_TASKS = """
 SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC
 """
 
 private const val QUERY_SELECT_TASK = """
-SELECT * FROM tasks WHERE deleted = false AND _id = :taskId LIMIT 1
+SELECT * FROM tasks WHERE NOT deleted AND _id = :taskId LIMIT 1
 """
 
 private const val QUERY_INSERT_TASK = """
@@ -129,7 +133,7 @@ class DittoTaskRepository(
     )
 
     private suspend fun registerSubscription() {
-        syncSubscription = dittoManager.registerSubscription(QUERY_SELECT_TASKS)
+        syncSubscription = dittoManager.registerSubscription(SUBSCRIPTION_QUERY_SELECT_TASKS)
     }
 
     private suspend fun registerObserver() {

@@ -10,4 +10,3 @@ actual fun createDitto(config: DittoConfig): Ditto =
         context = App.instance,
         config = config,
     )
-
