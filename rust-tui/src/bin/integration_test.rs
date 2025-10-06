@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
 
     // Get task to find from environment
     let task_to_find =
-        env::var("DITTO_CLOUD_TASK_TITLE").unwrap_or_else(|_| "Basic Test Task".to_string());
+        env::var("DITTO_CLOUD_TASK_TITLE").context("DITTO_CLOUD_TASK_TITLE not found")?;
 
     println!("🔍 Looking for task: {}", task_to_find);
 
