@@ -238,6 +238,9 @@ jobs:
             exit 1
           fi
 
+          # Export as environment variable (for System.getenv())
+          export DITTO_CLOUD_TASK_TITLE="$TASK_TITLE"
+
           # Run BrowserStack Selenium tests
           cd java-spring
           ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
