@@ -20,10 +20,14 @@ public class iOSTaskSearchTests : TaskSearchTests
         if (!string.IsNullOrEmpty(browserstackUsername) && !string.IsNullOrEmpty(browserstackAccessKey))
         {
             // Load device config from environment (set by workflow from browserstack-devices.json)
-            var deviceString = Environment.GetEnvironmentVariable("BROWSERSTACK_DEVICE") ?? "iPhone 15-17.0";
+            var deviceString = Environment.GetEnvironmentVariable("BROWSERSTACK_DEVICE");
+            if (string.IsNullOrEmpty(deviceString))
+            {
+                throw new InvalidOperationException("BROWSERSTACK_DEVICE environment variable must be set");
+            }
             var deviceParts = deviceString.Split('-');
             var deviceName = deviceParts[0];
-            var platformVersion = deviceParts.Length > 1 ? deviceParts[1] : "17.0";
+            var platformVersion = deviceParts.Length > 1 ? deviceParts[1] : throw new InvalidOperationException("Device string must include platform version (e.g., 'iPhone 15-17.0')");
 
             // BrowserStack capabilities for iOS
             options.PlatformName = "iOS";
