@@ -414,70 +414,7 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: 'flutter'
-
-      - name: Build Android debug APKs with seeded task title
-        working-directory: flutter_app/android
-        run: |
-          # Use the task title from seed job
-          TITLE="${{ steps.seed_task.outputs.document-title }}"
-          ENCODED_TASK=$(echo -n "TASK_TO_FIND=$TITLE" | base64)
-          TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
-
-          echo "📦 Building Android debug APKs with task title: $TITLE"
-          echo "📦 Encoded: $ENCODED_TASK"
-          echo "📦 Target: $TARGET_PATH"
-
-          chmod +x gradlew
-          ./gradlew assembleDebug assembleDebugAndroidTest \
-            -Ptarget="$TARGET_PATH" \
-            -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
-
-      - name: Upload app APK to BrowserStack
-        id: upload
-        run: |
-          echo "📤 Uploading app APK to BrowserStack..."
-          APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app" \
-            -F "file=@flutter_app/build/app/outputs/apk/debug/app-debug.apk")
-
-          echo "App upload response: $APP_RESPONSE"
-          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
-          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
-
-          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
-            echo "❌ Failed to upload app APK"
-            echo "Response: $APP_RESPONSE"
-            exit 1
-          fi
-          echo "✅ App APK uploaded: $APP_URL"
-
-      - name: Upload test suite APK to BrowserStack
-        id: upload_test
-        run: |
-          echo "📤 Uploading test suite APK to BrowserStack..."
-          TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/test-suite" \
-            -F "file=@flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk")
-
-          echo "Test suite upload response: $TEST_RESPONSE"
-          TEST_URL=$(echo "$TEST_RESPONSE" | jq -r .test_suite_url)
-          echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
-
-          if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
-            echo "❌ Failed to upload test suite APK"
-            echo "Response: $TEST_RESPONSE"
-            exit 1
-          fi
-          echo "✅ Test suite APK uploaded: $TEST_URL"
-
-      - name: Execute and wait for BrowserStack Android tests
+      - name: Seed, build, upload, and execute BrowserStack Android tests
         id: test
         uses: nick-fields/retry@v3
         with:
@@ -485,22 +422,88 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 900
           command: |
-            # Validate inputs before creating test execution request
-            APP_URL="${{ steps.upload.outputs.app_url }}"
-            TEST_URL="${{ steps.upload_test.outputs.test_url }}"
+            # Seed test task to Ditto Cloud
+            echo "📝 Seeding test task to Ditto Cloud..."
+            TIMESTAMP=$(date +%s)
+            INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+                \"args\": {
+                  \"newTask\": {
+                    \"_id\": \"${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"title\": \"${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"done\": false,
+                    \"deleted\": false
+                  }
+                }
+              }" \
+              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
 
-            echo "App URL: $APP_URL"
-            echo "Test URL: $TEST_URL"
+            HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+            BODY=$(echo "$SEED_RESPONSE" | sed '$d')
 
-            if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
-              echo "Error: No valid app URL available"
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              TASK_TITLE="${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+              echo "✅ Document inserted successfully with title: $TASK_TITLE"
+            else
+              echo "❌ Failed to insert document. HTTP status: $HTTP_CODE"
+              echo "Response: $BODY"
               exit 1
             fi
 
-            if [ -z "$TEST_URL" ] || [ "$TEST_URL" = "null" ]; then
-              echo "Error: No valid test URL available"
+            # Build Android debug APKs with seeded task title
+            cd flutter_app/android
+            ENCODED_TASK=$(echo -n "TASK_TO_FIND=$TASK_TITLE" | base64)
+            TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
+
+            echo "📦 Building Android debug APKs with task title: $TASK_TITLE"
+            echo "📦 Encoded: $ENCODED_TASK"
+            echo "📦 Target: $TARGET_PATH"
+
+            chmod +x gradlew
+            ./gradlew assembleDebug assembleDebugAndroidTest \
+              -Ptarget="$TARGET_PATH" \
+              -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
+
+            cd ../..
+
+            # Upload app APK to BrowserStack
+            echo "📤 Uploading app APK to BrowserStack..."
+            APP_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/app" \
+              -F "file=@flutter_app/build/app/outputs/apk/debug/app-debug.apk")
+
+            echo "App upload response: $APP_RESPONSE"
+            APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+
+            if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+              echo "❌ Failed to upload app APK"
+              echo "Response: $APP_RESPONSE"
               exit 1
             fi
+            echo "✅ App APK uploaded: $APP_URL"
+
+            # Upload test suite APK to BrowserStack
+            echo "📤 Uploading test suite APK to BrowserStack..."
+            TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/test-suite" \
+              -F "file=@flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk")
+
+            echo "Test suite upload response: $TEST_RESPONSE"
+            TEST_URL=$(echo "$TEST_RESPONSE" | jq -r .test_suite_url)
+
+            if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+              echo "❌ Failed to upload test suite APK"
+              echo "Response: $TEST_RESPONSE"
+              exit 1
+            fi
+            echo "✅ Test suite APK uploaded: $TEST_URL"
+
+            # Execute tests on BrowserStack
+            echo "🚀 Executing tests on BrowserStack..."
 
             # Load devices from centralized config
             DEVICES=$(jq -c '.flutter.android.devices' .github/browserstack-devices.json)
@@ -625,9 +628,10 @@ jobs:
             echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
-          echo "- **Test Task:** ${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$BUILD_ID" ]; then
+            echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
+            echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
   browserstack-ios:
@@ -662,86 +666,13 @@ jobs:
         working-directory: flutter_app/ios
         run: pod install || pod install --repo-update
 
-      - name: Seed test task to Ditto Cloud
-        id: seed_task
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: 'flutter'
-
       - name: Download iOS IPA
         uses: actions/download-artifact@v4
         with:
           name: flutter-ios-ipa-${{ github.run_number }}
           path: flutter_app/build/ios/ipa/
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Get Flutter dependencies
-        working-directory: flutter_app
-        run: flutter pub get
-
-      - name: Build iOS integration test package with seeded task title
-        working-directory: flutter_app
-        run: |
-          # Use the task title from seed job
-          TITLE="${{ steps.seed_task.outputs.document-title }}"
-          echo "🧪 Building iOS integration test package with task title: $TITLE"
-
-          flutter build ios integration_test/app_test.dart --release --no-codesign \
-            --dart-define=INTEGRATION_TEST_MODE=true \
-            --dart-define="TASK_TO_FIND=$TITLE"
-
-      - name: Create iOS test package
-        run: |
-          output="../build/ios_integration"
-          product="build/ios_integration/Build/Products"
-
-          pushd flutter_app/ios
-          xcodebuild -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -config Flutter/Release.xcconfig \
-            -derivedDataPath $output \
-            -sdk iphoneos \
-            build-for-testing \
-            CODE_SIGNING_ALLOWED=NO
-          popd
-
-          pushd flutter_app/$product
-          XCTESTRUN_FILE=$(find . -name "*.xctestrun" -type f | head -1)
-          if [ -z "$XCTESTRUN_FILE" ]; then
-            echo "❌ No .xctestrun file found"
-            exit 1
-          fi
-          echo "📦 Found xctestrun file: $XCTESTRUN_FILE"
-          zip -r "ios_test_package.zip" "Release-iphoneos" "$XCTESTRUN_FILE"
-          popd
-
-      - name: Upload iOS test package to BrowserStack
-        id: upload
-        run: |
-          echo "📤 Uploading iOS test package to BrowserStack..."
-          TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/test-package" \
-            -F "file=@flutter_app/build/ios_integration/Build/Products/ios_test_package.zip")
-
-          echo "Upload response: $TEST_RESPONSE"
-          TEST_PACKAGE_URL=$(echo "$TEST_RESPONSE" | jq -r .test_package_url)
-          echo "test_package_url=$TEST_PACKAGE_URL" >> "$GITHUB_OUTPUT"
-
-          if [ "$TEST_PACKAGE_URL" = "null" ] || [ -z "$TEST_PACKAGE_URL" ]; then
-            echo "❌ Failed to upload iOS test package"
-            echo "Response: $TEST_RESPONSE"
-            exit 1
-          fi
-          echo "✅ iOS test package uploaded: $TEST_PACKAGE_URL"
-
-      - name: Execute and wait for BrowserStack iOS tests
+      - name: Seed, build, upload, and execute BrowserStack iOS tests
         id: test
         uses: nick-fields/retry@v3
         with:
@@ -749,8 +680,89 @@ jobs:
           timeout_minutes: 20
           retry_wait_seconds: 900
           command: |
-            TEST_PACKAGE_URL="${{ steps.upload.outputs.test_package_url }}"
-            echo "Test Package URL: $TEST_PACKAGE_URL"
+            # Seed test task to Ditto Cloud
+            echo "📝 Seeding test task to Ditto Cloud..."
+            TIMESTAMP=$(date +%s)
+            INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+                \"args\": {
+                  \"newTask\": {
+                    \"_id\": \"${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"title\": \"${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"done\": false,
+                    \"deleted\": false
+                  }
+                }
+              }" \
+              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+            HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+            BODY=$(echo "$SEED_RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              TASK_TITLE="${INVERTED_TIMESTAMP}_flutter_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+              echo "✅ Document inserted successfully with title: $TASK_TITLE"
+            else
+              echo "❌ Failed to insert document. HTTP status: $HTTP_CODE"
+              echo "Response: $BODY"
+              exit 1
+            fi
+
+            # Build iOS integration test package with seeded task title
+            cd flutter_app
+            echo "🧪 Building iOS integration test package with task title: $TASK_TITLE"
+
+            flutter build ios integration_test/app_test.dart --release --no-codesign \
+              --dart-define=INTEGRATION_TEST_MODE=true \
+              --dart-define="TASK_TO_FIND=$TASK_TITLE"
+
+            # Create iOS test package
+            cd ..
+            output="../build/ios_integration"
+            product="build/ios_integration/Build/Products"
+
+            pushd flutter_app/ios
+            xcodebuild -workspace Runner.xcworkspace \
+              -scheme Runner \
+              -config Flutter/Release.xcconfig \
+              -derivedDataPath $output \
+              -sdk iphoneos \
+              build-for-testing \
+              CODE_SIGNING_ALLOWED=NO
+            popd
+
+            pushd flutter_app/$product
+            XCTESTRUN_FILE=$(find . -name "*.xctestrun" -type f | head -1)
+            if [ -z "$XCTESTRUN_FILE" ]; then
+              echo "❌ No .xctestrun file found"
+              exit 1
+            fi
+            echo "📦 Found xctestrun file: $XCTESTRUN_FILE"
+            zip -r "ios_test_package.zip" "Release-iphoneos" "$XCTESTRUN_FILE"
+            popd
+
+            # Upload iOS test package to BrowserStack
+            echo "📤 Uploading iOS test package to BrowserStack..."
+            TEST_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/test-package" \
+              -F "file=@flutter_app/build/ios_integration/Build/Products/ios_test_package.zip")
+
+            echo "Upload response: $TEST_RESPONSE"
+            TEST_PACKAGE_URL=$(echo "$TEST_RESPONSE" | jq -r .test_package_url)
+
+            if [ "$TEST_PACKAGE_URL" = "null" ] || [ -z "$TEST_PACKAGE_URL" ]; then
+              echo "❌ Failed to upload iOS test package"
+              echo "Response: $TEST_RESPONSE"
+              exit 1
+            fi
+            echo "✅ iOS test package uploaded: $TEST_PACKAGE_URL"
+
+            # Execute tests on BrowserStack
+            echo "🚀 Executing tests on BrowserStack..."
 
             # Create test execution request
             # NOTE: Flutter testing framework requires iOS 15+ due to _backtrace_async symbol
@@ -875,9 +887,10 @@ jobs:
             echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
           fi
 
-          echo "- **Test Task:** ${{ steps.seed_task.outputs.document-title }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$BUILD_ID" ]; then
+            echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
+            echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
