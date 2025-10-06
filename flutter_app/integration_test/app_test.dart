@@ -51,13 +51,15 @@ void main() {
 
       // Look for the test document that should be synced from Ditto cloud
       const testTitle = String.fromEnvironment('DITTO_CLOUD_TASK_TITLE');
-      const integrationTestMode = String.fromEnvironment('INTEGRATION_TEST_MODE');
+      const integrationTestMode =
+          String.fromEnvironment('INTEGRATION_TEST_MODE');
 
       // Debug logging
       print('DEBUG: DITTO_CLOUD_TASK_TITLE = "$testTitle"');
       print('DEBUG: INTEGRATION_TEST_MODE = "$integrationTestMode"');
       print('DEBUG: testTitle.isEmpty = ${testTitle.isEmpty}');
-      print('DEBUG: integrationTestMode.isEmpty = ${integrationTestMode.isEmpty}');
+      print(
+          'DEBUG: integrationTestMode.isEmpty = ${integrationTestMode.isEmpty}');
 
       if (testTitle.isEmpty) {
         throw Exception(
