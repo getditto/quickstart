@@ -50,21 +50,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Look for the test document that should be synced from Ditto cloud
-      const testTitle = String.fromEnvironment('DITTO_CLOUD_TASK_TITLE');
-      const integrationTestMode =
-          String.fromEnvironment('INTEGRATION_TEST_MODE');
-
-      // Debug logging
-      print('DEBUG: DITTO_CLOUD_TASK_TITLE = "$testTitle"');
-      print('DEBUG: INTEGRATION_TEST_MODE = "$integrationTestMode"');
-      print('DEBUG: testTitle.isEmpty = ${testTitle.isEmpty}');
-      print(
-          'DEBUG: integrationTestMode.isEmpty = ${integrationTestMode.isEmpty}');
+      const testTitle = String.fromEnvironment('TASK_TO_FIND');
 
       if (testTitle.isEmpty) {
-        throw Exception(
-            'DITTO_CLOUD_TASK_TITLE environment variable must be set. '
-            'Build with: --dart-define=DITTO_CLOUD_TASK_TITLE=<task_title>');
+        throw Exception('TASK_TO_FIND environment variable must be set. '
+            'Build with: --dart-define=TASK_TO_FIND=<task_title>');
       }
 
       expect(find.text(testTitle), findsOneWidget,

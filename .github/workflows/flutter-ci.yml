@@ -427,17 +427,17 @@ jobs:
         run: |
           # Use the task title from seed job
           TITLE="${{ steps.seed_task.outputs.document-title }}"
-          ENCODED_TASK=$(echo -n "DITTO_CLOUD_TASK_TITLE=$TITLE" | base64)
+          ENCODED_TASK=$(echo -n "TASK_TO_FIND=$TITLE" | base64)
           TARGET_PATH="$(pwd)/../integration_test/app_test.dart"
 
           echo "📦 Building Android debug APKs with task title: $TITLE"
-          echo "📦 Encoded: SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
+          echo "📦 Encoded: $ENCODED_TASK"
           echo "📦 Target: $TARGET_PATH"
 
           chmod +x gradlew
           ./gradlew assembleDebug assembleDebugAndroidTest \
             -Ptarget="$TARGET_PATH" \
-            -Pdart-defines="SU5URUdSQVRJT05fVEVTVF9NT0RFPXRydWU=,$ENCODED_TASK"
+            -Pdart-defines="$ENCODED_TASK"
 
       - name: Upload app APK to BrowserStack
         id: upload
@@ -696,8 +696,7 @@ jobs:
           echo "🧪 Building iOS integration test package with task title: $TITLE"
 
           flutter build ios integration_test/app_test.dart --release --no-codesign \
-            --dart-define=INTEGRATION_TEST_MODE=true \
-            --dart-define="DITTO_CLOUD_TASK_TITLE=$TITLE"
+            --dart-define="TASK_TO_FIND=$TITLE"
 
       - name: Create iOS test package
         run: |
