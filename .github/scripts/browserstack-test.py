@@ -62,10 +62,12 @@ def run_test(browser_config):
     # Include PR context for easier dashboard navigation
     pr_number = os.environ.get('GITHUB_PR_NUMBER', '')
     pr_title = os.environ.get('GITHUB_PR_TITLE', '')
+    # Truncate PR title to ensure project name stays under 100 chars
+    pr_title_truncated = pr_title[:75] if pr_title else ''
     commit_msg = os.environ.get('GITHUB_COMMIT_MSG', '')
 
-    if pr_number and pr_title:
-        project_name = f"quickstart PR {pr_number}: {pr_title}"
+    if pr_number and pr_title_truncated:
+        project_name = f"quickstart PR {pr_number}: {pr_title_truncated}"
     else:
         project_name = "quickstart"
 

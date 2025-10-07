@@ -207,10 +207,12 @@ jobs:
             # Build BrowserStack project/build names with PR context
             PR_NUMBER="${{ github.event.pull_request.number }}"
             PR_TITLE="${{ github.event.pull_request.title }}"
+            # Truncate PR title to ensure project name stays under 100 chars
+            PR_TITLE_TRUNCATED="${PR_TITLE:0:75}"
             COMMIT_MSG="${{ github.event.head_commit.message }}"
 
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+              PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE_TRUNCATED"
             else
               PROJECT_NAME="quickstart"
             fi
