@@ -1,0 +1,124 @@
+---
+# BrowserStack Device Configuration
+#
+# Centralized configuration for all BrowserStack testing across CI workflows.
+# Each SDK/app has its own configuration section below.
+#
+# Device Selection Criteria:
+# - Coverage: Test across multiple OS versions (latest, current-1, current-2)
+# - Market share: Focus on popular devices (Pixel, Samsung Galaxy, iPhone)
+# - OS baseline: Ensure minimum supported OS versions are tested
+#
+# References:
+# - Mobile devices: https://www.browserstack.com/docs/app-automate/api-reference/appium/devices
+# - Desktop browsers: https://www.browserstack.com/docs/automate/api-reference/selenium/list-of-browsers-and-platforms
+
+# Android C++ QuickStart
+android-cpp:
+  devices:
+    - "Google Pixel 7-13.0"  # Android 13 baseline
+
+# Android Java QuickStart
+android-java:
+  devices:
+    - "Google Pixel 8-14.0"      # Latest Android 14
+    - "Samsung Galaxy S23-13.0"  # Popular flagship, Android 13
+    - "Google Pixel 6-12.0"      # Android 12 support
+    - "OnePlus 9-11.0"           # Android 11 minimum baseline
+
+# Android Kotlin QuickStart
+android-kotlin:
+  devices:
+    - "Google Pixel 8-14.0"      # Latest Android 14
+    - "Samsung Galaxy S23-13.0"  # Popular flagship, Android 13
+    - "Google Pixel 6-12.0"      # Android 12 support
+    - "OnePlus 9-11.0"           # Android 11 minimum baseline
+
+# Flutter QuickStart (multi-platform)
+flutter:
+  android:
+    devices:
+      - "Google Pixel 7-13.0"      # Android 13 baseline
+      - "Samsung Galaxy S23-13.0"  # Popular flagship
+      - "Google Pixel 6-12.0"      # Android 12 support
+  ios:
+    devices:
+      - "iPhone 13-15"  # iOS 15 support
+      - "iPhone 14-16"  # iOS 16 current
+      - "iPhone 12-17"  # iOS 17 latest
+
+# Kotlin Multiplatform QuickStart
+kotlin-multiplatform:
+  android:
+    devices:
+      - "Google Pixel 8-14.0"      # Latest Android 14
+      - "Samsung Galaxy S23-13.0"  # Popular flagship
+
+# React Native QuickStart
+react-native:
+  android:
+    devices:
+      - "Samsung Galaxy S22-12.0"  # Android 12
+      - "Google Pixel 7-13.0"      # Android 13
+  ios:
+    devices:
+      - "iPhone 15-17.0"  # Latest iOS 17
+      - "iPhone 14-16.0"  # iOS 16 support
+
+# React Native Expo QuickStart
+react-native-expo:
+  android:
+    devices:
+      - "Samsung Galaxy S22-12.0"  # Android 12
+      - "Google Pixel 7-13.0"      # Android 13
+  ios:
+    devices:
+      - "iPhone 15-17.0"  # Latest iOS 17
+      - "iPhone 14-16.0"  # iOS 16 support
+
+# .NET MAUI QuickStart (multi-platform)
+dotnet-maui:
+  android:
+    devices:
+      - "Google Pixel 8-14.0"      # Latest Android 14
+      - "Samsung Galaxy S23-13.0"  # Popular flagship
+  ios:
+    devices:
+      - "iPhone 15-17.0"  # Latest iOS 17
+      - "iPhone 14-16.0"  # iOS 16 support
+
+# Swift/iOS QuickStart
+swift:
+  devices:
+    - "iPhone 15 Pro-17"  # Latest flagship with iOS 17
+
+# Java Spring (web application)
+# Tests web app in desktop browsers using Selenium WebDriver
+java-spring:
+  platforms:
+    - os: "Windows"
+      osVersion: "11"
+      browserName: "Chrome"
+      browserVersion: "latest"  # Always test latest Chrome
+
+# JavaScript Web (React web application)
+# Tests web app in multiple desktop browsers
+javascript-web:
+  browsers:
+    - browser: "Chrome"
+      browser_version: "120.0"
+      os: "Windows"
+      os_version: "11"
+    - browser: "Firefox"
+      browser_version: "121.0"
+      os: "Windows"
+      os_version: "11"
+
+# Metadata (informational only, not parsed by workflows)
+_metadata:
+  description: "Centralized BrowserStack device configuration organized by SDK/app"
+  last_updated: "2025-10-07"
+  structure: "Each SDK has its own configuration. Multi-platform SDKs have nested android/ios objects."
+  device_formats:
+    mobile: "Device Name-OS Version (e.g., 'Google Pixel 7-13.0', 'iPhone 15-17')"
+    desktop: "Separate fields: os, osVersion, browserName, browserVersion"

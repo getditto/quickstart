@@ -181,7 +181,7 @@ jobs:
             -F "file=@$APK_PATH" \
             -F "custom_id=ditto-dotnet-maui-android")
 
-          APP_URL=$(echo "$UPLOAD_RESPONSE" | jq -r .app_url)
+          APP_URL=$(echo "$UPLOAD_RESPONSE" | yq eval .app_url)
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "Error: Failed to upload APK"
             exit 1
@@ -229,7 +229,7 @@ jobs:
             fi
 
             # Load device from centralized config
-            DEVICE=$(jq -r '.["dotnet-maui"].android.devices[0]' .github/browserstack-devices.json)
+            DEVICE=$(yq eval '.["dotnet-maui"].android.devices[0]' .github/browserstack-devices.yml)
             echo "Using Android device: $DEVICE"
 
             # Execute tests
@@ -281,7 +281,7 @@ jobs:
             -F "file=@$IPA_PATH" \
             -F "custom_id=ditto-dotnet-maui-ios")
 
-          APP_URL=$(echo "$UPLOAD_RESPONSE" | jq -r .app_url)
+          APP_URL=$(echo "$UPLOAD_RESPONSE" | yq eval .app_url)
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "Error: Failed to upload IPA"
             exit 1
@@ -329,7 +329,7 @@ jobs:
             fi
 
             # Load device from centralized config
-            DEVICE=$(jq -r '.["dotnet-maui"].ios.devices[0]' .github/browserstack-devices.json)
+            DEVICE=$(yq eval '.["dotnet-maui"].ios.devices[0]' .github/browserstack-devices.yml)
             echo "Using iOS device: $DEVICE"
 
             # Execute tests

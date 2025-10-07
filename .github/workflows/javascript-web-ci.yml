@@ -131,6 +131,9 @@ jobs:
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_PR_TITLE: ${{ github.event.pull_request.title }}
+          GITHUB_COMMIT_MSG: ${{ github.event.head_commit.message }}
         with:
           max_attempts: 5
           timeout_minutes: 20
@@ -172,7 +175,7 @@ jobs:
             export DITTO_CLOUD_TASK_TITLE="$TASK_TITLE"
 
             # Install Python dependencies
-            pip3 install selenium
+            pip3 install selenium pyyaml
 
             # Run the test script
             python3 .github/scripts/browserstack-test.py

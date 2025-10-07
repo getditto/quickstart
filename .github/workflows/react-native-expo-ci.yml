@@ -267,7 +267,7 @@ jobs:
               -F "file=@./artifacts/app-release.apk" \
               -F "custom_id=ReactNative-Expo-Android-${{ github.run_id }}")
 
-            APP_URL=$(echo $response | jq -r '.app_url')
+            APP_URL=$(echo $response | yq eval '.app_url')
             if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
               echo "Error: Failed to upload APK"
               echo "Response: $response"
@@ -299,7 +299,7 @@ jobs:
               -F "file=@react-native-expo/maestro-tests.zip" \
               -F "custom_id=ReactNative-Expo-Tests-${{ github.run_id }}")
 
-            TEST_SUITE_URL=$(echo $response | jq -r '.test_suite_url')
+            TEST_SUITE_URL=$(echo $response | yq eval '.test_suite_url')
             if [ -z "$TEST_SUITE_URL" ] || [ "$TEST_SUITE_URL" = "null" ]; then
               echo "Error: Failed to upload test suite"
               echo "Response: $response"
@@ -309,7 +309,7 @@ jobs:
 
             # Execute tests
             # Load devices from centralized config
-            DEVICES=$(jq -c '.["react-native-expo"].android.devices' .github/browserstack-devices.json)
+            DEVICES=$(yq eval -o=json -I=0 '.["react-native-expo"].android.devices' .github/browserstack-devices.yml)
             echo "Loaded devices: $DEVICES"
 
             response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
@@ -329,7 +329,7 @@ jobs:
               }")
 
             echo "Execution response: $response"
-            build_id=$(echo $response | jq -r '.build_id')
+            build_id=$(echo $response | yq eval '.build_id')
 
             if [ "$build_id" = "null" ] || [ -z "$build_id" ]; then
               echo "❌ Failed to create BrowserStack build"
@@ -344,7 +344,7 @@ jobs:
               response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
                 "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
-              status=$(echo $response | jq -r '.status')
+              status=$(echo $response | yq eval '.status')
               echo "Test status: $status (attempt $i/108)"
 
               if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
@@ -361,7 +361,7 @@ jobs:
               elif [ "$status" = "error" ]; then
                 echo "❌ BrowserStack reported build error. Fetching session details..."
                 echo $response | jq '.'
-                echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
+                echo $response | yq eval '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
                   if [ -n "$sid" ]; then
                     echo "Session $sid details:"
                     curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
@@ -444,7 +444,7 @@ jobs:
               -F "file=@./artifacts/reactnativeexpo-unsigned.ipa" \
               -F "custom_id=ReactNative-Expo-iOS-${{ github.run_id }}")
 
-            APP_URL=$(echo $response | jq -r '.app_url')
+            APP_URL=$(echo $response | yq eval '.app_url')
             if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
               echo "Error: Failed to upload IPA"
               echo "Response: $response"
@@ -475,7 +475,7 @@ jobs:
               -F "file=@react-native-expo/maestro-tests.zip" \
               -F "custom_id=ReactNative-Expo-iOS-Tests-${{ github.run_id }}")
 
-            TEST_SUITE_URL=$(echo $response | jq -r '.test_suite_url')
+            TEST_SUITE_URL=$(echo $response | yq eval '.test_suite_url')
             if [ -z "$TEST_SUITE_URL" ] || [ "$TEST_SUITE_URL" = "null" ]; then
               echo "Error: Failed to upload test suite"
               echo "Response: $response"
@@ -485,7 +485,7 @@ jobs:
 
             # Execute tests
             # Load devices from centralized config
-            DEVICES=$(jq -c '.["react-native-expo"].ios.devices' .github/browserstack-devices.json)
+            DEVICES=$(yq eval -o=json -I=0 '.["react-native-expo"].ios.devices' .github/browserstack-devices.yml)
             echo "Loaded devices: $DEVICES"
 
             response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
@@ -508,7 +508,7 @@ jobs:
               }")
 
             echo "Execution response: $response"
-            build_id=$(echo $response | jq -r '.build_id')
+            build_id=$(echo $response | yq eval '.build_id')
 
             if [ "$build_id" = "null" ] || [ -z "$build_id" ]; then
               echo "❌ Failed to create BrowserStack build"
@@ -523,7 +523,7 @@ jobs:
               response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
                 "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
-              status=$(echo $response | jq -r '.status')
+              status=$(echo $response | yq eval '.status')
               echo "Test status: $status (attempt $i/108)"
 
               if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
@@ -540,7 +540,7 @@ jobs:
               elif [ "$status" = "error" ]; then
                 echo "❌ BrowserStack reported build error. Fetching session details..."
                 echo $response | jq '.'
-                echo $response | jq -r '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
+                echo $response | yq eval '.devices[]?.sessions[]?.id' 2>/dev/null | while read sid; do
                   if [ -n "$sid" ]; then
                     echo "Session $sid details:"
                     curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \

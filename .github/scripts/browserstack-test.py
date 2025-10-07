@@ -7,9 +7,9 @@ the basic functionality of the Ditto Tasks web application.
 """
 
 import time
-import json
 import sys
 import os
+import yaml
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -59,13 +59,28 @@ def run_test(browser_config):
     )
 
     # Set up BrowserStack options
+    # Include PR context for easier dashboard navigation
+    pr_number = os.environ.get('GITHUB_PR_NUMBER', '')
+    pr_title = os.environ.get('GITHUB_PR_TITLE', '')
+    commit_msg = os.environ.get('GITHUB_COMMIT_MSG', '')
+
+    if pr_number and pr_title:
+        project_name = f"quickstart PR {pr_number}: {pr_title}"
+    else:
+        project_name = "quickstart"
+
+    if commit_msg:
+        build_name = f"CI Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}: {commit_msg}"
+    else:
+        build_name = f"CI Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}"
+
     bs_options = {
         "browserVersion": browser_config["browser_version"],
         "os": browser_config["os"],
         "osVersion": browser_config["os_version"],
         "sessionName": f"Ditto Tasks Test - {browser_config['browser']} {browser_config['browser_version']}",
-        "buildName": f"CI Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}",
-        "projectName": "QuickStart JavaScript Web",
+        "buildName": build_name,
+        "projectName": project_name,
         "local": "true",
         "debug": "true",
         "video": "true",
@@ -228,10 +243,10 @@ def main():
     """Main function to run all browser tests."""
     # Load browser configurations from centralized config
     config_path = os.path.join(
-        os.path.dirname(__file__), "..", "browserstack-devices.json"
+        os.path.dirname(__file__), "..", "browserstack-devices.yml"
     )
     with open(config_path, "r") as f:
-        config = json.load(f)
+        config = yaml.safe_load(f)
     browsers = config["javascript-web"]["browsers"]
 
     # Run tests on all browsers

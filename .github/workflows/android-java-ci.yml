@@ -124,7 +124,7 @@ jobs:
           -F "file=@android-java/app/build/outputs/apk/debug/app-debug.apk" \
           -F "custom_id=ditto-android-java-app")
 
-        APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+        APP_URL=$(echo "$APP_RESPONSE" | yq eval .app_url)
         if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
           echo "Error: Failed to upload app APK"
           echo "Response: $APP_RESPONSE"
@@ -140,7 +140,7 @@ jobs:
           -F "file=@android-java/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
           -F "custom_id=ditto-android-java-test")
 
-        TEST_URL=$(echo "$TEST_RESPONSE" | jq -r .test_suite_url)
+        TEST_URL=$(echo "$TEST_RESPONSE" | yq eval .test_suite_url)
         if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
           echo "Error: Failed to upload test APK"
           echo "Response: $TEST_RESPONSE"
@@ -190,7 +190,7 @@ jobs:
           fi
 
           # Load devices from centralized config
-          DEVICES=$(jq -c '.["android-java"].devices' .github/browserstack-devices.json)
+          DEVICES=$(yq eval -o=json -I=0 '.["android-java"].devices' .github/browserstack-devices.yml)
           echo "Loaded devices: $DEVICES"
 
           # Create test execution request
@@ -214,7 +214,7 @@ jobs:
               }
             }')
 
-          BUILD_ID=$(echo "$BUILD_RESPONSE" | jq -r .build_id)
+          BUILD_ID=$(echo "$BUILD_RESPONSE" | yq eval .build_id)
 
           if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
             echo "Error: Failed to create BrowserStack build"
@@ -235,7 +235,7 @@ jobs:
             RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
 
-            STATUS=$(echo "$RESPONSE" | jq -r .status)
+            STATUS=$(echo "$RESPONSE" | yq eval .status)
 
             if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
               echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
@@ -265,11 +265,11 @@ jobs:
 
           # Validate and check results
           if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
-            BUILD_STATUS=$(echo "$FINAL_RESULT" | jq -r .status)
+            BUILD_STATUS=$(echo "$FINAL_RESULT" | yq eval .status)
             if [ "$BUILD_STATUS" != "passed" ]; then
               echo "❌ Tests failed with status: $BUILD_STATUS"
 
-              FAILED_DEVICES=$(echo "$FINAL_RESULT" | jq -r '.devices[] | select(.sessions[].status != "passed") | .device')
+              FAILED_DEVICES=$(echo "$FINAL_RESULT" | yq eval '.devices[] | select(.sessions[].status != "passed") | .device')
               if [ -n "$FAILED_DEVICES" ]; then
                 echo "Failed on devices: $FAILED_DEVICES"
               fi

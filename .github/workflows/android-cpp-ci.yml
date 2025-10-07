@@ -152,7 +152,7 @@ jobs:
             -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk" \
             -F "custom_id=ditto-android-cpp-appium-app")
 
-          APP_URL=$(echo "$APP_RESPONSE" | jq -r .app_url)
+          APP_URL=$(echo "$APP_RESPONSE" | yq eval .app_url)
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "Error: Failed to upload APK"
             exit 1
@@ -201,7 +201,7 @@ jobs:
             fi
 
             # Load device from centralized config
-            DEVICE=$(jq -r '.["android-cpp"].devices[0]' .github/browserstack-devices.json)
+            DEVICE=$(yq eval '.["android-cpp"].devices[0]' .github/browserstack-devices.yml)
             echo "Using device: $DEVICE"
 
             # Execute tests
