@@ -333,12 +333,17 @@ jobs:
             echo "BrowserStack Build ID: $build_id"
 
             # Wait for test completion and get results
-            for i in {1..108}; do
+            MAX_WAIT_TIME=1080  # 18 minutes
+            CHECK_INTERVAL=10   # Check every 10 seconds
+            ELAPSED=0
+
+            echo "⏳ Waiting for test execution to complete..."
+            while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
               response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
                 "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
               status=$(echo $response | yq eval '.status')
-              echo "Test status: $status (attempt $i/108)"
+              echo "Test status: $status (${ELAPSED}s elapsed)"
 
               if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
                 echo "Tests completed with status: $status"
@@ -364,11 +369,12 @@ jobs:
                 exit 1
               fi
 
-              sleep 10
+              sleep $CHECK_INTERVAL
+              ELAPSED=$((ELAPSED + CHECK_INTERVAL))
             done
 
-            if [ $i -eq 108 ]; then
-              echo "❌ Tests timed out after 18 minutes"
+            if [ $ELAPSED -ge $MAX_WAIT_TIME ]; then
+              echo "❌ Tests timed out after ${MAX_WAIT_TIME}s (18 minutes)"
               exit 1
             fi
 
@@ -512,12 +518,17 @@ jobs:
             echo "BrowserStack Build ID: $build_id"
 
             # Wait for test completion and get results
-            for i in {1..108}; do
+            MAX_WAIT_TIME=1080  # 18 minutes
+            CHECK_INTERVAL=10   # Check every 10 seconds
+            ELAPSED=0
+
+            echo "⏳ Waiting for test execution to complete..."
+            while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
               response=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
                 "https://api-cloud.browserstack.com/app-automate/maestro/v2/builds/$build_id")
 
               status=$(echo $response | yq eval '.status')
-              echo "Test status: $status (attempt $i/108)"
+              echo "Test status: $status (${ELAPSED}s elapsed)"
 
               if [ "$status" = "passed" ] || [ "$status" = "failed" ]; then
                 echo "Tests completed with status: $status"
@@ -543,11 +554,12 @@ jobs:
                 exit 1
               fi
 
-              sleep 10
+              sleep $CHECK_INTERVAL
+              ELAPSED=$((ELAPSED + CHECK_INTERVAL))
             done
 
-            if [ $i -eq 108 ]; then
-              echo "❌ Tests timed out after 18 minutes"
+            if [ $ELAPSED -ge $MAX_WAIT_TIME ]; then
+              echo "❌ Tests timed out after ${MAX_WAIT_TIME}s (18 minutes)"
               exit 1
             fi
 
