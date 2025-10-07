@@ -444,15 +444,15 @@ jobs:
             COMMIT_MSG="${{ github.event.head_commit.message }}"
 
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE_TRUNCATED"
+              PROJECT_NAME="quickstart - Swift"
             else
-              PROJECT_NAME="quickstart"
+              PROJECT_NAME="quickstart - Swift"
             fi
 
             if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
-              BUILD_NAME="CI Build #${{ github.run_number }}: $COMMIT_MSG"
+              BUILD_NAME="PR #$PR_NUMBER: $PR_TITLE_TRUNCATED"
             else
-              BUILD_NAME="CI Build #${{ github.run_number }}"
+              BUILD_NAME="Build #${{ github.run_number }}"
             fi
 
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \

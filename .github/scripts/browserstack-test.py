@@ -66,15 +66,14 @@ def run_test(browser_config):
     pr_title_truncated = pr_title[:75] if pr_title else ''
     commit_msg = os.environ.get('GITHUB_COMMIT_MSG', '')
 
-    if pr_number and pr_title_truncated:
-        project_name = f"quickstart PR {pr_number}: {pr_title_truncated}"
-    else:
-        project_name = "quickstart"
+    # Project name is always "quickstart - JavaScript Web"
+    project_name = "quickstart - JavaScript Web"
 
-    if commit_msg:
-        build_name = f"CI Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}: {commit_msg}"
+    # Build name includes PR context
+    if pr_number and pr_title_truncated:
+        build_name = f"PR #{pr_number}: {pr_title_truncated}"
     else:
-        build_name = f"CI Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}"
+        build_name = f"Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}"
 
     bs_options = {
         "browserVersion": browser_config["browser_version"],

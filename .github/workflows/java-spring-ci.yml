@@ -166,15 +166,15 @@ jobs:
         COMMIT_MSG="${{ github.event.head_commit.message }}"
 
         if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-          PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE_TRUNCATED"
+          PROJECT_NAME="quickstart - Java Spring"
         else
-          PROJECT_NAME="quickstart"
+          PROJECT_NAME="quickstart - Java Spring"
         fi
 
         if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
-          BUILD_NAME="CI Build #${{ github.run_number }}: $COMMIT_MSG"
+          BUILD_NAME="PR #$PR_NUMBER: $PR_TITLE_TRUNCATED"
         else
-          BUILD_NAME="CI Build #${{ github.run_number }}"
+          BUILD_NAME="Build #${{ github.run_number }}"
         fi
 
         cat > browserstack.yml << EOF
@@ -265,7 +265,7 @@ jobs:
           ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
             -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -DBROWSERSTACK_BUILD_NAME="CI Build #${{ github.run_number }}" \
+            -DBROWSERSTACK_BUILD_NAME="Build #${{ github.run_number }}" \
             -DBROWSERSTACK_LOCAL=true \
             -DDITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             --info
