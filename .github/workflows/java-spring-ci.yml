@@ -158,11 +158,28 @@ jobs:
         # Load platforms from centralized config and convert to YAML format
         PLATFORMS=$(yq eval '.["java-spring"].platforms[] | "  - os: \(.os)\n    osVersion: \"\(.osVersion)\"\n    browserName: \(.browserName)\n    browserVersion: \(.browserVersion)"' ../.github/browserstack-devices.yml)
 
+        # Build BrowserStack project/build names with PR context
+        PR_NUMBER="${{ github.event.pull_request.number }}"
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+        if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+          PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+        else
+          PROJECT_NAME="quickstart"
+        fi
+
+        if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
+          BUILD_NAME="CI Build #${{ github.run_number }}: $COMMIT_MSG"
+        else
+          BUILD_NAME="CI Build #${{ github.run_number }}"
+        fi
+
         cat > browserstack.yml << EOF
         userName: ${{ secrets.BROWSERSTACK_USERNAME }}
         accessKey: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        projectName: QuickStart Java Spring
-        buildName: CI Build #${{ github.run_number }}
+        projectName: $PROJECT_NAME
+        buildName: $BUILD_NAME
         platforms:
         $PLATFORMS
         browserstackLocal: true

@@ -204,6 +204,23 @@ jobs:
             DEVICE=$(yq eval '.["android-cpp"].devices[0]' .github/browserstack-devices.yml)
             echo "Using device: $DEVICE"
 
+            # Build BrowserStack project/build names with PR context
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+              PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+            else
+              PROJECT_NAME="quickstart"
+            fi
+
+            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
+              BUILD_NAME="CI Build #${{ github.run_number }}: $COMMIT_MSG"
+            else
+              BUILD_NAME="CI Build #${{ github.run_number }}"
+            fi
+
             # Execute tests
             cd android-cpp/QuickStartTasksCPP/appium-test
             export BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}"
@@ -211,6 +228,8 @@ jobs:
             export BROWSERSTACK_APP_URL="${{ steps.upload.outputs.app_url }}"
             export BROWSERSTACK_DEVICE="$DEVICE"
             export DITTO_CLOUD_TASK_TITLE="$TASK_TITLE"
+            export BROWSERSTACK_PROJECT="$PROJECT_NAME"
+            export BROWSERSTACK_BUILD="$BUILD_NAME"
 
             ../gradlew test --console=plain --no-daemon
 
