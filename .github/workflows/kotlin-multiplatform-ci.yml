@@ -389,6 +389,23 @@ jobs:
           # Load devices from centralized config
           DEVICES=$(yq eval -o=json -I=0 '.["kotlin-multiplatform"].android.devices' .github/browserstack-devices.yml)
 
+          # Build BrowserStack project/build names with PR context
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+            PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+          else
+            PROJECT_NAME="quickstart"
+          fi
+
+          if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
+            BUILD_NAME="CI Build #${{ github.run_number }}: $COMMIT_MSG"
+          else
+            BUILD_NAME="CI Build #${{ github.run_number }}"
+          fi
+
           BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
             -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" \
             -H "Content-Type: application/json" \
@@ -396,8 +413,8 @@ jobs:
               \"app\": \"${{ steps.upload.outputs.app_url }}\",
               \"testSuite\": \"${{ steps.upload.outputs.test_url }}\",
               \"devices\": $DEVICES,
-              \"project\": \"QuickStart Kotlin Multiplatform\",
-              \"buildName\": \"CI Build #${{ github.run_number }}\",
+              \"project\": \"$PROJECT_NAME\",
+              \"buildName\": \"$BUILD_NAME\",
               \"buildTag\": \"${{ github.ref_name }}\",
               \"deviceLogs\": true,
               \"video\": true,

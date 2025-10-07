@@ -232,6 +232,23 @@ jobs:
             DEVICE=$(yq eval '.["dotnet-maui"].android.devices[0]' .github/browserstack-devices.yml)
             echo "Using Android device: $DEVICE"
 
+            # Build BrowserStack project/build names with PR context
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+              PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+            else
+              PROJECT_NAME="quickstart"
+            fi
+
+            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
+              BUILD_NAME="Android Build #${{ github.run_number }}: $COMMIT_MSG"
+            else
+              BUILD_NAME="Android Build #${{ github.run_number }}"
+            fi
+
             # Execute tests
             cd dotnet-maui/UITests.Android
             dotnet restore
@@ -240,7 +257,8 @@ jobs:
             BROWSERSTACK_APP_ID="${{ steps.upload.outputs.app_url }}" \
             BROWSERSTACK_DEVICE="$DEVICE" \
             DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
-            BUILD_NAME="CI Build #${{ github.run_number }}" \
+            BROWSERSTACK_PROJECT="$PROJECT_NAME" \
+            BUILD_NAME="$BUILD_NAME" \
             dotnet run
 
   browserstack-ios:
@@ -332,6 +350,23 @@ jobs:
             DEVICE=$(yq eval '.["dotnet-maui"].ios.devices[0]' .github/browserstack-devices.yml)
             echo "Using iOS device: $DEVICE"
 
+            # Build BrowserStack project/build names with PR context
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+              PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+            else
+              PROJECT_NAME="quickstart"
+            fi
+
+            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
+              BUILD_NAME="iOS Build #${{ github.run_number }}: $COMMIT_MSG"
+            else
+              BUILD_NAME="iOS Build #${{ github.run_number }}"
+            fi
+
             # Execute tests
             cd dotnet-maui/UITests.iOS
             dotnet restore
@@ -340,7 +375,8 @@ jobs:
             BROWSERSTACK_APP_ID="${{ steps.upload.outputs.app_url }}" \
             BROWSERSTACK_DEVICE="$DEVICE" \
             DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
-            BUILD_NAME="CI Build #${{ github.run_number }}" \
+            BROWSERSTACK_PROJECT="$PROJECT_NAME" \
+            BUILD_NAME="$BUILD_NAME" \
             dotnet run
 
   summary:

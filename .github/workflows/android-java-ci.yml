@@ -193,6 +193,23 @@ jobs:
           DEVICES=$(yq eval -o=json -I=0 '.["android-java"].devices' .github/browserstack-devices.yml)
           echo "Loaded devices: $DEVICES"
 
+          # Build BrowserStack project/build names with PR context for better dashboard navigation
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+            PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+          else
+            PROJECT_NAME="quickstart"
+          fi
+
+          if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
+            BUILD_NAME="CI Build #${{ github.run_number }}: $COMMIT_MSG"
+          else
+            BUILD_NAME="CI Build #${{ github.run_number }}"
+          fi
+
           # Create test execution request
           BUILD_RESPONSE=$(curl -s -u '${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}' \
             -X POST 'https://api-cloud.browserstack.com/app-automate/espresso/v2/build' \
@@ -201,8 +218,8 @@ jobs:
               "app": "${{ steps.upload.outputs.app_url }}",
               "testSuite": "${{ steps.upload.outputs.test_url }}",
               "devices": '"$DEVICES"',
-              "project": "QuickStart Android Java",
-              "buildName": "CI Build #${{ github.run_number }}",
+              "project": "'"$PROJECT_NAME"'",
+              "buildName": "'"$BUILD_NAME"'",
               "buildTag": "${{ github.ref_name }}",
               "deviceLogs": true,
               "video": true,

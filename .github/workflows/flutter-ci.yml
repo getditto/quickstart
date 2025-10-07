@@ -508,6 +508,23 @@ jobs:
             # Load devices from centralized config
             DEVICES=$(yq eval -o=json -I=0 '.flutter.android.devices' .github/browserstack-devices.yml)
 
+            # Build BrowserStack project/build names with PR context
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+              PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+            else
+              PROJECT_NAME="quickstart"
+            fi
+
+            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
+              BUILD_NAME="Android Build #${{ github.run_number }}: $COMMIT_MSG"
+            else
+              BUILD_NAME="Android Build #${{ github.run_number }}"
+            fi
+
             # Create test execution request
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build" \
@@ -516,8 +533,8 @@ jobs:
                 \"app\": \"$APP_URL\",
                 \"testSuite\": \"$TEST_URL\",
                 \"devices\": $DEVICES,
-                \"project\": \"QuickStart Flutter\",
-                \"buildName\": \"Android Build #${{ github.run_number }}\",
+                \"project\": \"$PROJECT_NAME\",
+                \"buildName\": \"$BUILD_NAME\",
                 \"buildTag\": \"${{ github.ref_name }}\",
                 \"deviceLogs\": true,
                 \"video\": true,
@@ -770,14 +787,31 @@ jobs:
             # Load devices from centralized config
             DEVICES=$(yq eval -o=json -I=0 '.flutter.ios.devices' .github/browserstack-devices.yml)
 
+            # Build BrowserStack project/build names with PR context
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+              PROJECT_NAME="quickstart PR $PR_NUMBER: $PR_TITLE"
+            else
+              PROJECT_NAME="quickstart"
+            fi
+
+            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
+              BUILD_NAME="iOS Build #${{ github.run_number }}: $COMMIT_MSG"
+            else
+              BUILD_NAME="iOS Build #${{ github.run_number }}"
+            fi
+
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build" \
               -H "Content-Type: application/json" \
               -d "{
                 \"testPackage\": \"$TEST_PACKAGE_URL\",
                 \"devices\": $DEVICES,
-                \"project\": \"QuickStart Flutter\",
-                \"buildName\": \"CI Build #${{ github.run_number }}\",
+                \"project\": \"$PROJECT_NAME\",
+                \"buildName\": \"$BUILD_NAME\",
                 \"buildTag\": \"${{ github.ref_name }}\",
                 \"deviceLogs\": true,
                 \"networkLogs\": true,
