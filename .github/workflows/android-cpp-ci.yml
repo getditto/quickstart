@@ -152,7 +152,7 @@ jobs:
             -F "file=@android-cpp/QuickStartTasksCPP/app/build/outputs/apk/release/app-release-unsigned.apk" \
             -F "custom_id=ditto-android-cpp-appium-app")
 
-          APP_URL=$(echo "$APP_RESPONSE" | yq eval .app_url)
+          APP_URL=$(echo "$APP_RESPONSE" | yq eval -p=json .app_url)
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "Error: Failed to upload APK"
             exit 1

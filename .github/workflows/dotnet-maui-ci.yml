@@ -181,7 +181,7 @@ jobs:
             -F "file=@$APK_PATH" \
             -F "custom_id=ditto-dotnet-maui-android")
 
-          APP_URL=$(echo "$UPLOAD_RESPONSE" | yq eval .app_url)
+          APP_URL=$(echo "$UPLOAD_RESPONSE" | yq eval -p=json .app_url)
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "Error: Failed to upload APK"
             exit 1
@@ -299,7 +299,7 @@ jobs:
             -F "file=@$IPA_PATH" \
             -F "custom_id=ditto-dotnet-maui-ios")
 
-          APP_URL=$(echo "$UPLOAD_RESPONSE" | yq eval .app_url)
+          APP_URL=$(echo "$UPLOAD_RESPONSE" | yq eval -p=json .app_url)
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "Error: Failed to upload IPA"
             exit 1

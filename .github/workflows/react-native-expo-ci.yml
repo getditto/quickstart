@@ -267,7 +267,7 @@ jobs:
               -F "file=@./artifacts/app-release.apk" \
               -F "custom_id=ReactNative-Expo-Android-${{ github.run_id }}")
 
-            APP_URL=$(echo $response | yq eval '.app_url')
+            APP_URL=$(echo $response | yq eval -p=json '.app_url')
             if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
               echo "Error: Failed to upload APK"
               echo "Response: $response"
@@ -299,7 +299,7 @@ jobs:
               -F "file=@react-native-expo/maestro-tests.zip" \
               -F "custom_id=ReactNative-Expo-Tests-${{ github.run_id }}")
 
-            TEST_SUITE_URL=$(echo $response | yq eval '.test_suite_url')
+            TEST_SUITE_URL=$(echo $response | yq eval -p=json '.test_suite_url')
             if [ -z "$TEST_SUITE_URL" ] || [ "$TEST_SUITE_URL" = "null" ]; then
               echo "Error: Failed to upload test suite"
               echo "Response: $response"
@@ -467,7 +467,7 @@ jobs:
               -F "file=@./artifacts/reactnativeexpo-unsigned.ipa" \
               -F "custom_id=ReactNative-Expo-iOS-${{ github.run_id }}")
 
-            APP_URL=$(echo $response | yq eval '.app_url')
+            APP_URL=$(echo $response | yq eval -p=json '.app_url')
             if [ -z "$APP_URL" ] || [ "$APP_URL" = "null" ]; then
               echo "Error: Failed to upload IPA"
               echo "Response: $response"
@@ -498,7 +498,7 @@ jobs:
               -F "file=@react-native-expo/maestro-tests.zip" \
               -F "custom_id=ReactNative-Expo-iOS-Tests-${{ github.run_id }}")
 
-            TEST_SUITE_URL=$(echo $response | yq eval '.test_suite_url')
+            TEST_SUITE_URL=$(echo $response | yq eval -p=json '.test_suite_url')
             if [ -z "$TEST_SUITE_URL" ] || [ "$TEST_SUITE_URL" = "null" ]; then
               echo "Error: Failed to upload test suite"
               echo "Response: $response"

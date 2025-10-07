@@ -142,7 +142,7 @@ jobs:
             -F "file=@android-kotlin/QuickStartTasks/app/build/outputs/apk/debug/app-debug.apk" \
             -F "custom_id=ditto-android-kotlin-app")
 
-          APP_URL=$(echo "$APP_RESPONSE" | yq eval .app_url)
+          APP_URL=$(echo "$APP_RESPONSE" | yq eval -p=json .app_url)
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "Error: Failed to upload app APK"
             echo "Response: $APP_RESPONSE"
@@ -158,7 +158,7 @@ jobs:
             -F "file=@android-kotlin/QuickStartTasks/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
             -F "custom_id=ditto-android-kotlin-test")
 
-          TEST_URL=$(echo "$TEST_RESPONSE" | yq eval .test_suite_url)
+          TEST_URL=$(echo "$TEST_RESPONSE" | yq eval -p=json .test_suite_url)
           if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
             echo "Error: Failed to upload test APK"
             echo "Response: $TEST_RESPONSE"

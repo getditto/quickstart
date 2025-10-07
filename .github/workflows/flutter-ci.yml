@@ -477,7 +477,7 @@ jobs:
               -F "file=@flutter_app/build/app/outputs/apk/debug/app-debug.apk")
 
             echo "App upload response: $APP_RESPONSE"
-            APP_URL=$(echo "$APP_RESPONSE" | yq eval .app_url)
+            APP_URL=$(echo "$APP_RESPONSE" | yq eval -p=json .app_url)
 
             if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
               echo "❌ Failed to upload app APK"
@@ -493,7 +493,7 @@ jobs:
               -F "file=@flutter_app/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk")
 
             echo "Test suite upload response: $TEST_RESPONSE"
-            TEST_URL=$(echo "$TEST_RESPONSE" | yq eval .test_suite_url)
+            TEST_URL=$(echo "$TEST_RESPONSE" | yq eval -p=json .test_suite_url)
 
             if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
               echo "❌ Failed to upload test suite APK"
@@ -769,7 +769,7 @@ jobs:
               -F "file=@flutter_app/build/ios_integration/Build/Products/ios_test_package.zip")
 
             echo "Upload response: $TEST_RESPONSE"
-            TEST_PACKAGE_URL=$(echo "$TEST_RESPONSE" | yq eval .test_package_url)
+            TEST_PACKAGE_URL=$(echo "$TEST_RESPONSE" | yq eval -p=json .test_package_url)
 
             if [ "$TEST_PACKAGE_URL" = "null" ] || [ -z "$TEST_PACKAGE_URL" ]; then
               echo "❌ Failed to upload iOS test package"

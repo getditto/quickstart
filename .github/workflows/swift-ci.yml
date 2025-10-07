@@ -331,7 +331,7 @@ jobs:
             -F "custom_id=ditto-swift-app")
 
           echo "App upload response: $APP_UPLOAD_RESPONSE"
-          APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | yq eval .app_url)
+          APP_URL=$(echo "$APP_UPLOAD_RESPONSE" | yq eval -p=json .app_url)
 
           if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
             echo "❌ Failed to upload app"
@@ -360,7 +360,7 @@ jobs:
           fi
 
           # Prefer test_suite_url, fallback to test_url
-          TEST_URL=$(echo "$BODY" | yq eval '.test_suite_url // .test_url // empty')
+          TEST_URL=$(echo "$BODY" | yq eval -p=json '.test_suite_url // .test_url // empty')
 
           if [ -z "$TEST_URL" ]; then
             echo "❌ Failed to upload test bundle - no test suite URL in response"
