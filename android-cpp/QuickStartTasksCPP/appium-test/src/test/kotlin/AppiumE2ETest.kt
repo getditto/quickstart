@@ -16,11 +16,14 @@ class AppiumE2ETest {
 
         val options = UiAutomator2Options().apply {
             if (isBrowserStack) {
-                // Load device config from environment (set by workflow from browserstack-devices.json)
-                val deviceString = System.getenv("BROWSERSTACK_DEVICE") ?: "Google Pixel 7-13.0"
+                // Load device config from environment (set by workflow from browserstack-devices.yml)
+                val deviceString = System.getenv("BROWSERSTACK_DEVICE")
+                    ?: throw IllegalStateException("BROWSERSTACK_DEVICE environment variable not set")
                 val deviceParts = deviceString.split("-")
                 val deviceName = deviceParts[0]
-                val platformVersion = deviceParts.getOrElse(1) { "13.0" }
+                val platformVersion = deviceParts.getOrElse(1) {
+                    throw IllegalStateException("Invalid BROWSERSTACK_DEVICE format: $deviceString (expected 'Device Name-Version')")
+                }
 
                 setPlatformName("Android")
                 setDeviceName(deviceName)
