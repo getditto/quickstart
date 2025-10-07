@@ -360,7 +360,7 @@ jobs:
           fi
 
           # Prefer test_suite_url, fallback to test_url
-          TEST_URL=$(echo "$BODY" | yq eval -p=json '.test_suite_url // .test_url // empty')
+          TEST_URL=$(echo "$BODY" | yq eval -p=json '.test_suite_url // .test_url // ""')
 
           if [ -z "$TEST_URL" ]; then
             echo "❌ Failed to upload test bundle - no test suite URL in response"
