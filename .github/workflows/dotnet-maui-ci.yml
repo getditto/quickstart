@@ -241,7 +241,7 @@ jobs:
             PROJECT_NAME="quickstart - MAUI"
 
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              BUILD_NAME="PR #$PR_NUMBER: $COMMIT_MSG_TRUNCATED (Android)"
+              BUILD_NAME="PR-$PR_NUMBER: $COMMIT_MSG_TRUNCATED (Android)"
             else
               BUILD_NAME="Build #${{ github.run_number }} (Android)"
             fi
@@ -356,7 +356,7 @@ jobs:
             PROJECT_NAME="quickstart - MAUI"
 
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              BUILD_NAME="PR #$PR_NUMBER: $COMMIT_MSG_TRUNCATED (iOS)"
+              BUILD_NAME="PR-$PR_NUMBER: $COMMIT_MSG_TRUNCATED (iOS)"
             else
               BUILD_NAME="Build #${{ github.run_number }} (iOS)"
             fi

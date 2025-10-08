@@ -398,7 +398,7 @@ jobs:
           PROJECT_NAME="quickstart - Kotlin Multiplatform"
 
           if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-            BUILD_NAME="PR #$PR_NUMBER: $COMMIT_MSG_TRUNCATED"
+            BUILD_NAME="PR-$PR_NUMBER: $COMMIT_MSG_TRUNCATED"
           else
             BUILD_NAME="Build #${{ github.run_number }}"
           fi
