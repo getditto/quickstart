@@ -195,14 +195,22 @@ jobs:
 
           # Build BrowserStack project/build names with PR context for better dashboard navigation
           PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
           COMMIT_MSG="${{ github.event.head_commit.message }}"
-          # Truncate commit message to ensure build name stays under 100 chars
-          COMMIT_MSG_TRUNCATED=$(echo "$COMMIT_MSG" | head -n1 | cut -c1-75)
+
+          # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
+          PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed 's/[^A-Za-z0-9.:[\]/@&'\'' _-]//g')
+          COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
+          COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed 's/[^A-Za-z0-9.:[\]/@&'\'' _-]//g')
+
+          # Truncate to stay under 255 char limit: "PR-999: " (8) + title (100) + " - " (3) + commit (140) = 251
+          PR_TITLE_PART="${PR_TITLE_CLEAN:0:100}"
+          COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:140}"
 
           PROJECT_NAME="quickstart - Android Java"
 
           if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-            BUILD_NAME="PR-$PR_NUMBER: $COMMIT_MSG_TRUNCATED"
+            BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART"
           else
             BUILD_NAME="Build #${{ github.run_number }}"
           fi
