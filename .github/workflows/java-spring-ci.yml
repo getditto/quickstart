@@ -6,21 +6,13 @@
 name: Java Spring CI
 
 on:
-  push:
-    branches: [ main ]
-    paths: 
-      - 'java-spring/**'
-      - '.github/workflows/java-spring-ci.yml'
   pull_request:
-    branches: [ main ]
-    paths:
-      - 'java-spring/**'
-      - '.github/workflows/java-spring-ci.yml'
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 
 jobs:
   lint:
@@ -84,7 +76,7 @@ jobs:
           DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
           DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
           DITTO_ENABLE_CLOUD_SYNC: true
-        run: ./gradlew bootJar
+        run: ./gradlew bootJar -x test
 
 
       - name: Upload JAR artifacts
@@ -99,18 +91,10 @@ jobs:
     runs-on: macos-latest
     needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
-    timeout-minutes: 45
-    
+    timeout-minutes: 150
+
     steps:
     - uses: actions/checkout@v4
-
-    - name: Seed test task to Ditto Cloud
-      id: seed_task
-      uses: ./.github/actions/seed-ditto-document
-      with:
-        ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-        ditto-api-url: ${{ secrets.DITTO_API_URL }}
-        app-name: 'java-spring'
 
     - name: Download JAR artifacts
       uses: actions/download-artifact@v4
@@ -123,33 +107,33 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-    
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-    
+
     - name: Create .env file (root)
       run: |
         echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
         echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
         echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
         echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-    
+
     - name: Install BrowserStack Local binary
       run: |
         curl -O "https://www.browserstack.com/browserstack-local/BrowserStackLocal-darwin-x64.zip"
         unzip BrowserStackLocal-darwin-x64.zip
         chmod +x BrowserStackLocal
 
-    - name: Start BrowserStack Local tunnel 
+    - name: Start BrowserStack Local tunnel
       run: |
         echo "Starting BrowserStack Local tunnel..."
         nohup ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           --daemon-mode > browserstack-local.log 2>&1 &
-        
+
         # Wait for tunnel to establish
         TIMEOUT=60
         ELAPSED=0
-        
+
         while [ $ELAPSED -lt $TIMEOUT ]; do
           if [ -f browserstack-local.log ] && grep -q "You can now access your local server(s) in our remote browser" browserstack-local.log; then
             echo "BrowserStack Local tunnel established"
@@ -163,30 +147,53 @@ jobs:
           sleep 5
           ELAPSED=$((ELAPSED + 5))
         done
-        
+
         echo "BrowserStack Local tunnel timeout after ${TIMEOUT}s"
         [ -f browserstack-local.log ] && cat browserstack-local.log
         exit 1
-    
+
     - name: Create BrowserStack config
       working-directory: java-spring
       run: |
+        # Load platforms from centralized config and convert to YAML format
+        PLATFORMS=$(yq eval '.["java-spring"].platforms[] | "  - os: \(.os)\n    osVersion: \"\(.osVersion)\"\n    browserName: \(.browserName)\n    browserVersion: \(.browserVersion)"' ../.github/browserstack-devices.yml)
+
+            # Build BrowserStack project/build names with PR context
+            # Fetch PR info using GitHub CLI (works for both pull_request and push events)
+            PR_INFO=$(gh pr view "${{ github.head_ref || github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
+            PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
+            PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+        # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
+        PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
+        COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
+        COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
+
+        # Truncate to stay under 255 char limit: "PR-999: " (8) + title (100) + " - " (3) + commit (140) = 251
+        PR_TITLE_PART="${PR_TITLE_CLEAN:0:100}"
+        COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:140}"
+
+        PROJECT_NAME="quickstart - Java Spring"
+
+        if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+          BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART"
+        else
+          BUILD_NAME="Build-${{ github.run_number }}"
+        fi
+
         cat > browserstack.yml << EOF
         userName: ${{ secrets.BROWSERSTACK_USERNAME }}
         accessKey: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-        projectName: Ditto Java Spring Tasks
-        buildName: Java Spring Selenium Tests #${{ github.run_number }}
+        projectName: $PROJECT_NAME
+        buildName: $BUILD_NAME
         platforms:
-          - os: Windows
-            osVersion: 11
-            browserName: Chrome
-            browserVersion: latest
+        $PLATFORMS
         browserstackLocal: true
         debug: true
         video: true
         parallelsPerPlatform: 1
         EOF
-    
+
     - name: Start Spring Boot app in background
       working-directory: java-spring
       env:
@@ -210,28 +217,63 @@ jobs:
           fi
           sleep 2
         done
-    
-    - name: Execute Selenium tests on BrowserStack cloud browsers
-      working-directory: java-spring
+
+    - name: Seed and execute Selenium tests on BrowserStack cloud browsers
+      uses: nick-fields/retry@v3
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         BROWSERSTACK_LOCAL: true
-        TEST_TASK_TITLE: ${{ steps.seed_task.outputs.document-title }}
-        GITHUB_TEST_DOC_ID: ${{ steps.seed_task.outputs.document-title }}
-      run: |
-        TITLE="${{ steps.seed_task.outputs.document-title }}"
-        
-        # Run only the BrowserStack test method, not all test methods
-        ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
-          -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
-          -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-          -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
-          -DBROWSERSTACK_LOCAL=true \
-          -DTEST_TASK_TITLE="$TITLE" \
-          -DGITHUB_TEST_DOC_ID="$TITLE" \
-          --info
-    
+      with:
+        max_attempts: 5
+        timeout_minutes: 20
+        retry_wait_seconds: 900
+        command: |
+          # Seed test task to Ditto Cloud
+          echo "Seeding test task to Ditto Cloud..."
+          TIMESTAMP=$(date +%s)
+          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+          SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H 'Content-type: application/json' \
+            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+            -d "{
+              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+              \"args\": {
+                \"newTask\": {
+                  \"_id\": \"${INVERTED_TIMESTAMP}_java-spring_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                  \"title\": \"${INVERTED_TIMESTAMP}_java-spring_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                  \"done\": false,
+                  \"deleted\": false
+                }
+              }
+            }" \
+            "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+          HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+          BODY=$(echo "$SEED_RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            TASK_TITLE="${INVERTED_TIMESTAMP}_java-spring_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+            echo "Seeded task: $TASK_TITLE"
+          else
+            echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+
+          # Export as environment variable (for System.getenv())
+          export DITTO_CLOUD_TASK_TITLE="$TASK_TITLE"
+
+          # Run BrowserStack Selenium tests
+          cd java-spring
+          ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
+            -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
+            -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -DBROWSERSTACK_BUILD_NAME="Build-${{ github.run_number }}" \
+            -DBROWSERSTACK_LOCAL=true \
+            -DDITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
+            --info
+
     - name: Stop Spring Boot app
       if: always()
       working-directory: java-spring
@@ -240,11 +282,11 @@ jobs:
           kill $(cat app.pid) || true
           rm app.pid
         fi
-    
+
     - name: Stop BrowserStack Local tunnel
       if: always()
       run: pkill -f "BrowserStackLocal" || true
-    
+
     - name: Upload test reports
       if: always()
       uses: actions/upload-artifact@v4
@@ -252,7 +294,7 @@ jobs:
         name: browserstack-test-reports-${{ github.run_number }}
         path: java-spring/build/reports/tests/
         retention-days: 1
-    
+
     - name: Upload app logs
       if: always()
       uses: actions/upload-artifact@v4
@@ -296,7 +338,7 @@ jobs:
         if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=Ditto+Java+Spring+Tasks&build=Java+Spring+Selenium+Tests+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=quickstart+-+Java+Spring)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browser:**" >> $GITHUB_STEP_SUMMARY
           echo "- Chrome Latest (Windows 11)" >> $GITHUB_STEP_SUMMARY

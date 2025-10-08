@@ -24,7 +24,8 @@ async fn main() -> Result<()> {
         env::var("DITTO_WEBSOCKET_URL").unwrap_or_else(|_| "wss://cloud.ditto.live".to_string());
 
     // Get task to find from environment
-    let task_to_find = env::var("TASK_TO_FIND").unwrap_or_else(|_| "Basic Test Task".to_string());
+    let task_to_find =
+        env::var("DITTO_CLOUD_TASK_TITLE").context("DITTO_CLOUD_TASK_TITLE not found")?;
 
     println!("🔍 Looking for task: {}", task_to_find);
 
