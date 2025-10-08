@@ -37,8 +37,10 @@ runs:
       id: generate
       shell: bash
       run: |
-        # Fetch PR info using GitHub CLI (works for both pull_request and push events)
-        PR_INFO=$(gh pr view "${{ github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
+        # Fetch PR info using GitHub CLI
+        # Use head_ref for pull_request events, ref_name for push events
+        BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+        PR_INFO=$(gh pr view "$BRANCH_NAME" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
         PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
         PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
         COMMIT_MSG="${{ github.event.head_commit.message }}"

@@ -438,7 +438,7 @@ jobs:
 
             # Build BrowserStack project/build names with PR context
             # Fetch PR info using GitHub CLI (works for both pull_request and push events)
-            PR_INFO=$(gh pr view "${{ github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
+            PR_INFO=$(gh pr view "${{ github.head_ref || github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
             PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
             PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
             COMMIT_MSG="${{ github.event.head_commit.message }}"
@@ -468,7 +468,7 @@ jobs:
                 \"devices\": $DEVICES,
                 \"project\": \"$PROJECT_NAME\",
                 \"buildName\": \"$BUILD_NAME\",
-                \"buildTag\": \"${{ github.ref_name }}\",
+                \"buildTag\": \"${{ github.head_ref || github.ref_name }}\",
                 \"deviceLogs\": true,
                 \"video\": true,
                 \"networkLogs\": true,
