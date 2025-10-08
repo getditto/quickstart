@@ -149,75 +149,24 @@ jobs:
           path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa
           retention-days: 1
 
-  seed-task-data:
-    name: Seed Task Data
-    runs-on: ubuntu-latest
-    needs: [build-android, build-ios]
-    timeout-minutes: 5
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-    outputs:
-      test_task_title: ${{ steps.seed_task.outputs.test_task_title }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Seed test task in Ditto Cloud
-        id: seed_task
-        run: |
-          # Create a unique test document with inverted timestamp to appear at top
-          TIMESTAMP=$(date +%s)
-          INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-          DOC_ID="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-          DOC_TITLE="${INVERTED_TIMESTAMP}_ci_test_${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}"
-
-          echo "📝 Inserting test document (inverted timestamp for top position)"
-          echo "📝 ID: '${DOC_ID}'"
-          echo "📝 Title: '${DOC_TITLE}'"
-          echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
-
-          # Insert document using Ditto API v4
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H 'Content-type: application/json' \
-            -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
-            -d "{
-              \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
-              \"args\": {
-                \"newTask\": {
-                  \"_id\": \"${DOC_ID}\",
-                  \"title\": \"${DOC_TITLE}\",
-                  \"done\": false,
-                  \"deleted\": false
-                }
-              }
-            }" \
-          "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
-
-          # Extract HTTP status code and response body
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          # Check if insertion was successful
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✓ Successfully inserted test document with ID: ${DOC_ID}"
-            echo "✓ Document title: ${DOC_TITLE}"
-            echo "test_task_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
-            echo "Response: $BODY"
-            exit 1
-          fi
-
   browserstack-android:
     name: BrowserStack Android Tests
     runs-on: ubuntu-latest
-    needs: [build-android, seed-task-data]
+    needs: [build-android]
     timeout-minutes: 30
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Seed test task to Ditto Cloud
+        id: seed_task
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: 'dotnet-maui'
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -265,20 +214,28 @@ jobs:
           BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           BROWSERSTACK_APP_ID="${{ steps.upload-android.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ needs.seed-task-data.outputs.test_task_title }}" \
+          EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
           BUILD_NAME="CI Build #${{ github.run_number }}" \
           dotnet run
 
   browserstack-ios:
     name: BrowserStack iOS Tests
     runs-on: macos-latest
-    needs: [build-ios, seed-task-data]
+    needs: [build-ios]
     timeout-minutes: 60
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Seed test task to Ditto Cloud
+        id: seed_task
+        uses: ./.github/actions/seed-ditto-document
+        with:
+          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
+          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          app-name: 'dotnet-maui'
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -326,14 +283,14 @@ jobs:
           BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
           BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
           BROWSERSTACK_APP_ID="${{ steps.upload-ios.outputs.app_url }}" \
-          EXPECTED_TASK_TITLE="${{ needs.seed-task-data.outputs.test_task_title }}" \
+          EXPECTED_TASK_TITLE="${{ steps.seed_task.outputs.document-title }}" \
           BUILD_NAME="CI Build #${{ github.run_number }}" \
           dotnet run
 
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [lint, build-android, build-ios, browserstack-android, browserstack-ios]
+    needs: [browserstack-android, browserstack-ios]
     if: always()
 
     steps:
