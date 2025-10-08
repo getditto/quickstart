@@ -233,10 +233,18 @@ jobs:
             echo "Using Android device: $DEVICE"
 
             # Build BrowserStack project/build names with PR context
-            PR_NUMBER="${{ github.event.pull_request.number }}"
-            PR_TITLE="${{ github.event.pull_request.title }}"
+            # For pull_request events, use event data directly
+            # For push events, fetch PR info using GitHub API
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              PR_NUMBER="${{ github.event.pull_request.number }}"
+              PR_TITLE="${{ github.event.pull_request.title }}"
+            else
+              # Get PR number and title for push events
+              PR_INFO=$(gh pr view "${{ github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
+              PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
+              PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
+            fi
             COMMIT_MSG="${{ github.event.head_commit.message }}"
-
             # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
             PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
             COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
@@ -356,10 +364,18 @@ jobs:
             echo "Using iOS device: $DEVICE"
 
             # Build BrowserStack project/build names with PR context
-            PR_NUMBER="${{ github.event.pull_request.number }}"
-            PR_TITLE="${{ github.event.pull_request.title }}"
+            # For pull_request events, use event data directly
+            # For push events, fetch PR info using GitHub API
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              PR_NUMBER="${{ github.event.pull_request.number }}"
+              PR_TITLE="${{ github.event.pull_request.title }}"
+            else
+              # Get PR number and title for push events
+              PR_INFO=$(gh pr view "${{ github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
+              PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
+              PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
+            fi
             COMMIT_MSG="${{ github.event.head_commit.message }}"
-
             # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
             PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
             COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
