@@ -281,7 +281,7 @@ jobs:
           if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
             echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=QuickStart+Android+CPP&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+            echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=quickstart+-+Android+CPP)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
             echo "- Google Pixel 7 (Android 13.0)" >> $GITHUB_STEP_SUMMARY

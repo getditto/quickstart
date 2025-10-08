@@ -226,7 +226,7 @@ jobs:
           # BrowserStack info
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=QuickStart+JavaScript+Web&build=CI+Build+%23${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=quickstart+-+JavaScript+Web)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browsers:**" >> $GITHUB_STEP_SUMMARY
           echo "- Chrome 120.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
