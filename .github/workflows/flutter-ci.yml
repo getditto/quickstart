@@ -527,7 +527,7 @@ jobs:
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
               BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART (Android)"
             else
-              BUILD_NAME="Build #${{ github.run_number }} (Android)"
+              BUILD_NAME="Build-${{ github.run_number }} (Android)"
             fi
 
             # Create test execution request
@@ -811,7 +811,7 @@ jobs:
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
               BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART (iOS)"
             else
-              BUILD_NAME="Build #${{ github.run_number }} (iOS)"
+              BUILD_NAME="Build-${{ github.run_number }} (iOS)"
             fi
 
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \

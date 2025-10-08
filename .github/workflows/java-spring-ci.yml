@@ -177,7 +177,7 @@ jobs:
         if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
           BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART"
         else
-          BUILD_NAME="Build #${{ github.run_number }}"
+          BUILD_NAME="Build-${{ github.run_number }}"
         fi
 
         cat > browserstack.yml << EOF
@@ -268,7 +268,7 @@ jobs:
           ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
             -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -DBROWSERSTACK_BUILD_NAME="Build #${{ github.run_number }}" \
+            -DBROWSERSTACK_BUILD_NAME="Build-${{ github.run_number }}" \
             -DBROWSERSTACK_LOCAL=true \
             -DDITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             --info

@@ -229,7 +229,7 @@ jobs:
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
               BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART"
             else
-              BUILD_NAME="Build #${{ github.run_number }}"
+              BUILD_NAME="Build-${{ github.run_number }}"
             fi
 
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
