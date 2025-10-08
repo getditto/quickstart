@@ -238,9 +238,9 @@ jobs:
             COMMIT_MSG="${{ github.event.head_commit.message }}"
 
             # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed 's/[^A-Za-z0-9.:[\]/@&'\'' _-]//g')
+            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]/@&' _-]//g")
             COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed 's/[^A-Za-z0-9.:[\]/@&'\'' _-]//g')
+            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]/@&' _-]//g")
 
             # Truncate: "PR-999: " (8) + title (90) + " - " (3) + commit (130) + " (Android)" (10) = 241
             PR_TITLE_PART="${PR_TITLE_CLEAN:0:90}"
@@ -361,9 +361,9 @@ jobs:
             COMMIT_MSG="${{ github.event.head_commit.message }}"
 
             # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed 's/[^A-Za-z0-9.:[\]/@&'\'' _-]//g')
+            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]/@&' _-]//g")
             COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed 's/[^A-Za-z0-9.:[\]/@&'\'' _-]//g')
+            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]/@&' _-]//g")
 
             # Truncate: "PR-999: " (8) + title (90) + " - " (3) + commit (130) + " (iOS)" (6) = 237
             PR_TITLE_PART="${PR_TITLE_CLEAN:0:90}"

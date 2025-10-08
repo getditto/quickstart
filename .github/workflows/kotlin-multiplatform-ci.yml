@@ -395,9 +395,9 @@ jobs:
           COMMIT_MSG="${{ github.event.head_commit.message }}"
 
           # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-          PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed 's/[^A-Za-z0-9.:[\]/@&'\'' _-]//g')
+          PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]/@&' _-]//g")
           COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-          COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed 's/[^A-Za-z0-9.:[\]/@&'\'' _-]//g')
+          COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]/@&' _-]//g")
 
           # Truncate to stay under 255 char limit: "PR-999: " (8) + title (100) + " - " (3) + commit (140) = 251
           PR_TITLE_PART="${PR_TITLE_CLEAN:0:100}"
