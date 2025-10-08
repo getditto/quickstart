@@ -325,8 +325,8 @@ jobs:
               PROJECT_NAME="quickstart - React Native Expo"
             fi
 
-            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
-              BUILD_NAME="PR #$PR_NUMBER (Android): $PR_TITLE_TRUNCATED"
+            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+              BUILD_NAME="$PR_TITLE #$PR_NUMBER: $PR_TITLE_TRUNCATED (Android)"
             else
               BUILD_NAME="Build #${{ github.run_number }} (Android)"
             fi
@@ -526,8 +526,8 @@ jobs:
               PROJECT_NAME="quickstart - React Native Expo"
             fi
 
-            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
-              BUILD_NAME="PR #$PR_NUMBER (iOS): $PR_TITLE_TRUNCATED"
+            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+              BUILD_NAME="$PR_TITLE #$PR_NUMBER: $PR_TITLE_TRUNCATED (iOS)"
             else
               BUILD_NAME="Build #${{ github.run_number }} (iOS)"
             fi

@@ -90,13 +90,13 @@ class TaskVisibilityIntegrationTest {
 
     private static Map<String, String> loadBrowserStackPlatformConfig() {
         try {
-            // Path to browserstack-devices.json relative to project root
-            File configFile = Paths.get("..", ".github", "browserstack-devices.json").toFile();
+            // Path to browserstack-devices.yml relative to project root
+            File configFile = Paths.get("..", ".github", "browserstack-devices.yml").toFile();
             if (!configFile.exists()) {
-                throw new RuntimeException("browserstack-devices.json not found at: " + configFile.getAbsolutePath());
+                throw new RuntimeException("browserstack-devices.yml not found at: " + configFile.getAbsolutePath());
             }
 
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = new ObjectMapper(new com.fasterxml.jackson.dataformat.yaml.YAMLFactory());
             JsonNode root = mapper.readTree(configFile);
             JsonNode javaPlatform = root.get("java-spring").get("platforms").get(0);
 

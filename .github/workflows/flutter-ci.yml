@@ -510,19 +510,14 @@ jobs:
 
             # Build BrowserStack project/build names with PR context
             PR_NUMBER="${{ github.event.pull_request.number }}"
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            # Truncate PR title to ensure project name stays under 100 chars
-            PR_TITLE_TRUNCATED="${PR_TITLE:0:75}"
             COMMIT_MSG="${{ github.event.head_commit.message }}"
+            # Truncate commit message to ensure build name stays under 100 chars
+            COMMIT_MSG_TRUNCATED=$(echo "$COMMIT_MSG" | head -n1 | cut -c1-75)
+
+            PROJECT_NAME="quickstart - Flutter"
 
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              PROJECT_NAME="quickstart - Flutter"
-            else
-              PROJECT_NAME="quickstart - Flutter"
-            fi
-
-            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
-              BUILD_NAME="PR #$PR_NUMBER (Android): $PR_TITLE_TRUNCATED"
+              BUILD_NAME="PR #$PR_NUMBER: $COMMIT_MSG_TRUNCATED (Android)"
             else
               BUILD_NAME="Build #${{ github.run_number }} (Android)"
             fi
@@ -791,19 +786,14 @@ jobs:
 
             # Build BrowserStack project/build names with PR context
             PR_NUMBER="${{ github.event.pull_request.number }}"
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            # Truncate PR title to ensure project name stays under 100 chars
-            PR_TITLE_TRUNCATED="${PR_TITLE:0:75}"
             COMMIT_MSG="${{ github.event.head_commit.message }}"
+            # Truncate commit message to ensure build name stays under 100 chars
+            COMMIT_MSG_TRUNCATED=$(echo "$COMMIT_MSG" | head -n1 | cut -c1-75)
+
+            PROJECT_NAME="quickstart - Flutter"
 
             if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              PROJECT_NAME="quickstart - Flutter"
-            else
-              PROJECT_NAME="quickstart - Flutter"
-            fi
-
-            if [ -n "$COMMIT_MSG" ] && [ "$COMMIT_MSG" != "null" ]; then
-              BUILD_NAME="PR #$PR_NUMBER (iOS): $PR_TITLE_TRUNCATED"
+              BUILD_NAME="PR #$PR_NUMBER: $COMMIT_MSG_TRUNCATED (iOS)"
             else
               BUILD_NAME="Build #${{ github.run_number }} (iOS)"
             fi

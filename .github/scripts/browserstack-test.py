@@ -71,7 +71,7 @@ def run_test(browser_config):
 
     # Build name includes PR context
     if pr_number and pr_title_truncated:
-        build_name = f"PR #{pr_number}: {pr_title_truncated}"
+        build_name = f"{os.environ.get('GITHUB_PR_TITLE', '')} #{pr_number}: {pr_title_truncated}"
     else:
         build_name = f"Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}"
 
