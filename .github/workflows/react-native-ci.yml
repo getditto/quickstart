@@ -306,9 +306,9 @@ jobs:
             echo "Loaded devices: $DEVICES"
 
             # Build BrowserStack project/build names with PR context
-            PR_NUMBER="${ github.event.pull_request.number }"
-            PR_TITLE="${ github.event.pull_request.title }"
-            COMMIT_MSG="${ github.event.head_commit.message }"
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
 
             # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
             PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
@@ -510,9 +510,9 @@ jobs:
             echo "Loaded devices: $DEVICES"
 
             # Build BrowserStack project/build names with PR context
-            PR_NUMBER="${ github.event.pull_request.number }"
-            PR_TITLE="${ github.event.pull_request.title }"
-            COMMIT_MSG="${ github.event.head_commit.message }"
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
 
             # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
             PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
