@@ -3,111 +3,266 @@
 /**
  * bump-versions.js - Update Ditto SDK versions across all quickstart apps
  *
- * Usage: node scripts/bump-versions.js -t <version> [options]
+ * Usage: node scripts/bump-versions.js -t <version>
  *
  * Options:
  *   -t, --to <version>   New SDK version (required)
- *   -n, --dry-run        Preview changes without modifying files
  *   -h, --help           Show help
- *
- * Excludes: Kotlin Multiplatform (uses different versioning)
  */
 
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
-// Configuration for different project types
-const PROJECT_CONFIGS = [
-  {
-    name: "JavaScript/TypeScript (package.json)",
-    pattern: "**/package.json",
-    exclude: ["node_modules/**"],
-    regex:
-      /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
-    replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
-    lockfileUpdate: ["npm install --legacy-peer-deps", "npm install"],
-  },
-  {
-    name: "Android libs.versions.toml",
-    pattern: "**/libs.versions.toml",
-    exclude: ["node_modules/**"],
-    regex: /(ditto\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
-    replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
-  },
-  {
-    name: "Android build.gradle.kts",
-    pattern: "**/build.gradle.kts",
-    exclude: ["node_modules/**", "kotlin-multiplatform/**"],
-    regex: [
-      /(implementation\(["\']live\.ditto:ditto-cpp:)[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["\'])/g,
-      /(implementation\(["\']com\.ditto:ditto-java:)[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["\'])/g,
-      /(implementation\(["\']com\.ditto:ditto-binaries:)[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["\'])/g,
-    ],
-    replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
-  },
-  {
-    name: "Flutter pubspec.yaml",
-    pattern: "**/pubspec.yaml",
-    exclude: ["node_modules/**"],
-    regex: /(ditto_live:\s*)[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?/g,
-    replacement: (match, prefix) => `${prefix}^VERSION`,
-    lockfileUpdate: ["flutter pub get"],
-  },
-  {
-    name: "Rust Cargo.toml",
-    pattern: "**/Cargo.toml",
-    exclude: ["node_modules/**"],
-    regex:
-      /(dittolive-ditto\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
-    replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
-    lockfileUpdate: ["cargo update"],
-  },
-  {
-    name: ".NET .csproj",
-    pattern: "**/*.csproj",
-    exclude: ["node_modules/**"],
-    regex:
-      /(PackageReference\s+Include=["']Ditto["']\s+Version=["'])[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["'])/g,
-    replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
-    lockfileUpdate: ["dotnet restore"],
-  },
-];
+// ANSI color codes
+const colors = {
+  reset: "\x1b[0m",
+  bright: "\x1b[1m",
+  dim: "\x1b[2m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  cyan: "\x1b[36m",
+};
 
-// Lockfile update commands for different project directories
-const LOCKFILE_COMMANDS = {
-  "react-native": [
-    "npm install --legacy-peer-deps",
-    "cd ios && pod update --no-repo-update && cd ..",
-  ],
-  "react-native-expo": [
-    "npm install",
-    "cd ios && pod update --no-repo-update && cd ..",
-  ],
-  "javascript-tui": "npm install",
-  "javascript-web": "npm install",
-  flutter_app: "flutter pub get",
-  "rust-tui": "cargo update",
-  "dotnet-tui/DittoDotNetTasksConsole": "dotnet restore",
+const log = {
+  info: (msg) => console.log(`${colors.cyan}ℹ${colors.reset} ${msg}`),
+  success: (msg) => console.log(`${colors.green}✓${colors.reset} ${msg}`),
+  error: (msg) => console.error(`${colors.red}✗${colors.reset} ${msg}`),
+  warn: (msg) => console.warn(`${colors.yellow}⚠${colors.reset} ${msg}`),
+  title: (msg) =>
+    console.log(`\n${colors.bright}${colors.blue}${msg}${colors.reset}`),
+  dim: (msg) => console.log(`${colors.dim}${msg}${colors.reset}`),
+};
+
+// Configuration for each app directory
+const APP_CONFIGS = {
+  "react-native": {
+    skip: false,
+    files: [
+      {
+        path: "package.json",
+        regex:
+          /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
+        replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
+      },
+    ],
+    lockCommands: [
+      "npm install --legacy-peer-deps --no-audit",
+      "(cd ios && bundle exec pod update)",
+      "(cd macos && bundle exec pod update)",
+    ],
+  },
+
+  "react-native-expo": {
+    skip: false,
+    files: [
+      {
+        path: "package.json",
+        regex:
+          /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
+        replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
+      },
+    ],
+    lockCommands: ["npm install --no-audit", "(cd ios && pod update)"],
+  },
+
+  "javascript-tui": {
+    skip: false,
+    files: [
+      {
+        path: "package.json",
+        regex:
+          /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
+        replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
+      },
+    ],
+    lockCommands: ["npm install"],
+  },
+
+  "javascript-web": {
+    skip: false,
+    files: [
+      {
+        path: "package.json",
+        regex:
+          /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
+        replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
+      },
+    ],
+    lockCommands: ["npm install"],
+  },
+
+  "android-kotlin": {
+    skip: false,
+    files: [
+      {
+        path: "QuickStartTasks/gradle/libs.versions.toml",
+        regex: /(ditto\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+    ],
+    lockCommands: ["(cd QuickStartTasks && ./gradlew --refresh-dependencies)"],
+  },
+
+  "android-java": {
+    skip: false,
+    files: [
+      {
+        path: "gradle/libs.versions.toml",
+        regex: /(ditto\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+    ],
+    lockCommands: ["./gradlew --refresh-dependencies"],
+  },
+
+  "android-cpp": {
+    skip: false,
+    files: [
+      {
+        path: "QuickStartTasksCPP/app/build.gradle.kts",
+        regex:
+          /(implementation\("live\.ditto:ditto-cpp:)[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?("\))/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+    ],
+    lockCommands: [
+      "(cd QuickStartTasksCPP && ./gradlew --refresh-dependencies)",
+    ],
+  },
+
+  "cpp-tui": {
+    skip: false,
+    files: [
+      {
+        path: "taskscpp/Makefile",
+        regex:
+          /(DITTO_SDK_VERSION \?= )[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?/g,
+        replacement: (match, prefix) => `${prefix}VERSION`,
+      },
+    ],
+    lockCommands: [],
+  },
+
+  swift: {
+    skip: false,
+    files: [
+      {
+        path: "Tasks.xcodeproj/project.pbxproj",
+        regex:
+          /(minimumVersion\s*=\s*)[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?;/g,
+        replacement: (match, prefix) => `${prefix}VERSION;`,
+      },
+    ],
+    lockCommands: [
+      "xcodebuild -resolvePackageDependencies -project Tasks.xcodeproj -scheme Tasks",
+    ],
+  },
+
+  flutter_app: {
+    skip: false,
+    files: [
+      {
+        path: "pubspec.yaml",
+        regex:
+          /(ditto_live:\s*)[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?/g,
+        replacement: (match, prefix) => `${prefix}^VERSION`,
+      },
+    ],
+    lockCommands: [
+      "flutter pub get",
+      "(cd ios && pod update DittoFlutter)",
+      "(cd macos && pod update DittoFlutter)",
+    ],
+  },
+
+  "rust-tui": {
+    skip: false,
+    files: [
+      {
+        path: "Cargo.toml",
+        regex:
+          /(dittolive-ditto\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+    ],
+    lockCommands: ["cargo update"],
+  },
+
+  "dotnet-tui": {
+    skip: false,
+    files: [
+      {
+        path: "DittoDotNetTasksConsole/DittoDotNetTasksConsole.csproj",
+        regex:
+          /(PackageReference\s+Include=["']Ditto["']\s+Version=["'])[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["'])/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+      {
+        path: "DittoDotNetTasksConsole.Tests/DittoDotNetTasksConsole.Tests.csproj",
+        regex:
+          /(PackageReference\s+Include=["']Ditto["']\s+Version=["'])[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["'])/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+    ],
+    lockCommands: [], // No restore needed - .csproj is source of truth
+  },
+
+  "dotnet-maui": {
+    skip: false,
+    files: [
+      {
+        path: "DittoMauiTasksApp/DittoMauiTasksApp.csproj",
+        regex:
+          /(PackageReference\s+Include=["']Ditto["']\s+Version=["'])[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["'])/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+    ],
+    lockCommands: [], // No restore needed - .csproj is source of truth
+  },
+
+  "dotnet-winforms": {
+    skip: false,
+    files: [
+      {
+        path: "TasksApp/DittoTasksApp.csproj",
+        regex:
+          /(PackageReference\s+Include=["']Ditto["']\s+Version=["'])[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(["'])/g,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
+      },
+    ],
+    lockCommands: [], // No restore needed - .csproj is source of truth
+  },
+
+  // Excluded apps
+  "kotlin-multiplatform": {
+    skip: true,
+    reason: "Requires Ditto v5+, not on synchronized releases",
+  },
+
+  "java-spring": {
+    skip: true,
+    reason: "Requires Ditto v5+, not on synchronized releases",
+  },
 };
 
 function printHelp() {
   console.log(`
-bump-versions.js — update Ditto quickstart app versions
+${colors.bright}bump-versions.js${colors.reset} — update Ditto quickstart app versions
 
-Usage:
-  node scripts/bump-versions.js -t 4.12.2-rc.1 [options]
+${colors.bright}Usage:${colors.reset}
+  node scripts/bump-versions.js -t 4.12.2-rc.1
 
-Options:
+${colors.bright}Options:${colors.reset}
   -t, --to <version>    New version to set (required)
-  -n, --dry-run        Show what would change; do not write files
   -h, --help           Show help
 
-Notes:
-- Automatically detects current versions using regex patterns
-- Uses platform-specific version patterns for each project type  
-- Excludes Kotlin Multiplatform (not yet on synchronized releases)
-- Updates lockfiles automatically unless --dry-run is specified
+${colors.bright}Notes:${colors.reset}
+- Excludes: kotlin-multiplatform, java-spring (not on synchronized releases)
+- Updates lockfiles automatically for each app
+- Stops on first error
 `);
 }
 
@@ -115,7 +270,6 @@ function parseArgs() {
   const args = process.argv.slice(2);
   const config = {
     version: null,
-    dryRun: false,
     help: false,
   };
 
@@ -125,10 +279,6 @@ function parseArgs() {
       case "-t":
       case "--to":
         config.version = args[++i];
-        break;
-      case "-n":
-      case "--dry-run":
-        config.dryRun = true;
         break;
       case "-h":
       case "--help":
@@ -146,7 +296,7 @@ function parseArgs() {
   }
 
   if (!config.version) {
-    console.error("Error: --to version is required");
+    log.error("--to version is required");
     printHelp();
     process.exit(1);
   }
@@ -154,180 +304,120 @@ function parseArgs() {
   return config;
 }
 
-function findFiles(pattern, exclude = []) {
-  try {
-    // Convert glob pattern to find pattern
-    const findPattern = pattern.replace("**/", "");
-    let cmd = `find . -name "${findPattern}" -type f`;
+function updateFile(appDir, fileConfig, version) {
+  const filePath = path.join(process.cwd(), appDir, fileConfig.path);
 
-    // Add exclusions
-    for (const ex of exclude) {
-      cmd += ` -not -path "./${ex}"`;
-    }
-
-    const output = execSync(cmd, { encoding: "utf8" }).trim();
-    return output ? output.split("\n").filter((f) => f.trim()) : [];
-  } catch (error) {
-    return [];
+  if (!fs.existsSync(filePath)) {
+    log.error(
+      `expected to find file "${fileConfig.path}" in directory "${appDir}"`
+    );
+    process.exit(1);
   }
+
+  const content = fs.readFileSync(filePath, "utf8");
+  let newContent = content;
+
+  const matches = [...content.matchAll(fileConfig.regex)];
+
+  if (matches.length === 0) {
+    log.error(
+      `expected to find at least one match for pattern in file "${appDir}/${fileConfig.path}"`
+    );
+    process.exit(1);
+  }
+
+  newContent = newContent.replace(fileConfig.regex, (match, ...groups) => {
+    const replacement = fileConfig.replacement(match, ...groups);
+    return replacement.replace("VERSION", version);
+  });
+
+  if (newContent !== content) {
+    fs.writeFileSync(filePath, newContent, "utf8");
+    log.success(
+      `Updated ${colors.dim}${appDir}/${fileConfig.path}${colors.reset} (${
+        matches.length
+      } occurrence${matches.length > 1 ? "s" : ""})`
+    );
+    return true;
+  }
+
+  return false;
 }
 
-function updateFile(filePath, config, version, dryRun) {
-  try {
-    const content = fs.readFileSync(filePath, "utf8");
-    let modified = false;
-    let newContent = content;
-    let matchCount = 0;
+function runLockCommands(appDir, commands) {
+  const appPath = path.join(process.cwd(), appDir);
 
-    // Handle multiple regex patterns
-    const regexList = Array.isArray(config.regex)
-      ? config.regex
-      : [config.regex];
-
-    for (const regex of regexList) {
-      const matches = [...content.matchAll(regex)];
-      matchCount += matches.length;
-
-      if (matches.length > 0) {
-        modified = true;
-        newContent = newContent.replace(regex, (match, ...groups) => {
-          const replacement = config.replacement(match, ...groups);
-          return replacement.replace("VERSION", version);
-        });
-      }
+  for (const command of commands) {
+    try {
+      log.dim(`  Running: ${command}`);
+      execSync(command, {
+        cwd: appPath,
+        stdio: "inherit",
+      });
+    } catch (error) {
+      log.error(`Failed to run lock command in ${appDir}: ${command}`);
+      throw error;
     }
-
-    if (modified) {
-      if (dryRun) {
-        console.log(`Would update ${filePath} (${matchCount} occurrence(s))`);
-        // Show the actual matches
-        for (const regex of regexList) {
-          const matches = [...content.matchAll(regex)];
-          matches.forEach((match, index) => {
-            const lineNum = content
-              .substring(0, match.index)
-              .split("\n").length;
-            console.log(`  Line ${lineNum}: ${match[0]}`);
-          });
-        }
-      } else {
-        fs.writeFileSync(filePath, newContent, "utf8");
-        console.log(`Updated ${filePath} (${matchCount} occurrence(s))`);
-      }
-    }
-
-    return modified;
-  } catch (error) {
-    console.error(`Error processing ${filePath}: ${error.message}`);
-    return false;
-  }
-}
-
-function updateLockfiles(updatedProjects, dryRun) {
-  if (dryRun) return;
-
-  const lockfileUpdates = new Set();
-
-  // Determine which lockfiles need updating based on updated files
-  for (const filePath of updatedProjects) {
-    if (
-      filePath.includes("package.json") &&
-      !filePath.includes("node_modules")
-    ) {
-      if (filePath.includes("react-native/"))
-        lockfileUpdates.add("react-native");
-      else if (filePath.includes("react-native-expo/"))
-        lockfileUpdates.add("react-native-expo");
-      else if (filePath.includes("javascript-tui/"))
-        lockfileUpdates.add("javascript-tui");
-      else if (filePath.includes("javascript-web/"))
-        lockfileUpdates.add("javascript-web");
-    } else if (filePath.includes("pubspec.yaml")) {
-      lockfileUpdates.add("flutter_app");
-    } else if (filePath.includes("Cargo.toml")) {
-      lockfileUpdates.add("rust-tui");
-    } else if (filePath.includes(".csproj")) {
-      lockfileUpdates.add("dotnet-tui/DittoDotNetTasksConsole");
-    }
-  }
-
-  if (lockfileUpdates.size > 0) {
-    console.log("Updating lockfiles...");
-
-    for (const project of lockfileUpdates) {
-      const commands = LOCKFILE_COMMANDS[project];
-      if (!commands) continue;
-
-      const commandArray = Array.isArray(commands) ? commands : [commands];
-
-      try {
-        const projectPath = path.join(process.cwd(), project);
-        if (fs.existsSync(projectPath)) {
-          for (const command of commandArray) {
-            console.log(`Running: cd ${project} && ${command}`);
-
-            execSync(command, {
-              cwd: projectPath,
-              stdio: "inherit",
-            });
-          }
-        }
-      } catch (error) {
-        console.warn(
-          `Warning: Failed to update lockfile for ${project}: ${error.message}`
-        );
-      }
-    }
-
-    console.log("Lockfile updates completed.");
   }
 }
 
 function main() {
-  const { version, dryRun } = parseArgs();
+  const { version } = parseArgs();
 
-  if (dryRun) {
-    console.log("-- DRY RUN --");
-  }
+  log.title(`🌄 Bumping Ditto SDK to version ${version}`);
 
-  let totalFiles = 0;
-  let updatedFiles = [];
+  let totalApps = 0;
+  let updatedApps = 0;
+  let skippedApps = 0;
 
-  // Process each project type
-  for (const config of PROJECT_CONFIGS) {
-    console.log(`\nProcessing ${config.name}...`);
+  for (const [appDir, config] of Object.entries(APP_CONFIGS)) {
+    totalApps++;
 
-    const files = findFiles(config.pattern, config.exclude);
+    if (config.skip) {
+      skippedApps++;
+      log.dim(`\n⊘ Skipping ${appDir} - ${config.reason}`);
+      continue;
+    }
 
-    for (const filePath of files) {
-      // Skip Kotlin Multiplatform
-      if (filePath.includes("kotlin-multiplatform")) {
-        console.log(
-          `\x1b[33mSkipping ${filePath} (Kotlin Multiplatform is not yet on synchronized releases)\x1b[0m`
-        );
-        continue;
-      }
+    log.title(`📦 Processing ${appDir}`);
 
-      const wasUpdated = updateFile(filePath, config, version, dryRun);
-      if (wasUpdated) {
-        updatedFiles.push(filePath);
+    let appModified = false;
+
+    // Update all files for this app
+    for (const fileConfig of config.files) {
+      const wasModified = updateFile(appDir, fileConfig, version);
+      if (wasModified) {
+        appModified = true;
       }
     }
 
-    totalFiles += files.length;
+    // If any files were updated, run lock commands
+    if (appModified) {
+      updatedApps++;
+      if (config.lockCommands && config.lockCommands.length > 0) {
+        log.info("Updating lockfiles...");
+        runLockCommands(appDir, config.lockCommands);
+        log.success("Lockfiles updated");
+      }
+    } else {
+      log.dim("  No changes needed");
+    }
   }
 
+  log.title("✨ Summary");
   console.log(
-    `\nProcessed ${totalFiles} files, updated ${updatedFiles.length} file(s) to version ${version}.`
+    `  Total apps:   ${totalApps}\n` +
+      `  Updated:      ${colors.green}${updatedApps}${colors.reset}\n` +
+      `  Skipped:      ${colors.dim}${skippedApps}${colors.reset}\n` +
+      `  Version:      ${colors.cyan}${version}${colors.reset}`
   );
-
-  if (dryRun) {
-    console.log("Total files that would be updated:", updatedFiles.length);
-  } else {
-    updateLockfiles(updatedFiles, dryRun);
-  }
 }
 
 if (require.main === module) {
-  main();
+  try {
+    main();
+  } catch (error) {
+    log.error(`Script failed: ${error.message}`);
+    process.exit(1);
+  }
 }
