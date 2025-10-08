@@ -1,0 +1,73 @@
+name: 'Get BrowserStack Build Info'
+description: 'Fetches PR info and generates sanitized BrowserStack project and build names'
+inputs:
+  project-name:
+    description: 'BrowserStack project name (e.g., "quickstart - Flutter")'
+    required: true
+  platform-suffix:
+    description: 'Optional platform suffix to append to build name (e.g., " (Android)", " (iOS)")'
+    required: false
+    default: ''
+  title-max-length:
+    description: 'Maximum length for PR title in build name'
+    required: false
+    default: '100'
+  commit-max-length:
+    description: 'Maximum length for commit message in build name'
+    required: false
+    default: '140'
+outputs:
+  project-name:
+    description: 'BrowserStack project name'
+    value: ${{ steps.generate.outputs.project-name }}
+  build-name:
+    description: 'BrowserStack build name with PR and commit info'
+    value: ${{ steps.generate.outputs.build-name }}
+  pr-number:
+    description: 'PR number (if available)'
+    value: ${{ steps.generate.outputs.pr-number }}
+  pr-title:
+    description: 'Sanitized PR title (if available)'
+    value: ${{ steps.generate.outputs.pr-title }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate BrowserStack build info
+      id: generate
+      shell: bash
+      run: |
+        # Fetch PR info using GitHub CLI (works for both pull_request and push events)
+        PR_INFO=$(gh pr view "${{ github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
+        PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
+        PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
+        COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+        # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
+        PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
+        COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
+        COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
+
+        # Truncate to specified lengths
+        PR_TITLE_PART="${PR_TITLE_CLEAN:0:${{ inputs.title-max-length }}}"
+        COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:${{ inputs.commit-max-length }}}"
+
+        PROJECT_NAME="${{ inputs.project-name }}"
+        PLATFORM_SUFFIX="${{ inputs.platform-suffix }}"
+
+        # Generate build name
+        if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+          BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART$PLATFORM_SUFFIX"
+        else
+          BUILD_NAME="Build-${{ github.run_number }}$PLATFORM_SUFFIX"
+        fi
+
+        # Output all values
+        echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+        echo "build-name=$BUILD_NAME" >> $GITHUB_OUTPUT
+        echo "pr-number=$PR_NUMBER" >> $GITHUB_OUTPUT
+        echo "pr-title=$PR_TITLE_CLEAN" >> $GITHUB_OUTPUT
+
+        # Also output for debugging
+        echo "📦 Project: $PROJECT_NAME"
+        echo "🏗️  Build: $BUILD_NAME"
