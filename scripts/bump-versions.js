@@ -50,8 +50,8 @@ const APP_CONFIGS = {
     ],
     lockCommands: [
       "npm install --legacy-peer-deps --no-audit",
-      "(cd ios && pod update DittoReactNativeIOS)",
-      "(cd macos && pod update DittoReactNativeIOS)",
+      "(cd ios && bundle exec pod update)",
+      "(cd macos && bundle exec pod update)",
     ],
   },
 
@@ -65,10 +65,7 @@ const APP_CONFIGS = {
         replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
       },
     ],
-    lockCommands: [
-      "npm install --no-audit",
-      "(cd ios && pod update DittoReactNativeIOS)",
-    ],
+    lockCommands: ["npm install --no-audit", "(cd ios && pod update)"],
   },
 
   "javascript-tui": {
@@ -141,7 +138,8 @@ const APP_CONFIGS = {
     files: [
       {
         path: "taskscpp/Makefile",
-        regex: /(DITTO_SDK_VERSION \?= )[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?/g,
+        regex:
+          /(DITTO_SDK_VERSION \?= )[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?/g,
         replacement: (match, prefix) => `${prefix}VERSION`,
       },
     ],
