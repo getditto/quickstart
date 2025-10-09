@@ -102,6 +102,8 @@ jobs:
     needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 150
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
 
     steps:
     - uses: actions/checkout@v4
@@ -330,7 +332,7 @@ jobs:
         if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=quickstart+-+Android+Java)" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 [View Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Devices:**" >> $GITHUB_STEP_SUMMARY
           echo "- Google Pixel 8 (Android 14)" >> $GITHUB_STEP_SUMMARY

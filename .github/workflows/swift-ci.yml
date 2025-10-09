@@ -215,6 +215,8 @@ jobs:
     needs: [build-ios]
     if: needs.build-ios.outputs.ios-build-success == 'true'
     timeout-minutes: 150
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
 
     steps:
       - uses: actions/checkout@v4
@@ -474,6 +476,7 @@ jobs:
             fi
 
             echo "Build started with ID: $BUILD_ID"
+            echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
 
             # Wait for XCUITest to complete
             MAX_WAIT_TIME=1080  # 18 minutes
@@ -555,7 +558,7 @@ jobs:
           if [[ "${{ needs.browserstack.result }}" != "skipped" ]]; then
             echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🍎 [View Test Results](https://app-automate.browserstack.com/builds?project=quickstart+-+Swift)" >> $GITHUB_STEP_SUMMARY
+            echo "🍎 [View Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY
             echo "- iPhone 15 Pro (iOS 17)" >> $GITHUB_STEP_SUMMARY

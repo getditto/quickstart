@@ -299,6 +299,8 @@ jobs:
     needs: [build-android]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 150
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
 
     steps:
     - uses: actions/checkout@v4
@@ -429,6 +431,7 @@ jobs:
           fi
 
           echo "Build started with ID: $BUILD_ID"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
 
           # Wait for BrowserStack tests to complete
           MAX_WAIT_TIME=1080  # 18 minutes
@@ -540,5 +543,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🤖 [View Android Test Results](https://app-automate.browserstack.com/builds?project=quickstart+-+Kotlin+Multiplatform)" >> $GITHUB_STEP_SUMMARY
+          echo "🤖 [View Android Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
         fi
