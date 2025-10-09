@@ -92,6 +92,8 @@ jobs:
     needs: [build]
     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 150
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
 
     steps:
     - uses: actions/checkout@v4
@@ -202,6 +204,7 @@ jobs:
         done
 
     - name: Seed and execute Selenium tests on BrowserStack cloud browsers
+      id: test
       uses: nick-fields/retry@v3
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
@@ -256,6 +259,20 @@ jobs:
             -DBROWSERSTACK_LOCAL=true \
             -DDITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             --info
+
+          # Query BrowserStack API to get the build ID
+          echo "Fetching build ID from BrowserStack..."
+          BUILDS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            "https://api.browserstack.com/automate/builds.json?limit=1")
+
+          BUILD_ID=$(echo "$BUILDS_RESPONSE" | yq eval '.[0].hashed_id' -)
+
+          if [ "$BUILD_ID" != "null" ] && [ -n "$BUILD_ID" ]; then
+            echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+            echo "✅ Build ID: $BUILD_ID"
+          else
+            echo "⚠️ Could not retrieve build ID from BrowserStack API"
+          fi
 
     - name: Stop Spring Boot app
       if: always()
@@ -321,7 +338,11 @@ jobs:
         if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=quickstart+-+Java+Spring)" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ needs.browserstack-test.outputs.build_id }}" ]; then
+            echo "🔗 [View Test Results](https://automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-test.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=quickstart+-+Java+Spring)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browser:**" >> $GITHUB_STEP_SUMMARY
           echo "- Chrome Latest (Windows 11)" >> $GITHUB_STEP_SUMMARY
