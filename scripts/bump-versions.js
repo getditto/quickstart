@@ -328,7 +328,7 @@ function updateFile(appDir, fileConfig, version) {
 
   newContent = newContent.replace(fileConfig.regex, (match, ...groups) => {
     const replacement = fileConfig.replacement(match, ...groups);
-    return replacement.replace("VERSION", version);
+    return replacement.replace(/\bVERSION\b/g, version);
   });
 
   if (newContent !== content) {
