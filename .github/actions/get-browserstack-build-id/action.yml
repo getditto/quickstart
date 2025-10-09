@@ -51,9 +51,12 @@ runs:
         fi
 
         echo "🔍 Fetching build ID from BrowserStack (${{ inputs.api-type }} API)..."
+        set +e  # Disable errexit for curl
         BUILDS_RESPONSE=$(curl -s -u "${{ env.BROWSERSTACK_USERNAME }}:${{ env.BROWSERSTACK_ACCESS_KEY }}" \
-          "${API_ENDPOINT}?limit=10" || true)
-        echo "✓ API call completed"
+          "${API_ENDPOINT}?limit=10")
+        CURL_EXIT=$?
+        set -e  # Re-enable errexit
+        echo "✓ API call completed (exit code: $CURL_EXIT)"
 
         # Check if API call succeeded
         if [ -z "$BUILDS_RESPONSE" ]; then
