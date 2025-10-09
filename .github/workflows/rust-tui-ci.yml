@@ -1,11 +1,6 @@
 name: Rust TUI CI
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'rust-tui/**'
   pull_request:
-    branches: [main]
     paths:
       - 'rust-tui/**'
   workflow_dispatch:
@@ -124,7 +119,7 @@ jobs:
       - name: Build and run integration test
         working-directory: rust-tui
         env:
-          TASK_TO_FIND: ${{ steps.seed.outputs.document-title }}
+          DITTO_CLOUD_TASK_TITLE: ${{ steps.seed.outputs.document-title }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |

@@ -17,13 +17,23 @@ public class AndroidTaskSearchTests : TaskSearchTests
 
         if (!string.IsNullOrEmpty(browserstackUsername) && !string.IsNullOrEmpty(browserstackAccessKey))
         {
-            // BrowserStack capabilities - match android-cpp pattern exactly
+            // Load device config from environment (set by workflow from browserstack-devices.json)
+            var deviceString = Environment.GetEnvironmentVariable("BROWSERSTACK_DEVICE");
+            if (string.IsNullOrEmpty(deviceString))
+            {
+                throw new InvalidOperationException("BROWSERSTACK_DEVICE environment variable must be set");
+            }
+            var deviceParts = deviceString.Split('-');
+            var deviceName = deviceParts[0];
+            var platformVersion = deviceParts.Length > 1 ? deviceParts[1] : throw new InvalidOperationException("Device string must include platform version (e.g., 'Google Pixel 7-13.0')");
+
+            // BrowserStack capabilities
             options.PlatformName = "Android";
             options.AutomationName = "UiAutomator2";
-            options.DeviceName = "Google Pixel 7";
-            options.PlatformVersion = "13.0";
+            options.DeviceName = deviceName;
+            options.PlatformVersion = platformVersion;
             options.App = browserstackApp ?? GetAppPath();
-            options.AddAdditionalAppiumOption("project", "Ditto .NET MAUI");
+            options.AddAdditionalAppiumOption("project", "QuickStart .NET MAUI");
             options.AddAdditionalAppiumOption("build", Environment.GetEnvironmentVariable("BUILD_NAME") ?? "Local Tests");
             options.AddAdditionalAppiumOption("name", "Android Task Search Tests");
 

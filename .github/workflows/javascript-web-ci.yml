@@ -1,20 +1,10 @@
-name: javascript-web-browserstack
+name: JavaScript Web CI
 
 on:
   pull_request:
-    branches:
-      - main
-      - 'sdk-*'
     paths:
-      - 'javascript-web/**'
-      - '.github/workflows/javascript-web-browserstack.yml'
-  push:
-    branches:
-      - main
-      - 'sdk-*'
-    paths:
-      - 'javascript-web/**'
-      - '.github/workflows/javascript-web-browserstack.yml'
+      - "javascript-web/**"
+      - ".github/workflows/javascript-web-ci.yml"
   workflow_dispatch:
 
 concurrency:
@@ -22,10 +12,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: Build and Test on BrowserStack
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,28 +24,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: javascript-web/package-lock.json
-
-      - name: Create .env file
-        run: |
-          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
-          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
-          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
-          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
-
-      - name: Insert test document into Ditto Cloud
-        id: seed_document
-        uses: ./.github/actions/seed-ditto-document
-        with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
-          app-name: 'javascript-web'
-
-      - name: Set document ID for tests
-        run: |
-          echo "GITHUB_TEST_DOC_ID=${{ steps.seed_document.outputs.document-title }}" >> $GITHUB_ENV
 
       - name: Install dependencies
         working-directory: javascript-web
@@ -64,16 +36,77 @@ jobs:
         working-directory: javascript-web
         run: npm run lint
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: javascript-web/package-lock.json
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Install dependencies
+        working-directory: javascript-web
+        run: npm ci
+
       - name: Build application
         working-directory: javascript-web
-        run: |
-          npm run build
-          echo "App built successfully"
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: javascript-web-dist
+          path: javascript-web/dist/
+          retention-days: 1
+
+  browserstack-web:
+    name: BrowserStack Tests
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 150
+    outputs:
+      build_id: ${{ steps.build-id.outputs.build_id }}
+      build_error: ${{ steps.build-id.outputs.error }}
+      build_found: ${{ steps.build-id.outputs.found }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: javascript-web-dist
+          path: javascript-web/dist
+
+      - name: Install http-server
+        run: npm install -g http-server
 
       - name: Start web server
         working-directory: javascript-web
         run: |
-          nohup npx http-server dist -p 3000 -c-1 --cors > server.log 2>&1 &
+          nohup http-server dist -p 3000 -c-1 --cors > server.log 2>&1 &
           sleep 5
           curl -f http://localhost:3000/ || (echo "Server failed to start" && cat server.log && exit 1)
           echo "Web server started on http://localhost:3000"
@@ -89,41 +122,89 @@ jobs:
           chmod 600 browserstack.yml
 
           nohup ./BrowserStackLocal --config-file ./browserstack.yml --daemon start &
-          sleep 10
+          sleep 20
           echo "BrowserStack Local tunnel established"
 
       - name: Make test script executable
         run: chmod +x .github/scripts/browserstack-test.py
 
-      - name: Execute tests on BrowserStack
+      - name: Get BrowserStack build info
+        id: build-info
+        uses: ./.github/actions/get-browserstack-build-info
+        with:
+          project-name: 'quickstart - JavaScript Web'
+
+      - name: Seed and execute tests on BrowserStack
+        id: test
+        uses: nick-fields/retry@v3
         env:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_TEST_DOC_ID: ${{ env.GITHUB_TEST_DOC_ID }}
-        run: |
-          # Install Python dependencies
-          pip3 install selenium
+          BROWSERSTACK_BUILD_NAME: ${{ steps.build-info.outputs.build-name }}
+          BROWSERSTACK_PROJECT_NAME: ${{ steps.build-info.outputs.project-name }}
+        with:
+          max_attempts: 5
+          timeout_minutes: 20
+          retry_wait_seconds: 900
+          command: |
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            TIMESTAMP=$(date +%s)
+            INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+                \"args\": {
+                  \"newTask\": {
+                    \"_id\": \"${INVERTED_TIMESTAMP}_javascript-web_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"title\": \"${INVERTED_TIMESTAMP}_javascript-web_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"done\": false,
+                    \"deleted\": false
+                  }
+                }
+              }" \
+              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
 
-          # Run the test script
-          python3 .github/scripts/browserstack-test.py
+            HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+            BODY=$(echo "$SEED_RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              TASK_TITLE="${INVERTED_TIMESTAMP}_javascript-web_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+              echo "Seeded task: $TASK_TITLE"
+            else
+              echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
+              echo "Response: $BODY"
+              exit 1
+            fi
+
+            # Set environment variable for Python script
+            export DITTO_CLOUD_TASK_TITLE="$TASK_TITLE"
+
+            # Install Python dependencies
+            pip3 install selenium pyyaml
+
+            # Run the test script
+            python3 .github/scripts/browserstack-test.py
+
+      - name: Get BrowserStack build ID
+        id: build-id
+        uses: ./.github/actions/get-browserstack-build-id
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        with:
+          api-type: 'selenium'
+          build-name: ${{ steps.build-info.outputs.build-name }}
+          project-name: ${{ steps.build-info.outputs.project-name }}
+          wait-seconds: '30'
 
       - name: Stop BrowserStack Local tunnel
         if: always()
         run: ./BrowserStackLocal --key "${{ secrets.BROWSERSTACK_ACCESS_KEY }}" --daemon stop || true
-          
-      - name: Generate test report
-        if: always()
-        run: |
-          echo "# BrowserStack Web Test Report" > test-report.md
-          echo "" >> test-report.md
-          echo "## Tested Browsers" >> test-report.md
-          echo "- Chrome 120.0 (Windows 11)" >> test-report.md
-          echo "- Firefox 121.0 (Windows 11)" >> test-report.md
-          echo "" >> test-report.md
-          echo "## Sync Verification" >> test-report.md
-          echo "- GitHub Test Document ID: ${GITHUB_TEST_DOC_ID:-Not generated}" >> test-report.md
 
       - name: Upload test artifacts
         if: always()
@@ -133,38 +214,57 @@ jobs:
           path: |
             javascript-web/dist/
             javascript-web/server.log
-            test-report.md
             *screenshot*.png
-            .github/scripts/browserstack-test.py
 
-      - name: Generate test summary
-        if: always()
+  summary:
+    name: CI Report
+    runs-on: ubuntu-latest
+    needs: [lint, build, browserstack-web]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Report Results
         run: |
           echo "## 🌐 JavaScript Web CI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Overall status
-          if [ "${{ job.status }}" = "success" ]; then
+          if [[ "${{ needs.lint.result }}" == "success" && \
+                "${{ needs.build.result }}" == "success" && \
+                "${{ needs.browserstack-web.result }}" == "success" ]]; then
             echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| BrowserStack Tests | ${{ job.status == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack Tests | ${{ needs.browserstack-web.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # BrowserStack info
+          # BrowserStack link
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Dashboard](https://automate.browserstack.com/dashboard/v2)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Add BrowserStack summary
+        if: needs.browserstack-web.result != 'skipped'
+        uses: ./.github/actions/browserstack-summary
+        with:
+          build-id: ${{ needs.browserstack-web.outputs.build_id }}
+          error: ${{ needs.browserstack-web.outputs.build_error }}
+          found: ${{ needs.browserstack-web.outputs.build_found }}
+          result: ${{ needs.browserstack-web.result }}
+          api-type: 'selenium'
+
+      - name: Add tested browsers info
+        if: needs.browserstack-web.result != 'skipped'
+        run: |
           echo "**Tested Browsers:**" >> $GITHUB_STEP_SUMMARY
           echo "- Chrome 120.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
           echo "- Firefox 121.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Test Document ID:** \`${GITHUB_TEST_DOC_ID:-Not generated}\`" >> $GITHUB_STEP_SUMMARY

@@ -1,11 +1,6 @@
 name: .NET WinForms CI
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'dotnet-winforms/**'
   pull_request:
-    branches: [main]
     paths:
       - 'dotnet-winforms/**'
   workflow_dispatch:
@@ -104,7 +99,7 @@ jobs:
       - name: Build and run integration test
         working-directory: dotnet-winforms/IntegrationTest
         env:
-          GITHUB_TEST_DOC_TITLE: ${{ steps.seed.outputs.document-title }}
+          DITTO_CLOUD_TASK_TITLE: ${{ steps.seed.outputs.document-title }}
         run: |
           dotnet restore
           dotnet build --configuration Release --no-restore
