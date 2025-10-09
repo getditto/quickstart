@@ -55,10 +55,13 @@ runs:
         BUILDS_RESPONSE=$(curl -s -u "${{ env.BROWSERSTACK_USERNAME }}:${{ env.BROWSERSTACK_ACCESS_KEY }}" \
           "${API_ENDPOINT}?limit=10")
         CURL_EXIT=$?
-        set -e  # Re-enable errexit
         echo "✓ API call completed (exit code: $CURL_EXIT)"
+        echo "🔍 About to check if response is empty..."
+        set -e  # Re-enable errexit
+        echo "✓ Errexit re-enabled"
 
         # Check if API call succeeded
+        echo "🔍 Checking response..."
         if [ -z "$BUILDS_RESPONSE" ]; then
           ERROR_MSG="BrowserStack API returned empty response"
           echo "error=$ERROR_MSG" >> $GITHUB_OUTPUT
