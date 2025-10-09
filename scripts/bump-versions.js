@@ -172,7 +172,9 @@ const APP_CONFIGS = {
       },
     ],
     lockCommands: [
+      "flutter clean",
       "flutter pub get",
+      "pod repo update",
       "(cd ios && pod update DittoFlutter)",
       "(cd macos && pod update DittoFlutter)",
     ],
