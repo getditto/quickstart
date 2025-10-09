@@ -334,12 +334,10 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
 
         # BrowserStack link
-        if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]]; then
+        if [[ "${{ needs.browserstack-test.result }}" != "skipped" ]] && [ -n "${{ needs.browserstack-test.outputs.build_id }}" ]; then
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ needs.browserstack-test.outputs.build_id }}" ]; then
-            echo "🔗 [View Test Results](https://automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-test.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "🔗 [View Test Results](https://automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-test.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browser:**" >> $GITHUB_STEP_SUMMARY
           echo "- Chrome Latest (Windows 11)" >> $GITHUB_STEP_SUMMARY

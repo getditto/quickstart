@@ -241,12 +241,12 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # BrowserStack info
-          echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ needs.browserstack-web.outputs.build_id }}" ]; then
+            echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
             echo "🔗 [View Test Results](https://automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-web.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Tested Browsers:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Chrome 120.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
+            echo "- Firefox 121.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tested Browsers:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Chrome 120.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
-          echo "- Firefox 121.0 (Windows 11)" >> $GITHUB_STEP_SUMMARY
