@@ -310,6 +310,9 @@ jobs:
     if: always()
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Report Results
       run: |
         echo "## ☕ Java Spring CI" >> $GITHUB_STEP_SUMMARY
