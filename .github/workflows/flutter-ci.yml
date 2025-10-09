@@ -639,7 +639,7 @@ jobs:
 
           if [ -n "$BUILD_ID" ]; then
             echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
-            echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID/)" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -907,7 +907,7 @@ jobs:
 
           if [ -n "$BUILD_ID" ]; then
             echo "- **Build ID:** $BUILD_ID" >> $GITHUB_STEP_SUMMARY
-            echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Dashboard:** [View Results](https://app-automate.browserstack.com/dashboard/v2/builds/$BUILD_ID/)" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY

@@ -347,6 +347,7 @@ jobs:
             fi
 
             echo "BrowserStack Build ID: $build_id"
+            echo "build_id=$build_id" >> $GITHUB_OUTPUT
 
             # Wait for test completion and get results
             MAX_WAIT_TIME=1080  # 18 minutes
@@ -541,6 +542,7 @@ jobs:
             fi
 
             echo "BrowserStack Build ID: $build_id"
+            echo "build_id=$build_id" >> $GITHUB_OUTPUT
 
             # Wait for test completion and get results
             MAX_WAIT_TIME=1080  # 18 minutes
@@ -603,15 +605,15 @@ jobs:
           # Android results
           echo "### Android Tests" >> $GITHUB_STEP_SUMMARY
           ANDROID_BUILD_ID="${{ needs.browserstack-android.outputs.build_id }}"
-          ANDROID_STATUS="${{ needs.browserstack-android.outputs.status }}"
+          ANDROID_RESULT="${{ needs.browserstack-android.result }}"
 
           if [ -n "$ANDROID_BUILD_ID" ] && [ "$ANDROID_BUILD_ID" != "null" ]; then
-            if [ "$ANDROID_STATUS" = "success" ]; then
+            if [ "$ANDROID_RESULT" = "success" ]; then
               echo "✅ **Status:** Passed" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
             fi
-            echo "🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/$ANDROID_BUILD_ID)**" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/$ANDROID_BUILD_ID/)**" >> $GITHUB_STEP_SUMMARY
             echo "Build ID: \`$ANDROID_BUILD_ID\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           else
@@ -622,15 +624,15 @@ jobs:
           # iOS results
           echo "### iOS Tests" >> $GITHUB_STEP_SUMMARY
           IOS_BUILD_ID="${{ needs.browserstack-ios.outputs.build_id }}"
-          IOS_STATUS="${{ needs.browserstack-ios.outputs.status }}"
+          IOS_RESULT="${{ needs.browserstack-ios.result }}"
 
           if [ -n "$IOS_BUILD_ID" ] && [ "$IOS_BUILD_ID" != "null" ]; then
-            if [ "$IOS_STATUS" = "success" ]; then
+            if [ "$IOS_RESULT" = "success" ]; then
               echo "✅ **Status:** Passed" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ **Status:** Failed" >> $GITHUB_STEP_SUMMARY
             fi
-            echo "🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/$IOS_BUILD_ID)**" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **[View Dashboard](https://app-automate.browserstack.com/dashboard/v2/builds/$IOS_BUILD_ID/)**" >> $GITHUB_STEP_SUMMARY
             echo "Build ID: \`$IOS_BUILD_ID\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           else
@@ -640,7 +642,7 @@ jobs:
 
           # Summary
           echo "---" >> $GITHUB_STEP_SUMMARY
-          if [ "$ANDROID_STATUS" = "success" ] && [ "$IOS_STATUS" = "success" ]; then
+          if [ "$ANDROID_RESULT" = "success" ] && [ "$IOS_RESULT" = "success" ]; then
             echo "✅ **Overall Result:** All tests passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ **Overall Result:** Some tests failed" >> $GITHUB_STEP_SUMMARY

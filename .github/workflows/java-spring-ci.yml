@@ -255,7 +255,6 @@ jobs:
           ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
             -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
             -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -DBROWSERSTACK_BUILD_NAME="Build-${{ github.run_number }}" \
             -DBROWSERSTACK_LOCAL=true \
             -DDITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
             --info
@@ -308,7 +307,7 @@ jobs:
   summary:
     name: CI Report
     runs-on: ubuntu-latest
-    needs: [browserstack-test]
+    needs: [lint, build, browserstack-test]
     if: always()
 
     steps:
@@ -339,9 +338,7 @@ jobs:
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ needs.browserstack-test.outputs.build_id }}" ]; then
-            echo "🔗 [View Test Results](https://automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-test.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=quickstart+-+Java+Spring)" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 [View Test Results](https://automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-test.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browser:**" >> $GITHUB_STEP_SUMMARY

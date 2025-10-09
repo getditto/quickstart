@@ -166,7 +166,7 @@ jobs:
         id: build-info
         uses: ./.github/actions/get-browserstack-build-info
         with:
-          project-name: 'quickstart - Android C++'
+          project-name: 'quickstart - Android CPP'
 
       - name: Seed and execute Appium tests on BrowserStack
         id: test
@@ -281,9 +281,7 @@ jobs:
             echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             if [ -n "${{ needs.browserstack-android.outputs.build_id }}" ]; then
-              echo "🤖 [View Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "🤖 [View Test Results](https://app-automate.browserstack.com/builds?project=quickstart+-+Android+CPP)" >> $GITHUB_STEP_SUMMARY
+              echo "🤖 [View Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Tested Device:**" >> $GITHUB_STEP_SUMMARY

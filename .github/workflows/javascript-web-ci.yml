@@ -244,9 +244,7 @@ jobs:
           echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ needs.browserstack-web.outputs.build_id }}" ]; then
-            echo "🔗 [View Test Results](https://automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-web.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "🔗 [View Test Results](https://automate.browserstack.com/builds?project=quickstart+-+JavaScript+Web)" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 [View Test Results](https://automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-web.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tested Browsers:**" >> $GITHUB_STEP_SUMMARY

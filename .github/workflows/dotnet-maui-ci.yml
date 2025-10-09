@@ -195,7 +195,7 @@ jobs:
         id: build-info-android
         uses: ./.github/actions/get-browserstack-build-info
         with:
-          project-name: 'quickstart - MAUI'
+          project-name: 'quickstart - .NET MAUI'
           platform-suffix: ' (Android)'
           title-max-length: '90'
           commit-max-length: '130'
@@ -322,7 +322,7 @@ jobs:
         id: build-info-ios
         uses: ./.github/actions/get-browserstack-build-info
         with:
-          project-name: 'quickstart - MAUI'
+          project-name: 'quickstart - .NET MAUI'
           platform-suffix: ' (iOS)'
           title-max-length: '90'
           commit-max-length: '130'
@@ -437,17 +437,13 @@ jobs:
 
             if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
               if [ -n "${{ needs.browserstack-android.outputs.build_id }}" ]; then
-                echo "🤖 [Android Test Session](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
-              else
-                echo "🤖 [Android Test Session](https://app-automate.browserstack.com/builds?project=quickstart+-+.NET+MAUI&filter_device_name=Google+Pixel+7)" >> $GITHUB_STEP_SUMMARY
+                echo "🤖 [Android Test Session](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
               fi
             fi
 
             if [[ "${{ needs.browserstack-ios.result }}" != "skipped" ]]; then
               if [ -n "${{ needs.browserstack-ios.outputs.build_id }}" ]; then
-                echo "🍎 [iOS Test Session](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-ios.outputs.build_id }})" >> $GITHUB_STEP_SUMMARY
-              else
-                echo "🍎 [iOS Test Session](https://app-automate.browserstack.com/builds?project=quickstart+-+.NET+MAUI&filter_device_name=iPhone+15)" >> $GITHUB_STEP_SUMMARY
+                echo "🍎 [iOS Test Session](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-ios.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
               fi
             fi
 
