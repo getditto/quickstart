@@ -85,10 +85,10 @@ runs:
 
         if [ "${{ inputs.api-type }}" = "selenium" ]; then
           BUILD_ID=$(echo "$BUILDS_RESPONSE" | jq -r --arg buildname "$BUILD_NAME" \
-            '.[] | .automation_build | select(.name == $buildname) | .hashed_id' | head -1)
+            '.[] | .automation_build | select(.name == $buildname) | .hashed_id' | head -1 || true)
         else
           BUILD_ID=$(echo "$BUILDS_RESPONSE" | jq -r --arg buildname "$BUILD_NAME" \
-            '.[] | select(.name == $buildname) | .hashed_id' | head -1)
+            '.[] | select(.name == $buildname) | .hashed_id' | head -1 || true)
         fi
 
         # Check if we found the build
