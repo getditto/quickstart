@@ -52,7 +52,7 @@ runs:
 
         echo "🔍 Fetching build ID from BrowserStack (${{ inputs.api-type }} API)..."
         BUILDS_RESPONSE=$(curl -s -u "${{ env.BROWSERSTACK_USERNAME }}:${{ env.BROWSERSTACK_ACCESS_KEY }}" \
-          "${API_ENDPOINT}?limit=5&status=running")
+          "${API_ENDPOINT}?limit=10")
 
         # Check if API call succeeded
         if [ -z "$BUILDS_RESPONSE" ]; then
@@ -72,7 +72,7 @@ runs:
           exit 0
         fi
 
-        echo "📋 Recent running builds:"
+        echo "📋 Recent builds:"
         if [ "${{ inputs.api-type }}" = "selenium" ]; then
           echo "$BUILDS_RESPONSE" | jq -r '.[] | .automation_build | "\(.hashed_id) - \(.name)"' 2>/dev/null || echo "$BUILDS_RESPONSE"
         else
