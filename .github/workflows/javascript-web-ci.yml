@@ -200,6 +200,7 @@ jobs:
           api-type: 'selenium'
           build-name: ${{ steps.build-info.outputs.build-name }}
           project-name: ${{ steps.build-info.outputs.project-name }}
+          wait-seconds: '15'
 
       - name: Stop BrowserStack Local tunnel
         if: always()
