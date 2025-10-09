@@ -431,22 +431,17 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # BrowserStack links
-          if [[ "${{ needs.browserstack-android.result }}" != "skipped" || "${{ needs.browserstack-ios.result }}" != "skipped" ]]; then
-            echo "### BrowserStack Sessions" >> $GITHUB_STEP_SUMMARY
+          echo "### BrowserStack Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.browserstack-android.result }}" != "skipped" && -n "${{ needs.browserstack-android.outputs.build_id }}" ]]; then
+            echo "**🤖 Android:**" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 [View Android Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
+          fi
 
-            if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
-              if [ -n "${{ needs.browserstack-android.outputs.build_id }}" ]; then
-                echo "🤖 [Android Test Session](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
-              fi
-            fi
-
-            if [[ "${{ needs.browserstack-ios.result }}" != "skipped" ]]; then
-              if [ -n "${{ needs.browserstack-ios.outputs.build_id }}" ]; then
-                echo "🍎 [iOS Test Session](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-ios.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
-              fi
-            fi
-
+          if [[ "${{ needs.browserstack-ios.result }}" != "skipped" && -n "${{ needs.browserstack-ios.outputs.build_id }}" ]]; then
+            echo "**🍎 iOS:**" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 [View iOS Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-ios.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "[View All Sessions](https://app-automate.browserstack.com/builds?project=quickstart+-+.NET+MAUI)" >> $GITHUB_STEP_SUMMARY
           fi
