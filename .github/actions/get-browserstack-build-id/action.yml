@@ -83,15 +83,17 @@ runs:
         BUILD_NAME="${{ inputs.build-name }}"
         echo "🔎 Searching for build: $BUILD_NAME"
 
-        # Temporarily disable pipefail to prevent SIGPIPE errors from head
+        # Temporarily disable errexit and pipefail to prevent failures
+        set +e
         set +o pipefail
         if [ "${{ inputs.api-type }}" = "selenium" ]; then
           BUILD_ID=$(echo "$BUILDS_RESPONSE" | jq -r --arg buildname "$BUILD_NAME" \
-            '.[] | .automation_build | select(.name == $buildname) | .hashed_id' 2>/dev/null | head -1 || true)
+            '.[] | .automation_build | select(.name == $buildname) | .hashed_id' 2>/dev/null | head -1)
         else
           BUILD_ID=$(echo "$BUILDS_RESPONSE" | jq -r --arg buildname "$BUILD_NAME" \
-            '.[] | select(.name == $buildname) | .hashed_id' 2>/dev/null | head -1 || true)
+            '.[] | select(.name == $buildname) | .hashed_id' 2>/dev/null)
         fi
+        set -e
         set -o pipefail
 
         # Check if we found the build
