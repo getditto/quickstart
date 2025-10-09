@@ -50,6 +50,7 @@ const APP_CONFIGS = {
     ],
     lockCommands: [
       "npm install --legacy-peer-deps --no-audit",
+      "pod repo update",
       "(cd ios && bundle exec pod update)",
       "(cd macos && bundle exec pod update)",
     ],
