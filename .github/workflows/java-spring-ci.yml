@@ -271,7 +271,7 @@ jobs:
         api-type: 'selenium'
         build-name: ${{ steps.build-info.outputs.build-name }}
         project-name: ${{ steps.build-info.outputs.project-name }}
-        wait-seconds: '15'
+        wait-seconds: '30'
 
     - name: Stop Spring Boot app
       if: always()

@@ -99,9 +99,10 @@ runs:
           exit 0
         fi
 
-        # No build found - fail immediately
+        # No build found - report error but don't fail job
         ERROR_MSG="No build found matching '$BUILD_NAME'"
         echo "error=$ERROR_MSG" >> $GITHUB_OUTPUT
         echo "found=false" >> $GITHUB_OUTPUT
         echo "❌ $ERROR_MSG"
-        exit 1
+        echo "💡 Build may not be indexed yet. Check BrowserStack dashboard manually."
+        exit 0

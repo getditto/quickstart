@@ -268,7 +268,7 @@ jobs:
           api-type: 'appium'
           build-name: ${{ steps.build-info-android.outputs.build-name }}
           project-name: ${{ steps.build-info-android.outputs.project-name }}
-          wait-seconds: '15'
+          wait-seconds: '30'
 
   browserstack-ios:
     name: BrowserStack iOS Tests
@@ -395,7 +395,7 @@ jobs:
           api-type: 'appium'
           build-name: ${{ steps.build-info-ios.outputs.build-name }}
           project-name: ${{ steps.build-info-ios.outputs.project-name }}
-          wait-seconds: '15'
+          wait-seconds: '30'
 
   summary:
     name: CI Report
