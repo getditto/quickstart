@@ -217,6 +217,15 @@ jobs:
           name: android-apk-${{ github.run_number }}
           path: ./artifacts/
 
+      - name: Get BrowserStack build info (Android)
+        id: build-info-android
+        uses: ./.github/actions/get-browserstack-build-info
+        with:
+          project-name: 'quickstart - React Native'
+          platform-suffix: ' (Android)'
+          title-max-length: '90'
+          commit-max-length: '130'
+
       - name: Seed, create test suite, upload, and execute Android tests on BrowserStack
         id: execute-tests
         uses: nick-fields/retry@v3
@@ -305,38 +314,14 @@ jobs:
             DEVICES=$(yq eval -o=json -I=0 '.["react-native"].android.devices' .github/browserstack-devices.yml)
             echo "Loaded devices: $DEVICES"
 
-            # Build BrowserStack project/build names with PR context
-            # Fetch PR info using GitHub CLI (works for both pull_request and push events)
-            PR_INFO=$(gh pr view "${{ github.head_ref || github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
-            PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
-            PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
-            COMMIT_MSG="${{ github.event.head_commit.message }}"
-
-            # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-            COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-
-            # Truncate: "PR-999: " (8) + title (90) + " - " (3) + commit (130) + " (Android)" = ~240
-            PR_TITLE_PART="${PR_TITLE_CLEAN:0:90}"
-            COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:130}"
-
-            PROJECT_NAME="quickstart - React Native"
-
-            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART (Android)"
-            else
-              BUILD_NAME="Build-${{ github.run_number }} (Android)"
-            fi
-
             response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/android/build" \
               -H "Content-Type: application/json" \
               -d "{
                 \"app\": \"$APP_URL\",
                 \"testSuite\": \"$TEST_SUITE_URL\",
-                \"project\": \"$PROJECT_NAME\",
-                \"buildName\": \"$BUILD_NAME\",
+                \"project\": \"${{ steps.build-info-android.outputs.project-name }}\",
+                \"buildName\": \"${{ steps.build-info-android.outputs.build-name }}\",
                 \"buildTag\": \"${{ github.head_ref || github.ref_name }}\",
                 \"devices\": $DEVICES,
                 \"execute\": [\"01-app-launch-and-seeded-tasks-android.yaml\"],
@@ -419,6 +404,15 @@ jobs:
         with:
           name: ios-ipa-${{ github.run_number }}
           path: ./artifacts/
+
+      - name: Get BrowserStack build info (iOS)
+        id: build-info-ios
+        uses: ./.github/actions/get-browserstack-build-info
+        with:
+          project-name: 'quickstart - React Native'
+          platform-suffix: ' (iOS)'
+          title-max-length: '90'
+          commit-max-length: '130'
 
       - name: Seed, upload, and execute iOS Maestro tests on BrowserStack
         id: execute-tests
@@ -511,38 +505,14 @@ jobs:
             DEVICES=$(yq eval -o=json -I=0 '.["react-native"].ios.devices' .github/browserstack-devices.yml)
             echo "Loaded devices: $DEVICES"
 
-            # Build BrowserStack project/build names with PR context
-            # Fetch PR info using GitHub CLI (works for both pull_request and push events)
-            PR_INFO=$(gh pr view "${{ github.head_ref || github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
-            PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
-            PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
-            COMMIT_MSG="${{ github.event.head_commit.message }}"
-
-            # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-            COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-
-            # Truncate: "PR-999: " (8) + title (90) + " - " (3) + commit (130) + " (iOS)" = ~240
-            PR_TITLE_PART="${PR_TITLE_CLEAN:0:90}"
-            COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:130}"
-
-            PROJECT_NAME="quickstart - React Native"
-
-            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART (iOS)"
-            else
-              BUILD_NAME="Build-${{ github.run_number }} (iOS)"
-            fi
-
             response=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/maestro/v2/ios/build" \
               -H "Content-Type: application/json" \
               -d "{
                 \"app\": \"$APP_URL\",
                 \"testSuite\": \"$TEST_SUITE_URL\",
-                \"project\": \"$PROJECT_NAME\",
-                \"buildName\": \"$BUILD_NAME\",
+                \"project\": \"${{ steps.build-info-ios.outputs.project-name }}\",
+                \"buildName\": \"${{ steps.build-info-ios.outputs.build-name }}\",
                 \"buildTag\": \"${{ github.head_ref || github.ref_name }}\",
                 \"devices\": $DEVICES,
                 \"execute\": [\"01-app-launch-and-seeded-tasks-ios.yaml\"],

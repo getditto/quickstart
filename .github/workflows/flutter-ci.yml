@@ -414,6 +414,15 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
+      - name: Get BrowserStack build info (Android)
+        id: build-info-android
+        uses: ./.github/actions/get-browserstack-build-info
+        with:
+          project-name: 'quickstart - Flutter'
+          platform-suffix: ' (Android)'
+          title-max-length: '90'
+          commit-max-length: '130'
+
       - name: Seed, build, upload, and execute BrowserStack Android tests
         id: test
         uses: nick-fields/retry@v3
@@ -508,30 +517,6 @@ jobs:
             # Load devices from centralized config
             DEVICES=$(yq eval -o=json -I=0 '.flutter.android.devices' .github/browserstack-devices.yml)
 
-            # Build BrowserStack project/build names with PR context
-            # Fetch PR info using GitHub CLI (works for both pull_request and push events)
-            PR_INFO=$(gh pr view "${{ github.head_ref || github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
-            PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
-            PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
-            COMMIT_MSG="${{ github.event.head_commit.message }}"
-
-            # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-            COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-
-            # Truncate: "PR-999: " (8) + title (90) + " - " (3) + commit (130) + " (Android)" = ~240
-            PR_TITLE_PART="${PR_TITLE_CLEAN:0:90}"
-            COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:130}"
-
-            PROJECT_NAME="quickstart - Flutter"
-
-            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART (Android)"
-            else
-              BUILD_NAME="Build-${{ github.run_number }} (Android)"
-            fi
-
             # Create test execution request
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/android/build" \
@@ -540,8 +525,8 @@ jobs:
                 \"app\": \"$APP_URL\",
                 \"testSuite\": \"$TEST_URL\",
                 \"devices\": $DEVICES,
-                \"project\": \"$PROJECT_NAME\",
-                \"buildName\": \"$BUILD_NAME\",
+                \"project\": \"${{ steps.build-info-android.outputs.project-name }}\",
+                \"buildName\": \"${{ steps.build-info-android.outputs.build-name }}\",
                 \"buildTag\": \"${{ github.head_ref || github.ref_name }}\",
                 \"deviceLogs\": true,
                 \"video\": true,
@@ -696,6 +681,15 @@ jobs:
           name: flutter-ios-ipa-${{ github.run_number }}
           path: flutter_app/build/ios/ipa/
 
+      - name: Get BrowserStack build info (iOS)
+        id: build-info-ios
+        uses: ./.github/actions/get-browserstack-build-info
+        with:
+          project-name: 'quickstart - Flutter'
+          platform-suffix: ' (iOS)'
+          title-max-length: '90'
+          commit-max-length: '130'
+
       - name: Seed, build, upload, and execute BrowserStack iOS tests
         id: test
         uses: nick-fields/retry@v3
@@ -794,38 +788,14 @@ jobs:
             # Load devices from centralized config
             DEVICES=$(yq eval -o=json -I=0 '.flutter.ios.devices' .github/browserstack-devices.yml)
 
-            # Build BrowserStack project/build names with PR context
-            # Fetch PR info using GitHub CLI (works for both pull_request and push events)
-            PR_INFO=$(gh pr view "${{ github.head_ref || github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
-            PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
-            PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
-            COMMIT_MSG="${{ github.event.head_commit.message }}"
-
-            # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-            COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-
-            # Truncate: "PR-999: " (8) + title (90) + " - " (3) + commit (130) + " (iOS)" = ~240
-            PR_TITLE_PART="${PR_TITLE_CLEAN:0:90}"
-            COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:130}"
-
-            PROJECT_NAME="quickstart - Flutter"
-
-            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART (iOS)"
-            else
-              BUILD_NAME="Build-${{ github.run_number }} (iOS)"
-            fi
-
             BUILD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
               -X POST "https://api-cloud.browserstack.com/app-automate/flutter-integration-tests/v2/ios/build" \
               -H "Content-Type: application/json" \
               -d "{
                 \"testPackage\": \"$TEST_PACKAGE_URL\",
                 \"devices\": $DEVICES,
-                \"project\": \"$PROJECT_NAME\",
-                \"buildName\": \"$BUILD_NAME\",
+                \"project\": \"${{ steps.build-info-ios.outputs.project-name }}\",
+                \"buildName\": \"${{ steps.build-info-ios.outputs.build-name }}\",
                 \"buildTag\": \"${{ github.head_ref || github.ref_name }}\",
                 \"deviceLogs\": true,
                 \"networkLogs\": true,

@@ -189,6 +189,15 @@ jobs:
           echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
           echo "Android APK uploaded: $APP_URL"
 
+      - name: Get BrowserStack build info (Android)
+        id: build-info-android
+        uses: ./.github/actions/get-browserstack-build-info
+        with:
+          project-name: 'quickstart - MAUI'
+          platform-suffix: ' (Android)'
+          title-max-length: '90'
+          commit-max-length: '130'
+
       - name: Seed and execute Android tests on BrowserStack
         uses: nick-fields/retry@v3
         with:
@@ -232,29 +241,6 @@ jobs:
             DEVICE=$(yq eval '.["dotnet-maui"].android.devices[0]' .github/browserstack-devices.yml)
             echo "Using Android device: $DEVICE"
 
-            # Build BrowserStack project/build names with PR context
-            # Fetch PR info using GitHub CLI (works for both pull_request and push events)
-            PR_INFO=$(gh pr view "${{ github.head_ref || github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
-            PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
-            PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
-            COMMIT_MSG="${{ github.event.head_commit.message }}"
-            # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-            COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-
-            # Truncate: "PR-999: " (8) + title (90) + " - " (3) + commit (130) + " (Android)" (10) = 241
-            PR_TITLE_PART="${PR_TITLE_CLEAN:0:90}"
-            COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:130}"
-
-            PROJECT_NAME="quickstart - MAUI"
-
-            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART (Android)"
-            else
-              BUILD_NAME="Build-${{ github.run_number }} (Android)"
-            fi
-
             # Execute tests
             cd dotnet-maui/UITests.Android
             dotnet restore
@@ -263,8 +249,8 @@ jobs:
             BROWSERSTACK_APP_ID="${{ steps.upload.outputs.app_url }}" \
             BROWSERSTACK_DEVICE="$DEVICE" \
             DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
-            BROWSERSTACK_PROJECT="$PROJECT_NAME" \
-            BUILD_NAME="$BUILD_NAME" \
+            BROWSERSTACK_PROJECT="${{ steps.build-info-android.outputs.project-name }}" \
+            BUILD_NAME="${{ steps.build-info-android.outputs.build-name }}" \
             dotnet run
 
   browserstack-ios:
@@ -313,6 +299,15 @@ jobs:
           echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
           echo "iOS IPA uploaded: $APP_URL"
 
+      - name: Get BrowserStack build info (iOS)
+        id: build-info-ios
+        uses: ./.github/actions/get-browserstack-build-info
+        with:
+          project-name: 'quickstart - MAUI'
+          platform-suffix: ' (iOS)'
+          title-max-length: '90'
+          commit-max-length: '130'
+
       - name: Seed and execute iOS tests on BrowserStack
         uses: nick-fields/retry@v3
         with:
@@ -356,29 +351,6 @@ jobs:
             DEVICE=$(yq eval '.["dotnet-maui"].ios.devices[0]' .github/browserstack-devices.yml)
             echo "Using iOS device: $DEVICE"
 
-            # Build BrowserStack project/build names with PR context
-            # Fetch PR info using GitHub CLI (works for both pull_request and push events)
-            PR_INFO=$(gh pr view "${{ github.head_ref || github.ref_name }}" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
-            PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
-            PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
-            COMMIT_MSG="${{ github.event.head_commit.message }}"
-            # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-            PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-            COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-            COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
-
-            # Truncate: "PR-999: " (8) + title (90) + " - " (3) + commit (130) + " (iOS)" (6) = 237
-            PR_TITLE_PART="${PR_TITLE_CLEAN:0:90}"
-            COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:130}"
-
-            PROJECT_NAME="quickstart - MAUI"
-
-            if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-              BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART (iOS)"
-            else
-              BUILD_NAME="Build-${{ github.run_number }} (iOS)"
-            fi
-
             # Execute tests
             cd dotnet-maui/UITests.iOS
             dotnet restore
@@ -387,8 +359,8 @@ jobs:
             BROWSERSTACK_APP_ID="${{ steps.upload.outputs.app_url }}" \
             BROWSERSTACK_DEVICE="$DEVICE" \
             DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
-            BROWSERSTACK_PROJECT="$PROJECT_NAME" \
-            BUILD_NAME="$BUILD_NAME" \
+            BROWSERSTACK_PROJECT="${{ steps.build-info-ios.outputs.project-name }}" \
+            BUILD_NAME="${{ steps.build-info-ios.outputs.build-name }}" \
             dotnet run
 
   summary:
