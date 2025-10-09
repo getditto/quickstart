@@ -51,10 +51,14 @@ runs:
         PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
         COMMIT_MSG="${{ github.event.head_commit.message }}"
 
-        # Sanitize - keep only BrowserStack-allowed chars: A-Z a-z 0-9 . : - [ ] / @ & ' _
-        PR_TITLE_CLEAN=$(echo "$PR_TITLE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
+        # Sanitize for BrowserStack buildName requirements
+        # Reference: https://www.browserstack.com/docs/automate/selenium/organize-tests
+        # Allowed: A-Z a-z 0-9 . : - [ ] / @ & ' _
+        # Max length: 255 characters
+        # Using tr to delete disallowed chars (more portable than sed character classes)
+        PR_TITLE_CLEAN=$(echo "$PR_TITLE" | tr -cd 'A-Za-z0-9.:[\]/@&'\'' _-')
         COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
-        COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | sed "s/[^A-Za-z0-9.:[\]\/@&' _-]//g")
+        COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | tr -cd 'A-Za-z0-9.:[\]/@&'\'' _-')
 
         # Truncate to specified lengths
         PR_TITLE_PART="${PR_TITLE_CLEAN:0:${{ inputs.title-max-length }}}"
@@ -68,6 +72,12 @@ runs:
           BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART$PLATFORM_SUFFIX"
         else
           BUILD_NAME="Build-${{ github.run_number }}$PLATFORM_SUFFIX"
+        fi
+
+        # Ensure build name doesn't exceed BrowserStack's 255 character limit
+        if [ ${#BUILD_NAME} -gt 255 ]; then
+          BUILD_NAME="${BUILD_NAME:0:255}"
+          echo "⚠️  Build name truncated to 255 characters"
         fi
 
         # Output all values
