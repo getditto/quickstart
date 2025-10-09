@@ -59,21 +59,21 @@ def run_test(browser_config):
     )
 
     # Set up BrowserStack options
-    # Include PR context for easier dashboard navigation
-    pr_number = os.environ.get('GITHUB_PR_NUMBER', '')
-    pr_title = os.environ.get('GITHUB_PR_TITLE', '')
-    # Truncate PR title to ensure project name stays under 100 chars
-    pr_title_truncated = pr_title[:75] if pr_title else ''
-    commit_msg = os.environ.get('GITHUB_COMMIT_MSG', '')
+    # Use build info from composite action if available, otherwise fallback to legacy logic
+    build_name = os.environ.get('BROWSERSTACK_BUILD_NAME')
+    project_name = os.environ.get('BROWSERSTACK_PROJECT_NAME', 'quickstart - JavaScript Web')
 
-    # Project name is always "quickstart - JavaScript Web"
-    project_name = "quickstart - JavaScript Web"
+    if not build_name:
+        # Fallback to legacy build name logic for backwards compatibility
+        pr_number = os.environ.get('GITHUB_PR_NUMBER', '')
+        pr_title = os.environ.get('GITHUB_PR_TITLE', '')
+        pr_title_truncated = pr_title[:75] if pr_title else ''
+        commit_msg = os.environ.get('GITHUB_COMMIT_MSG', '')
 
-    # Build name includes PR context
-    if pr_number and pr_title_truncated:
-        build_name = f"PR-{pr_number}: {pr_title_truncated} - {commit_msg}"
-    else:
-        build_name = f"Build-{os.environ.get('GITHUB_RUN_NUMBER', '0')}"
+        if pr_number and pr_title_truncated:
+            build_name = f"PR-{pr_number}: {pr_title_truncated} - {commit_msg}"
+        else:
+            build_name = f"Build-{os.environ.get('GITHUB_RUN_NUMBER', '0')}"
 
     bs_options = {
         "browserVersion": browser_config["browser_version"],
