@@ -45,6 +45,8 @@ class DittoManager(
         // SDKS-1294: Don't create Ditto in a scope using Dispatchers.IO
         createJob = scope.launch(Dispatchers.Default) {
             ditto = try {
+                DittoLogger.minimumLogLevel = DittoLogLevel.Info
+
                 val config = DittoConfig(
                     databaseId = credentials.appId,
                     connect = DittoConfig.Connect.Server(
@@ -52,7 +54,6 @@ class DittoManager(
                     ),
                 )
 
-                DittoLogger.minimumLogLevel = DittoLogLevel.Verbose
                 createDitto(
                     config = config
                 ).apply {
@@ -62,6 +63,12 @@ class DittoManager(
                             token = credentials.appToken,
                             provider = DittoAuthenticationProvider.development(),
                         )
+                    }
+                }.apply {
+                    updateTransportConfig { config ->
+                        config.peerToPeer.lan.enabled = true
+                        config.peerToPeer.bluetoothLe.enabled = true
+                        config.peerToPeer.wifiAware.enabled = true
                     }
                 }
             } catch (e: Throwable) {
