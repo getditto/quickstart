@@ -1,11 +1,11 @@
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{path::PathBuf, sync::Arc, time::{Duration, SystemTime, UNIX_EPOCH}};
 
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
 use dittolive_ditto::{
-    fs::TempRoot, identity::OnlineWithAuthentication, prelude::DittoAuthenticationEventHandler,
-    AppId, Ditto,
+    fs::PersistentRoot, identity::OnlineWithAuthentication,
+    prelude::DittoAuthenticationEventHandler, AppId, Ditto,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -30,6 +30,10 @@ pub struct Cli {
     /// Path to write logs on disk
     #[clap(long, default_value = "/tmp/ditto-quickstart.log")]
     log: PathBuf,
+
+    /// Path to Ditto's persistent storage directory. If not provided, a timestamped directory will be created.
+    #[clap(short = 'd', long)]
+    persistence_dir: Option<PathBuf>,
 }
 
 impl Cli {
@@ -60,6 +64,7 @@ async fn main() -> Result<()> {
         cli.token,
         cli.custom_auth_url,
         cli.websocket_url,
+        cli.persistence_dir,
     )
     .await?;
     let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, ditto)
@@ -121,19 +126,28 @@ async fn try_init_ditto(
     _token: String,
     custom_auth_url: String,
     websocket_url: String,
+    persistence_dir: Option<PathBuf>,
 ) -> Result<Ditto> {
-    // We use a temporary directory to store Ditto's local database.
-    // This means that data will not be persistent between runs of the
-    // application, but it allows us to run multiple instances of the
-    // application concurrently on the same machine.  For a production
-    // application, we would want to store the database in a more permanent
-    // location, and if multiple instances are needed, ensure that each
-    // instance has its own persistence directory.
+    // Use a persistent directory to store Ditto's local database.
+    // This allows certificates and data to persist between runs.
+    // If no directory is specified, create a timestamped one to support multiple concurrent instances.
+    let persistence_dir = persistence_dir.unwrap_or_else(|| {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("failed to get system time")
+            .as_secs();
+        PathBuf::from(format!(".ditto_{}", timestamp))
+    });
+
+    std::fs::create_dir_all(&persistence_dir)
+        .context("failed to create persistence directory")?;
+
+    tracing::info!(path = ?persistence_dir, "Using persistence directory");
 
     let my_handler = AuthHandler {};
 
     let ditto = Ditto::builder()
-        .with_root(Arc::new(TempRoot::new()))
+        .with_root(Arc::new(PersistentRoot::new(&persistence_dir)?))
         .with_identity(|root| {
             OnlineWithAuthentication::new(
                 root,

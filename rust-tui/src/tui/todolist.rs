@@ -317,8 +317,13 @@ impl Todolist {
         // tracing::info!("Revocations count: {}", revocations.len());
 
         let result = self.ditto.store().execute_v2("SELECT * FROM __revocation_list").await.unwrap();
-        let json_item = result.get_item(0).unwrap().json_string();  
-        println!("First revocation (as JSON): {}", json_item);
+        if result.item_count() > 0 {
+            println!("Revocations found: {}", result.item_count());
+            let json_item = result.get_item(0).unwrap().json_string();  
+            println!("First revocation (as JSON): {}", json_item);
+        } else {
+            println!("No revocations found.");
+        }
 
         // for doc in revocations {
             // tracing::info!("Revocation: {:?}", doc);
