@@ -1,0 +1,75 @@
+name: 'BrowserStack Summary'
+description: 'Generates BrowserStack summary with links or error messages'
+inputs:
+  build-id:
+    description: 'The BrowserStack build hashed_id'
+    required: false
+    default: ''
+  error:
+    description: 'Error message if build_id extraction failed'
+    required: false
+    default: ''
+  found:
+    description: 'Whether build_id was successfully found (true/false)'
+    required: false
+    default: 'false'
+  result:
+    description: 'The job result status (success/failure/skipped)'
+    required: true
+  platform:
+    description: 'Platform name (e.g., "Android", "iOS", or empty for single platform)'
+    required: false
+    default: ''
+  api-type:
+    description: 'API type: "selenium" (web browsers) or "appium" (mobile apps) - determines dashboard URL'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Add BrowserStack section to summary
+      shell: bash
+      run: |
+        # Skip if job was skipped
+        if [ "${{ inputs.result }}" = "skipped" ]; then
+          exit 0
+        fi
+
+        # Determine dashboard base URL
+        if [ "${{ inputs.api-type }}" = "selenium" ]; then
+          DASHBOARD_URL="https://automate.browserstack.com/dashboard/v2/builds"
+        else
+          DASHBOARD_URL="https://app-automate.browserstack.com/dashboard/v2/builds"
+        fi
+
+        # Add platform prefix if specified
+        PLATFORM_PREFIX=""
+        PLATFORM_EMOJI=""
+        if [ -n "${{ inputs.platform }}" ]; then
+          PLATFORM_PREFIX="**${{ inputs.platform }}:** "
+          case "${{ inputs.platform }}" in
+            *Android*) PLATFORM_EMOJI="🤖 " ;;
+            *iOS*) PLATFORM_EMOJI="🍎 " ;;
+            *) PLATFORM_EMOJI="📱 " ;;
+          esac
+        fi
+
+        # Check if build_id was found
+        if [ "${{ inputs.found }}" = "true" ] && [ -n "${{ inputs.build-id }}" ]; then
+          # Success - show link
+          echo "${PLATFORM_PREFIX}${PLATFORM_EMOJI}" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Test Results](${DASHBOARD_URL}/${{ inputs.build-id }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        else
+          # Error - show error message
+          echo "${PLATFORM_PREFIX}${PLATFORM_EMOJI}" >> $GITHUB_STEP_SUMMARY
+          echo "❌ **Failed to retrieve BrowserStack link**" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ inputs.error }}" ]; then
+            echo "**Error:** ${{ inputs.error }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Error:** Build ID not available" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Tip:** Check the test execution logs above for BrowserStack session details" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi

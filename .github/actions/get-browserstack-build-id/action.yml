@@ -1,0 +1,120 @@
+name: 'Get BrowserStack Build ID'
+description: 'Extracts the build_id from BrowserStack API after test execution'
+inputs:
+  api-type:
+    description: 'API type: "selenium" (web browsers) or "appium" (mobile apps)'
+    required: true
+  build-name:
+    description: 'The build name to search for (from get-browserstack-build-info action)'
+    required: true
+  project-name:
+    description: 'The project name to search for (fallback if build name not found)'
+    required: false
+    default: ''
+  wait-seconds:
+    description: 'Seconds to wait before querying API (for build indexing)'
+    required: false
+    default: '5'
+outputs:
+  build_id:
+    description: 'The BrowserStack build hashed_id'
+    value: ${{ steps.extract.outputs.build_id }}
+  error:
+    description: 'Error message if build_id extraction failed'
+    value: ${{ steps.extract.outputs.error }}
+  found:
+    description: 'Whether build_id was successfully found (true/false)'
+    value: ${{ steps.extract.outputs.found }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Extract build ID from BrowserStack API
+      id: extract
+      shell: bash
+      run: |
+        # Wait for build to be indexed
+        sleep ${{ inputs.wait-seconds }}
+
+        # Determine API endpoint based on type
+        if [ "${{ inputs.api-type }}" = "selenium" ]; then
+          API_ENDPOINT="https://api.browserstack.com/automate/builds.json"
+          API_STRUCTURE=".automation_build"
+        elif [ "${{ inputs.api-type }}" = "appium" ]; then
+          API_ENDPOINT="https://api-cloud.browserstack.com/app-automate/builds.json"
+          API_STRUCTURE="."
+        else
+          echo "error=Invalid api-type: must be 'selenium' or 'appium'" >> $GITHUB_OUTPUT
+          echo "found=false" >> $GITHUB_OUTPUT
+          echo "❌ Error: Invalid api-type parameter"
+          exit 1
+        fi
+
+        echo "🔍 Fetching build ID from BrowserStack (${{ inputs.api-type }} API)..."
+        set +e  # Disable errexit for curl
+        BUILDS_RESPONSE=$(curl -s -u "${{ env.BROWSERSTACK_USERNAME }}:${{ env.BROWSERSTACK_ACCESS_KEY }}" \
+          "${API_ENDPOINT}?limit=10")
+        CURL_EXIT=$?
+        echo "✓ API call completed (exit code: $CURL_EXIT)"
+        echo "🔍 About to check if response is empty..."
+        set -e  # Re-enable errexit
+        echo "✓ Errexit re-enabled"
+
+        # Check if API call succeeded
+        echo "🔍 Checking response..."
+        if [ -z "$BUILDS_RESPONSE" ]; then
+          ERROR_MSG="BrowserStack API returned empty response"
+          echo "error=$ERROR_MSG" >> $GITHUB_OUTPUT
+          echo "found=false" >> $GITHUB_OUTPUT
+          echo "❌ $ERROR_MSG"
+          exit 0
+        fi
+
+        # Check for API errors
+        API_ERROR=$(echo "$BUILDS_RESPONSE" | jq -r '.message // empty' 2>/dev/null)
+        if [ -n "$API_ERROR" ]; then
+          echo "error=BrowserStack API error: $API_ERROR" >> $GITHUB_OUTPUT
+          echo "found=false" >> $GITHUB_OUTPUT
+          echo "❌ BrowserStack API error: $API_ERROR"
+          exit 0
+        fi
+
+        echo "📋 Recent builds:"
+        if [ "${{ inputs.api-type }}" = "selenium" ]; then
+          echo "$BUILDS_RESPONSE" | jq -r '.[] | .automation_build | "\(.hashed_id) - \(.name)"' 2>/dev/null || echo "$BUILDS_RESPONSE"
+        else
+          echo "$BUILDS_RESPONSE" | jq -r '.[] | "\(.hashed_id) - \(.name)"' 2>/dev/null || echo "$BUILDS_RESPONSE"
+        fi
+
+        # Extract build_id matching our build name
+        BUILD_NAME="${{ inputs.build-name }}"
+        echo "🔎 Searching for build: $BUILD_NAME"
+
+        # Temporarily disable errexit and pipefail to prevent failures
+        set +e
+        set +o pipefail
+        if [ "${{ inputs.api-type }}" = "selenium" ]; then
+          BUILD_ID=$(echo "$BUILDS_RESPONSE" | jq -r --arg buildname "$BUILD_NAME" \
+            '.[] | .automation_build | select(.name == $buildname) | .hashed_id' 2>/dev/null | head -1)
+        else
+          BUILD_ID=$(echo "$BUILDS_RESPONSE" | jq -r --arg buildname "$BUILD_NAME" \
+            '.[] | select(.name == $buildname) | .hashed_id' 2>/dev/null)
+        fi
+        set -e
+        set -o pipefail
+
+        # Check if we found the build
+        if [ -n "$BUILD_ID" ] && [ "$BUILD_ID" != "null" ]; then
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "found=true" >> $GITHUB_OUTPUT
+          echo "✅ Build ID found: $BUILD_ID"
+          exit 0
+        fi
+
+        # No build found - report error but don't fail job
+        ERROR_MSG="No build found matching '$BUILD_NAME'"
+        echo "error=$ERROR_MSG" >> $GITHUB_OUTPUT
+        echo "found=false" >> $GITHUB_OUTPUT
+        echo "❌ $ERROR_MSG"
+        echo "💡 Build may not be indexed yet. Check BrowserStack dashboard manually."
+        exit 0
