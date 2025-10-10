@@ -47,7 +47,7 @@ fun TaskAddEditScreen(
 
     Column(
         modifier = modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top,
     ) {
         Text(
             text = title,
