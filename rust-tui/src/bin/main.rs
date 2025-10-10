@@ -1,10 +1,10 @@
-use std::{path::PathBuf, sync::Arc, time::{Duration, SystemTime, UNIX_EPOCH}};
+use std::{path::PathBuf, sync::Arc, time::{Duration}};
 
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
 use dittolive_ditto::{
-    fs::PersistentRoot, identity::OnlineWithAuthentication,
+    fs::{DittoRoot, PersistentRoot, TempRoot}, identity::OnlineWithAuthentication,
     prelude::DittoAuthenticationEventHandler, AppId, Ditto,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -31,7 +31,7 @@ pub struct Cli {
     #[clap(long, default_value = "/tmp/ditto-quickstart.log")]
     log: PathBuf,
 
-    /// Path to Ditto's persistent storage directory. If not provided, a timestamped directory will be created.
+    /// Path to Ditto's persistent storage directory. If not provided, temporary storage will be used (no persistence).
     #[clap(short = 'd', long)]
     persistence_dir: Option<PathBuf>,
 }
@@ -130,24 +130,24 @@ async fn try_init_ditto(
 ) -> Result<Ditto> {
     // Use a persistent directory to store Ditto's local database.
     // This allows certificates and data to persist between runs.
-    // If no directory is specified, create a timestamped one to support multiple concurrent instances.
-    let persistence_dir = persistence_dir.unwrap_or_else(|| {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("failed to get system time")
-            .as_secs();
-        PathBuf::from(format!(".ditto_{}", timestamp))
-    });
-
-    std::fs::create_dir_all(&persistence_dir)
-        .context("failed to create persistence directory")?;
-
-    tracing::info!(path = ?persistence_dir, "Using persistence directory");
+    // If no directory is specified, use TempRoot.
+    let ditto_root: Arc<dyn DittoRoot> = match persistence_dir {
+        Some(ref dir) => {
+            std::fs::create_dir_all(&dir)
+                .context("failed to create persistence directory")?;
+            tracing::info!(path = ?dir, "Using persistence directory");
+            Arc::new(PersistentRoot::new(dir)?)
+        },
+        None => {
+            tracing::info!("Using temporary storage (no persistence)");
+            Arc::new(TempRoot::new())
+        }
+    };
 
     let my_handler = AuthHandler {};
 
     let ditto = Ditto::builder()
-        .with_root(Arc::new(PersistentRoot::new(&persistence_dir)?))
+        .with_root(ditto_root)
         .with_identity(|root| {
             OnlineWithAuthentication::new(
                 root,
