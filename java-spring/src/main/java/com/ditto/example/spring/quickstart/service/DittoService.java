@@ -62,13 +62,17 @@ public class DittoService implements DisposableBean {
 
         this.ditto.setDeviceName("Spring Java");
 
-        this.ditto.updateTransportConfig(transportConfig -> {
-            transportConfig.connect(connect -> {
+        this.ditto.updateTransportConfig(config -> {
+            config.connect(connect -> {
                 // Set the Ditto Websocket URL
                 connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
             });
+            config.peerToPeer(p2p -> {
+                p2p.bluetoothLe().isEnabled(true);
+                p2p.lan().isEnabled(true);
+            });
 
-            logger.info("Transport config: {}", transportConfig);
+            logger.info("Transport config: {}", config);
         });
 
         presenceObserver = observePeersPresence();
