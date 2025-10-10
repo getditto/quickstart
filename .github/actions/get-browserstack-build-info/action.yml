@@ -1,0 +1,91 @@
+name: 'Get BrowserStack Build Info'
+description: 'Fetches PR info and generates sanitized BrowserStack project and build names'
+inputs:
+  project-name:
+    description: 'BrowserStack project name (e.g., "quickstart - Flutter")'
+    required: true
+  platform-suffix:
+    description: 'Optional platform suffix to append to build name (e.g., " (Android)", " (iOS)")'
+    required: false
+    default: ''
+  title-max-length:
+    description: 'Maximum length for PR title in build name'
+    required: false
+    default: '100'
+  commit-max-length:
+    description: 'Maximum length for commit message in build name'
+    required: false
+    default: '140'
+outputs:
+  project-name:
+    description: 'BrowserStack project name'
+    value: ${{ steps.generate.outputs.project-name }}
+  build-name:
+    description: 'BrowserStack build name with PR and commit info'
+    value: ${{ steps.generate.outputs.build-name }}
+  pr-number:
+    description: 'PR number (if available)'
+    value: ${{ steps.generate.outputs.pr-number }}
+  pr-title:
+    description: 'Sanitized PR title (if available)'
+    value: ${{ steps.generate.outputs.pr-title }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate BrowserStack build info
+      id: generate
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # Fetch PR info using GitHub CLI
+        # Use head_ref for pull_request events, ref_name for push events
+        BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+
+        echo "🔍 Fetching PR info for branch: $BRANCH_NAME"
+        PR_INFO=$(gh pr view "$BRANCH_NAME" --json number,title --jq '{number:.number, title:.title}' 2>/dev/null || echo '{}')
+        echo "📋 PR Info: $PR_INFO"
+
+        PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number // empty')
+        PR_TITLE=$(echo "$PR_INFO" | jq -r '.title // empty')
+        COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+        # Sanitize for BrowserStack buildName requirements
+        # Reference: https://www.browserstack.com/docs/automate/selenium/organize-tests
+        # Allowed: A-Z a-z 0-9 . : - [ ] / @ & ' _
+        # Max length: 255 characters
+        # Using tr to delete disallowed chars (more portable than sed character classes)
+        PR_TITLE_CLEAN=$(echo "$PR_TITLE" | tr -cd 'A-Za-z0-9.:[\]/@&'\'' _-')
+        COMMIT_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n1)
+        COMMIT_MSG_CLEAN=$(echo "$COMMIT_FIRST_LINE" | tr -cd 'A-Za-z0-9.:[\]/@&'\'' _-')
+
+        # Truncate to specified lengths
+        PR_TITLE_PART="${PR_TITLE_CLEAN:0:${{ inputs.title-max-length }}}"
+        COMMIT_MSG_PART="${COMMIT_MSG_CLEAN:0:${{ inputs.commit-max-length }}}"
+
+        PROJECT_NAME="${{ inputs.project-name }}"
+        PLATFORM_SUFFIX="${{ inputs.platform-suffix }}"
+
+        # Generate build name
+        if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+          BUILD_NAME="PR-$PR_NUMBER: $PR_TITLE_PART - $COMMIT_MSG_PART$PLATFORM_SUFFIX"
+        else
+          BUILD_NAME="Build-${{ github.run_number }}$PLATFORM_SUFFIX"
+        fi
+
+        # Ensure build name doesn't exceed BrowserStack's 255 character limit
+        if [ ${#BUILD_NAME} -gt 255 ]; then
+          BUILD_NAME="${BUILD_NAME:0:255}"
+          echo "⚠️  Build name truncated to 255 characters"
+        fi
+
+        # Output all values
+        echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+        echo "build-name=$BUILD_NAME" >> $GITHUB_OUTPUT
+        echo "pr-number=$PR_NUMBER" >> $GITHUB_OUTPUT
+        echo "pr-title=$PR_TITLE_CLEAN" >> $GITHUB_OUTPUT
+
+        # Also output for debugging
+        echo "📦 Project: $PROJECT_NAME"
+        echo "🏗️  Build: $BUILD_NAME"

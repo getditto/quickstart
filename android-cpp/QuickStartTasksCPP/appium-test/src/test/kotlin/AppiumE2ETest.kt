@@ -16,12 +16,21 @@ class AppiumE2ETest {
 
         val options = UiAutomator2Options().apply {
             if (isBrowserStack) {
+                // Load device config from environment (set by workflow from browserstack-devices.yml)
+                val deviceString = System.getenv("BROWSERSTACK_DEVICE")
+                    ?: throw IllegalStateException("BROWSERSTACK_DEVICE environment variable not set")
+                val deviceParts = deviceString.split("-")
+                val deviceName = deviceParts[0]
+                val platformVersion = deviceParts.getOrElse(1) {
+                    throw IllegalStateException("Invalid BROWSERSTACK_DEVICE format: $deviceString (expected 'Device Name-Version')")
+                }
+
                 setPlatformName("Android")
-                setDeviceName("Google Pixel 7")
-                setPlatformVersion("13.0")
+                setDeviceName(deviceName)
+                setPlatformVersion(platformVersion)
                 setCapability("app", System.getenv("BROWSERSTACK_APP_URL"))
-                setCapability("project", "Ditto SDK Android CPP")
-                setCapability("build", "Appium E2E Tests")
+                setCapability("project", System.getenv("BROWSERSTACK_PROJECT") ?: "quickstart - Android C++")
+                setCapability("build", System.getenv("BROWSERSTACK_BUILD") ?: "Local Build")
                 setCapability("name", "Task Sync Verification")
                 setCapability("automationName", "UiAutomator2")
             } else {
@@ -54,8 +63,8 @@ class AppiumE2ETest {
 
     @Test
     fun testTaskFromEnvironmentVariableAppears() {
-        val testTaskName = System.getenv("GITHUB_TEST_DOC_ID")
-            ?: throw IllegalStateException("GITHUB_TEST_DOC_ID environment variable not set")
+        val testTaskName = System.getenv("DITTO_CLOUD_TASK_TITLE")
+            ?: throw IllegalStateException("DITTO_CLOUD_TASK_TITLE environment variable not set")
 
         try {
             Thread.sleep(3000)

@@ -7,9 +7,9 @@ the basic functionality of the Ditto Tasks web application.
 """
 
 import time
-import json
 import sys
 import os
+import yaml
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -59,13 +59,29 @@ def run_test(browser_config):
     )
 
     # Set up BrowserStack options
+    # Use build info from composite action if available, otherwise fallback to legacy logic
+    build_name = os.environ.get('BROWSERSTACK_BUILD_NAME')
+    project_name = os.environ.get('BROWSERSTACK_PROJECT_NAME', 'quickstart - JavaScript Web')
+
+    if not build_name:
+        # Fallback to legacy build name logic for backwards compatibility
+        pr_number = os.environ.get('GITHUB_PR_NUMBER', '')
+        pr_title = os.environ.get('GITHUB_PR_TITLE', '')
+        pr_title_truncated = pr_title[:75] if pr_title else ''
+        commit_msg = os.environ.get('GITHUB_COMMIT_MSG', '')
+
+        if pr_number and pr_title_truncated:
+            build_name = f"PR-{pr_number}: {pr_title_truncated} - {commit_msg}"
+        else:
+            build_name = f"Build-{os.environ.get('GITHUB_RUN_NUMBER', '0')}"
+
     bs_options = {
         "browserVersion": browser_config["browser_version"],
         "os": browser_config["os"],
         "osVersion": browser_config["os_version"],
         "sessionName": f"Ditto Tasks Test - {browser_config['browser']} {browser_config['browser_version']}",
-        "buildName": f"Ditto JavaScript Web Build #{os.environ.get('GITHUB_RUN_NUMBER', '0')}",
-        "projectName": "Ditto JavaScript Web",
+        "buildName": build_name,
+        "projectName": project_name,
         "local": "true",
         "debug": "true",
         "video": "true",
@@ -125,7 +141,7 @@ def run_test(browser_config):
         time.sleep(3)
 
         # Check for GitHub test document
-        github_doc_id = os.environ.get("GITHUB_TEST_DOC_ID")
+        github_doc_id = os.environ.get("DITTO_CLOUD_TASK_TITLE")
         if github_doc_id:
             print(f"Checking for GitHub test document: {github_doc_id}")
             if wait_for_sync_document(driver, github_doc_id):
@@ -226,21 +242,13 @@ def run_test(browser_config):
 
 def main():
     """Main function to run all browser tests."""
-    # Browser configurations to test
-    browsers = [
-        {
-            "browser": "Chrome",
-            "browser_version": "120.0",
-            "os": "Windows",
-            "os_version": "11",
-        },
-        {
-            "browser": "Firefox",
-            "browser_version": "121.0",
-            "os": "Windows",
-            "os_version": "11",
-        },
-    ]
+    # Load browser configurations from centralized config
+    config_path = os.path.join(
+        os.path.dirname(__file__), "..", "browserstack-devices.yml"
+    )
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+    browsers = config["javascript-web"]["browsers"]
 
     # Run tests on all browsers
     results = []

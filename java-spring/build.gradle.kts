@@ -72,4 +72,7 @@ dependencies {
     // Selenium WebDriver for visual browser testing
     testImplementation("org.seleniumhq.selenium:selenium-java:4.11.0")
     testImplementation("io.github.bonigarcia:webdrivermanager:5.9.2")
+
+    // Jackson YAML for reading browserstack-devices.yml
+    testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.2")
 }

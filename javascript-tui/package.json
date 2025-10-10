@@ -13,14 +13,14 @@
 		"dev": "babel --out-dir=dist --watch source",
 		"test": "npm run test:format && npm run test:integration",
 		"test:format": "prettier --check .",
-		"test:integration": "npm run build && GITHUB_TEST_DOC_TITLE=\"<insert-my-task-name-here>\" node tests/integration_test.js",
+		"test:integration": "npm run build && DITTO_CLOUD_TASK_TITLE=\"<insert-my-task-name-here>\" node tests/integration_test.js",
 		"format": "prettier --write ."
 	},
 	"files": [
 		"dist"
 	],
 	"dependencies": {
-		"@dittolive/ditto": "^4.11.1",
+		"@dittolive/ditto": "^4.12.3",
 		"dotenv": "^16.4.5",
 		"ink": "^4.1.0",
 		"meow": "^11.0.0",
