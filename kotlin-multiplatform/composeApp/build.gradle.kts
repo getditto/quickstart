@@ -45,7 +45,7 @@ kotlin {
             implementation(libs.koin.android)
         }
         commonMain.dependencies {
-            implementation("com.ditto:ditto-kotlin:5.0.0-preview.1")
+            implementation("com.ditto:ditto-kotlin:5.0.0-preview.3")
 
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -67,7 +67,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-        
+
         val androidInstrumentedTest by getting {
             dependencies {
                 implementation(libs.androidx.test.junit)
@@ -83,26 +83,26 @@ kotlin {
             implementation(libs.kotlinx.coroutines.swing)
 
             // This will include binaries for all the supported platforms and architectures
-            implementation("com.ditto:ditto-binaries:5.0.0-preview.1")
+            implementation("com.ditto:ditto-binaries:5.0.0-preview.3")
 
             // To reduce your module artifact's size, consider including just the necessary platforms and architectures
             /*
             // macOS Apple Silicon
-            implementation("com.ditto:ditto-binaries:5.0.0-preview.1") {
+            implementation("com.ditto:ditto-binaries:5.0.0-preview.3") {
                 capabilities {
                     requireCapability("com.ditto:ditto-binaries-macos-arm64")
                 }
             }
 
             // Windows x86_64
-            implementation("com.ditto:ditto-binaries:5.0.0-preview.1") {
+            implementation("com.ditto:ditto-binaries:5.0.0-preview.3") {
                 capabilities {
                     requireCapability("com.ditto:ditto-binaries-windows-x64")
                 }
             }
 
             // Linux x86_64
-            implementation("com.ditto:ditto-binaries:5.0.0-preview.1") {
+            implementation("com.ditto:ditto-binaries:5.0.0-preview.3") {
                 capabilities {
                     requireCapability("com.ditto:ditto-binaries-linux-x64")
                 }
@@ -115,7 +115,7 @@ kotlin {
 android {
     namespace = "com.ditto.quickstart"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    
+
     // Force consistent androidx.tracing version to resolve test dependency conflicts
     configurations.all {
         resolutionStrategy {
@@ -129,9 +129,9 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
-        
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
+
         // Pass environment variables to instrumented tests
         testInstrumentationRunnerArguments["github_test_doc_title"] = System.getenv("GITHUB_TEST_DOC_TITLE") ?: ""
     }
@@ -167,7 +167,7 @@ detekt {
 dependencies {
     implementation(libs.androidx.material3.android)
     debugImplementation(compose.uiTooling)
-    
+
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)

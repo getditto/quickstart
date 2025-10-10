@@ -1,11 +1,12 @@
 package com.ditto.quickstart.ditto
 
+import com.ditto.kotlin.Ditto
 import com.ditto.kotlin.DittoConfig
-import com.ditto.kotlin.DittoIdentity
+import com.ditto.kotlin.DittoFactory
 import com.ditto.quickstart.App
 
-actual fun createDittoConfig(identity: DittoIdentity): DittoConfig =
-    DittoConfig(
-        identity = identity,
-        context = App.instance
+actual fun createDitto(config: DittoConfig): Ditto =
+    DittoFactory.create(
+        context = App.instance,
+        config = config,
     )
