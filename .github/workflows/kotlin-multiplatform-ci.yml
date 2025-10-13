@@ -352,6 +352,7 @@ jobs:
       id: build-info
       uses: ./.github/actions/generate-browserstack-names
       with:
+        platform-suffix: ' (Android)'
 
     - name: Seed and execute tests on BrowserStack
       id: test
