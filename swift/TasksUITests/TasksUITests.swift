@@ -4,21 +4,7 @@ final class TasksUITests: XCTestCase {
 
     func testDidFindOnlyGitHubSeededDocument() throws {
         let app = XCUIApplication()
-
-        // Handle permission dialogs that may appear
-        addUIInterruptionMonitor(withDescription: "Local Network Permission") { alert in
-            let allowButton = alert.buttons["Allow"]
-            if allowButton.exists {
-                allowButton.tap()
-                return true
-            }
-            return false
-        }
-
         app.launch()
-
-        // Wait a moment for permission dialog to appear and be handled
-        sleep(2)
 
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30),
                       "App should launch successfully")
@@ -28,7 +14,7 @@ final class TasksUITests: XCTestCase {
         let githubRunNumber = ProcessInfo.processInfo.environment["GITHUB_RUN_NUMBER"] ?? ""
 
         print("🔍 GitHub Run Info:")
-        print("  GITHUB_RUN_ID: '\(githubRunID)'")
+        print("  GITHUB_RUN_ID: '\(githubRunID)'")  
         print("  GITHUB_RUN_NUMBER: '\(githubRunNumber)'")
 
         guard !githubRunID.isEmpty, !githubRunNumber.isEmpty else {
@@ -37,13 +23,13 @@ final class TasksUITests: XCTestCase {
         }
 
         // Get the exact document title that GitHub Actions seeded
-        let expectedTitle = ProcessInfo.processInfo.environment["DITTO_CLOUD_TASK_TITLE"] ?? ""
-
+        let expectedTitle = ProcessInfo.processInfo.environment["GITHUB_TEST_DOC_TITLE"] ?? ""
+        
         guard !expectedTitle.isEmpty else {
-            XCTFail("Missing DITTO_CLOUD_TASK_TITLE - expected exact document title from GitHub Actions")
+            XCTFail("Missing GITHUB_TEST_DOC_TITLE - expected exact document title from GitHub Actions")
             return
         }
-
+        
         print("🔍 Looking for exact document with title: '\(expectedTitle)'")
 
         // Make maxWaitTime configurable via environment variable for BrowserStack environments
@@ -60,7 +46,7 @@ final class TasksUITests: XCTestCase {
         while Date().timeIntervalSince(start) < maxWaitTime, !found {
             let elapsed = Date().timeIntervalSince(start)
             print("📱 Search attempt at \(String(format: "%.1f", elapsed))s elapsed...")
-
+            
             let cells = app.collectionViews.firstMatch.cells
             print("📋 Found \(cells.count) cells in collection view")
 
@@ -70,14 +56,14 @@ final class TasksUITests: XCTestCase {
                 print("📄 Examining all documents:")
                 for i in 0..<cells.count {
                     let cell = cells.element(boundBy: i)
-                    guard cell.exists else {
+                    guard cell.exists else { 
                         print("   Cell[\(i)]: NOT EXISTS")
-                        continue
+                        continue 
                     }
 
                     let label = cell.staticTexts.firstMatch.label
                     print("   Cell[\(i)]: '\(label)'")
-
+                    
                     if label == expectedTitle {
                         print("✅ FOUND EXACT MATCH! Document '\(label)' found at cell[\(i)]")
                         print("🎉 Test should PASS - document sync working!")
@@ -105,10 +91,10 @@ final class TasksUITests: XCTestCase {
             print("❌ FAILURE: Exact document '\(expectedTitle)' not found after \(String(format: "%.1f", finalElapsed))s")
             print("💡 This means either:")
             print("   1. GitHub Actions didn't seed the document")
-            print("   2. Ditto Cloud sync is not working")
-            print("   3. Environment variable DITTO_CLOUD_TASK_TITLE is incorrect")
+            print("   2. Ditto Cloud sync is not working") 
+            print("   3. Environment variable GITHUB_TEST_DOC_TITLE is incorrect")
         }
-
+        
         XCTAssertTrue(found, "GitHub-seeded document '\(expectedTitle)' not found")
     }
 }

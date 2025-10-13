@@ -31,8 +31,8 @@
       shouldAutocreateTestPlan = "YES">
       <EnvironmentVariables>
          <EnvironmentVariable
-            key = "DITTO_CLOUD_TASK_TITLE"
-            value = "$(DITTO_CLOUD_TASK_TITLE)"
+            key = "GITHUB_TEST_DOC_TITLE"
+            value = "$(GITHUB_TEST_DOC_TITLE)"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>

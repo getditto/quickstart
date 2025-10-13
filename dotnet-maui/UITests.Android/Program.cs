@@ -1,7 +1,7 @@
 using UITests.Android;
 
 // Log environment variables for debugging
-var expectedTitle = Environment.GetEnvironmentVariable("DITTO_CLOUD_TASK_TITLE");
+var expectedTitle = Environment.GetEnvironmentVariable("EXPECTED_TASK_TITLE");
 var buildName = Environment.GetEnvironmentVariable("BUILD_NAME");
 if (!string.IsNullOrEmpty(expectedTitle))
     Console.WriteLine($"Expected task: {expectedTitle}");

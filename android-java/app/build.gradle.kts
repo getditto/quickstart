@@ -79,9 +79,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
+        
         // Pass environment variables to instrumentation tests
-        testInstrumentationRunnerArguments["DITTO_CLOUD_TASK_TITLE"] = System.getenv("DITTO_CLOUD_TASK_TITLE") ?: ""
+        testInstrumentationRunnerArguments["github_test_doc_id"] = System.getenv("GITHUB_TEST_DOC_ID") ?: ""
     }
 
     buildTypes {

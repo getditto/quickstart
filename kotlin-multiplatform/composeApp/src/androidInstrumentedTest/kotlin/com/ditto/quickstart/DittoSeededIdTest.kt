@@ -18,23 +18,23 @@ class DittoSeededIdTest {
     @Test
     fun testGitHubSeededDocumentSync() {
         val args = InstrumentationRegistry.getArguments()
-        val testDocumentTitle = args?.getString("DITTO_CLOUD_TASK_TITLE")
-            ?: throw IllegalStateException("No test document title provided. Please provide it via the instrumentation argument 'DITTO_CLOUD_TASK_TITLE'.")
-
+        val testDocumentTitle = args?.getString("github_test_doc_title")
+            ?: throw IllegalStateException("No test document title provided. Please provide it via the instrumentation argument 'github_test_doc_title'.")
+        
         Thread.sleep(3000)
-
+        
         // Handle system permission dialogs
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         for (i in 1..3) {
             try {
                 val allowSelectors = listOf(
                     UiSelector().text("Allow"),
-                    UiSelector().text("ALLOW"),
+                    UiSelector().text("ALLOW"), 
                     UiSelector().text("Allow only while using the app"),
                     UiSelector().text("While using the app"),
                     UiSelector().text("OK")
                 )
-
+                
                 var found = false
                 for (selector in allowSelectors) {
                     val allowButton = device.findObject(selector)
@@ -45,13 +45,13 @@ class DittoSeededIdTest {
                         break
                     }
                 }
-
+                
                 if (!found) break
             } catch (e: Exception) {
                 break
             }
         }
-
+        
         // Wait for document to appear
         composeTestRule.waitUntil(
             condition = {
@@ -59,12 +59,12 @@ class DittoSeededIdTest {
             },
             timeoutMillis = 15000
         )
-
+        
         // Verify document exists
         composeTestRule
             .onNode(hasText(testDocumentTitle))
             .assertExists("Document with title '$testDocumentTitle' should exist in the task list")
-
+        
         // Allow time for video capture
         Thread.sleep(3000)
     }

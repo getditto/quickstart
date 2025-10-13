@@ -8,7 +8,7 @@ End-to-end Appium tests that verify dynamically seeded tasks appear in the Andro
 ```bash
 npm install -g appium
 appium --port 4723
-export DITTO_CLOUD_TASK_TITLE="Your Task Name"
+export GITHUB_TEST_DOC_ID="Your Task Name"
 ```
 
 ### Run Test
@@ -23,7 +23,7 @@ export DITTO_CLOUD_TASK_TITLE="Your Task Name"
 export BROWSERSTACK_USERNAME="your-username"
 export BROWSERSTACK_ACCESS_KEY="your-access-key"
 export BROWSERSTACK_APP_URL="bs://your-app-id"
-export DITTO_CLOUD_TASK_TITLE="Task Name to Find"
+export GITHUB_TEST_DOC_ID="Task Name to Find"
 ```
 
 ### Run Test

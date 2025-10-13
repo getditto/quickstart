@@ -67,7 +67,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-
+        
         val androidInstrumentedTest by getting {
             dependencies {
                 implementation(libs.androidx.test.junit)
@@ -115,7 +115,7 @@ kotlin {
 android {
     namespace = "com.ditto.quickstart"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-
+    
     // Force consistent androidx.tracing version to resolve test dependency conflicts
     configurations.all {
         resolutionStrategy {
@@ -129,11 +129,11 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
-
+        
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
+        
         // Pass environment variables to instrumented tests
-        testInstrumentationRunnerArguments["DITTO_CLOUD_TASK_TITLE"] = System.getenv("DITTO_CLOUD_TASK_TITLE") ?: ""
+        testInstrumentationRunnerArguments["github_test_doc_title"] = System.getenv("GITHUB_TEST_DOC_TITLE") ?: ""
     }
     packaging {
         resources {
@@ -167,7 +167,7 @@ detekt {
 dependencies {
     implementation(libs.androidx.material3.android)
     debugImplementation(compose.uiTooling)
-
+    
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)

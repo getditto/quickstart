@@ -15,10 +15,10 @@ class Program
         try
         {
             // Get the test document title from environment variable (set by CI)
-            var expectedTitle = Environment.GetEnvironmentVariable("DITTO_CLOUD_TASK_TITLE");
+            var expectedTitle = Environment.GetEnvironmentVariable("GITHUB_TEST_DOC_TITLE");
             if (string.IsNullOrEmpty(expectedTitle))
             {
-                Console.WriteLine("❌ FAIL: Missing DITTO_CLOUD_TASK_TITLE environment variable");
+                Console.WriteLine("❌ FAIL: Missing GITHUB_TEST_DOC_TITLE environment variable");
                 Console.WriteLine("   This test requires a document to be seeded by CI");
                 return 1;
             }

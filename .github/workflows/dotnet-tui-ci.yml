@@ -1,6 +1,11 @@
 name: .NET TUI CI
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'dotnet-tui/**'
   pull_request:
+    branches: [main]
     paths:
       - 'dotnet-tui/**'
   workflow_dispatch:
@@ -107,7 +112,7 @@ jobs:
       - name: Run .NET integration tests
         working-directory: dotnet-tui
         env:
-          DITTO_CLOUD_TASK_TITLE: ${{ steps.seed.outputs.document-title }}
+          TASK_TO_FIND: ${{ steps.seed.outputs.document-title }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: dotnet test DittoDotNetTasksConsole.Tests --configuration Release --logger "console;verbosity=detailed"
