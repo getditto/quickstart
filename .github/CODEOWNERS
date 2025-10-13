@@ -14,14 +14,14 @@
 /dotnet-maui/            @busec0 @kristopherjohnson
 /dotnet-tui/             @busec0 @kristopherjohnson
 /dotnet-winforms/        @busec0 @kristopherjohnson
-/flutter_app/            @cameron1024 @teodorciuraru
+/flutter_app/            @pvditto @teodorciuraru
 /java-spring/            @phatblat @busec0
 /javascript-tui/         @konstantinbe @pvditto @teodorciuraru
 /javascript-web/         @konstantinbe @pvditto @teodorciuraru
 /kotlin-multiplatform/   @busec0 @phatblat
 /react-native/           @teodorciuraru @kristopherjohnson
 /react-native-expo/      @teodorciuraru @kristopherjohnson
-/rust-tui/               @kristopherjohnson @cameron1024
+/rust-tui/               @kristopherjohnson
 /swift/                  @phatblat @konstantinbe @busec0
 
 # TODO: Enable once we have 2 reviewers for Edge Server
