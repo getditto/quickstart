@@ -171,9 +171,8 @@ jobs:
 
       - name: Get BrowserStack build info
         id: build-info
-        uses: ./.github/actions/get-browserstack-build-info
+        uses: ./.github/actions/generate-browserstack-names
         with:
-          project-name: 'quickstart - Android Kotlin'
 
       - name: Seed and execute tests on BrowserStack
         id: test

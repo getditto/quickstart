@@ -12,11 +12,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Test build info action
+      - name: Test generate names action
         id: build-info
-        uses: ./.github/actions/get-browserstack-build-info
+        uses: ./.github/actions/generate-browserstack-names
         with:
-          project-name: 'quickstart - Test Project'
           platform-suffix: ' (Test Platform)'
 
       - name: Display outputs

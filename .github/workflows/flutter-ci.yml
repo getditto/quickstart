@@ -416,9 +416,8 @@ jobs:
 
       - name: Get BrowserStack build info (Android)
         id: build-info-android
-        uses: ./.github/actions/get-browserstack-build-info
+        uses: ./.github/actions/generate-browserstack-names
         with:
-          project-name: 'quickstart - Flutter'
           platform-suffix: ' (Android)'
           title-max-length: '90'
           commit-max-length: '130'
@@ -683,9 +682,8 @@ jobs:
 
       - name: Get BrowserStack build info (iOS)
         id: build-info-ios
-        uses: ./.github/actions/get-browserstack-build-info
+        uses: ./.github/actions/generate-browserstack-names
         with:
-          project-name: 'quickstart - Flutter'
           platform-suffix: ' (iOS)'
           title-max-length: '90'
           commit-max-length: '130'

@@ -350,9 +350,8 @@ jobs:
 
     - name: Get BrowserStack build info
       id: build-info
-      uses: ./.github/actions/get-browserstack-build-info
+      uses: ./.github/actions/generate-browserstack-names
       with:
-        project-name: 'quickstart - Kotlin Multiplatform'
 
     - name: Seed and execute tests on BrowserStack
       id: test

@@ -123,11 +123,9 @@ jobs:
           sleep 20
           echo "BrowserStack Local tunnel established"
 
-      - name: Get BrowserStack build info
+      - name: Generate BrowserStack names
         id: build-info
-        uses: ./.github/actions/get-browserstack-build-info
-        with:
-          project-name: 'quickstart - JavaScript Web'
+        uses: ./.github/actions/generate-browserstack-names
 
       - name: Make test script executable
         run: chmod +x .github/scripts/browserstack-test.py
