@@ -17,7 +17,7 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
 }
 
-rootProject.name = "spring-quickstart-java"
+rootProject.name = "quickstart-java"
 
 dependencyResolutionManagement {
     @Suppress("UnstableApiUsage")
