@@ -19,4 +19,14 @@ class Task {
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
   Map<String, dynamic> toJson() => _$TaskToJson(this);
+
+  /// Creates a random task for testing (used in crash scenario simulations)
+  factory Task.random() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    return Task(
+      title: 'Task ${timestamp % 10000}',
+      done: false,
+      deleted: false,
+    );
+  }
 }
