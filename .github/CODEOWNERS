@@ -15,7 +15,7 @@
 /dotnet-tui/             @busec0 @kristopherjohnson
 /dotnet-winforms/        @busec0 @kristopherjohnson
 /flutter_app/            @pvditto @teodorciuraru
-/java-spring/            @phatblat @busec0
+/java-server/            @phatblat @busec0
 /javascript-tui/         @konstantinbe @pvditto @teodorciuraru
 /javascript-web/         @konstantinbe @pvditto @teodorciuraru
 /kotlin-multiplatform/   @busec0 @phatblat

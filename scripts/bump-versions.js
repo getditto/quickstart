@@ -245,7 +245,7 @@ const APP_CONFIGS = {
     reason: "Requires Ditto v5+, not on synchronized releases",
   },
 
-  "java-spring": {
+  "java-server": {
     skip: true,
     reason: "Requires Ditto v5+, not on synchronized releases",
   },
@@ -263,7 +263,7 @@ ${colors.bright}Options:${colors.reset}
   -h, --help           Show help
 
 ${colors.bright}Notes:${colors.reset}
-- Excludes: kotlin-multiplatform, java-spring (not on synchronized releases)
+- Excludes: kotlin-multiplatform, java-server (not on synchronized releases)
 - Updates lockfiles automatically for each app
 - Stops on first error
 `);
