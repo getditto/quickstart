@@ -1,0 +1,63 @@
+name: 'Generate BrowserStack Names'
+description: 'Auto-generates BrowserStack project name from workflow context'
+inputs:
+  platform-suffix:
+    description: 'Optional platform suffix to append to build name (e.g., " (Android)", " (iOS)")'
+    required: false
+    default: ''
+outputs:
+  project-name:
+    description: 'BrowserStack project name (auto-derived from workflow)'
+    value: ${{ steps.generate.outputs.project-name }}
+  build-name:
+    description: 'BrowserStack build name (currently returns empty - FIXME)'
+    value: ${{ steps.generate.outputs.build-name }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate BrowserStack names
+      id: generate
+      shell: bash
+      run: |
+        # Auto-derive project name from workflow file name
+        # Pattern: <workflow-name>-ci.yml -> quickstart - <Workflow Name>
+        WORKFLOW_FILE="${{ github.workflow }}"
+
+        echo "🔍 Workflow: $WORKFLOW_FILE"
+
+        # Extract platform name from workflow name and convert to title case
+        # Examples:
+        #   "JavaScript Web CI" -> "JavaScript Web"
+        #   "Android Kotlin CI" -> "Android Kotlin"
+        #   "React Native Expo CI" -> "React Native Expo"
+        PLATFORM_NAME=$(echo "$WORKFLOW_FILE" | sed 's/ CI$//')
+
+        # Special case mappings for non-standard names
+        case "$PLATFORM_NAME" in
+          "Android C++")
+            PLATFORM_NAME="Android CPP"
+            ;;
+        esac
+
+        PROJECT_NAME="quickstart - $PLATFORM_NAME"
+
+        # FIXME: Build name generation is currently broken and doesn't work properly
+        # For now, we return an empty string. This needs to be fixed in a future PR.
+        # The build name should ideally include PR context and commit info, but the
+        # current implementation using GitHub CLI and event context is unreliable.
+        #
+        # TODO: Implement proper build name generation that:
+        #   1. Reliably fetches PR information
+        #   2. Sanitizes strings for BrowserStack requirements
+        #   3. Handles both PR and non-PR contexts
+        #   4. Includes platform suffix when provided
+        BUILD_NAME=""
+
+        # Output values
+        echo "project-name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+        echo "build-name=$BUILD_NAME" >> $GITHUB_OUTPUT
+
+        # Debug output
+        echo "📦 Project: $PROJECT_NAME"
+        echo "🏗️  Build: $BUILD_NAME (empty - FIXME)"

@@ -26,6 +26,13 @@ void main() {
         await tester.pumpAndSettle(const Duration(seconds: 2));
       }
 
+      // Tap "Allow" button if local network permission dialog appears (iOS)
+      final allowButton = find.text('Allow');
+      if (allowButton.evaluate().isNotEmpty) {
+        await tester.tap(allowButton);
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+      }
+
       // Verify app title is present
       expect(find.text('Ditto Tasks'), findsOneWidget);
 
