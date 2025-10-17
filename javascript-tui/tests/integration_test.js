@@ -85,10 +85,10 @@ async function createDittoInstance() {
 
 async function runIntegrationTest() {
 	try {
-		const expectedTitle = process.env.GITHUB_TEST_DOC_TITLE;
+		const expectedTitle = process.env.DITTO_CLOUD_TASK_TITLE;
 
 		if (!expectedTitle || expectedTitle.trim() === '') {
-			throw new Error('Missing GITHUB_TEST_DOC_TITLE environment variable');
+			throw new Error('Missing DITTO_CLOUD_TASK_TITLE environment variable');
 		}
 
 		const ditto = await createDittoInstance();

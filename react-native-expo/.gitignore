@@ -9,8 +9,10 @@ dist/
 web-build/
 expo-env.d.ts
 android
-ios
-!ios/Podfile.lock
+ios/Pods/
+ios/build/
+ios/.xcode.env.local
+ios/DerivedData/
 
 # Native
 *.orig.*

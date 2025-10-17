@@ -14,27 +14,27 @@ import org.junit.Assert.assertTrue
  */
 @RunWith(AndroidJUnit4::class)
 class TasksUITest {
-    
+
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
-    
+
     @Test
     fun testDocumentSyncAndVerification() {
         // Get test document title from BrowserStack instrumentationOptions, BuildConfig, or fallback
         val args = InstrumentationRegistry.getArguments()
-        val fromInstrumentation = args?.getString("github_test_doc_id")
-        val fromBuildConfig = try { 
-            BuildConfig.TEST_DOCUMENT_TITLE 
-        } catch (e: NoSuchFieldError) { 
-            null 
-        } catch (e: ExceptionInInitializerError) { 
-            null 
+        val fromInstrumentation = args?.getString("DITTO_CLOUD_TASK_TITLE")
+        val fromBuildConfig = try {
+            BuildConfig.TEST_DOCUMENT_TITLE
+        } catch (e: NoSuchFieldError) {
+            null
+        } catch (e: ExceptionInInitializerError) {
+            null
         }
-        
+
         val testDocumentTitle = fromInstrumentation?.takeIf { it.isNotEmpty() }
             ?: fromBuildConfig?.takeIf { it.isNotEmpty() }
-            ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'github_test_doc_id' or BuildConfig.TEST_DOCUMENT_TITLE")
-        
+            ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'DITTO_CLOUD_TASK_TITLE' or BuildConfig.TEST_DOCUMENT_TITLE")
+
         try {
             // Wait for app initialization and Ditto sync with intelligent polling
             composeTestRule.waitForIdle()
@@ -44,14 +44,14 @@ class TasksUITest {
                 },
                 timeoutMillis = 18000 // Wait up to 18 seconds for app init and Ditto sync
             )
-            
+
             // Final verification that document exists
             composeTestRule
                 .onNode(hasText(testDocumentTitle))
                 .assertExists("Document with title '$testDocumentTitle' should exist in the task list")
-            
+
             println("✅ DOCUMENT FOUND: '$testDocumentTitle'")
-            
+
         } catch (e: IllegalStateException) {
             if (e.message?.contains("No compose hierarchies found") == true) {
                 // Local environment fallback - validate parameter passing works
