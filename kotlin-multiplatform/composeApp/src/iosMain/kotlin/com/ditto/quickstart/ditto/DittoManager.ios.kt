@@ -1,9 +1,10 @@
 package com.ditto.quickstart.ditto
 
+import com.ditto.kotlin.Ditto
 import com.ditto.kotlin.DittoConfig
-import com.ditto.kotlin.DittoIdentity
+import com.ditto.kotlin.DittoFactory
 
-actual fun createDittoConfig(identity: DittoIdentity): DittoConfig {
-    return DittoConfig(identity = identity)
-}
-
+actual fun createDitto(config: DittoConfig): Ditto =
+    DittoFactory.create(
+        config = config
+    )
