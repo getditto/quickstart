@@ -9,6 +9,10 @@ struct TaskModel {
     var deleted: Bool = false
 }
 
+enum TaskModelSearchScope: String, CaseIterable {
+    case title = "By Title", id = "By ID"
+}
+
 extension TaskModel {
 
     /// Convenience initializer returns instance from `QueryResultItem.value`

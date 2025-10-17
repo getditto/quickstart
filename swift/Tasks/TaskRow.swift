@@ -5,6 +5,7 @@ struct TaskRow: View {
 
     var onToggle: ((_ task: TaskModel) -> Void)?
     var onClickEdit: ((_ task: TaskModel) -> Void)?
+    let searchScope: TaskModelSearchScope
 
     var body: some View {
         HStack {
@@ -21,10 +22,18 @@ struct TaskRow: View {
             } else {
                 Text(task.title)
             }
+            searchIdText
         }
         .contentShape(Rectangle())
         .onTapGesture {
             onClickEdit?(task)
+        }
+    }
+
+    @ViewBuilder
+    private var searchIdText: some View {
+        if searchScope == .id {
+            Text(task.id).font(.caption)
         }
     }
 }
@@ -32,9 +41,9 @@ struct TaskRow: View {
 struct TaskRow_Previews: PreviewProvider {
     static var previews: some View {
         List {
-            TaskRow(task: TaskModel(title: "Get Milk", done: true))
-            TaskRow(task: TaskModel(title: "Do Homework"))
-            TaskRow(task: TaskModel(title: "Take out trash", done: true))
+            TaskRow(task: TaskModel(title: "Get Milk", done: true), searchScope: .title)
+            TaskRow(task: TaskModel(title: "Do Homework"), searchScope: .title)
+            TaskRow(task: TaskModel(title: "Take out trash", done: true), searchScope: .title)
         }
     }
 }
