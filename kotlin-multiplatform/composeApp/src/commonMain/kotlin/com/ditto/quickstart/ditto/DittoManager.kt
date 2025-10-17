@@ -11,7 +11,6 @@ import com.ditto.kotlin.DittoQueryResult
 import com.ditto.kotlin.DittoSyncSubscription
 import com.ditto.kotlin.error.DittoError
 import com.ditto.kotlin.serialization.DittoCborSerializable
-import com.ditto.quickstart.data.DittoCredentials
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -31,10 +30,15 @@ private const val TAG = "DittoManager"
  *
  * Because ditto also has a "database" component, it is fine to expose this class to a Repository.
  */
-class DittoManager(
-    val credentials: DittoCredentials
-)  {
-    private val scope = CoroutineScope(SupervisorJob())
+class DittoManager {
+    val secrets: DittoSecretsConfiguration
+
+    constructor(secrets: DittoSecretsConfiguration) {
+        this.secrets = secrets
+        this.scope = CoroutineScope(SupervisorJob())
+    }
+
+    private val scope: CoroutineScope
     private var createJob: Job? = null
     private var closeJob: Job? = null
     private var ditto: Ditto? = null
@@ -48,9 +52,9 @@ class DittoManager(
                 DittoLogger.minimumLogLevel = DittoLogLevel.Info
 
                 val config = DittoConfig(
-                    databaseId = credentials.appId,
+                    databaseId = secrets.DITTO_APP_ID,
                     connect = DittoConfig.Connect.Server(
-                        url = "https://${credentials.appId}.cloud.ditto.live",
+                        url = secrets.DITTO_AUTH_URL,
                     ),
                 )
 
@@ -60,7 +64,7 @@ class DittoManager(
                     auth?.setExpirationHandler { ditto, secondsRemaining ->
                         // Authenticate when a token is expiring
                         val clientInfo = ditto.auth?.login(
-                            token = credentials.appToken,
+                            token = secrets.DITTO_PLAYGROUND_TOKEN,
                             provider = DittoAuthenticationProvider.development(),
                         )
                     }
