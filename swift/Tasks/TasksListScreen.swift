@@ -64,9 +64,9 @@ class TasksListScreenViewModel: ObservableObject {
         subscription?.cancel()
         subscription = nil
 
-        storeObserver?.cancel()
-        storeObserver = nil
-
+        Task { @MainActor in
+            resetDittoStoreObserver()
+        }
         if ditto.isSyncActive {
             DittoManager.shared.ditto.stopSync()
         }
@@ -235,6 +235,11 @@ class TasksListScreenViewModel: ObservableObject {
 
 private extension TasksListScreenViewModel {
 
+    private func resetDittoStoreObserver() {
+        storeObserver?.cancel()
+        storeObserver = nil
+    }
+
     private func updateDittoObserver() {
         var whereStatement = "WHERE NOT deleted"
         if !searchText.isEmpty && useDQLForSearch {
@@ -243,6 +248,7 @@ private extension TasksListScreenViewModel {
         observerQuery = "\(syncSubscriptionQuery) \(whereStatement) ORDER BY title ASC"
         debugPrint("TaskListScreenVM.\(#function) - Querying for tasks with DQL: [\(observerQuery)]")
 
+        resetDittoStoreObserver()
         storeObserver = try? ditto.store.registerObserver(query: observerQuery) { [weak self] result in
             guard let self = self else { return }
             self.dittoObserverTasks = result.items.compactMap {
@@ -401,19 +407,24 @@ struct TasksListScreen: View {
 
     private var searchResultEmptyText: some View {
         VStack {
-            Text("🎉 No tasks - take the day off 🎉\n\nAdd a new task by tapping the '+' button\(viewModel.searchText.isEmpty ? "" : " or change your current search").")
+            let searchSuffix = viewModel.searchText.isEmpty ? "" : " or change your current search"
+            Text("🎉 No tasks - take the day off 🎉\n\nAdd a new task by tapping the '+' button\(searchSuffix).")
                 .multilineTextAlignment(.center)
                 .italic()
         }.frame(maxWidth: .infinity)
     }
 
     private var searchInfoText: some View {
-        VStack(alignment: .leading) {
+        let searchMethod = viewModel.useDQLForSearch ? "Swift DQL Observer" : "In-memory data from view model"
+        return VStack(alignment: .leading) {
             Text("Sync Subscription Query [DQL]: \(viewModel.syncSubscriptionQuery)")
             Text("Observer Query [DQL]: \(viewModel.observerQuery)")
             if !viewModel.searchText.isEmpty {
-                Text("Search Method: \(viewModel.useDQLForSearch ? "Swift DQL Observer" : "In-memory data from view model")").italic().padding(.top)
-                Text("Total Search Results: \(viewModel.displayedTasks.count)").italic()
+                Text("Search Method: \(searchMethod)")
+                    .italic()
+                    .padding(.top)
+                Text("Total Search Results: \(viewModel.displayedTasks.count)")
+                    .italic()
             }
         }
     }
@@ -422,7 +433,7 @@ struct TasksListScreen: View {
     private var searchToggles: some View {
         if !viewModel.searchText.isEmpty {
             Toggle(isOn: $viewModel.useDQLForSearch) {
-                Text("Search - Use DQL")
+                Text("Search - Use DQL Observer")
             }
             Toggle(isOn: $viewModel.isCaseSensitive) {
                 Text("Search - Case Sensitive")
