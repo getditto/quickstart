@@ -3,7 +3,7 @@ date := `date +%Y-%m-%d`
 # Download the latest nightly edge server image
 download target:
     # Download the appropriate container
-    URL="https://edge-server-nightlies.s3.us-east-1.amazonaws.com/{{ date }}/ditto-edge-server-container_{{ target }}.tar" && \
+    URL="https://edge-server-nightlies.s3.us-east-1.amazonaws.com/{{ date }}/ditto-edge-server-image_{{ target }}.tar" && \
     echo "Downloading edge server image for {{ target }}..." && \
     curl --fail -L "$URL" -o edge-server-image.tar && \
     echo "Successfully downloaded edge server image for {{ target }}"
