@@ -1,0 +1,194 @@
+name: Ditto Edge Server Quickstart CI
+
+on:
+  pull_request:
+    types:
+      # These first three events are the default ones.
+      - opened
+      - reopened
+      - synchronize
+    paths:
+      - "edge-server/**"
+      - ".github/workflows/edge-server-ci.yml"
+  push:
+    tags:
+      - ditto-edge-server-release-*
+  schedule:
+    # Every day at 00:00 UTC.
+    # If this changes, the upload-nightly if statement must change as well.
+    - cron: '0 1 * * *'
+
+
+# Limits the concurrency of this workflow to prevent wasted runner time
+# Only one instance of this workflow can run per actor-branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.triggering_actor }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+env:
+  DIST_BUCKET_NAME: edge-server-nightlies
+  PUBLISH_ACCOUNT: "102052685887"
+  PUBLISH_ROLE: "GitHubAction-EdgeServerNightlies"
+  AWS_REGION: "us-east-1"
+  REGISTRY_NAME: 102052685887.dkr.ecr.us-east-1.amazonaws.com
+  IMG_REPOSITORY: ditto-preview/ditto-edge-server
+
+jobs:
+  # Sets global config variables for this workflow run.
+  # This consolidates conditional logic an keeps things DRY.
+  set-workfow-vars:
+    name: Set Workflow Variables
+    runs-on: [self-hosted, ditto-ci-runner-small]
+    permissions: {}
+    outputs:
+      is-nightly: ${{ github.event.schedule == '0 1 * * *' }}
+    steps:
+      # Keep one no-op job to satisfy GHA parser.
+    - name: Set Variables
+      if: false
+      run: |
+        echo "Done"
+
+  test:
+    name: Test on ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    needs:
+      - set-workfow-vars
+    permissions:
+      id-token: write   # This is required for requesting the JWT
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - platform: linux-x86
+            runner: [ubuntu-latest-16-cores]
+            target: x86_64-unknown-linux-gnu
+            docker-platform: linux/amd64
+          - platform: linux-aarch64
+            runner: [linux-aarch64]
+            target: aarch64-unknown-linux-gnu
+            docker-platform: linux/arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install just command runner
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      # Install jq for JSON processing (used by justfile commands)
+      - name: Install jq
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+
+      # Configure quickstart config with credentials
+      - name: Configure quickstart config
+        uses: mikefarah/yq@master
+        with:
+          cmd: |
+            yq eval \
+              '.resources.my_ditto_db.db_id = "${{ secrets.DITTO_APP_ID }}" |
+               .resources.my_ditto_db.auth.server.access_token = "${{ secrets.DITTO_PLAYGROUND_TOKEN }}" |
+               .resources.my_ditto_db.auth.server.auth_url = "${{ secrets.DITTO_AUTH_URL }}" |
+               .resources.my_http_server.databases.my_db.db_id = "${{ secrets.DITTO_APP_ID }}"' \
+              edge-server/quickstart_config_sample.yaml > ${{runner.temp}}/quickstart_config.yaml
+
+      # Download the nightly edge server image for the target platform
+      - name: Download edge server nightly for ${{ matrix.target }}
+        working-directory: ./edge-server
+        run: |
+          just download ${{ matrix.target }}
+
+      # Load the downloaded image into Docker
+      - name: Load edge server image
+        working-directory: ./edge-server
+        run: |
+          just load
+
+      # Fail fast with a known reason if the sample config is no longer valid.
+      - name: Validate Input Config
+        working-directory: ./edge-server
+        # Runs the edge server with the freshlyy made config mounted to /config.yaml and validates it.
+        run: |
+          just run ${{ runner.temp }}/quickstart_config.yaml config validate -c /config.yaml
+
+      # Start edge server in background
+      - name: Start edge server
+        working-directory: ./edge-server
+        run: |
+          docker run --rm -d \
+            --name edge-server-test \
+            -p 127.0.0.1:8080:8080 \
+            -v ${{runner.temp}}/quickstart_config.yaml:/config.yaml \
+            edge-server-quickstart:latest run -c /config.yaml
+
+          # Wait for edge server to be ready
+          echo "Waiting for edge server to be ready..."
+          for i in {1..30}; do
+            if curl -s http://127.0.0.1:8080/my_server > /dev/null 2>&1; then
+              echo "Edge server is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Edge server failed to start"
+              docker logs edge-server-test
+              exit 1
+            fi
+            echo "Attempt $i/30: Edge server not ready yet..."
+            sleep 2
+          done
+
+      # Test basic functionality: create, get, update, delete tasks
+      - name: Test edge server functionality
+        working-directory: ./edge-server
+        run: |
+          # Create a task
+          echo "Creating a task..."
+          TASK_RESULT=$(just create-task "Test Task from CI")
+          echo "$TASK_RESULT"
+          TASK_ID=$(echo "$TASK_RESULT" | jq -r '.mutateResult.value._id')
+          echo "Created task with ID: $TASK_ID"
+
+          # Get all tasks
+          echo "Getting all tasks..."
+          TASKS=$(just get-tasks)
+          echo "$TASKS"
+          TASK_COUNT=$(echo "$TASKS" | jq '.items | length')
+          if [ "$TASK_COUNT" -lt 1 ]; then
+            echo "Error: Expected at least 1 task, got $TASK_COUNT"
+            exit 1
+          fi
+          echo "Successfully retrieved $TASK_COUNT task(s)"
+
+          # Update the task
+          echo "Updating task to completed..."
+          UPDATE_RESULT=$(just update-task "$TASK_ID" "true")
+          echo "$UPDATE_RESULT"
+
+          # Verify the update
+          echo "Verifying task update..."
+          TASKS=$(just get-tasks)
+          TASK_DONE=$(echo "$TASKS" | jq -r ".items[] | select(._id == \"$TASK_ID\") | .done")
+          if [ "$TASK_DONE" != "true" ]; then
+            echo "Error: Task was not marked as done"
+            exit 1
+          fi
+          echo "Task successfully updated to completed"
+
+          # Delete the task
+          echo "Deleting task..."
+          DELETE_RESULT=$(just delete-task "$TASK_ID")
+          echo "$DELETE_RESULT"
+          echo "Task successfully deleted"
+
+      # Cleanup
+      - name: Stop edge server
+        if: always()
+        run: |
+          docker stop edge-server-test || true
+          docker rm edge-server-test || true
+
+      # Show logs if tests failed
+      - name: Show edge server logs on failure
+        if: failure()
+        run: |
+          docker logs edge-server-test || echo "Container not found"

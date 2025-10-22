@@ -14,8 +14,8 @@ load:
     docker tag $LOADED_IMAGE edge-server-quickstart:latest
 
 # Run the loaded docker image
-run *command="run -c /config.yaml":
-    docker run --rm -p 127.0.0.1:8080:8080 -v ./quickstart_config.yaml:/config.yaml edge-server-quickstart:latest {{ command }}
+run config="./quickstart_config.yaml" *command="run -c /config.yaml":
+    docker run --rm -p 127.0.0.1:8080:8080 -v {{ config }}:/config.yaml edge-server-quickstart:latest {{ command }}
 
 # Creates a new task with the given title
 create-task *title:
