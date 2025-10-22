@@ -44,12 +44,12 @@ public static class MauiProgram
         var authUrl = envVars["DITTO_AUTH_URL"];
         var websocketUrl = envVars["DITTO_WEBSOCKET_URL"];
 
-        var ditto = new Ditto(DittoIdentity
-        .OnlinePlayground(
-            AppId,
-            PlaygroundToken,
-            false,  // This is required to be set to false to use the correct URLs
-            authUrl), Path.Combine(FileSystem.Current.AppDataDirectory, "ditto"));
+        var config = new DittoConfig(AppId, new DittoConfigConnect.Server(new Uri(authUrl)), "ditto");
+        var ditto = Ditto.Open(config);
+        ditto.Auth.ExpirationHandler += async (sender, args) =>
+        {
+            await ditto.Auth.LoginAsync(PlaygroundToken, DittoAuthenticationProvider.Development);
+        };
 
         // Set the transport configuration
         // https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations#enabling-and-disabling-transports
