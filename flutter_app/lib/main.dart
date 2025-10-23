@@ -1,5 +1,4 @@
 import 'dart:io' show Platform;
-import 'dart:typed_data';
 
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
