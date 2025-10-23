@@ -48,7 +48,9 @@ class _DialogState extends State<_Dialog> {
                 done: _done,
                 deleted: false,
                 // Pass the attachment note text if provided
-                attachment: _attachmentNote.text.isNotEmpty ? {"note": _attachmentNote.text} : null,
+                attachment: _attachmentNote.text.isNotEmpty
+                    ? {"note": _attachmentNote.text}
+                    : null,
               );
               Navigator.of(context).pop(task);
             },
