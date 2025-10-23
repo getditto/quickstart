@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:typed_data';
 
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
@@ -100,16 +101,74 @@ class _DittoExampleState extends State<DittoExample> {
     final task = await showAddTaskDialog(context);
     if (task == null) return;
 
+    Map<String, dynamic> taskJson = task.toJson();
+
+    // If the task has an attachment note, create a Ditto attachment
+    if (task.attachment != null && task.attachment!['note'] != null) {
+      final noteText = task.attachment!['note'] as String;
+      final noteBytes = Uint8List.fromList(noteText.codeUnits);
+
+      // Create attachment from the note bytes
+      final attachment = await _ditto!.store.newAttachment(noteBytes);
+
+      // Replace the placeholder with the actual attachment token
+      taskJson['attachment'] = attachment;
+    }
+
     // https://docs.ditto.live/sdk/latest/crud/create
     await _ditto!.store.execute(
       "INSERT INTO tasks DOCUMENTS (:task)",
-      arguments: {"task": task.toJson()},
+      arguments: {"task": taskJson},
     );
   }
 
   Future<void> _clearTasks() async {
     // https://docs.ditto.live/sdk/latest/crud/delete#evicting-data
     await _ditto!.store.execute("EVICT FROM tasks WHERE true");
+  }
+
+  Future<void> _showAttachment(Map<String, dynamic> attachmentToken) async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    String? attachmentContent;
+
+    // Fetch the attachment using the Ditto attachment API
+    _ditto!.store.fetchAttachment(
+      attachmentToken,
+      (event) async {
+        if (event is AttachmentFetchEventCompleted) {
+          // Get the attachment data
+          final bytes = await event.attachment.data;
+          // Convert bytes back to string
+          attachmentContent = String.fromCharCodes(bytes);
+
+          // Close loading dialog
+          if (mounted) Navigator.of(context).pop();
+
+          // Show the attachment content in a dialog
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text("Attachment Content"),
+                content: Text(attachmentContent ?? "No content"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text("Close"),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
+      },
+    );
   }
 
   @override
@@ -207,6 +266,20 @@ class _DittoExampleState extends State<DittoExample> {
         secondaryBackground: _dismissibleBackground(false),
         child: CheckboxListTile(
           title: Text(task.title),
+          subtitle: task.attachment != null
+              ? Row(
+                  children: [
+                    const Icon(Icons.attachment, size: 16),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => _showAttachment(task.attachment!),
+                        child: const Text("View Attachment"),
+                      ),
+                    ),
+                  ],
+                )
+              : null,
           value: task.done,
           onChanged: (value) => _ditto!.store.execute(
             "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",

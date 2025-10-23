@@ -11,6 +11,7 @@ Task _$TaskFromJson(Map<String, dynamic> json) => Task(
       title: json['title'] as String,
       done: json['done'] as bool,
       deleted: json['deleted'] as bool,
+      attachment: json['attachment'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$TaskToJson(Task instance) {
@@ -26,5 +27,6 @@ Map<String, dynamic> _$TaskToJson(Task instance) {
   val['title'] = instance.title;
   val['done'] = instance.done;
   val['deleted'] = instance.deleted;
+  writeNotNull('attachment', instance.attachment);
   return val;
 }

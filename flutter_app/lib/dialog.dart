@@ -18,6 +18,7 @@ class _Dialog extends StatefulWidget {
 
 class _DialogState extends State<_Dialog> {
   late final _name = TextEditingController(text: widget.taskToEdit?.title);
+  late final _attachmentNote = TextEditingController();
   late var _done = widget.taskToEdit?.done ?? false;
 
   @override
@@ -30,6 +31,7 @@ class _DialogState extends State<_Dialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _textInput(_name, "Name"),
+            _textInput(_attachmentNote, "Attachment Note (optional)"),
             _doneSwitch,
           ],
         ),
@@ -45,6 +47,8 @@ class _DialogState extends State<_Dialog> {
                 title: _name.text,
                 done: _done,
                 deleted: false,
+                // Pass the attachment note text if provided
+                attachment: _attachmentNote.text.isNotEmpty ? {"note": _attachmentNote.text} : null,
               );
               Navigator.of(context).pop(task);
             },
