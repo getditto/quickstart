@@ -2,6 +2,9 @@ name: Kotlin Multiplatform CI
 
 on:
   pull_request:
+    paths:
+      - "kotlin-multiplatform/**"
+      - ".github/workflows/kotlin-multiplatform-ci.yml"
   workflow_dispatch:
 
 concurrency:
