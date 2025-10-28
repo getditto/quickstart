@@ -761,7 +761,7 @@
     "@deno/shim-deno-test" "^0.4.0"
     which "^2.0.2"
 
-"@dittolive/ditto@^4.12.3":
+"@dittolive/ditto@^4.11.7-rc.1":
   version "4.12.3"
   resolved "https://registry.npmjs.org/@dittolive/ditto/-/ditto-4.12.3.tgz"
   integrity sha512-HwEYD+UJbfX+NmD6pE99RcVgtv6LOLJyJV7aP+0aW++tTtdsFVLsxe1wV78oJQExpUIbDLk6gbW+2RW1nJWHtw==

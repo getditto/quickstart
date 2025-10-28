@@ -14,7 +14,7 @@ appcompat = "1.7.1"
 datastorePreferences = "1.1.7"
 koin-bom = "4.1.0"
 coroutines-tests = "1.10.2"
-ditto = "4.12.3"
+ditto = "4.11.7-rc.1"
 monitor = "1.7.2"
 
 [libraries]
