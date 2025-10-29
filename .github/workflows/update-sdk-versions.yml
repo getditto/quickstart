@@ -64,6 +64,14 @@ jobs:
           pod --version
 
       - name: Update SDK versions and lockfiles
+        # The Android Kotlin build requires all four Ditto environment variables to be set
+        # for any Gradle operation (including dependency refresh). These are validated at
+        # configuration time in android-kotlin/QuickStartTasks/app/build.gradle.kts
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+          DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
         run: node scripts/bump-versions.js -t "${{ github.event.inputs.version }}"
 
       - name: Configure Git
