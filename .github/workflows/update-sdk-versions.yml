@@ -53,6 +53,7 @@ jobs:
       - name: Setup Ruby and Bundler
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.3'
           # working-directory specifies where to find Gemfile for bundler-cache
           bundler-cache: true
           working-directory: react-native
