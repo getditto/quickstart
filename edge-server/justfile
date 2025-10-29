@@ -3,24 +3,30 @@ date := `date +%Y-%m-%d`
 # Download the latest nightly edge server image
 download target:
     # Download the appropriate container
-    URL="https://edge-server-nightlies.s3.us-east-1.amazonaws.com/{{ date }}/ditto-edge-server-container_{{ target }}.tar" && \
+    URL="https://edge-server-nightlies.s3.us-east-1.amazonaws.com/{{ date }}/ditto-edge-server-image_{{ target }}.tar" && \
     echo "Downloading edge server image for {{ target }}..." && \
     curl --fail -L "$URL" -o edge-server-image.tar && \
     echo "Successfully downloaded edge server image for {{ target }}"
 
 # Load the downloaded docker image to your docker engine
 load:
-    LOADED_IMAGE=$(docker load -i edge-server-image.tar | grep "Loaded image:" | cut -d' ' -f3) && \
-    docker tag $LOADED_IMAGE edge-server-quickstart:latest
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Loading image"
+    docker load -i edge-server-image.tar
+    echo "Loaded successfully"
+    LOADED_IMAGE=$(docker image ls --format '{{{{.ID}}' --filter 'dangling=true' | head -n 1)
+    echo "Identified image successfully"
+    docker tag "${LOADED_IMAGE}" edge-server-quickstart:latest
 
 # Run the loaded docker image
-run *command="run -c /config.yaml":
-    docker run --rm -p 127.0.0.1:8080:8080 -v ./quickstart_config.yaml:/config.yaml edge-server-quickstart:latest {{ command }}
+run config="./quickstart_config.yaml" *command="run -c /config.yaml":
+    docker run --rm -p 127.0.0.1:8080:8080 -v {{ config }}:/config.yaml edge-server-quickstart:latest {{ command }}
 
 # Creates a new task with the given title
 create-task *title:
     @cat requests/create.json \
-    | jq '.query_args.newTask.title = "{{ title }}"' \
+    | jq '.args.newTask.title = "{{ title }}"' \
     | curl \
     --request POST \
     --header "Content-Type: application/json" \
@@ -42,7 +48,7 @@ get-tasks:
 # Updates a task's completion status
 update-task id done="false":
     @cat requests/update.json \
-    | jq '.query_args.id = "{{ id }}" | .query_args.done = {{ if done == "true" { "true" } else { "false" } }}' \
+    | jq '.args.id = "{{ id }}" | .args.done = {{ if done == "true" { "true" } else { "false" } }}' \
     | curl \
     --fail-with-body \
     --request POST \
@@ -54,7 +60,7 @@ update-task id done="false":
 # Soft deletes a task
 delete-task id:
     @cat requests/delete.json \
-    | jq '.query_args.id = "{{ id }}"' \
+    | jq '.args.id = "{{ id }}"' \
     | curl \
     --request POST \
     --header "Content-Type: application/json" \

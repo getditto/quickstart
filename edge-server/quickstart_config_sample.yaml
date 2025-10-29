@@ -12,7 +12,9 @@ resources:
         provider: "__playgroundProvider"
   my_http_server:
     resource_type: HttpServer
-    db_id: "YOUR_DB_ID_HERE"
-    base_path: my_server
-    http_api: true
     listen_addr: "0.0.0.0:8080"
+    databases:
+      my_db:
+        db_id: "YOUR_DB_ID_HERE"
+        base_path: my_server
+        http_api: true

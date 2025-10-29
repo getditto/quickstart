@@ -7,6 +7,7 @@ This guide provides step-by-step instructions for getting started with the Ditto
 - **curl**: For downloading binaries and making HTTP requests
 - **jq**: For JSON processing (used in API examples)
 - **Docker**: For running the containerized version
+- The image store for your docker installation must be `containerd` ([setup guide](https://docs.docker.com/desktop/features/containerd/#enable-the-containerd-image-store))
 - **just**: Command runner tool ([installation guide](https://github.com/casey/just#installation), optional)
 
 If you prefer to run commands directly, copy-paste commands from the `justfile`.
