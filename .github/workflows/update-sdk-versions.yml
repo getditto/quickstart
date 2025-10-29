@@ -11,7 +11,7 @@ on:
 
 jobs:
   update-sdk-versions:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     permissions:
       contents: write
       pull-requests: write
@@ -53,7 +53,7 @@ jobs:
       - name: Setup Ruby and Bundler
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          ruby-version: "3.3"
           # working-directory specifies where to find Gemfile for bundler-cache
           bundler-cache: true
           working-directory: react-native
