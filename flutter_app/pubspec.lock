@@ -69,10 +69,10 @@ packages:
     dependency: "direct main"
     description:
       name: ditto_live
-      sha256: "86aa472c77557632612aefd59a5e098d545f8080350a0d70d68b55c70deec362"
+      sha256: "648c91f0515a80e7bef76793a1fc0a79c4cf5868bbba59a86aafbcd41436f197"
       url: "https://pub.dev"
     source: hosted
-    version: "4.12.3"
+    version: "4.12.4-rc.1"
   equatable:
     dependency: "direct main"
     description:
@@ -259,10 +259,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_android
-      sha256: d0d310befe2c8ab9e7f393288ccbb11b60c019c6b5afc21973eeee4dda2b35e9
+      sha256: "4adf4fd5423ec60a29506c76581bc05854c55e3a0b72d35bb28d661c9686edf2"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.17"
+    version: "2.2.15"
   path_provider_foundation:
     dependency: transitive
     description:
@@ -478,4 +478,4 @@ packages:
     version: "1.1.0"
 sdks:
   dart: ">=3.7.0-0 <4.0.0"
-  flutter: ">=3.27.0"
+  flutter: ">=3.24.0"
