@@ -27,7 +27,6 @@ jobs:
           cache: "npm"
           cache-dependency-path: |
             react-native/package-lock.json
-            react-native-expo/package-lock.json
             javascript-tui/package-lock.json
             javascript-web/package-lock.json
 
