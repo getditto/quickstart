@@ -1,2 +1,4 @@
-BUNDLE_PATH: "vendor/bundle"
-BUNDLE_FORCE_RUBY_PLATFORM: 1
+---
+BUNDLE_PATH: "/Users/runner/work/quickstart/quickstart/react-native/vendor/bundle"
+BUNDLE_FORCE_RUBY_PLATFORM: "1"
+BUNDLE_DEPLOYMENT: "true"
