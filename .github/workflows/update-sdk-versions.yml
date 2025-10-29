@@ -50,6 +50,13 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Setup Ruby and Bundler
+        uses: ruby/setup-ruby@v1
+        with:
+          # working-directory specifies where to find Gemfile for bundler-cache
+          bundler-cache: true
+          working-directory: react-native
+
       - name: Setup CocoaPods
         run: |
           sudo gem install cocoapods
