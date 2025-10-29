@@ -118,6 +118,8 @@ jobs:
 
       - name: Output PR URL
         if: steps.create-branch.outputs.has-changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_URL=$(gh pr view "${{ steps.create-branch.outputs.branch-name }}" --json url -q .url)
           echo "Created draft PR: $PR_URL"
