@@ -45,7 +45,7 @@ const APP_CONFIGS = {
         path: "package.json",
         regex:
           /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
-        replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
       },
     ],
     lockCommands: [
@@ -63,7 +63,7 @@ const APP_CONFIGS = {
         path: "package.json",
         regex:
           /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
-        replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
       },
     ],
     lockCommands: ["npm install --no-audit", "(cd ios && pod update)"],
@@ -76,7 +76,7 @@ const APP_CONFIGS = {
         path: "package.json",
         regex:
           /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
-        replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
       },
     ],
     lockCommands: ["npm install"],
@@ -89,7 +89,7 @@ const APP_CONFIGS = {
         path: "package.json",
         regex:
           /("@dittolive\/ditto":\s*")[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?(")/g,
-        replacement: (match, prefix, suffix) => `${prefix}^VERSION${suffix}`,
+        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
       },
     ],
     lockCommands: ["npm install"],
@@ -169,7 +169,7 @@ const APP_CONFIGS = {
         path: "pubspec.yaml",
         regex:
           /(ditto_live:\s*)[\^~]?[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?/g,
-        replacement: (match, prefix) => `${prefix}^VERSION`,
+        replacement: (match, prefix) => `${prefix}VERSION`,
       },
     ],
     lockCommands: [
