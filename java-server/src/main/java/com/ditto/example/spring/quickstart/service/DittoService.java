@@ -15,7 +15,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -43,32 +42,37 @@ public class DittoService implements DisposableBean {
         dittoDir.mkdirs();
 
         /*
-         *  Setup Ditto Identity
+         *  Setup Ditto Config
          *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
          */
-        DittoIdentity identity = new DittoIdentity.OnlinePlayground(
-                DittoSecretsConfiguration.DITTO_APP_ID,
-                DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-                // This is required to be set to false to use the correct URLs
-                false,
-                DittoSecretsConfiguration.DITTO_AUTH_URL
-        );
 
-        DittoConfig dittoConfig = new DittoConfig.Builder(dittoDir)
-                .identity(identity)
+        DittoConfig dittoConfig = new DittoConfig.Builder(DittoSecretsConfiguration.DITTO_APP_ID)
+                .serverConnect(DittoSecretsConfiguration.DITTO_AUTH_URL)
                 .build();
 
-        this.ditto = new Ditto(dittoConfig);
+        this.ditto = DittoFactory.create(dittoConfig);
+
+        this.ditto.getAuth().setExpirationHandler((expiringDitto, _timeUntilExpiration) ->
+                expiringDitto.getAuth()
+                        .login(
+                                DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
+                                DittoAuthenticationProvider.development()
+                        ).thenRun(() -> { })
+        );
 
         this.ditto.setDeviceName("Spring Java");
 
-        this.ditto.updateTransportConfig(transportConfig -> {
-            transportConfig.connect(connect -> {
+        this.ditto.updateTransportConfig(config -> {
+            config.connect(connect -> {
                 // Set the Ditto Websocket URL
                 connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
             });
+            config.peerToPeer(p2p -> {
+                p2p.bluetoothLe().isEnabled(true);
+                p2p.lan().isEnabled(true);
+            });
 
-            logger.info("Transport config: {}", transportConfig);
+            logger.info("Transport config: {}", config);
         });
 
         presenceObserver = observePeersPresence();
@@ -109,7 +113,7 @@ public class DittoService implements DisposableBean {
             for (DittoPeer peer : graph.getRemotePeers()) {
                 logger.info("Peer: {}", peer.getDeviceName());
                 for (DittoConnection connection : peer.getConnections()) {
-                    logger.info("\t- {} {} {}", connection.getId(), connection.getConnectionType(), connection.getApproximateDistanceInMeters());
+                    logger.info("\t- {} {}", connection.getId(), connection.getConnectionType());
                 }
             }
         });
@@ -144,7 +148,7 @@ public class DittoService implements DisposableBean {
                         if (!items.isEmpty()) {
                             newSyncState = items.get(0).getValue()
                                     .get(DITTO_SYNC_STATE_ID)
-                                    .getBoolean();
+                                    .asBoolean();
                         }
 
                         if (newSyncState) {
@@ -174,7 +178,7 @@ public class DittoService implements DisposableBean {
 
         try {
             future.toCompletableFuture().join().close();
-        } catch (IOException e) {
+        } catch (DittoError e) {
             throw new RuntimeException(e);
         }
     }
