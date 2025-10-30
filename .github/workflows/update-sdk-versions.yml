@@ -51,7 +51,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Setup Ruby and Bundler
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@v1.267.0
         with:
           ruby-version: "3.3"
           # working-directory specifies where to find Gemfile for bundler-cache
