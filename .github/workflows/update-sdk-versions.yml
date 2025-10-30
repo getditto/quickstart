@@ -11,6 +11,9 @@ on:
 
 jobs:
   update-sdk-versions:
+    # NOTE: We use macos-latest instead of ubuntu-latest because this workflow needs to run
+    # CocoaPods commands for updating React Native iOS dependencies. CocoaPods requires a
+    # macOS environment with Xcode.
     runs-on: macos-latest
     permissions:
       contents: write
@@ -25,6 +28,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
+          # Note: react-native-expo uses yarn (not npm), so it's excluded from npm cache paths
           cache-dependency-path: |
             react-native/package-lock.json
             javascript-tui/package-lock.json
@@ -101,7 +105,7 @@ jobs:
       - name: Create Draft Pull Request
         if: steps.create-branch.outputs.has-changes == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create \
             --title "chore: update Ditto SDK to version ${{ github.event.inputs.version }}" \
