@@ -213,18 +213,15 @@ jobs:
       - name: Execute Selenium tests on BrowserStack cloud browsers
         working-directory: java-server
         env:
-          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BROWSERSTACK_BUILD_NAME: "Java Spring Selenium Tests #${{ github.run_number }}"
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_LOCAL: true
-          TASK_TITLE: "${{ steps.seed_task.outputs.document-title }}"
+          DITTO_CLOUD_TASK_TITLE: "${{ steps.seed_task.outputs.document-title }}"
         run: |
           # Run only the BrowserStack test method, not all test methods
-          ./gradlew test --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
-            -DBROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
-            -DBROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
-            -DBROWSERSTACK_BUILD_NAME="Java Spring Selenium Tests #${{ github.run_number }}" \
-            -DBROWSERSTACK_LOCAL=true \
-            -DDITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
+          ./gradlew test \
+            --tests "*TaskVisibilityIntegrationTest.shouldPassWithExistingTask" \
             --info
 
       - name: Stop Spring Boot app
