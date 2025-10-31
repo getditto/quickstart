@@ -172,7 +172,6 @@ jobs:
       - name: Get BrowserStack build info
         id: build-info
         uses: ./.github/actions/generate-browserstack-names
-        with:
 
       - name: Seed and execute tests on BrowserStack
         id: test
