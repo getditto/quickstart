@@ -12,43 +12,57 @@ AppID and Online Playground Token, Auth URL, and Websocket URL in order to use t
 
 [0]: https://portal.ditto.live
 
-From the repo root, copy the `.env.sample` file to `.env`, and fill in the
-fields with your AppID, Online Playground Token, Auth URL, and Websocket URL:
-
-```
-cp ../../.env.sample ../../.env
-```
-
-The `.env` file should look like this (with your fields filled in):
+Create a `.env` file in this directory with your Ditto credentials:
 
 ```bash
-#!/usr/bin/env bash
+# Create .env file
+cat > .env << 'EOF'
+DITTO_APP_ID=your-app-id
+DITTO_PLAYGROUND_TOKEN=your-playground-token
+DITTO_AUTH_URL=https://your-app-id.cloud.ditto.live
+EOF
+```
 
-# Copy this file from ".env.sample" to ".env", then fill in these values
-# A Ditto AppID, Online Playground Token, Auth URL, and Websocket URL can be obtained from https://portal.ditto.live
-export DITTO_APP_ID=""
-export DITTO_PLAYGROUND_TOKEN=""
-export DITTO_AUTH_URL=""
-export DITTO_WEBSOCKET_URL=""
+Alternatively, you can set these as environment variables:
+
+```bash
+export DITTO_APP_ID="your-app-id"
+export DITTO_PLAYGROUND_TOKEN="your-playground-token"
+export DITTO_AUTH_URL="https://your-app-id.cloud.ditto.live"
 ```
 
 ## Building
 
-First, build the FFI library (required for Ditto SDK):
-```bash
-(cd ../../ditto/sdks/go && make build)
-```
+From this directory (`go-tui`):
 
-Then build the application:
 ```bash
+# Using the Makefile
+make build
+
+# Or build directly with Go
 go build -o ditto-tasks-termui
 ```
 
+
 ## Running
+
+**Note:** the Ditto Go SDK `libdittoffi.so` (Linux) or `libdittoffi.dylib`
+shared library must be present and in one of the directories searched by the
+system's dynamic linker to run the application.  This is handled automatically
+by `make run`. If you use one of the other options, you may need to perform
+additional steps.  See the [Go SDK Install Guide](https://docs.ditto.live/sdk/latest/install-guides/go)
+for details.
 
 Run the quickstart app with the following command:
 
+
 ```bash
+# Using the Makefile (which will download the shared library and set shared-library load paths automatically)
+make run
+```
+
+```bash
+# Run the executable that was created via make build
 ./ditto-tasks-termui 2>/dev/null
 ```
 
@@ -75,51 +89,35 @@ go run main.go 2>/dev/null
 ## Features
 
 - ✅ Create, edit, and delete tasks
-- ✅ Mark tasks as complete/incomplete  
+- ✅ Mark tasks as complete/incomplete
 - ✅ Real-time synchronization across devices
 - ✅ Terminal-based interface using termui
 - ✅ Cross-platform compatibility with other Ditto quickstart apps
 
-## Data Model
-
-Tasks are stored in a `tasks` collection with the following structure:
-```json
-{
-  "_id": "unique-task-id",
-  "title": "Task description",
-  "done": false,
-  "deleted": false
-}
-```
-
-This matches the data model used by other quickstart apps (Rust, C++, etc.) for cross-platform sync compatibility.
-
-## UI Features
-
-The TUI displays tasks in a table format with:
-- Selection indicator (❯❯) for the currently selected task
-- Checkboxes showing task status (✅ for done, ☐ for not done)
-- Modal overlay for creating and editing tasks
-- Keyboard shortcut hints in the status bar
 
 ## Troubleshooting
 
-### Library not found
-If you get a library loading error, ensure the FFI library is built and available:
-```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../../ditto/sdks/go/build
-```
+### Logs
 
-On macOS, you may need to use `DYLD_LIBRARY_PATH` instead:
-```bash
-export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:../../ditto/sdks/go/build
-```
+To find errors and messages that are not printed to the TUI display, check the application logs.
+Logs are output to `/tmp/ditto-tasks-termui.log`.
+
+### libdittoffi Library not found
+
+If you get a library loading error, ensure that the `libdittoffi.so` (Linux) or
+`libdittoffi.dylib` (macOS) shared library is present and that `LD_LIBRARY_PATH`
+(Linux) or `DYLD_LIBRARY_PATH` (macOS) is set appropriately.
 
 ### Environment variables not found
-The app looks for `.env` file in parent directories. Ensure it exists in the repository root with all required variables set.
+
+The app looks for a `.env` file in the current directory. Ensure it exists with
+all required variables set, or export them as environment variables.
 
 ### Garbled screen output
-Always run the application with `2>/dev/null` to suppress stderr output that can interfere with the TUI display:
+
+Always run the application with `2>/dev/null` to suppress stderr output that can
+interfere with the TUI display:
+
 ```bash
 ./ditto-tasks-termui 2>/dev/null
 ```
@@ -128,17 +126,14 @@ Always run the application with `2>/dev/null` to suppress stderr output that can
 
 The application uses:
 - [termui v3](https://github.com/gizak/termui) for the TUI framework (similar to Rust's ratatui)
-- [Ditto Go SDK](https://docs.ditto.live) for real-time sync
+- [Ditto Go SDK](https://github.com/getditto/ditto-go-sdk) for edge sync
 - Channels for async communication between Ditto observers and the UI
 
 ## Architecture
 
-The app follows an event-driven architecture similar to the Rust TUI implementation:
+The app follows an event-driven architecture:
 - Direct event loop handling keyboard input
-- Table widget for displaying tasks
+- Table widget for displaying tasks (similar to Rust's ratatui)
 - Manual text input handling for create/edit modes
 - Async updates from Ditto observers via Go channels
-
-## License
-
-MIT
+- Real-time sync with other Ditto peers running the same app

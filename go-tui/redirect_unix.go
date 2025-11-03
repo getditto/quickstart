@@ -4,9 +4,10 @@
 package main
 
 import (
+	"log"
 	"os"
-	"syscall"
 
+	"golang.org/x/sys/unix"
 	"golang.org/x/term"
 )
 
@@ -21,10 +22,15 @@ func redirectStderr() {
 	// This is similar to what the C++ TUI does with freopen
 	if isTerminal(os.Stderr.Fd()) {
 		devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
-		if err == nil {
-			// Redirect stderr to /dev/null
-			syscall.Dup2(int(devNull.Fd()), int(os.Stderr.Fd()))
-			devNull.Close()
+		if err != nil {
+			log.Printf("Failed to open %s: %v", os.DevNull, err)
+			return
+		}
+		defer devNull.Close()
+
+		// Redirect stderr to /dev/null
+		if err := unix.Dup2(int(devNull.Fd()), int(os.Stderr.Fd())); err != nil {
+			log.Printf("Failed to redirect stderr: %v", err)
 		}
 	}
 }

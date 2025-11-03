@@ -1,2 +1,4 @@
 ditto-tasks-termui
 go-tui
+*.log
+*.out

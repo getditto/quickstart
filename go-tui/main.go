@@ -75,7 +75,7 @@ func main() {
 	}
 
 	// Set Ditto log level to Error to suppress most logs
-	// ditto.SetLogLevel(ditto.LogLevelError) // Commented out - causing segfault
+	// ditto.SetMinimumLogLevel(ditto.LogLevelError) // Commented out - causing segfault
 
 	// Load environment variables
 	if err := loadEnv(); err != nil {
@@ -86,10 +86,9 @@ func main() {
 	appID := os.Getenv("DITTO_APP_ID")
 	token := os.Getenv("DITTO_PLAYGROUND_TOKEN")
 	authURL := os.Getenv("DITTO_AUTH_URL")
-	websocketURL := os.Getenv("DITTO_WEBSOCKET_URL")
 
-	if appID == "" || token == "" || authURL == "" || websocketURL == "" {
-		log.Fatal("Missing required environment variables. Please set DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, DITTO_AUTH_URL, and DITTO_WEBSOCKET_URL")
+	if appID == "" || token == "" || authURL == "" {
+		log.Fatal("Missing required environment variables. Please set DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, and DITTO_AUTH_URL")
 	}
 
 	// Create temp directory for persistence
@@ -100,13 +99,10 @@ func main() {
 	defer os.RemoveAll(tempDir)
 
 	// Initialize Ditto with Server connection API
-	config := &ditto.DittoConfig{
-		DatabaseID:           appID,
-		PersistenceDirectory: tempDir,
-		Connect: &ditto.DittoConfigConnectServer{
-			URL: authURL,
-		},
-	}
+	config := ditto.DefaultDittoConfig().
+		WithDatabaseID(appID).
+		WithPersistenceDirectory(tempDir).
+		WithConnect(&ditto.DittoConfigConnectServer{URL: authURL})
 
 	d, err := ditto.Open(config)
 	if err != nil {
@@ -116,37 +112,22 @@ func main() {
 
 	// Set up authentication handler for development mode
 	if auth := d.Auth(); auth != nil {
-		auth.SetExpirationHandler(func(dit *ditto.Ditto, timeUntilExpiration time.Duration) {
-			log.Printf("Expiration handler called with time: %v", timeUntilExpiration)
-			// For development mode, login with the playground token
-			provider := ditto.AuthenticationProviderDevelopment()
-			err := dit.Auth().Login(token, provider, func(clientInfo map[string]interface{}, err error) {
+		auth.SetExpirationHandler(
+			func(d *ditto.Ditto, timeUntilExpiration time.Duration) {
+				log.Printf("Expiration handler called with time until expiration: %v", timeUntilExpiration)
+
+				// For development mode, login with the playground token
+				provider := ditto.DevelopmentAuthenticationProvider()
+				clientInfoJSON, err := d.Auth().Login(token, provider)
 				if err != nil {
-					log.Printf("Login failed: %v", err)
+					log.Printf("Failed to login: %v", err)
 				} else {
 					log.Printf("Login successful")
+					if clientInfoJSON != "" {
+						log.Printf("Client info: %s", clientInfoJSON)
+					}
 				}
 			})
-			if err != nil {
-				log.Printf("Failed to initiate login: %v", err)
-			}
-		})
-		if err != nil {
-			log.Fatal("Failed to set expiration handler:", err)
-		}
-
-		// Explicitly login after setting handler
-		provider := ditto.AuthenticationProviderDevelopment()
-		err = auth.Login(token, provider, func(clientInfo map[string]interface{}, err error) {
-			if err != nil {
-				log.Printf("Initial login failed: %v", err)
-			} else {
-				log.Printf("Initial login successful: %v", clientInfo)
-			}
-		})
-		if err != nil {
-			log.Printf("Failed to initiate initial login: %v", err)
-		}
 	}
 
 	// Start sync (authentication handler will be called automatically if needed)
@@ -174,14 +155,16 @@ func main() {
 	// Create observer for local changes
 	observer, err := d.Store().RegisterObserver(
 		"SELECT * FROM tasks WHERE deleted = false ORDER BY _id",
+		nil,
 		func(result *ditto.QueryResult) {
+			defer result.Close()
+
 			tasks := parseTasks(result)
 			select {
 			case app.tasksChan <- tasks:
 			case <-app.ctx.Done():
 			}
-		},
-	)
+		})
 	if err != nil {
 		log.Fatal("Failed to register observer:", err)
 	}
@@ -218,12 +201,10 @@ func NewApp(d *ditto.Ditto) *App {
 	app.inputBox.Title = " New Task "
 	app.inputBox.BorderStyle = ui.NewStyle(ui.ColorMagenta)
 
-	app.statusBar = widgets.NewParagraph()
-	app.statusBar.Border = false
+	app.statusBar = BorderlessParagraph()
 	app.statusBar.Text = "[c](fg:yellow): create  [e](fg:yellow): edit  [d](fg:yellow): delete  [q](fg:yellow): quit  [s](fg:yellow): toggle sync"
 
-	app.errorBar = widgets.NewParagraph()
-	app.errorBar.Border = false
+	app.errorBar = BorderlessParagraph()
 	app.errorBar.TextStyle = ui.NewStyle(ui.ColorRed)
 
 	return app
@@ -369,11 +350,11 @@ func (a *App) render() {
 	a.updateTable()
 
 	// Layout calculations
-	tableHeight := termHeight - 3 // Leave room for status bar
+	tableHeight := termHeight - 2 // Leave room for status bar
 
 	// Set widget positions
 	a.taskTable.SetRect(0, 0, termWidth, tableHeight)
-	a.statusBar.SetRect(0, termHeight-2, termWidth, termHeight)
+	a.statusBar.SetRect(0, termHeight-1, termWidth, termHeight)
 
 	// Render main widgets
 	ui.Render(a.taskTable, a.statusBar)
@@ -403,7 +384,7 @@ func (a *App) render() {
 	// Render error if present
 	if a.errorMsg.value != "" {
 		a.errorBar.Text = fmt.Sprintf("Error: %s", a.errorMsg.value)
-		a.errorBar.SetRect(0, termHeight-3, termWidth, termHeight-2)
+		a.errorBar.SetRect(0, termHeight-2, termWidth, termHeight-1)
 		ui.Render(a.errorBar)
 
 		// Clear error after 3 seconds using the reset channel
@@ -453,17 +434,19 @@ func (a *App) createTask(title string) {
 		"deleted": false,
 	}
 
-	_, err := a.ditto.Store().Execute(
+	result, err := a.ditto.Store().Execute(
 		"INSERT INTO tasks VALUES (:task)",
 		map[string]interface{}{"task": task},
 	)
 	if err != nil {
 		a.setError(err.Error())
+		return
 	}
+	defer result.Close()
 }
 
 func (a *App) updateTask(id, title string) {
-	_, err := a.ditto.Store().Execute(
+	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET title = :title WHERE _id = :id",
 		map[string]interface{}{
 			"title": title,
@@ -472,11 +455,13 @@ func (a *App) updateTask(id, title string) {
 	)
 	if err != nil {
 		a.setError(err.Error())
+		return
 	}
+	defer result.Close()
 }
 
 func (a *App) toggleTask(id string, done bool) {
-	_, err := a.ditto.Store().Execute(
+	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET done = :done WHERE _id = :id",
 		map[string]interface{}{
 			"done": done,
@@ -485,17 +470,21 @@ func (a *App) toggleTask(id string, done bool) {
 	)
 	if err != nil {
 		a.setError(err.Error())
+		return
 	}
+	defer result.Close()
 }
 
 func (a *App) deleteTask(id string) {
-	_, err := a.ditto.Store().Execute(
+	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET deleted = true WHERE _id = :id",
 		map[string]interface{}{"id": id},
 	)
 	if err != nil {
 		a.setError(err.Error())
+		return
 	}
+	defer result.Close()
 }
 
 // Set the UI error message. May be called by any goroutine.
@@ -508,8 +497,8 @@ func loadEnv() error {
 	dir, _ := os.Getwd()
 	for {
 		envPath := filepath.Join(dir, ".env")
-		if _, err := os.Stat(envPath); err == nil {
-			return godotenv.Load(envPath)
+		if err := godotenv.Load(envPath); err == nil || !os.IsNotExist(err) {
+			return err
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -528,17 +517,9 @@ func parseTasks(result *ditto.QueryResult) []Task {
 	// Don't pre-allocate when we're filtering
 	var tasks []Task
 	items := result.Items()
-	for i := 0; i < len(items); i++ {
-		queryItem := items[i]
-
+	for _, queryItem := range items {
 		// Get the value as a map
-		if queryItem == nil || queryItem.Value == nil {
-			continue
-		}
-		item, ok := queryItem.Value.(map[string]interface{})
-		if !ok {
-			continue
-		}
+		item := queryItem.Value()
 
 		// Parse the task from the document
 		task := Task{
@@ -571,7 +552,7 @@ func (a *App) updateTasks(tasks []Task) {
 }
 
 // Generic helper for type assertions
-func getValueAs[T any](m map[string]interface{}, key string) (T, bool) {
+func getValueAs[T any](m map[string]any, key string) (T, bool) {
 	if v, ok := m[key].(T); ok {
 		return v, true
 	}
@@ -579,14 +560,14 @@ func getValueAs[T any](m map[string]interface{}, key string) (T, bool) {
 	return zero, false
 }
 
-func getStringValue(m map[string]interface{}, key string) string {
+func getStringValue(m map[string]any, key string) string {
 	if v, ok := getValueAs[string](m, key); ok {
 		return v
 	}
 	return ""
 }
 
-func getBoolValue(m map[string]interface{}, key string) bool {
+func getBoolValue(m map[string]any, key string) bool {
 	if v, ok := getValueAs[bool](m, key); ok {
 		return v
 	}
