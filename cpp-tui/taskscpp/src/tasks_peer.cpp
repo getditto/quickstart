@@ -35,44 +35,39 @@ static string to_json_string(const ditto::QueryResult &result) {
       result.items(),
       [](const ditto::QueryResultItem &item) { return item.json_string(); });
 
-  const auto modified_document_ids = transform_container<vector<string>>(
-      result.mutated_document_ids(),
-      [](const ditto::DocumentId &id) { return id.to_string(); });
+  const auto modified_document_ids = result.mutated_document_ids();
 
-  nlohmann::json result_json = {
-      {"items", items}, {"modified_document_ids", modified_document_ids}};
+  nlohmann::json result_json;
+  result_json["items"] = items;
+  result_json["modified_document_ids"] = modified_document_ids;
   return result_json.dump();
 }
 
 /// Initialize a Ditto instance.
-static shared_ptr<ditto::Ditto> init_ditto(string app_id,
-                                           string online_playground_token,
-                                           string websocket_url,
-                                           string auth_url,
-                                           bool enable_cloud_sync,
-                                           string persistence_dir) {
+static shared_ptr<ditto::Ditto>
+init_ditto(string app_id, string online_playground_token, string websocket_url,
+           string auth_url, bool enable_cloud_sync, string persistence_dir) {
   try {
     const auto identity = ditto::Identity::OnlinePlayground(
-        std::move(app_id), 
-        std::move(online_playground_token),
-        enable_cloud_sync,
-        std::move(auth_url));
+        std::move(app_id), std::move(online_playground_token),
+        enable_cloud_sync, std::move(auth_url));
 
     auto ditto =
         std::make_shared<ditto::Ditto>(identity, std::move(persistence_dir));
 
-    ditto->update_transport_config([websocket_url](ditto::TransportConfig &config) {
-      config.enable_all_peer_to_peer();
-      config.connect.websocket_urls.insert(websocket_url);
-    });
+    ditto->update_transport_config(
+        [websocket_url](ditto::TransportConfig &config) {
+          config.enable_all_peer_to_peer();
+          config.connect.websocket_urls.insert(websocket_url);
+        });
 
     // Required for compatibility with DQL.
     ditto->disable_sync_with_v3();
 
-     
     // Disable DQL strict mode
     // https://docs.ditto.live/dql/strict-mode
-    const auto disableStrictModeCommand = "ALTER SYSTEM SET DQL_STRICT_MODE = false";
+    const auto disableStrictModeCommand =
+        "ALTER SYSTEM SET DQL_STRICT_MODE = false";
     const auto result = ditto->get_store().execute(disableStrictModeCommand);
 
     return ditto;
@@ -90,29 +85,21 @@ private:
 
   string select_tasks_query(bool include_deleted_tasks = false) {
     if (include_deleted_tasks) {
-      return "SELECT * FROM tasks ORDER BY _id";
+      return "SELECT * FROM tasks ORDER BY title ASC";
     } else {
-      return "SELECT * FROM tasks WHERE NOT deleted ORDER BY _id";
+      return "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC";
     }
   }
 
 public:
-  Impl(
-    string app_id, 
-    string online_playground_token, 
-    string websocket_url,
-    string auth_url,
-    bool enable_cloud_sync,
-    string persistence_dir)
+  Impl(string app_id, string online_playground_token, string websocket_url,
+       string auth_url, bool enable_cloud_sync, string persistence_dir)
       : mtx(new mutex()),
-        ditto(
-          init_ditto(
-            std::move(app_id), 
-            std::move(online_playground_token),
-            std::move(websocket_url), 
-            std::move(auth_url),
-            enable_cloud_sync,    // This is required to be set to false to use the correct URLs
-            std::move(persistence_dir))) {}
+        ditto(init_ditto(std::move(app_id), std::move(online_playground_token),
+                         std::move(websocket_url), std::move(auth_url),
+                         enable_cloud_sync, // This is required to be set to
+                                            // false to use the correct URLs
+                         std::move(persistence_dir))) {}
 
   ~Impl() noexcept {
     try {
@@ -131,7 +118,7 @@ public:
 
     ditto->start_sync();
     tasks_subscription =
-        ditto->sync().register_subscription("SELECT * FROM tasks");
+        ditto->get_sync().register_subscription("SELECT * FROM tasks");
   }
 
   void stop_sync() {
@@ -153,9 +140,9 @@ public:
       const auto command = "INSERT INTO tasks DOCUMENTS (:newTask)";
       const auto result =
           ditto->get_store().execute(command, {{"newTask", task_args}});
-      auto task_id = result.mutated_document_ids()[0].to_string();
-      log_debug("Added task: " + task_id);
-      return task_id;
+      auto task_id = result.mutated_document_ids()[0];
+      log_debug("Added task: " + task_id.to_string());
+      return task_id.to_string();
     } catch (const exception &err) {
       log_error("Failed to add task: " + string(err.what()));
       throw runtime_error("unable to add task: " + string(err.what()));
@@ -400,20 +387,12 @@ public:
   }
 }; // class TasksPeer::Impl
 
-TasksPeer::TasksPeer(
-  string app_id, 
-  string online_playground_token,
-  string websocket_url,
-  string auth_url,
-  bool enable_cloud_sync, 
-  string persistence_dir)
-    : impl(new Impl(
-      std::move(app_id), 
-      std::move(online_playground_token),
-      std::move(websocket_url),
-      std::move(auth_url),
-      enable_cloud_sync, 
-      std::move(persistence_dir))) {}
+TasksPeer::TasksPeer(string app_id, string online_playground_token,
+                     string websocket_url, string auth_url,
+                     bool enable_cloud_sync, string persistence_dir)
+    : impl(new Impl(std::move(app_id), std::move(online_playground_token),
+                    std::move(websocket_url), std::move(auth_url),
+                    enable_cloud_sync, std::move(persistence_dir))) {}
 
 TasksPeer::~TasksPeer() noexcept {
   try {

@@ -1,6 +1,5 @@
 # Ditto .NET WinForms Quickstart App 🚀
 
-
 ## Prerequisites
 
 1. Install the .NET 8 SDK from <https://dotnet.microsoft.com/en-us/download/dotnet/8.0>

@@ -1,12 +1,14 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.compose.ExperimentalComposeLibrary
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.detekt)
 
     id("quickstart-conventions")
 }
@@ -48,6 +50,7 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -60,6 +63,20 @@ kotlin {
             implementation(libs.koin.compose.viewmodel.navigation)
             implementation(libs.datastore.preferences)
             implementation(libs.datastore)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
+
+        val androidInstrumentedTest by getting {
+            dependencies {
+                implementation(libs.androidx.test.junit)
+                implementation(libs.androidx.test.runner)
+                implementation("androidx.test.uiautomator:uiautomator:2.3.0")
+                implementation("androidx.tracing:tracing:1.1.0")
+                @OptIn(ExperimentalComposeLibrary::class)
+                implementation(compose.uiTest)
+            }
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -99,12 +116,24 @@ android {
     namespace = "com.ditto.quickstart"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    // Force consistent androidx.tracing version to resolve test dependency conflicts
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.tracing:tracing:1.1.0")
+        }
+    }
+
     defaultConfig {
         applicationId = "com.ditto.quickstart"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Pass environment variables to instrumented tests
+        testInstrumentationRunnerArguments["DITTO_CLOUD_TASK_TITLE"] = System.getenv("DITTO_CLOUD_TASK_TITLE") ?: ""
     }
     packaging {
         resources {
@@ -126,9 +155,25 @@ android {
     }
 }
 
+detekt {
+    toolVersion = libs.versions.detekt.get()
+    config.setFrom(rootProject.file("detekt.yml"))
+    buildUponDefaultConfig = true
+    autoCorrect = false
+    ignoreFailures = false
+    parallel = true
+}
+
 dependencies {
     implementation(libs.androidx.material3.android)
     debugImplementation(compose.uiTooling)
+
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    @OptIn(ExperimentalComposeLibrary::class)
+    androidTestImplementation(compose.uiTest)
 }
 
 compose.desktop {

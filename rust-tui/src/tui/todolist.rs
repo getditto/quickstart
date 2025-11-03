@@ -35,7 +35,7 @@ pub struct Todolist {
     /// Ditto subscriptions must also be held to keep them alive
     ///
     /// Subscriptions cause Ditto to sync selected data from other peers
-    pub tasks_subscription: Option<Arc<SyncSubscription>>,
+    pub tasks_subscription: Arc<SyncSubscription>,
 
     // TUI state below
     pub mode: TodoMode,
@@ -64,10 +64,10 @@ pub enum TodoMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodoItem {
     #[serde(rename = "_id")]
-    id: String,
-    title: String,
-    done: bool,
-    deleted: bool,
+    pub id: String,
+    pub title: String,
+    pub done: bool,
+    pub deleted: bool,
 }
 
 impl TodoItem {
@@ -90,12 +90,11 @@ impl Todolist {
         let tasks_subscription = ditto
             .sync()
             .register_subscription_v2("SELECT * FROM tasks")?;
-        let tasks_subscription = Some(tasks_subscription);
 
         // register observer for live query
         // Register observer, which runs against the local database on this peer
         let tasks_observer = ditto.store().register_observer_v2(
-            "SELECT * FROM tasks WHERE deleted=false ORDER BY _id",
+            "SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC",
             move |query_result| {
                 let docs = query_result
                     .into_iter()
@@ -147,7 +146,7 @@ impl Todolist {
             })
             .collect::<Vec<_>>();
 
-        let sync_state = if self.tasks_subscription.is_some() {
+        let sync_state = if self.ditto.is_sync_active() {
             " 🟢 Sync Active ".green()
         } else {
             " 🔴 Sync Inactive ".red()
@@ -286,19 +285,11 @@ impl Todolist {
     }
 
     fn toggle_sync(&mut self) -> Result<()> {
-        self.tasks_subscription = match &self.tasks_subscription {
-            Some(subscription) => {
-                subscription.cancel();
-                None
-            }
-            None => {
-                let sub = self
-                    .ditto
-                    .sync()
-                    .register_subscription_v2("SELECT * FROM tasks")?;
-                Some(sub)
-            }
-        };
+        if self.ditto.is_sync_active() {
+            self.ditto.stop_sync();
+        } else {
+            self.ditto.start_sync()?;
+        }
         Ok(())
     }
 
@@ -349,8 +340,8 @@ impl Todolist {
                 "UPDATE tasks SET deleted=true WHERE _id=:id",
                 serde_json::json!({
                     "id": id
-                })),
-            )
+                }),
+            ))
             .await?;
 
         Ok(())
@@ -365,8 +356,8 @@ impl Todolist {
                 "INSERT INTO tasks DOCUMENTS (:task)",
                 serde_json::json!({
                     "task": task
-                })),
-            )
+                }),
+            ))
             .await?;
         Ok(())
     }
@@ -377,11 +368,11 @@ impl Todolist {
             .store()
             .execute_v2((
                 "UPDATE tasks SET title=:title WHERE _id=:id",
-                serde_json::json!({ 
-                    "title": title, 
-                    "id": id 
-                })),
-            )
+                serde_json::json!({
+                    "title": title,
+                    "id": id
+                }),
+            ))
             .await?;
 
         Ok(())

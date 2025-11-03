@@ -10,12 +10,24 @@ plugins {
 }
 
 fun loadEnvProperties(): Properties {
-    val envFile = rootProject.file("../.env")
     val properties = Properties()
+    val envFile = rootProject.file("../.env")
+
     if (envFile.exists()) {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
-        throw FileNotFoundException(".env file not found at: ${envFile.path}")
+        val requiredEnvVars = listOf(
+            "DITTO_APP_ID",
+            "DITTO_PLAYGROUND_TOKEN",
+            "DITTO_AUTH_URL",
+            "DITTO_WEBSOCKET_URL"
+        )
+
+        for (envVar in requiredEnvVars) {
+            val value = System.getenv(envVar)
+                ?: throw RuntimeException("Required environment variable $envVar not found")
+            properties[envVar] = value
+        }
     }
     return properties
 }
@@ -79,6 +91,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Pass environment variables to instrumentation tests
+        testInstrumentationRunnerArguments["DITTO_CLOUD_TASK_TITLE"] = System.getenv("DITTO_CLOUD_TASK_TITLE") ?: ""
     }
 
     buildTypes {
@@ -127,6 +142,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)

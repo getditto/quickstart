@@ -2,27 +2,27 @@ import React from 'react';
 import {useState, useEffect} from 'react';
 import {
   Button,
-  Modal,
-  ModalProps,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
 type EditTaskModalProps = {
+  visible: boolean;
   task: {id: string; title: string} | null;
   onSubmit: (taskId: string, newTitle: string) => void;
   onClose?: () => void;
 };
 
-type Props = EditTaskModalProps & ModalProps;
+type Props = EditTaskModalProps;
 
 const EditTaskModal: React.FC<Props> = ({
+  visible,
   task,
   onSubmit,
   onClose,
-  ...props
 }) => {
   const [input, setInput] = useState('');
 
@@ -39,38 +39,63 @@ const EditTaskModal: React.FC<Props> = ({
     }
   };
 
+  if (!visible) {
+    return null;
+  }
+
   return (
-    <Modal animationType="slide" {...props}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Edit Task</Text>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            autoFocus
-          />
-          <Button title="Save" onPress={submit} />
-          <Button title="Cancel" onPress={onClose} />
-        </View>
+    <View style={styles.modalOverlay}>
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        onPress={onClose}
+      />
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Edit Task</Text>
+        <TextInput
+          style={styles.input}
+          value={input}
+          onChangeText={setInput}
+          autoFocus
+        />
+        <Button title="Save" onPress={submit} />
+        <Button title="Cancel" onPress={onClose} />
       </View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   modalOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
     width: '80%',
+    maxWidth: 400,
     padding: 20,
     backgroundColor: '#fff',
     borderRadius: 10,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 18,

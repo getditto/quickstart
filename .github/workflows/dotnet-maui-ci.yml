@@ -1,0 +1,445 @@
+name: .NET MAUI CI
+
+on:
+  pull_request:
+    paths:
+      - "dotnet-maui/**"
+      - ".github/workflows/dotnet-maui-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Create test .env file
+        run: |
+          echo "DITTO_APP_ID=test" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
+          echo "DITTO_AUTH_URL=test" >> .env
+          echo "DITTO_WEBSOCKET_URL=test" >> .env
+
+      - name: Restore workloads and dependencies
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet workload restore
+          dotnet restore
+
+      - name: Run .NET format check
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet format DittoMauiTasksApp.sln --verify-no-changes --verbosity diagnostic
+          if [ $? -ne 0 ]; then
+            echo "❌ Code formatting issues found. Run 'dotnet format' to fix."
+            exit 1
+          fi
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Restore workloads and dependencies
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet workload restore
+          dotnet restore
+
+      - name: Build Android APK (unsigned Release)
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-android --no-restore
+
+      - name: Upload Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-android/live.ditto.quickstart.mauitasksapp-Signed.apk
+          retention-days: 1
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-26
+    needs: lint
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Restore workloads and dependencies
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet workload restore
+          dotnet restore --runtime ios-arm64
+
+      - name: Build iOS Device (Release for BrowserStack)
+        working-directory: dotnet-maui/DittoMauiTasksApp
+        run: |
+          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
+            /p:RuntimeIdentifier=ios-arm64 \
+            /p:EnableCodeSigning=false \
+            /p:ArchiveOnBuild=false
+
+      - name: Create iOS IPA for BrowserStack
+        working-directory: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64
+        run: |
+          mkdir -p Payload
+          cp -r DittoMauiTasksApp.app Payload/
+          zip -r DittoMauiTasksApp-device.ipa Payload
+          echo "Created IPA: $(pwd)/DittoMauiTasksApp-device.ipa"
+          ls -la DittoMauiTasksApp-device.ipa
+
+      - name: Upload iOS IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa
+          retention-days: 1
+
+  browserstack-android:
+    name: BrowserStack Android Tests
+    runs-on: ubuntu-latest
+    needs: [build-android]
+    timeout-minutes: 150
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Download Android APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: ./android-artifact
+
+      - name: Upload APK to BrowserStack
+        id: upload
+        run: |
+          echo "Uploading Android APK to BrowserStack..."
+          APK_PATH="./android-artifact/live.ditto.quickstart.mauitasksapp-Signed.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: APK not found at $APK_PATH"
+            find ./android-artifact -name "*.apk" -type f
+            exit 1
+          fi
+
+          UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@$APK_PATH" \
+            -F "custom_id=ditto-dotnet-maui-android")
+
+          APP_URL=$(echo "$UPLOAD_RESPONSE" | yq eval -p=json .app_url)
+          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+            echo "Error: Failed to upload APK"
+            exit 1
+          fi
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+          echo "Android APK uploaded: $APP_URL"
+
+      - name: Get BrowserStack build info (Android)
+        id: build-info-android
+        uses: ./.github/actions/generate-browserstack-names
+        with:
+          platform-suffix: ' (Android)'
+          title-max-length: '90'
+          commit-max-length: '130'
+
+      - name: Seed and execute Android tests on BrowserStack
+        id: test
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          timeout_minutes: 20
+          retry_wait_seconds: 900
+          command: |
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            TIMESTAMP=$(date +%s)
+            INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+                \"args\": {
+                  \"newTask\": {
+                    \"_id\": \"${INVERTED_TIMESTAMP}_dotnet-maui_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"title\": \"${INVERTED_TIMESTAMP}_dotnet-maui_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"done\": false,
+                    \"deleted\": false
+                  }
+                }
+              }" \
+              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+            HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+            BODY=$(echo "$SEED_RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              TASK_TITLE="${INVERTED_TIMESTAMP}_dotnet-maui_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+              echo "Seeded task: $TASK_TITLE"
+            else
+              echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
+              echo "Response: $BODY"
+              exit 1
+            fi
+
+            # Load device from centralized config
+            DEVICE=$(yq eval '.["dotnet-maui"].android.devices[0]' .github/browserstack-devices.yml)
+            echo "Using Android device: $DEVICE"
+
+            # Execute tests
+            cd dotnet-maui/UITests.Android
+            dotnet restore
+            BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
+            BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            BROWSERSTACK_APP_ID="${{ steps.upload.outputs.app_url }}" \
+            BROWSERSTACK_DEVICE="$DEVICE" \
+            DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
+            BROWSERSTACK_PROJECT="${{ steps.build-info-android.outputs.project-name }}" \
+            BUILD_NAME="${{ steps.build-info-android.outputs.build-name }}" \
+            dotnet run
+
+            # Query BrowserStack API to get the build ID
+            echo "Fetching build ID from BrowserStack..."
+            BUILDS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/builds.json?limit=1")
+
+            BUILD_ID=$(echo "$BUILDS_RESPONSE" | yq eval '.[0].hashed_id' -)
+
+            if [ "$BUILD_ID" != "null" ] && [ -n "$BUILD_ID" ]; then
+              echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+              echo "✅ Build ID: $BUILD_ID"
+            else
+              echo "⚠️ Could not retrieve build ID from BrowserStack API"
+            fi
+
+  browserstack-ios:
+    name: BrowserStack iOS Tests
+    runs-on: macos-latest
+    needs: [build-ios]
+    timeout-minutes: 150
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Download iOS IPA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: ./ios-artifact
+
+      - name: Upload IPA to BrowserStack
+        id: upload
+        run: |
+          echo "Uploading iOS IPA to BrowserStack..."
+          IPA_PATH="./ios-artifact/DittoMauiTasksApp-device.ipa"
+          if [ ! -f "$IPA_PATH" ]; then
+            echo "Error: IPA not found at $IPA_PATH"
+            find ./ios-artifact -name "*.ipa" -type f
+            exit 1
+          fi
+
+          UPLOAD_RESPONSE=$(curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@$IPA_PATH" \
+            -F "custom_id=ditto-dotnet-maui-ios")
+
+          APP_URL=$(echo "$UPLOAD_RESPONSE" | yq eval -p=json .app_url)
+          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+            echo "Error: Failed to upload IPA"
+            exit 1
+          fi
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+          echo "iOS IPA uploaded: $APP_URL"
+
+      - name: Get BrowserStack build info (iOS)
+        id: build-info-ios
+        uses: ./.github/actions/generate-browserstack-names
+        with:
+          platform-suffix: ' (iOS)'
+          title-max-length: '90'
+          commit-max-length: '130'
+
+      - name: Seed and execute iOS tests on BrowserStack
+        id: test
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          timeout_minutes: 20
+          retry_wait_seconds: 900
+          command: |
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            TIMESTAMP=$(date +%s)
+            INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+                \"args\": {
+                  \"newTask\": {
+                    \"_id\": \"${INVERTED_TIMESTAMP}_dotnet-maui_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"title\": \"${INVERTED_TIMESTAMP}_dotnet-maui_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"done\": false,
+                    \"deleted\": false
+                  }
+                }
+              }" \
+              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+            HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+            BODY=$(echo "$SEED_RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              TASK_TITLE="${INVERTED_TIMESTAMP}_dotnet-maui_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+              echo "Seeded task: $TASK_TITLE"
+            else
+              echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
+              echo "Response: $BODY"
+              exit 1
+            fi
+
+            # Load device from centralized config
+            DEVICE=$(yq eval '.["dotnet-maui"].ios.devices[0]' .github/browserstack-devices.yml)
+            echo "Using iOS device: $DEVICE"
+
+            # Execute tests
+            cd dotnet-maui/UITests.iOS
+            dotnet restore
+            BROWSERSTACK_USERNAME="${{ secrets.BROWSERSTACK_USERNAME }}" \
+            BROWSERSTACK_ACCESS_KEY="${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            BROWSERSTACK_APP_ID="${{ steps.upload.outputs.app_url }}" \
+            BROWSERSTACK_DEVICE="$DEVICE" \
+            DITTO_CLOUD_TASK_TITLE="$TASK_TITLE" \
+            BROWSERSTACK_PROJECT="${{ steps.build-info-ios.outputs.project-name }}" \
+            BUILD_NAME="${{ steps.build-info-ios.outputs.build-name }}" \
+            dotnet run
+
+            # Query BrowserStack API to get the build ID
+            echo "Fetching build ID from BrowserStack..."
+            BUILDS_RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/builds.json?limit=1")
+
+            BUILD_ID=$(echo "$BUILDS_RESPONSE" | yq eval '.[0].hashed_id' -)
+
+            if [ "$BUILD_ID" != "null" ] && [ -n "$BUILD_ID" ]; then
+              echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+              echo "✅ Build ID: $BUILD_ID"
+            else
+              echo "⚠️ Could not retrieve build ID from BrowserStack API"
+            fi
+
+  summary:
+    name: CI Report
+    runs-on: ubuntu-latest
+    needs: [lint, build-android, build-ios, browserstack-android, browserstack-ios]
+    if: always()
+
+    steps:
+      - name: Report Results
+        run: |
+          echo "## 📱 .NET MAUI CI" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Overall status
+          if [[ "${{ needs.lint.result }}" == "success" && \
+                "${{ needs.build-android.result }}" == "success" && \
+                "${{ needs.build-ios.result }}" == "success" && \
+                "${{ needs.browserstack-android.result }}" == "success" && \
+                "${{ needs.browserstack-ios.result }}" == "success" ]]; then
+            echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Android | ${{ needs.build-android.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build iOS | ${{ needs.build-ios.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack Android | ${{ needs.browserstack-android.result == 'success' && '✅ Passed' || (needs.browserstack-android.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack iOS | ${{ needs.browserstack-ios.result == 'success' && '✅ Passed' || (needs.browserstack-ios.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # BrowserStack links
+          echo "### BrowserStack Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.browserstack-android.result }}" != "skipped" && -n "${{ needs.browserstack-android.outputs.build_id }}" ]]; then
+            echo "**🤖 Android:**" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 [View Android Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.browserstack-ios.result }}" != "skipped" && -n "${{ needs.browserstack-ios.outputs.build_id }}" ]]; then
+            echo "**🍎 iOS:**" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 [View iOS Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-ios.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi

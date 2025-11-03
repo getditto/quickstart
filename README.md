@@ -46,6 +46,7 @@ build and run them.
 - [Javascript TUI](javascript-tui/README.md)
 - [Javascript Web](javascript-web/README.md)
 - [React Native](react-native/README.md)
+- [React Native Expo](react-native-expo/README.md)
 - [Rust TUI](rust-tui/README.md)
 - [Swift](swift/README.md)
 

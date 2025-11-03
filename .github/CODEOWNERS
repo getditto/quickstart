@@ -7,16 +7,23 @@
 * @getditto/sdk-engineers
 
 # SDK-specific owners
-/android-cpp/        @kristopherjohnson @teodorciuraru
-/android-java/       @phatblat @anyercastillo
-/android-kotlin/     @phatblat @anyercastillo
-/cpp-tui/            @kristopherjohnson @teodorciuraru
-/dotnet-maui/        @busec0 @phatblat
-/dotnet-tui/         @busec0 @phatblat
-/flutter_quickstart/ @cameron1024 @teodorciuraru
-/go-tui/             @kristopherjohnson @dsharp-pivotal
-/javascript-tui/     @konstantinbe @pvditto @teodorciuraru
-/javascript-web/     @konstantinbe @pvditto @teodorciuraru
-/react-native/       @teodorciuraru @kristopherjohnson
-/rust-tui/           @kristopherjohnson @cameron1024
-/swift/              @phatblat @konstantinbe @busec0
+/android-cpp/            @kristopherjohnson @teodorciuraru
+/android-java/           @phatblat @busec0
+/android-kotlin/         @phatblat @busec0
+/cpp-tui/                @kristopherjohnson @teodorciuraru
+/dotnet-maui/            @busec0 @kristopherjohnson
+/dotnet-tui/             @busec0 @kristopherjohnson
+/dotnet-winforms/        @busec0 @kristopherjohnson
+/flutter_app/            @pvditto @teodorciuraru
+/go-tui/                 @kristopherjohnson
+/java-spring/            @phatblat @busec0
+/javascript-tui/         @konstantinbe @pvditto @teodorciuraru
+/javascript-web/         @konstantinbe @pvditto @teodorciuraru
+/kotlin-multiplatform/   @busec0 @phatblat
+/react-native/           @teodorciuraru @kristopherjohnson
+/react-native-expo/      @teodorciuraru @kristopherjohnson
+/rust-tui/               @kristopherjohnson
+/swift/                  @phatblat @konstantinbe @busec0
+
+# TODO: Enable once we have 2 reviewers for Edge Server
+# /edge-server/            @baxterjo

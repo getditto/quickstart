@@ -1,0 +1,32 @@
+appId: com.dittoreactnativesampleapp
+tags:
+  - "smoke"
+---
+# Simple test: Launch app and verify specific task exists using testID
+# Usage: MAESTRO_DITTO_CLOUD_TASK_TITLE="Basic Test Task" maestro test 01-app-launch-and-seeded-tasks-android.yaml
+
+- launchApp:
+    appId: com.dittoreactnativesampleapp
+
+# Handle permission dialog if it appears
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# Wait for app to load
+- waitForAnimationToEnd
+
+# Scroll until the task is visible using testID
+- scrollUntilVisible:
+    element:
+      id: "${MAESTRO_DITTO_CLOUD_TASK_TITLE}"
+    direction: DOWN
+    timeout: 30000
+    speed: 40
+    visibilityPercentage: 100
+
+# Final assertion - task must be visible using id selector
+- assertVisible:
+    id: "${MAESTRO_DITTO_CLOUD_TASK_TITLE}"

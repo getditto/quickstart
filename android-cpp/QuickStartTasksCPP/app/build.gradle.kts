@@ -10,12 +10,24 @@ plugins {
 
 // Load properties from the .env file at the repository root
 fun loadEnvProperties(): Properties {
-    val envFile = rootProject.file("../../.env")
     val properties = Properties()
+    val envFile = rootProject.file("../../.env")
+
     if (envFile.exists()) {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
-        throw FileNotFoundException(".env file not found at: ${envFile.path}")
+        val requiredEnvVars = listOf(
+            "DITTO_APP_ID",
+            "DITTO_PLAYGROUND_TOKEN",
+            "DITTO_AUTH_URL",
+            "DITTO_WEBSOCKET_URL"
+        )
+
+        for (envVar in requiredEnvVars) {
+            val value = System.getenv(envVar)
+                ?: throw RuntimeException("Required environment variable $envVar not found")
+            properties[envVar] = value
+        }
     }
     return properties
 }
@@ -62,6 +74,7 @@ androidComponents {
                 "Ditto Websocket URL"
             )
         )
+
     }
 }
 
@@ -78,7 +91,6 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -114,6 +126,9 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
+    lint {
+        disable += "NullSafeMutableLiveData"
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -135,7 +150,7 @@ android {
 
 dependencies {
     // Ditto C++ SDK for Android
-    implementation("live.ditto:ditto-cpp:4.11.1")
+    implementation("live.ditto:ditto-cpp:4.12.4")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -150,12 +165,5 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.datastore.preferences)
 
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-
     debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }

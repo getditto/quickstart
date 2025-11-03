@@ -3,6 +3,7 @@ package com.example.dittotasks;
 import android.app.AlertDialog;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -47,21 +48,32 @@ public class MainActivity extends ComponentActivity {
     private String DITTO_WEBSOCKET_URL = BuildConfig.DITTO_WEBSOCKET_URL;
 
     // This is required to be set to false to use the correct URLs
-    private Boolean DITTO_ENABLE_CLOUD_SYNC = false;
+    private Boolean DITTO_ENABLE_CLOUD_SYNC = true;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // Keep screen on during testing to prevent NoActivityResumedException
+        if(BuildConfig.DEBUG && isInstrumentationTest()){
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+        
         initDitto();
 
-        // Populate AppID view
-        TextView appId = findViewById(R.id.ditto_app_id);
-        appId.setText(String.format("App ID: %s", DITTO_APP_ID));
+        // Populate connection info (only in debug builds)
+        if(BuildConfig.DEBUG) {
+            TextView appId = findViewById(R.id.ditto_app_id);
+            appId.setText(String.format("App ID: %s", DITTO_APP_ID));
 
-        // Populate Playground Token view
-        TextView playgroundToken = findViewById(R.id.ditto_playground_token);
-        playgroundToken.setText(String.format("Playground Token: %s", DITTO_PLAYGROUND_TOKEN));
+            TextView playgroundToken = findViewById(R.id.ditto_playground_token);
+            playgroundToken.setText(String.format("Playground Token: %s", DITTO_PLAYGROUND_TOKEN));
+        } else {
+            // Hide credential views in production
+            findViewById(R.id.ditto_app_id).setVisibility(View.GONE);
+            findViewById(R.id.ditto_playground_token).setVisibility(View.GONE);
+        }
 
         // Initialize "add task" fab
         FloatingActionButton addButton = findViewById(R.id.add_button);
@@ -84,18 +96,43 @@ public class MainActivity extends ComponentActivity {
         });
         taskAdapter.setOnTaskDeleteListener(this::deleteTask);
         taskAdapter.setOnTaskLongPressListener(this::showEditTaskModal);
+        
+        // Initialize empty list - Ditto observer will populate it
         taskAdapter.setTasks(List.of());
     }
 
-    void initDitto() {
-        requestPermissions();
 
+    void initDitto() {
+        Log.d("DittoInit", "=== Starting Ditto initialization ===");
+        
+        // Enable Ditto's internal debug logging (if available)
+        Log.d("DittoInit", "Ditto Logger class not available in this version, using Android Log instead");
+        
+        Log.d("DittoInit", "DITTO_APP_ID: " + DITTO_APP_ID);
+        Log.d("DittoInit", "DITTO_PLAYGROUND_TOKEN: " + (DITTO_PLAYGROUND_TOKEN != null ? "Present" : "NULL"));
+        Log.d("DittoInit", "DITTO_AUTH_URL: " + DITTO_AUTH_URL);
+        Log.d("DittoInit", "DITTO_WEBSOCKET_URL: " + DITTO_WEBSOCKET_URL);
+        Log.d("DittoInit", "DITTO_ENABLE_CLOUD_SYNC: " + DITTO_ENABLE_CLOUD_SYNC);
+        
+        // Skip permission requests during testing to avoid permission dialogs
+        if (!isInstrumentationTest()) {
+            Log.d("DittoInit", "Requesting permissions...");
+            requestPermissions();
+        } else {
+            Log.d("DittoInit", "Skipping permissions during instrumentation test");
+        }
+
+        Log.d("DittoInit", "Starting Ditto SDK initialization...");
         try {
+            Log.d("DittoInit", "Creating AndroidDependencies...");
             DittoDependencies androidDependencies = new DefaultAndroidDittoDependencies(getApplicationContext());
+            Log.d("DittoInit", "AndroidDependencies created successfully");
+            
             /*
              *  Setup Ditto Identity
              *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
              */
+            Log.d("DittoInit", "Creating DittoIdentity.OnlinePlayground...");
             var identity = new DittoIdentity
                     .OnlinePlayground(
                             androidDependencies,
@@ -103,43 +140,73 @@ public class MainActivity extends ComponentActivity {
                             DITTO_PLAYGROUND_TOKEN,
                             DITTO_ENABLE_CLOUD_SYNC, // This is required to be set to false to use the correct URLs
                             DITTO_AUTH_URL);
+            Log.d("DittoInit", "DittoIdentity created successfully");
+            
+            Log.d("DittoInit", "Creating Ditto instance...");
             ditto = new Ditto(androidDependencies, identity);
+            Log.d("DittoInit", "Ditto instance created successfully");
 
             //https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations
+            Log.d("DittoInit", "Updating transport config...");
             ditto.updateTransportConfig(config -> {
                 config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
 
                 // lambda must return Kotlin Unit which corresponds to 'void' in Java
                 return kotlin.Unit.INSTANCE;
             });
+            Log.d("DittoInit", "Transport config updated");
 
             // disable sync with v3 peers, required for DQL
+            Log.d("DittoInit", "Disabling sync with v3...");
             ditto.disableSyncWithV3();
+            Log.d("DittoInit", "Sync with v3 disabled");
 
             // Disable DQL strict mode
             // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
             // https://docs.ditto.live/dql/strict-mode
+            Log.d("DittoInit", "Setting DQL strict mode to false...");
             ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+            Log.d("DittoInit", "DQL strict mode disabled");
 
             // register subscription
             // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+            Log.d("DittoInit", "Registering subscription...");
             taskSubscription = ditto.sync.registerSubscription("SELECT * FROM tasks");
+            Log.d("DittoInit", "Subscription registered");
 
             // register observer for live query
             // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-            taskObserver = ditto.store.registerObserver("SELECT * FROM tasks WHERE deleted=false ORDER BY _id", null, result -> {
+            Log.d("DittoInit", "Registering observer...");
+            taskObserver = ditto.store.registerObserver("SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC", null, result -> {
+                Log.d("DittoInit", "Observer callback triggered with " + result.getItems().size() + " items");
                 var tasks = result.getItems().stream().map(Task::fromQueryItem).collect(Collectors.toCollection(ArrayList::new));
                 runOnUiThread(() -> {
+                    Log.d("DittoInit", "Updating UI with " + tasks.size() + " tasks");
                     taskAdapter.setTasks(new ArrayList<>(tasks));
                 });
                 return Unit.INSTANCE;
             });
+            Log.d("DittoInit", "Observer registered");
 
-
-
+            Log.d("DittoInit", "Starting Ditto sync...");
             ditto.startSync();
+            Log.d("DittoInit", "=== Ditto initialization completed successfully ===");
         } catch (DittoError e) {
+            Log.e("DittoInit", "DittoError during initialization: " + e.getMessage(), e);
             e.printStackTrace();
+        } catch (Exception e) {
+            Log.e("DittoInit", "Unexpected error during Ditto initialization: " + e.getMessage(), e);
+            e.printStackTrace();
+        }
+    }
+
+    // Check if running under instrumentation (testing)
+    private boolean isInstrumentationTest() {
+        try {
+            Class.forName("androidx.test.espresso.Espresso");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
         }
     }
 
@@ -186,6 +253,11 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void toggleTask(Task task) {
+        if (ditto == null) {
+            Log.i("MainActivity", "Ditto disabled - toggle task ignored: " + task.getTitle());
+            return;
+        }
+        
         HashMap<String, Object> args = new HashMap<>();
         args.put("id", task.getId());
         args.put("done", !task.isDone());
@@ -200,6 +272,11 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void deleteTask(Task task) {
+        if (ditto == null) {
+            Log.i("MainActivity", "Ditto disabled - delete task ignored: " + task.getTitle());
+            return;
+        }
+        
         HashMap<String, Object> args = new HashMap<>();
         args.put("id", task.getId());
         try {

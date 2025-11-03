@@ -11,7 +11,7 @@ namespace DittoMauiTasksApp.ViewModels
 {
     public partial class TasksPageviewModel : ObservableObject
     {
-        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted";
+        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC";
 
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
@@ -50,21 +50,21 @@ namespace DittoMauiTasksApp.ViewModels
                 }
 #else
 
-                DittoSyncPermissions.RequestPermissionsAsync().ContinueWith(async t =>
+            DittoSyncPermissions.RequestPermissionsAsync().ContinueWith(async t =>
+            {
+                try
                 {
-                    try
-                    {
-                        await InsertInitialTasks();
-                        ObserveDittoTasksCollection();
-                        StartSync();
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
-                    }
-                });
+                    await InsertInitialTasks();
+                    ObserveDittoTasksCollection();
+                    StartSync();
+                }
+                catch (Exception e)
+                {
+                    logger.LogError($"TasksPageviewModel: Unable to start Ditto sync: {e.Message}");
+                }
+            });
 #endif
-            }
+        }
         private async Task InsertInitialTasks()
         {
             try
@@ -253,7 +253,7 @@ namespace DittoMauiTasksApp.ViewModels
                 {
                     var newTasks = queryResult.Items.Select(d =>
                         JsonSerializer.Deserialize<DittoTask>(d.JsonString())
-                    ).OrderBy(t => t.Id).ToList();
+                    ).ToList();
 
                     MainThread.BeginInvokeOnMainThread(() =>
                     {

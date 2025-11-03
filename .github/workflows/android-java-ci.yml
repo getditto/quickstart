@@ -1,0 +1,340 @@
+name: Android Java CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android-java/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('android-java/gradle/wrapper/gradle-wrapper.properties', 'android-java/**/*.gradle*') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Create test .env file
+        run: |
+          echo "DITTO_APP_ID=test" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=test" >> .env
+          echo "DITTO_AUTH_URL=test" >> .env
+          echo "DITTO_WEBSOCKET_URL=test" >> .env
+
+      - name: Run Android linting
+        working-directory: android-java
+        run: ./gradlew lint
+
+  build:
+    name: Build APKs
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Create .env file
+        run: |
+          echo "DITTO_APP_ID=${{ secrets.DITTO_APP_ID }}" > .env
+          echo "DITTO_PLAYGROUND_TOKEN=${{ secrets.DITTO_PLAYGROUND_TOKEN }}" >> .env
+          echo "DITTO_AUTH_URL=${{ secrets.DITTO_AUTH_URL }}" >> .env
+          echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
+
+      - name: Build APKs
+        working-directory: android-java
+        run: ./gradlew assembleDebug assembleDebugAndroidTest
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks-${{ github.run_number }}
+          path: |
+            android-java/app/build/outputs/apk/debug/app-debug.apk
+            android-java/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          retention-days: 1
+
+  browserstack-android:
+    name: BrowserStack Device Testing
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 150
+    outputs:
+      build_id: ${{ steps.test.outputs.build_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apks-${{ github.run_number }}
+          path: android-java/app/build/outputs/apk/
+
+      - name: Upload APKs to BrowserStack
+        id: upload
+        run: |
+          CREDS="${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
+
+          # Upload app APK
+          echo "Uploading app APK to BrowserStack..."
+          APP_RESPONSE=$(curl -u "$CREDS" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" \
+            -F "file=@android-java/app/build/outputs/apk/debug/app-debug.apk" \
+            -F "custom_id=ditto-android-java-app")
+
+          APP_URL=$(echo "$APP_RESPONSE" | yq eval -p=json .app_url)
+          if [ "$APP_URL" = "null" ] || [ -z "$APP_URL" ]; then
+            echo "Error: Failed to upload app APK"
+            echo "Response: $APP_RESPONSE"
+            exit 1
+          fi
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+          echo "App APK uploaded: $APP_URL"
+
+          # Upload test APK
+          echo "Uploading test APK to BrowserStack..."
+          TEST_RESPONSE=$(curl -u "$CREDS" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" \
+            -F "file=@android-java/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" \
+            -F "custom_id=ditto-android-java-test")
+
+          TEST_URL=$(echo "$TEST_RESPONSE" | yq eval -p=json .test_suite_url)
+          if [ "$TEST_URL" = "null" ] || [ -z "$TEST_URL" ]; then
+            echo "Error: Failed to upload test APK"
+            echo "Response: $TEST_RESPONSE"
+            exit 1
+          fi
+          echo "test_url=$TEST_URL" >> "$GITHUB_OUTPUT"
+          echo "Test APK uploaded: $TEST_URL"
+
+      - name: Get BrowserStack build info
+        id: build-info
+        uses: ./.github/actions/generate-browserstack-names
+
+      - name: Seed and execute tests on BrowserStack
+        id: test
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          timeout_minutes: 20
+          retry_wait_seconds: 900
+          command: |
+            # Seed test task to Ditto Cloud
+            echo "Seeding test task to Ditto Cloud..."
+            TIMESTAMP=$(date +%s)
+            INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
+            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H 'Content-type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -d "{
+                \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
+                \"args\": {
+                  \"newTask\": {
+                    \"_id\": \"${INVERTED_TIMESTAMP}_android-java_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"title\": \"${INVERTED_TIMESTAMP}_android-java_ci_test_${{ github.run_id }}_${{ github.run_number }}\",
+                    \"done\": false,
+                    \"deleted\": false
+                  }
+                }
+              }" \
+              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+
+            HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
+            BODY=$(echo "$SEED_RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              TASK_TITLE="${INVERTED_TIMESTAMP}_android-java_ci_test_${{ github.run_id }}_${{ github.run_number }}"
+              echo "Seeded task: $TASK_TITLE"
+            else
+              echo "Error: Failed to seed task. HTTP Status: $HTTP_CODE"
+              echo "Response: $BODY"
+              exit 1
+            fi
+
+            # Load devices from centralized config
+            DEVICES=$(yq eval -o=json -I=0 '.["android-java"].devices' .github/browserstack-devices.yml)
+            echo "Loaded devices: $DEVICES"
+
+            # Create test execution request
+            BUILD_RESPONSE=$(curl -s -u '${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}' \
+              -X POST 'https://api-cloud.browserstack.com/app-automate/espresso/v2/build' \
+              -H 'Content-Type: application/json' \
+              -d '{
+                "app": "${{ steps.upload.outputs.app_url }}",
+                "testSuite": "${{ steps.upload.outputs.test_url }}",
+                "devices": '"$DEVICES"',
+                "project": "${{ steps.build-info.outputs.project-name }}",
+                "buildName": "${{ steps.build-info.outputs.build-name }}",
+                "buildTag": "${{ github.head_ref || github.ref_name }}",
+                "deviceLogs": true,
+                "video": true,
+                "networkLogs": true,
+                "autoGrantPermissions": true,
+                "instrumentationLogs": true,
+                "instrumentationOptions": {
+                  "DITTO_CLOUD_TASK_TITLE": "'"$TASK_TITLE"'"
+                }
+              }')
+
+            BUILD_ID=$(echo "$BUILD_RESPONSE" | yq eval .build_id)
+
+            if [ "$BUILD_ID" = "null" ] || [ -z "$BUILD_ID" ]; then
+              echo "Error: Failed to create BrowserStack build"
+              echo "Response: $BUILD_RESPONSE"
+              exit 1
+            fi
+
+            echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+            echo "Build started with ID: $BUILD_ID"
+
+            # Wait for test execution to complete
+            MAX_WAIT_TIME=1080  # 18 minutes
+            CHECK_INTERVAL=30   # Check every 30 seconds
+            ELAPSED=0
+
+            echo "⏳ Waiting for test execution to complete..."
+            while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+              RESPONSE=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+                "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+
+              STATUS=$(echo "$RESPONSE" | yq eval .status)
+
+              if [ "$STATUS" = "null" ] || [ -z "$STATUS" ]; then
+                echo "⚠️  API error, retrying... (${ELAPSED}s elapsed)"
+                sleep $CHECK_INTERVAL
+                ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+                continue
+              fi
+
+              echo "📊 Status: $STATUS (${ELAPSED}s elapsed)"
+
+              # Check for completion
+              if [[ "$STATUS" =~ ^(done|failed|error|passed|completed)$ ]]; then
+                echo "✅ Build completed with status: $STATUS"
+                break
+              fi
+
+              sleep $CHECK_INTERVAL
+              ELAPSED=$((ELAPSED + CHECK_INTERVAL))
+            done
+
+            # Get final results
+            FINAL_RESULT=$(curl -s -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+              "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$BUILD_ID")
+
+            echo "📋 Final results:"
+            echo "$FINAL_RESULT" | jq .
+
+            # Validate and check results
+            if echo "$FINAL_RESULT" | jq -e .devices > /dev/null 2>&1; then
+              BUILD_STATUS=$(echo "$FINAL_RESULT" | yq eval .status)
+              if [ "$BUILD_STATUS" != "passed" ]; then
+                echo "❌ Tests failed with status: $BUILD_STATUS"
+
+                FAILED_DEVICES=$(echo "$FINAL_RESULT" | yq eval '.devices[] | select(.sessions[].status != "passed") | .device')
+                if [ -n "$FAILED_DEVICES" ]; then
+                  echo "Failed on devices: $FAILED_DEVICES"
+                fi
+                exit 1
+              else
+                echo "🎉 All tests passed successfully!"
+              fi
+            else
+              echo "⚠️  Could not parse final results"
+              exit 1
+            fi
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            android-java/app/build/outputs/apk/
+            android-java/app/build/reports/
+
+  summary:
+    name: CI Report
+    runs-on: ubuntu-latest
+    needs: [lint, build, browserstack-android]
+    if: always()
+
+    steps:
+      - name: Report Results
+        run: |
+          echo "## 📱 Android Java CI" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Overall status
+          if [[ "${{ needs.lint.result }}" == "success" && \
+                "${{ needs.build.result }}" == "success" && \
+                "${{ needs.browserstack-android.result }}" == "success" ]]; then
+            echo "**Overall Status:** ✅ All checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Overall Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| BrowserStack Tests | ${{ needs.browserstack-android.result == 'success' && '✅ Passed' || (needs.browserstack-android.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # BrowserStack link
+          if [[ "${{ needs.browserstack-android.result }}" != "skipped" ]]; then
+            echo "### BrowserStack Session" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🤖 [View Test Results](https://app-automate.browserstack.com/dashboard/v2/builds/${{ needs.browserstack-android.outputs.build_id }}/)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Tested Devices:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Google Pixel 8 (Android 14)" >> $GITHUB_STEP_SUMMARY
+            echo "- Samsung Galaxy S23 (Android 13)" >> $GITHUB_STEP_SUMMARY
+            echo "- Google Pixel 6 (Android 12)" >> $GITHUB_STEP_SUMMARY
+            echo "- OnePlus 9 (Android 11)" >> $GITHUB_STEP_SUMMARY
+          fi

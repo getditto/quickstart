@@ -4,12 +4,14 @@ use dittolive_ditto::prelude::*;
 use futures::{FutureExt, Stream, StreamExt};
 use ratatui::prelude::*;
 use std::{io::Stdout, ops::ControlFlow, time::Duration};
-use todolist::Todolist;
 use tokio::task::JoinHandle;
 
 use crate::{should_quit, Shutdown};
 
 pub mod todolist;
+
+// Re-export for integration tests
+pub use todolist::{TodoItem, Todolist};
 
 /// External handle for callers to interact with the tui task
 pub struct TuiTask {
