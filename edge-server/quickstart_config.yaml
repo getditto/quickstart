@@ -1,0 +1,46 @@
+resources:
+  my_http_server:
+    resource_type: HttpServer
+    listen_addr: "0.0.0.0:8080"
+    databases:
+      my_db:
+        db_id: "6f40c2a7-e390-4808-a6e9-e66ed4b7e355"
+        base_path: my_server
+        http_api: true
+        max_timeout_ms: 10000
+        default_timeout_ms: 5000
+  my_ditto_db:
+    resource_type: DittoDatabase
+    db_id: "6f40c2a7-e390-4808-a6e9-e66ed4b7e355"
+    device_name: your-device-name
+    auth:
+      server:
+        access_token: "33c20441-5b98-4cce-8c6e-3e8fe028946b"
+        auth_url: https://i83inp.cloud.dittolive.app/
+        provider: __playgroundProvider
+        enable_cloud_sync: false
+    persistence_dir: from_current_exe
+    transport_config:
+      peer_to_peer:
+        ble_enabled: true
+        lan_enabled: true
+        lan_mdns_enabled: true
+        lan_multicast_enabled: null
+      connect_config:
+        known_tcp_servers: []
+        known_ws_servers: []
+        retry_interval_msec: null
+      listen_config:
+        tcp_listen:
+          enable: true
+          ip: "0.0.0.0"
+          port: 9000
+    auto_fetch_attachments: false
+    subscriptions:
+      - SELECT * FROM tasks
+logging:
+  ditto_sdk: debug
+  edge_server:
+    level: debug
+    console_logs: std_out
+    rotating_logs: null

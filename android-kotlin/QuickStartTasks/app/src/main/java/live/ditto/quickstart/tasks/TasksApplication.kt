@@ -67,6 +67,8 @@ class TasksApplication : Application() {
         ditto.updateTransportConfig { config ->
             // Set the Ditto Websocket URL
             config.connect.websocketUrls.add(webSocketURL)
+
+            config.connect.tcpServers.add("192.168.1.8:9000")
         }
 
         ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false")
