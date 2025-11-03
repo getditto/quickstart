@@ -11,7 +11,10 @@ on:
 
 jobs:
   update-sdk-versions:
-    runs-on: ubuntu-latest
+    # NOTE: We use macos-latest instead of ubuntu-latest because this workflow needs to run
+    # CocoaPods commands for updating React Native iOS dependencies. CocoaPods requires a
+    # macOS environment with Xcode.
+    runs-on: macos-latest
     permissions:
       contents: write
       pull-requests: write
@@ -25,9 +28,9 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
+          # Note: react-native-expo uses yarn (not npm), so it's excluded from npm cache paths
           cache-dependency-path: |
             react-native/package-lock.json
-            react-native-expo/package-lock.json
             javascript-tui/package-lock.json
             javascript-web/package-lock.json
 
@@ -51,12 +54,28 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Setup Ruby and Bundler
+        uses: ruby/setup-ruby@v1.267.0
+        with:
+          ruby-version: "3.3"
+          # working-directory specifies where to find Gemfile for bundler-cache
+          bundler-cache: true
+          working-directory: react-native
+
       - name: Setup CocoaPods
         run: |
           sudo gem install cocoapods
           pod --version
 
       - name: Update SDK versions and lockfiles
+        # The Android Kotlin build requires all four Ditto environment variables to be set
+        # for any Gradle operation (including dependency refresh). These are validated at
+        # configuration time in android-kotlin/QuickStartTasks/app/build.gradle.kts
+        env:
+          DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
+          DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
+          DITTO_AUTH_URL: ${{ secrets.DITTO_AUTH_URL }}
+          DITTO_WEBSOCKET_URL: ${{ secrets.DITTO_WEBSOCKET_URL }}
         run: node scripts/bump-versions.js -t "${{ github.event.inputs.version }}"
 
       - name: Configure Git
@@ -86,7 +105,7 @@ jobs:
       - name: Create Draft Pull Request
         if: steps.create-branch.outputs.has-changes == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create \
             --title "chore: update Ditto SDK to version ${{ github.event.inputs.version }}" \
@@ -103,6 +122,8 @@ jobs:
 
       - name: Output PR URL
         if: steps.create-branch.outputs.has-changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_URL=$(gh pr view "${{ steps.create-branch.outputs.branch-name }}" --json url -q .url)
           echo "Created draft PR: $PR_URL"
