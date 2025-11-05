@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/getditto/ditto-go-sdk/ditto"
+	"github.com/getditto/ditto-go-sdk/v5/ditto"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/google/uuid"
