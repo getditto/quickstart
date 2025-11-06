@@ -96,15 +96,15 @@ public class DittoTaskService {
 
     @Nonnull
     public Flux<List<Task>> observeAll() {
-        final String selectQuery = "SELECT * FROM %s WHERE NOT deleted".formatted(TASKS_COLLECTION_NAME);
+        final String subscriptionQuery = "SELECT * FROM %s WHERE NOT deleted".formatted(TASKS_COLLECTION_NAME);
+        final String displayQuery = subscriptionQuery + " ORDER BY title ASC";
 
         return Flux.create(emitter -> {
             Ditto ditto = dittoService.getDitto();
             try {
-                DittoSyncSubscription subscription = ditto.getSync().registerSubscription(selectQuery);
-                DittoStoreObserver observer = ditto.getStore().registerObserver(selectQuery, results -> {
-                    emitter.next(results.getItems().stream().map(this::itemToTask).toList());
-                });
+                DittoSyncSubscription subscription = ditto.getSync().registerSubscription(subscriptionQuery);
+                DittoStoreObserver observer = ditto.getStore().registerObserver(displayQuery, results ->
+                    emitter.next(results.getItems().stream().map(this::itemToTask).toList()));
 
                 emitter.onDispose(() -> {
                     // TODO: Can't just catch, this potentially leaks the `observer` resource.
