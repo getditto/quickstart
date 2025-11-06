@@ -11,8 +11,6 @@ require (
 	golang.org/x/term v0.36.0
 )
 
-replace github.com/getditto/ditto-go-sdk/v5 => /Users/kristopherjohnson/getditto/ditto-go-sdk
-
 require (
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
