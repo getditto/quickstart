@@ -62,6 +62,7 @@ class DittoManager(
                             token = secrets.DITTO_PLAYGROUND_TOKEN,
                             provider = DittoAuthenticationProvider.development(),
                         )
+                        DittoLog.d(TAG, "Auth response: $clientInfo")
                     }
                 }.apply {
                     updateTransportConfig { config ->
