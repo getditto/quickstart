@@ -30,15 +30,10 @@ private const val TAG = "DittoManager"
  *
  * Because ditto also has a "database" component, it is fine to expose this class to a Repository.
  */
-class DittoManager {
-    val secrets: DittoSecretsConfiguration
-
-    constructor(secrets: DittoSecretsConfiguration) {
-        this.secrets = secrets
-        this.scope = CoroutineScope(SupervisorJob())
-    }
-
-    private val scope: CoroutineScope
+class DittoManager(
+    val secrets: DittoSecretsConfiguration,
+) {
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
     private var createJob: Job? = null
     private var closeJob: Job? = null
     private var ditto: Ditto? = null
