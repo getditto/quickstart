@@ -56,7 +56,7 @@ class DittoManager(
                 createDitto(
                     config = config
                 ).apply {
-                    auth?.setExpirationHandler { ditto, secondsRemaining ->
+                    auth?.setExpirationHandler { ditto, _ ->
                         // Authenticate when a token is expiring
                         val clientInfo = ditto.auth?.login(
                             token = secrets.DITTO_PLAYGROUND_TOKEN,
@@ -64,7 +64,6 @@ class DittoManager(
                         )
                         DittoLog.d(TAG, "Auth response: $clientInfo")
                     }
-                }.apply {
                     updateTransportConfig { config ->
                         config.peerToPeer.lan.enabled = true
                         config.peerToPeer.bluetoothLe.enabled = true
