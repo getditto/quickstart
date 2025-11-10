@@ -108,6 +108,9 @@ android {
 }
 
 dependencies {
+    // Ditto SDK
+    implementation(libs.ditto)
+
     // Core Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -130,9 +133,6 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.koin.androidx.compose.navigation)
-
-    // Ditto SDK
-    implementation(libs.live.ditto)
 
     // Testing
     testImplementation(libs.junit)
