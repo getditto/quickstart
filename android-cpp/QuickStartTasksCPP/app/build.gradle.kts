@@ -150,7 +150,7 @@ android {
 
 dependencies {
     // Ditto C++ SDK for Android
-    implementation("live.ditto:ditto-cpp:4.12.4")
+    implementation("live.ditto:ditto-cpp:4.13.0-rc.4")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
