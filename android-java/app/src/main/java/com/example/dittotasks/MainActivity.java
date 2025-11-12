@@ -17,8 +17,10 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import kotlin.Unit;
 import live.ditto.*;
 import live.ditto.android.DefaultAndroidDittoDependencies;
+import live.ditto.android.DittoAndroidConfig;
 import live.ditto.transports.DittoSyncPermissions;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +35,7 @@ public class MainActivity extends ComponentActivity {
     DittoSyncSubscription taskSubscription;
     DittoStoreObserver taskObserver;
 
+    private final String TAG = "MainActivity";
     private final String DITTO_APP_ID = BuildConfig.DITTO_APP_ID;
     private final String DITTO_PLAYGROUND_TOKEN = BuildConfig.DITTO_PLAYGROUND_TOKEN;
     private final String DITTO_AUTH_URL = BuildConfig.DITTO_AUTH_URL;
@@ -115,47 +118,47 @@ public class MainActivity extends ComponentActivity {
 
         Log.d("DittoInit", "Starting Ditto SDK initialization...");
         try {
-            Log.d("DittoInit", "Creating AndroidDependencies...");
-            DittoDependencies androidDependencies = new DefaultAndroidDittoDependencies(getApplicationContext());
-            Log.d("DittoInit", "AndroidDependencies created successfully");
-            
-            /*
-             *  Setup Ditto Identity
-             *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
-             */
-            Log.d("DittoInit", "Creating DittoIdentity.OnlinePlayground...");
-            var identity = new DittoIdentity
-                    .OnlinePlayground(
-                            androidDependencies,
-                            DITTO_APP_ID,
-                            DITTO_PLAYGROUND_TOKEN,
-                            DITTO_ENABLE_CLOUD_SYNC, // This is required to be set to false in order to use the correct URLs
-                            DITTO_AUTH_URL);
-            Log.d("DittoInit", "DittoIdentity created successfully");
-            
-            Log.d("DittoInit", "Creating Ditto instance...");
-            ditto = new Ditto(androidDependencies, identity);
-            Log.d("DittoInit", "Ditto instance created successfully");
+            // DittoConfig setup
+            // https://docs.ditto.live/sdk/latest/ditto-config#api-usage
+            var dittoConfig = new DittoAndroidConfig(
+                    getApplicationContext(),
+                    DITTO_APP_ID,
+                    new DittoConfigConnect.Server(URI.create(DITTO_AUTH_URL))
+            );
+            ditto = Ditto.openSync(dittoConfig);
 
-            //https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations
-            Log.d("DittoInit", "Updating transport config...");
+            assert ditto.auth != null;
+            ditto.auth.setExpirationHandler((ditto, seconds) -> {
+                assert ditto.auth != null;
+                ditto.auth.login(
+                        DITTO_PLAYGROUND_TOKEN,
+                        DittoAuthenticationProvider.Companion.development().getRawValue(),
+                        (clientInfo, error) -> {
+                            if (error != null) {
+                                DittoLog.e(TAG, "Authentication error: " + error.getMessage());
+                            } else {
+                                System.out.println("Authentication successful");
+                            }
+                        }
+                );
+                // lambda must return Kotlin Unit which corresponds to 'void' in Java
+                return Unit.INSTANCE;
+            });
+
+            // https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations
             ditto.updateTransportConfig(config -> {
                 config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
 
                 // lambda must return Kotlin Unit which corresponds to 'void' in Java
                 return Unit.INSTANCE;
             });
-            Log.d("DittoInit", "Transport config updated");
 
             // disable sync with v3 peers, required for DQL
-            Log.d("DittoInit", "Disabling sync with v3...");
             ditto.disableSyncWithV3();
-            Log.d("DittoInit", "Sync with v3 disabled");
 
             // Disable DQL strict mode
             // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
             // https://docs.ditto.live/dql/strict-mode
-            Log.d("DittoInit", "Setting DQL strict mode to false...");
             try (DittoQueryResult result = ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false")) {
                 // result auto-closed
             }
