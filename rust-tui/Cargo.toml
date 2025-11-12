@@ -18,7 +18,7 @@ path = "src/bin/integration_test.rs"
 
 [dependencies]
 # Ditto dependenceis
-dittolive-ditto = "4.12.4"
+dittolive-ditto = "4.13.0-rc.4"
 
 # External dependencies
 anyhow = "1"
@@ -37,5 +37,3 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
 uuid = "1.13"
-
-
