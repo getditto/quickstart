@@ -8,31 +8,22 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
-
 import androidx.activity.ComponentActivity;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import kotlin.Unit;
+import live.ditto.*;
+import live.ditto.android.DefaultAndroidDittoDependencies;
+import live.ditto.transports.DittoSyncPermissions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import kotlin.Unit;
-import live.ditto.Ditto;
-import live.ditto.DittoDependencies;
-import live.ditto.DittoError;
-import live.ditto.DittoIdentity;
-import live.ditto.DittoStoreObserver;
-import live.ditto.DittoSyncSubscription;
-import live.ditto.android.DefaultAndroidDittoDependencies;
-import live.ditto.transports.DittoSyncPermissions;
-import live.ditto.transports.DittoTransportConfig;
 
 public class MainActivity extends ComponentActivity {
     private TaskAdapter taskAdapter;
@@ -42,13 +33,13 @@ public class MainActivity extends ComponentActivity {
     DittoSyncSubscription taskSubscription;
     DittoStoreObserver taskObserver;
 
-    private String DITTO_APP_ID = BuildConfig.DITTO_APP_ID;
-    private String DITTO_PLAYGROUND_TOKEN = BuildConfig.DITTO_PLAYGROUND_TOKEN;
-    private String DITTO_AUTH_URL = BuildConfig.DITTO_AUTH_URL;
-    private String DITTO_WEBSOCKET_URL = BuildConfig.DITTO_WEBSOCKET_URL;
+    private final String DITTO_APP_ID = BuildConfig.DITTO_APP_ID;
+    private final String DITTO_PLAYGROUND_TOKEN = BuildConfig.DITTO_PLAYGROUND_TOKEN;
+    private final String DITTO_AUTH_URL = BuildConfig.DITTO_AUTH_URL;
+    private final String DITTO_WEBSOCKET_URL = BuildConfig.DITTO_WEBSOCKET_URL;
 
-    // This is required to be set to false to use the correct URLs
-    private Boolean DITTO_ENABLE_CLOUD_SYNC = true;
+    // This is required to be set to false, in order to use the correct URLs
+    private final Boolean DITTO_ENABLE_CLOUD_SYNC = true;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -138,7 +129,7 @@ public class MainActivity extends ComponentActivity {
                             androidDependencies,
                             DITTO_APP_ID,
                             DITTO_PLAYGROUND_TOKEN,
-                            DITTO_ENABLE_CLOUD_SYNC, // This is required to be set to false to use the correct URLs
+                            DITTO_ENABLE_CLOUD_SYNC, // This is required to be set to false in order to use the correct URLs
                             DITTO_AUTH_URL);
             Log.d("DittoInit", "DittoIdentity created successfully");
             
@@ -152,7 +143,7 @@ public class MainActivity extends ComponentActivity {
                 config.getConnect().getWebsocketUrls().add(DITTO_WEBSOCKET_URL);
 
                 // lambda must return Kotlin Unit which corresponds to 'void' in Java
-                return kotlin.Unit.INSTANCE;
+                return Unit.INSTANCE;
             });
             Log.d("DittoInit", "Transport config updated");
 
@@ -165,7 +156,9 @@ public class MainActivity extends ComponentActivity {
             // when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
             // https://docs.ditto.live/dql/strict-mode
             Log.d("DittoInit", "Setting DQL strict mode to false...");
-            ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+            try (DittoQueryResult result = ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false")) {
+                // result auto-closed
+            }
             Log.d("DittoInit", "DQL strict mode disabled");
 
             // register subscription
