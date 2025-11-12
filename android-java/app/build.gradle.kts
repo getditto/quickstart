@@ -45,7 +45,7 @@ androidComponents {
             "DITTO_APP_ID",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_APP_ID"]}\"",
+                "${prop["DITTO_APP_ID"]}",
                 "Ditto application ID"
             )
         )
@@ -53,7 +53,7 @@ androidComponents {
             "DITTO_PLAYGROUND_TOKEN",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
+                "${prop["DITTO_PLAYGROUND_TOKEN"]}",
                 "Ditto online playground authentication token"
             )
         )
@@ -62,7 +62,7 @@ androidComponents {
             "DITTO_AUTH_URL",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_AUTH_URL"]}\"",
+                "${prop["DITTO_AUTH_URL"]}",
                 "Ditto Auth URL"
             )
         )
@@ -71,7 +71,7 @@ androidComponents {
             "DITTO_WEBSOCKET_URL",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_WEBSOCKET_URL"]}\"",
+                "${prop["DITTO_WEBSOCKET_URL"]}",
                 "Ditto Websocket URL"
             )
         )
@@ -126,7 +126,7 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.ditto)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -135,7 +135,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.ditto)
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
 
