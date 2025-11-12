@@ -1,6 +1,7 @@
 [versions]
 ditto = "4.13.0-rc.4"
 agp = "8.7.3"
+ditto = "4.13.0-rc.4"
 kotlin = "1.9.24"
 coreKtx = "1.16.0"
 junit = "4.13.2"
@@ -17,6 +18,7 @@ datastorePreferences = "1.1.7"
 [libraries]
 ditto-cpp = { module = "live.ditto:ditto-cpp", version.ref = "ditto" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+ditto-cpp = { module = "live.ditto:ditto-cpp", version.ref = "ditto" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
