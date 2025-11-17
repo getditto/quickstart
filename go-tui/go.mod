@@ -3,12 +3,12 @@ module github.com/getditto/quickstart/go-tui/ditto-tasks-termui
 go 1.24.0
 
 require (
-	github.com/getditto/ditto-go-sdk/v5 v5.0.0-experimental-go-publish.10
+	github.com/getditto/ditto-go-sdk/v5 v5.0.0-go-preview.3
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
-	golang.org/x/sys v0.37.0
-	golang.org/x/term v0.36.0
+	golang.org/x/sys v0.38.0
+	golang.org/x/term v0.37.0
 )
 
 require (

@@ -17,8 +17,7 @@ help:
 GO=go
 
 # Ditto SDK version and platform detection
-#DITTO_SDK_VERSION ?= 5.0.0-go-preview.1
-DITTO_SDK_VERSION ?= 5.0.0-experimental-go-publish.10
+DITTO_SDK_VERSION ?= 5.0.0-go-preview.3
 PLATFORM := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m)
 
@@ -36,7 +35,7 @@ else
     $(error Unsupported platform: $(PLATFORM))
 endif
 
-DITTO_SDK_URL = "https://software.ditto.live/go-$(DITTO_PLATFORM)/Ditto/$(DITTO_SDK_VERSION)/libs/libdittoffi-$(DITTO_PLATFORM).tar.gz"
+DITTO_SDK_URL = "https://software.ditto.live/go/Ditto/$(DITTO_SDK_VERSION)/libs/libdittoffi-$(DITTO_PLATFORM).tar.gz"
 
 # Build the application
 .PHONY: build
