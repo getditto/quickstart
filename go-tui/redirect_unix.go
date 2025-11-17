@@ -26,7 +26,6 @@ func redirectStderr() {
 			log.Printf("Failed to open %s: %v", os.DevNull, err)
 			return
 		}
-		defer devNull.Close()
 
 		// Redirect stderr to /dev/null
 		if err := unix.Dup2(int(devNull.Fd()), int(os.Stderr.Fd())); err != nil {
