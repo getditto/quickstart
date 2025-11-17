@@ -75,7 +75,7 @@ func main() {
 	}
 
 	// Set Ditto log level to Error to suppress most logs
-	// ditto.SetMinimumLogLevel(ditto.LogLevelError) // Commented out - causing segfault
+	ditto.SetMinimumLogLevel(ditto.LogLevelError)
 
 	// Load environment variables
 	if err := loadEnv(); err != nil {
