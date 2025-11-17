@@ -1,9 +1,9 @@
 #
-# .github/workflows/java-spring-ci.yml
-# Workflow for building and testing java-spring with BrowserStack integration
+# .github/workflows/java-server-ci.yml
+# Workflow for building and testing java-server with BrowserStack integration
 #
 ---
-name: Java Spring CI
+name: Java Server CI
 
 on:
   pull_request:
@@ -39,7 +39,7 @@ jobs:
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
       - name: Run linter (PMD + SpotBugs)
-        working-directory: java-spring
+        working-directory: java-server
         run: ./gradlew pmdMain pmdTest spotbugsMain
 
   build:
@@ -68,7 +68,7 @@ jobs:
           echo "DITTO_WEBSOCKET_URL=${{ secrets.DITTO_WEBSOCKET_URL }}" >> .env
 
       - name: Build Spring Boot JAR
-        working-directory: java-spring
+        working-directory: java-server
         env:
           DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
           DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
@@ -80,8 +80,8 @@ jobs:
       - name: Upload JAR artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: java-spring-jar-${{ github.run_number }}
-          path: java-spring/build/libs/*.jar
+          name: java-server-jar-${{ github.run_number }}
+          path: java-server/build/libs/*.jar
           retention-days: 1
 
   browserstack-test:
@@ -99,8 +99,8 @@ jobs:
       - name: Download JAR artifacts
         uses: actions/download-artifact@v4
         with:
-          name: java-spring-jar-${{ github.run_number }}
-          path: java-spring/build/libs/
+          name: java-server-jar-${{ github.run_number }}
+          path: java-server/build/libs/
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -155,9 +155,13 @@ jobs:
       - name: Get BrowserStack build info
         id: build-info
         uses: ./.github/actions/generate-browserstack-names
+        with:
+          platform-suffix: " (Java)"
+          title-max-length: "90"
+          commit-max-length: "130"
 
       - name: Create BrowserStack config
-        working-directory: java-spring
+        working-directory: java-server
         run: |
           # Load platforms from centralized config and convert to YAML format
           PLATFORMS=$(yq eval '.["java-spring"].platforms[] | "  - os: \(.os)\n    osVersion: \"\(.osVersion)\"\n    browserName: \(.browserName)\n    browserVersion: \(.browserVersion)"' ../.github/browserstack-devices.yml)
@@ -176,7 +180,7 @@ jobs:
           EOF
 
       - name: Start Spring Boot app in background
-        working-directory: java-spring
+        working-directory: java-server
         env:
           DITTO_APP_ID: ${{ secrets.DITTO_APP_ID }}
           DITTO_PLAYGROUND_TOKEN: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
@@ -200,11 +204,13 @@ jobs:
           done
 
       - name: Seed and execute Selenium tests on BrowserStack cloud browsers
+        # working-directory: java-server
         id: test
         uses: nick-fields/retry@v3
         env:
-          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          BROWSERSTACK_BUILD_NAME: "Java Spring Selenium Tests #${{ github.run_number }}"
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_LOCAL: true
         with:
           max_attempts: 5
@@ -271,7 +277,7 @@ jobs:
 
       - name: Stop Spring Boot app
         if: always()
-        working-directory: java-spring
+        working-directory: java-server
         run: |
           if [ -f app.pid ]; then
             kill $(cat app.pid) || true
@@ -287,7 +293,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: browserstack-test-reports-${{ github.run_number }}
-          path: java-spring/build/reports/tests/
+          path: java-server/build/reports/tests/
           retention-days: 1
 
       - name: Upload app logs
@@ -296,7 +302,7 @@ jobs:
         with:
           name: spring-boot-logs-${{ github.run_number }}
           path: |
-            java-spring/app.log
+            java-server/app.log
             browserstack-local.log
           retention-days: 1
 

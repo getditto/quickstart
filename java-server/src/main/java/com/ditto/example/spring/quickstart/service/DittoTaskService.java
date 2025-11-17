@@ -52,7 +52,7 @@ public class DittoTaskService {
                             .build()
             ).toCompletableFuture().join();
 
-            boolean isDone = tasks.getItems().get(0).getValue().get("done").getBoolean();
+            boolean isDone = tasks.getItems().get(0).getValue().get("done").asBoolean();
 
             dittoService.getDitto().getStore().execute(
                     "UPDATE %s SET done = :done WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
@@ -96,15 +96,15 @@ public class DittoTaskService {
 
     @Nonnull
     public Flux<List<Task>> observeAll() {
-        final String selectQuery = "SELECT * FROM %s WHERE NOT deleted ORDER BY title ASC".formatted(TASKS_COLLECTION_NAME);
+        final String subscriptionQuery = "SELECT * FROM %s WHERE NOT deleted".formatted(TASKS_COLLECTION_NAME);
+        final String displayQuery = subscriptionQuery + " ORDER BY title ASC";
 
         return Flux.create(emitter -> {
             Ditto ditto = dittoService.getDitto();
             try {
-                DittoSyncSubscription subscription = ditto.getSync().registerSubscription(selectQuery);
-                DittoStoreObserver observer = ditto.getStore().registerObserver(selectQuery, results -> {
-                    emitter.next(results.getItems().stream().map(this::itemToTask).toList());
-                });
+                DittoSyncSubscription subscription = ditto.getSync().registerSubscription(subscriptionQuery);
+                DittoStoreObserver observer = ditto.getStore().registerObserver(displayQuery, results ->
+                    emitter.next(results.getItems().stream().map(this::itemToTask).toList()));
 
                 emitter.onDispose(() -> {
                     // TODO: Can't just catch, this potentially leaks the `observer` resource.
@@ -115,7 +115,7 @@ public class DittoTaskService {
                     }
                     try {
                         observer.close();
-                    } catch (IOException e) {
+                    } catch (DittoError e) {
                         throw new RuntimeException(e);
                     }
                 });
@@ -128,10 +128,10 @@ public class DittoTaskService {
     private Task itemToTask(@Nonnull DittoQueryResultItem item) {
         DittoCborSerializable.Dictionary value = item.getValue();
         return new Task(
-                value.get("_id").getString(),
-                value.get("title").getString(),
-                value.get("done").getBoolean(),
-                value.get("deleted").getBoolean()
+                value.get("_id").asString(),
+                value.get("title").asString(),
+                value.get("done").asBoolean(),
+                value.get("deleted").asBoolean()
         );
     }
 }

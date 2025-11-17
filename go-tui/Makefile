@@ -61,7 +61,7 @@ go-sdk: ## Downloads and installs the Ditto Go SDK library to go-sdk directory
 	fi
 
 # Run the application (built binary)
-.PHONY: build
+.PHONY: run
 run: build
 	@echo "Running ditto-tasks-termui..."
 	LD_LIBRARY_PATH="$$(pwd)/go-sdk" DYLD_LIBRARY_PATH="$$(pwd)/go-sdk" ./ditto-tasks-termui 2>/dev/null
