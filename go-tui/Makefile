@@ -35,7 +35,7 @@ else
     $(error Unsupported platform: $(PLATFORM))
 endif
 
-DITTO_SDK_URL = "https://software.ditto.live/go/Ditto/$(DITTO_SDK_VERSION)/libs/libdittoffi-$(DITTO_PLATFORM).tar.gz"
+DITTO_SDK_URL = "https://software.ditto.live/go/Ditto/$(DITTO_SDK_VERSION)/dist/libdittoffi-$(DITTO_PLATFORM).tar.gz"
 
 # Build the application
 .PHONY: build
