@@ -514,23 +514,13 @@ func parseTasks(result *ditto.QueryResult) []Task {
 		return []Task{}
 	}
 
-	// Don't pre-allocate when we're filtering
-	var tasks []Task
-	items := result.Items()
-	for _, queryItem := range items {
-		// Get the value as a map
-		item := queryItem.Value()
-
-		// Parse the task from the document
-		task := Task{
-			ID:      getStringValue(item, "_id"),
-			Title:   getStringValue(item, "title"),
-			Done:    getBoolValue(item, "done"),
-			Deleted: getBoolValue(item, "deleted"),
+	tasks := make([]Task, 0, result.ItemCount())
+	for _, queryItem := range result.Items() {
+		var task Task
+		if err := queryItem.UnmarshalTo(&task); err != nil {
+			panic(err)
 		}
-		if !task.Deleted {
-			tasks = append(tasks, task)
-		}
+		tasks = append(tasks, task)
 	}
 	return tasks
 }
