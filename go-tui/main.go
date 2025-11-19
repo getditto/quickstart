@@ -271,7 +271,7 @@ func (a *App) handleNormalMode(e ui.Event) {
 		}
 		a.render()
 
-	case "<Enter>", " ":
+	case "<Enter>", "<Space>":
 		if task, ok := a.getSelectedTask(); ok {
 			go a.toggleTask(task.ID, !task.Done)
 		}
