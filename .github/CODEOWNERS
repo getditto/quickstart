@@ -15,7 +15,7 @@
 /dotnet-tui/             @busec0 @kristopherjohnson
 /dotnet-winforms/        @busec0 @kristopherjohnson
 /flutter_app/            @pvditto @teodorciuraru
-/go-tui/                 @kristopherjohnson
+/go-tui/                 @kristopherjohnson @dsharp-pivotal
 /java-spring/            @phatblat @busec0
 /java-server/            @russhwolf @phatblat @busec0
 /javascript-tui/         @konstantinbe @pvditto @teodorciuraru
