@@ -271,7 +271,7 @@ func (a *App) handleNormalMode(e ui.Event) {
 		}
 		a.render()
 
-	case "<Enter>", " ":
+	case "<Enter>", "<Space>":
 		if task, ok := a.getSelectedTask(); ok {
 			go a.toggleTask(task.ID, !task.Done)
 		}
@@ -436,7 +436,7 @@ func (a *App) createTask(title string) {
 
 	result, err := a.ditto.Store().Execute(
 		"INSERT INTO tasks VALUES (:task)",
-		map[string]interface{}{"task": task},
+		ditto.QueryArguments{"task": task},
 	)
 	if err != nil {
 		a.setError(err.Error())
@@ -448,7 +448,7 @@ func (a *App) createTask(title string) {
 func (a *App) updateTask(id, title string) {
 	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET title = :title WHERE _id = :id",
-		map[string]interface{}{
+		ditto.QueryArguments{
 			"title": title,
 			"id":    id,
 		},
@@ -463,7 +463,7 @@ func (a *App) updateTask(id, title string) {
 func (a *App) toggleTask(id string, done bool) {
 	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET done = :done WHERE _id = :id",
-		map[string]interface{}{
+		ditto.QueryArguments{
 			"done": done,
 			"id":   id,
 		},
@@ -478,7 +478,7 @@ func (a *App) toggleTask(id string, done bool) {
 func (a *App) deleteTask(id string) {
 	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET deleted = true WHERE _id = :id",
-		map[string]interface{}{"id": id},
+		ditto.QueryArguments{"id": id},
 	)
 	if err != nil {
 		a.setError(err.Error())
@@ -514,23 +514,13 @@ func parseTasks(result *ditto.QueryResult) []Task {
 		return []Task{}
 	}
 
-	// Don't pre-allocate when we're filtering
-	var tasks []Task
-	items := result.Items()
-	for _, queryItem := range items {
-		// Get the value as a map
-		item := queryItem.Value()
-
-		// Parse the task from the document
-		task := Task{
-			ID:      getStringValue(item, "_id"),
-			Title:   getStringValue(item, "title"),
-			Done:    getBoolValue(item, "done"),
-			Deleted: getBoolValue(item, "deleted"),
+	tasks := make([]Task, 0, result.ItemCount())
+	for _, queryItem := range result.Items() {
+		var task Task
+		if err := queryItem.UnmarshalTo(&task); err != nil {
+			panic(err)
 		}
-		if !task.Deleted {
-			tasks = append(tasks, task)
-		}
+		tasks = append(tasks, task)
 	}
 	return tasks
 }
