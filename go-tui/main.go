@@ -436,7 +436,7 @@ func (a *App) createTask(title string) {
 
 	result, err := a.ditto.Store().Execute(
 		"INSERT INTO tasks VALUES (:task)",
-		map[string]interface{}{"task": task},
+		ditto.QueryArguments{"task": task},
 	)
 	if err != nil {
 		a.setError(err.Error())
@@ -448,7 +448,7 @@ func (a *App) createTask(title string) {
 func (a *App) updateTask(id, title string) {
 	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET title = :title WHERE _id = :id",
-		map[string]interface{}{
+		ditto.QueryArguments{
 			"title": title,
 			"id":    id,
 		},
@@ -463,7 +463,7 @@ func (a *App) updateTask(id, title string) {
 func (a *App) toggleTask(id string, done bool) {
 	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET done = :done WHERE _id = :id",
-		map[string]interface{}{
+		ditto.QueryArguments{
 			"done": done,
 			"id":   id,
 		},
@@ -478,7 +478,7 @@ func (a *App) toggleTask(id string, done bool) {
 func (a *App) deleteTask(id string) {
 	result, err := a.ditto.Store().Execute(
 		"UPDATE tasks SET deleted = true WHERE _id = :id",
-		map[string]interface{}{"id": id},
+		ditto.QueryArguments{"id": id},
 	)
 	if err != nil {
 		a.setError(err.Error())
