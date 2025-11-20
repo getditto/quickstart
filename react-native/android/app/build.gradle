@@ -77,13 +77,18 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.temprnproject"
+    namespace "com.dittoreactnativesampleapp"
+
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
-        applicationId "com.temprnproject"
+        applicationId "com.dittoreactnativesampleapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        buildConfigField("boolean", "IS_EDGE_TO_EDGE_ENABLED", "false")
     }
     signingConfigs {
         debug {
@@ -105,8 +110,18 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
-    packaging {
-        pickFirst '**/*.so'
+     packagingOptions {
+         jniLibs {
+             useLegacyPackaging = true
+             keepDebugSymbols.add("**/libdittoffi.so")
+             keepDebugSymbols.add("**/libcpp.so")
+         }
+
+        pickFirst 'lib/**/libdittoffi.so'
+        pickFirst 'lib/**/libjsi.so'
+        pickFirst 'lib/**/libreact_nativemodule_core.so'
+        pickFirst 'lib/**/libturbomodulejsijni.so'
+        pickFirst 'lib/**/libreactnative.so'
     }
 }
 

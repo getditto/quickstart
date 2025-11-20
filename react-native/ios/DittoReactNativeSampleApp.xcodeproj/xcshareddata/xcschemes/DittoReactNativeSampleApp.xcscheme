@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "TempRNProject.app"
-               BlueprintName = "TempRNProject"
-               ReferencedContainer = "container:TempRNProject.xcodeproj">
+               BuildableName = "DittoReactNativeSampleApp.app"
+               BlueprintName = "DittoReactNativeSampleApp"
+               ReferencedContainer = "container:DittoReactNativeSampleApp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "TempRNProjectTests.xctest"
-               BlueprintName = "TempRNProjectTests"
-               ReferencedContainer = "container:TempRNProject.xcodeproj">
+               BuildableName = "DittoReactNativeSampleAppTests.xctest"
+               BlueprintName = "DittoReactNativeSampleAppTests"
+               ReferencedContainer = "container:DittoReactNativeSampleApp.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "TempRNProject.app"
-            BlueprintName = "TempRNProject"
-            ReferencedContainer = "container:TempRNProject.xcodeproj">
+            BuildableName = "DittoReactNativeSampleApp.app"
+            BlueprintName = "DittoReactNativeSampleApp"
+            ReferencedContainer = "container:DittoReactNativeSampleApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "TempRNProject.app"
-            BlueprintName = "TempRNProject"
-            ReferencedContainer = "container:TempRNProject.xcodeproj">
+            BuildableName = "DittoReactNativeSampleApp.app"
+            BlueprintName = "DittoReactNativeSampleApp"
+            ReferencedContainer = "container:DittoReactNativeSampleApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
