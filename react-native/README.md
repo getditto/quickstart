@@ -1,97 +1,98 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+<div align="center" style="display: flex; justify-content: space-around; align-items: center;">
+  <img src="https://github.com/user-attachments/assets/7b0b1385-12d9-48d2-9005-deee70daa5f9" alt="Screenshot 1" style="width: 20%; margin-right: 120px;">
+  <img src="https://github.com/user-attachments/assets/e58a4713-437a-4e21-af39-be3dcc8da814" alt="Screenshot 2" style="width: 20%;">
+</div>
 
-# Getting Started
+# Ditto Task Sync App
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+A sample React Native application that lets you create tasks and sync them with the Ditto Cloud via OnlinePlayground authentication. This example is built according to the [official Ditto installation guide for React Native](https://docs.ditto.live/install-guides/react-native).
 
-## Step 1: Start Metro
+## Documentation
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- [React Native Install Guide](https://docs.ditto.live/sdk/latest/install-guides/react-native)
+- [Javascript/React Native API Reference](https://software.ditto.live/js/Ditto/4.12.0/api-reference/)
+- [Javascript/React Native Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Prerequisites
 
-```sh
-# Using npm
-npm start
+- **Ditto Portal Account**: Ensure you have a Ditto account. Sign up [here](https://portal.ditto.live/signup).
+- **App Credentials**: After registration, create an application within the Ditto Portal to obtain your `AppID`, `Online Playground Token`, `Auth URL`, and `Websocket URL`. Visit the [Ditto Portal](https://portal.ditto.live/) to manage your applications.
 
-# OR using Yarn
+## Getting Started
+
+### Install Dependencies
+
+```bash
+# Project is set up to work seamlessly with yarn
+yarn install
+```
+
+### Run the Application
+
+Running the `start` script launches the "Metro" dev tool, which will build the iOS, Android, or macOS apps on demand.
+After running the start command, press `i` to launch the iOS simulator, `a` to launch the Android emulator, or `m` to launch the macOS app.
+
+```bash
 yarn start
 ```
 
-## Step 2: Build and run your app
+For iOS:
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```bash
+(cd ios && pod install)
+yarn react-native run-ios
 ```
 
-### iOS
+For Android:
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```bash
+yarn react-native run-android
 ```
 
-Then, and every time you update your native dependencies, run:
+For macOS:
 
-```sh
-bundle exec pod install
+```bash
+yarn react-native run-macos
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Features
 
-```sh
-# Using npm
-npm run ios
+- **Task Creation**: Users can add new tasks to their list.
+- **Real-time Sync**: Tasks are synchronized in real-time across all devices using the same Ditto application.
+- **Cross-Platform**: Supports iOS, Android, and macOS platforms.
 
-# OR using Yarn
-yarn ios
+## Additional Information
+
+- Limitation: React Native's Fast Refresh must be disabled and it's something we're working on fixing.
+
+## iOS Installation
+
+If you encounter an issue with iOS installing pod files, check your terminal to make sure your environment is set up correctly.
+For example:
+
+```bash
+❯ pod install
+
+[!] Invalid `Podfile` file: cannot load such file -- /Users/xxxx/Developer/ditto/quickstart/react-native/node_modules/react-native/scripts/react_native_pods.rb
+Debugger listening on ws://127.0.0.1:59620/xxxxx-xxxx-xxxx-xxxx-xxxxxxxxx
+For help, see: https://nodejs.org/en/docs/inspector
+Debugger attached.
+Waiting for the debugger to disconnect....
+
+ #  from /Users/xxxx/Developer/ditto/quickstart/react-native/ios/Podfile:2
+ #  -------------------------------------------
+ #  # Resolve react_native_pods.rb with node to allow for hoisting
+ >  require Pod::Executable.execute_command('node', ['-p',
+ #    'require.resolve(
+ #  -------------------------------------------
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+This error is usually an issue with the terminal setup. If you are using the terminal in your IDE, we suggest you use the terminal app that comes with iOS to see if this is an issue with your terminal setup.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+### Troubleshooting
 
-## Step 3: Modify your app
+Should you encounter any issues, please refer to the [Ditto documentation](https://docs.ditto.live/) or check the FAQs on the Ditto Portal.
 
-Now that you have successfully run the app, let's make changes!
+### Contact
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+For support or queries, reach out to us via [support@ditto.live](mailto:support@ditto.live).
