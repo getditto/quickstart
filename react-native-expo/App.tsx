@@ -168,6 +168,8 @@ const App = () => {
 
       ditto.current.sync.start();
 
+      await ditto.current.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
+
       taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
       taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC', response => {
@@ -189,7 +191,7 @@ const App = () => {
     (async () => {
       const granted =
         Platform.OS === "android" ? await requestPermissions() : true;
-      
+
       setHasPermissions(granted);
       initDitto();
     })();
