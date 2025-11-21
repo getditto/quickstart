@@ -7,6 +7,9 @@ name: Java Server CI
 
 on:
   pull_request:
+    paths:
+      - "java-server/**"
+      - ".github/workflows/java-server-ci.yml"
   workflow_dispatch:
 
 concurrency:
