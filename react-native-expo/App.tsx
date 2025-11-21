@@ -5,10 +5,10 @@ import {
   PermissionsAndroid,
   Platform,
   View,
-  SafeAreaView,
   FlatList,
   Button,
 } from "react-native";
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {
   Authenticator,
   Ditto,
@@ -214,7 +214,8 @@ const App = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
       {!hasPermissions && (
         <View style={styles.permissionBanner}>
           <Text style={styles.permissionText}>
@@ -249,7 +250,8 @@ const App = () => {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
