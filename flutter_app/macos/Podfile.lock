@@ -1,8 +1,8 @@
 PODS:
-  - ditto_live (4.15.0-experimental-b6835ba.0):
-    - DittoFlutter (= 4.15.0-experimental-b6835ba.0)
+  - ditto_live (4.15.0-rc.2):
+    - DittoFlutter (= 4.15.0-rc.2)
     - FlutterMacOS
-  - DittoFlutter (4.15.0-experimental-b6835ba.0)
+  - DittoFlutter (4.15.0-rc.2)
   - FlutterMacOS (1.0.0)
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -26,8 +26,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
 
 SPEC CHECKSUMS:
-  ditto_live: 98619592d1cbc2d983f6434f0213979f411b514c
-  DittoFlutter: 0676be89a6583df960b2cf3b229c5cc494aead9b
+  ditto_live: 9f2fc6a872df0e30a33c88a76bd8c677ee217d0f
+  DittoFlutter: 570818778b6a1cbfe6b27d99016fcd63060420c1
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
 

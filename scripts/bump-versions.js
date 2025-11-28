@@ -182,7 +182,7 @@ const APP_CONFIGS = {
   },
 
   "rust-tui": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "Cargo.toml",

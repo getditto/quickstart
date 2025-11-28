@@ -20,7 +20,7 @@
 		"dist"
 	],
 	"dependencies": {
-		"@dittolive/ditto": "4.15.0-experimental-b6835ba.0",
+		"@dittolive/ditto": "4.15.0-rc.2",
 		"dotenv": "^16.4.5",
 		"ink": "^4.1.0",
 		"meow": "^11.0.0",
