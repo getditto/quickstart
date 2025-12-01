@@ -102,7 +102,7 @@ public class DittoService implements DisposableBean {
         try {
             boolean currentSyncState = mutableSyncStatePublisher.asFlux().blockFirst();
             setSyncStateIntoDittoStore(!currentSyncState);
-        } catch (DittoError e) {
+        } catch (DittoException e) {
             throw new RuntimeException(e);
         }
     }
@@ -146,15 +146,20 @@ public class DittoService implements DisposableBean {
                         List<? extends DittoQueryResultItem> items = result.getItems();
                         boolean newSyncState = false;
                         if (!items.isEmpty()) {
-                            newSyncState = items.get(0).getValue()
-                                    .get(DITTO_SYNC_STATE_ID)
-                                    .asBoolean();
+                            try {
+                                newSyncState = items.get(0).getValue()
+                                        .get(DITTO_SYNC_STATE_ID)
+                                        .asBoolean();
+                            } catch (DittoException e) {
+                                logger.error(e.getMessage());
+                                throw new RuntimeException(e);
+                            }
                         }
 
                         if (newSyncState) {
                             try {
                                 ditto.startSync();
-                            } catch (DittoError e) {
+                            } catch (DittoException e) {
                                 throw new RuntimeException(e);
                             }
                         } else {
@@ -163,12 +168,12 @@ public class DittoService implements DisposableBean {
 
                         mutableSyncStatePublisher.tryEmitNext(newSyncState);
                     });
-        } catch (DittoError e) {
+        } catch (DittoException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void setSyncStateIntoDittoStore(boolean newState) throws DittoError {
+    private void setSyncStateIntoDittoStore(boolean newState) throws DittoException {
         CompletionStage<DittoQueryResult> future = ditto.getStore().execute(
                 "UPDATE %s SET %s = :syncState".formatted(DITTO_SYNC_STATE_COLLECTION, DITTO_SYNC_STATE_ID),
                 DittoCborSerializable.buildDictionary()
@@ -178,7 +183,7 @@ public class DittoService implements DisposableBean {
 
         try {
             future.toCompletableFuture().join().close();
-        } catch (DittoError e) {
+        } catch (DittoException e) {
             throw new RuntimeException(e);
         }
     }
