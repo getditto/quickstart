@@ -128,14 +128,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.runtime.livedata)
 
-    // Dependency Injection
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
-
-    // Ditto SDK
-    implementation(libs.live.ditto)
-
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines)

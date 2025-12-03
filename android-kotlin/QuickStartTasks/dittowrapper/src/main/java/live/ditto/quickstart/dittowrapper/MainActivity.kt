@@ -14,6 +14,8 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Blank activity - main functionality is through AIDL services
+
+        //todo: start AIDL service, and show toast message that service was started successfully
         finish() // Immediately close after launch
     }
 }

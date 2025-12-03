@@ -45,5 +45,11 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    //todo: include ditto sdk here (and remove from app module)
+    //ditto sdk
+    implementation(libs.live.ditto)
+
+    // Koin DI
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+
 }
