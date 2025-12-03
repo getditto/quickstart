@@ -3,9 +3,8 @@ import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.jetbrains.kotlin.android)
-    alias(libs.plugins.compose.compiler)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
 fun loadEnvProperties(): Properties {
@@ -89,6 +88,11 @@ android {
     
     kotlinOptions {
         jvmTarget = "1.8"
+        //todo: Remove the version check
+        freeCompilerArgs = listOf(
+            "-Xskip-metadata-version-check",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+        )
     }
     
     buildFeatures {
@@ -97,7 +101,7 @@ android {
     }
     
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+        kotlinCompilerExtensionVersion = "1.3.2"
     }
     
     packaging {
@@ -125,11 +129,9 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
 
     // Dependency Injection
-    implementation(platform(libs.koin.bom))
     implementation(libs.koin.core)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
-    implementation(libs.koin.androidx.compose.navigation)
 
     // Ditto SDK
     implementation(libs.live.ditto)

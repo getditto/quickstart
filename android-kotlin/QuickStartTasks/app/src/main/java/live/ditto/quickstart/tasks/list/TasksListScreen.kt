@@ -81,7 +81,7 @@ fun TasksListScreen(navController: NavController) {
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.smallTopAppBarColors(
                     containerColor = colorResource(id = R.color.blue_700),
                     titleContentColor = Color.White
                 ),

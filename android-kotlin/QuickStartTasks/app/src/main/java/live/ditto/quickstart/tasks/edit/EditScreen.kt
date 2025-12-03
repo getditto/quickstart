@@ -34,7 +34,7 @@ fun EditScreen(navController: NavController, taskId: String?) {
         topBar = {
             TopAppBar(
                 title = { Text(topBarTitle, color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.smallTopAppBarColors(
                     containerColor = colorResource(id = R.color.blue_700)
                 )
             )

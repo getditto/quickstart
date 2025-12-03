@@ -40,7 +40,7 @@ fun TaskRow(
     val color = if (task.done) R.color.blue_200 else R.color.gray
     val textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
     ListItem(
-        headlineContent = {
+        headlineText = {
             Text(
                 text = task.title,
                 textDecoration = textDecoration
