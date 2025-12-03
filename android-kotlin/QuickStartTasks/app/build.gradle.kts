@@ -45,7 +45,7 @@ androidComponents {
         buildConfigFields.forEach { (key, description) ->
             it.buildConfigFields.put(
                 key,
-                BuildConfigField("String", "\"${prop[key]}\"", description)
+                BuildConfigField("String", "${prop[key]}", description)
             )
         }
     }
