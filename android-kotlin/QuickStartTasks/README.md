@@ -10,53 +10,39 @@ Gradle has difficulty resolving multiple Kotlin plugin versions in the same buil
 
 ## Solution: Build Modules Separately
 
+Use the provided `switch-module.sh` script to automatically configure the build for either module:
+
 ### Build app module (Kotlin 1.7.20)
 
-1. Edit `settings.gradle.kts`:
-```kotlin
-rootProject.name = "QuickStart Tasks"
-include(":app")              // Enable app
-//include(":dittowrapper")   // Comment out dittowrapper
-```
-
-2. Edit `build.gradle.kts` (root):
-```kotlin
-buildscript {
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.1.4")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.20")  // Uncomment
-    }
-}
-```
-
-3. Build:
 ```bash
-./gradlew --stop && ./gradlew clean && ./gradlew :app:assembleDebug
+./switch-module.sh app
 ```
+
+This script will:
+- Enable the `:app` module in `settings.gradle.kts`
+- Disable the `:dittowrapper` module in `settings.gradle.kts`
+- Enable the Kotlin 1.7.20 classpath in `build.gradle.kts`
+
+Then in Android Studio:
+1. Select the correct build configuration
+2. Sync Gradle (File → Sync Project with Gradle Files)
+3. Build and run using the play button
 
 ### Build dittowrapper module (Kotlin 1.9.23)
 
-1. Edit `settings.gradle.kts`:
-```kotlin
-rootProject.name = "QuickStart Tasks"
-//include(":app")             // Comment out app
-include(":dittowrapper")      // Enable dittowrapper
-```
-
-2. Edit `build.gradle.kts` (root):
-```kotlin
-buildscript {
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.1.4")
-        // classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.20")  // Comment out
-    }
-}
-```
-
-3. Build:
 ```bash
-./gradlew --stop && ./gradlew clean && ./gradlew :dittowrapper:assembleDebug
+./switch-module.sh dittowrapper
 ```
+
+This script will:
+- Disable the `:app` module in `settings.gradle.kts`
+- Enable the `:dittowrapper` module in `settings.gradle.kts`
+- Disable the Kotlin 1.7.20 classpath in `build.gradle.kts`
+
+Then in Android Studio:
+1. Select the correct build configuration
+2. Sync Gradle (File → Sync Project with Gradle Files)
+3. Build and run using the play button
 
 ## About dittowrapper
 
@@ -78,10 +64,3 @@ The dittowrapper module is designed to be installed as an independent APK and ru
 - **app module**: Gets Kotlin version from root `build.gradle.kts` buildscript classpath (1.7.20)
 - **dittowrapper module**: Specifies Kotlin version explicitly in its plugins block (`version "1.9.23"`)
 - The root buildscript classpath must be commented out when building dittowrapper to avoid conflicts
-
-## Future Improvements
-
-Consider these approaches if you need to build both modules together:
-1. Upgrade app to Kotlin 1.9+ (requires Compose compiler updates)
-2. Use Gradle composite builds to isolate Kotlin versions completely
-3. Split into separate Git repositories or submodules for complete isolation

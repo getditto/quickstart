@@ -27,6 +27,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "QuickStart Tasks"
-//include(":app")  // Kotlin 1.7.20 - Comment out when building dittowrapper
+include(":app")  // Kotlin 1.7.20 - Comment out when building dittowrapper
 include(":dittowrapper")  // Kotlin 1.9.23
  
