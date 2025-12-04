@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import live.ditto.Ditto
 import live.ditto.DittoIdentity
 import live.ditto.android.DefaultAndroidDittoDependencies
+import live.ditto.transports.DittoSyncPermissions
 
 class DittoManager(private val applicationContext: Context) {
 
@@ -45,4 +46,6 @@ class DittoManager(private val applicationContext: Context) {
 
         Log.d(TAG, "Ditto initialized and sync started")
     }
+
+    fun getMissingPermissions(): List<String> = DittoSyncPermissions(applicationContext).requiredPermissions()
 }

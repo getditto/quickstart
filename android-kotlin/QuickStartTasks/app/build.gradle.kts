@@ -143,6 +143,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Ditto SDK (TODO: remove once AIDL migration is complete)
-    implementation(libs.live.ditto)
+//    implementation(libs.live.ditto)
 }
 

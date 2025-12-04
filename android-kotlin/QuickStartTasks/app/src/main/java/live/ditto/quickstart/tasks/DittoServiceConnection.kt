@@ -115,4 +115,23 @@ class DittoServiceConnection(private val context: Context) {
         }
     }
 
+    /**
+     * Get missing permissions from the remote service
+     * @return List of missing permissions, or empty list if service not bound
+     */
+    fun getMissingPermissions(): List<String> {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call getMissingPermissions - service not bound")
+            return emptyList()
+        }
+
+        return try {
+            Log.d(TAG, "Calling getMissingPermissions on remote service...")
+            dittoManager?.getMissingPermissions() ?: emptyList()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling getMissingPermissions", e)
+            emptyList()
+        }
+    }
+
 }

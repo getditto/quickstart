@@ -40,6 +40,8 @@ class DittoService : Service() {
                 }
             }
         }
+
+        override fun getMissingPermissions(): List<String> = dittoManager.getMissingPermissions()
     }
 
     override fun onCreate() {

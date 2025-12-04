@@ -36,8 +36,9 @@ class TasksApplication : Application() {
         instance = this
     }
 
-    // AIDL Service Connection
-    private lateinit var dittoServiceConnection: DittoServiceConnection
+    // AIDL Service Connection - exposed publicly for MainActivity access
+    lateinit var dittoServiceConnection: DittoServiceConnection
+        private set
 
     override fun onCreate() {
         super.onCreate()

@@ -5,4 +5,5 @@ package live.ditto.quickstart.dittowrapper.aidl;
 
 interface IDittoManager {
     void initDitto(String appId, String token, String customAuthUrl, String webSocketUrl);
+    List<String> getMissingPermissions();
 }
