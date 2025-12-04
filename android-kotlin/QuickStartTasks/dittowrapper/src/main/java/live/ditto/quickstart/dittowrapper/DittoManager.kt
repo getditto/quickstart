@@ -1,11 +1,16 @@
 package live.ditto.quickstart.dittowrapper
 
 import android.content.Context
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import live.ditto.Ditto
 import live.ditto.DittoIdentity
 import live.ditto.android.DefaultAndroidDittoDependencies
+import live.ditto.quickstart.dittowrapper.aidl.IDittoManager
 
 class DittoManager(private val applicationContext: Context) {
 
@@ -37,5 +42,29 @@ class DittoManager(private val applicationContext: Context) {
 
             dittoInstance.startSync()
         }
+    }
+
+    private val binder = object : IDittoManager.Stub() {
+
+        val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+        override fun initDitto(
+            appId: String,
+            token: String,
+            customAuthUrl: String,
+            webSocketUrl: String
+        ) {
+
+            Log.d("BINDER_TEST", "initDitto()")
+//            coroutineScope.launch {
+//                this@DittoManager.initDitto(
+//                    appId = appId,
+//                    token = token,
+//                    customAuthUrl = customAuthUrl,
+//                    webSocketUrl = webSocketUrl
+//                )
+//            }
+        }
+
     }
 }

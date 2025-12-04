@@ -5,9 +5,9 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.1.4")
+        classpath("com.android.tools.build:gradle:8.7.3")
         // For app module (Kotlin 1.7.20) - comment out when building dittowrapper
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.20")
+//        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.20")
     }
 }
 

@@ -33,6 +33,23 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    buildFeatures {
+        aidl = true
+    }
+}
+
+configurations.all {
+    /**
+     * force these dependencies to resolve to 1.9.23 to avoid transitive dependencies from other
+     * libraries using incompatible versions
+     */
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23")
+        force("org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23")
+    }
 }
 
 dependencies {
@@ -48,8 +65,8 @@ dependencies {
     //ditto sdk
     implementation(libs.live.ditto)
 
-    // Koin DI
-    implementation(platform(libs.koin.bom))
-    implementation(libs.koin.core)
+    // Coroutines (compatible with Kotlin 1.9)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
 }
