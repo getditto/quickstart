@@ -14,7 +14,6 @@ appcompat = "1.6.0"
 datastorePreferences = "1.0.0"
 coroutines-tests = "1.6.4"
 ditto = "4.12.4"
-koin-bom = "4.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,11 +36,6 @@ androidx-appcompat = { module = "androidx.appcompat:appcompat", name = "appcompa
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", name = "datastore-preferences", version.ref = "datastorePreferences" }
 live-ditto = { group = "live.ditto", name = "ditto", version.ref = "ditto" }
 kotlinx-coroutines = {group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-tests" }
-koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
-koin-core = { module = "io.insert-koin:koin-core" }
-koin-android = { module = "io.insert-koin:koin-android" }
 
 [plugins]
-android-application = { id = "com.android.application", version.ref = "agp" }
-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 
