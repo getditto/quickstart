@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    kotlin("android") version "1.9.23"
+    kotlin("android") version "2.1.0"
 }
 
 android {
@@ -39,21 +39,8 @@ android {
     }
 }
 
-configurations.all {
-    /**
-     * force these dependencies to resolve to 1.9.23 to avoid transitive dependencies from other
-     * libraries using incompatible versions
-     */
-    resolutionStrategy {
-        force("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
-        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23")
-        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23")
-        force("org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23")
-    }
-}
-
 dependencies {
-    // Core Android (required for Kotlin 1.9)
+    // Core Android (compatible with Kotlin 2.1)
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("com.google.android.material:material:1.11.0")
 
@@ -65,8 +52,8 @@ dependencies {
     //ditto sdk
     implementation(libs.live.ditto)
 
-    // Coroutines (compatible with Kotlin 1.9)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Coroutines (compatible with Kotlin 2.1)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
 }
