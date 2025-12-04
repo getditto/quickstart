@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "live.ditto.quickstart.dittowrapper"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "live.ditto.quickstart.dittowrapper"
@@ -41,8 +41,8 @@ android {
 
 dependencies {
     // Core Android (compatible with Kotlin 2.1)
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("com.google.android.material:material:1.11.0")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.material)
 
     // Testing
     testImplementation(libs.junit)
@@ -53,7 +53,7 @@ dependencies {
     implementation(libs.live.ditto)
 
     // Coroutines (compatible with Kotlin 2.1)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
 
 }

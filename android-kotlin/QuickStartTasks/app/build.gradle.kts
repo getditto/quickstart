@@ -114,7 +114,7 @@ android {
 
 dependencies {
     // Core Android
-    implementation(libs.androidx.core.ktx)
+    implementation("androidx.core:core-ktx:1.9.0")  // not using latest for compatibility reasons
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)

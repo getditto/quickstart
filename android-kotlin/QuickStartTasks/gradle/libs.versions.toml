@@ -1,11 +1,14 @@
 [versions]
-coreKtx = "1.9.0"
+coreKtx = "1.17.0"
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
+kotlinxCoroutinesAndroid = "1.10.2"
+kotlinxCoroutinesCore = "1.10.2"
 lifecycleRuntimeKtx = "2.5.1"
 activityCompose = "1.6.1"
 composeBom = "2022.12.00"
+material = "1.13.0"
 navigationCompose = "2.5.3"
 runtimeLivedata = "1.3.3"
 appcompat = "1.6.0"
@@ -32,8 +35,11 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", name = "datastore-preferences", version.ref = "datastorePreferences" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
 live-ditto = { group = "live.ditto", name = "ditto", version.ref = "ditto" }
 kotlinx-coroutines = {group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-tests" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
 
 [plugins]
 
