@@ -4,7 +4,7 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    kotlin("android") version "1.7.20"
 }
 
 fun loadEnvProperties(): Properties {
@@ -142,7 +142,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    //todo: remove
+    // Ditto SDK (TODO: remove once AIDL migration is complete)
     implementation(libs.live.ditto)
 }
 
