@@ -79,6 +79,27 @@ class DittoService : Service() {
             }
         }
 
+        override fun registerObserver(
+            query: String,
+            args: Bundle?,
+            callback: IObserverCallback
+        ): String {
+            return dittoManager.registerObserver(
+                query = query,
+                args = args?.toMap()
+            ) { dittoQueryResult, signalNext ->
+                dittoQueryResult.use { result ->
+                    val resultJson = result.items.map { it.jsonString() }
+                    callback.onResult(resultJson)
+                    signalNext()
+                }
+            }
+        }
+
+        override fun closeObserver(uuid: String) {
+            dittoManager.closeObserver(uuid)
+        }
+
     }
 
     override fun onCreate() {

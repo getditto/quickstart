@@ -10,6 +10,7 @@ import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import live.ditto.quickstart.dittowrapper.aidl.IDittoManager
+import live.ditto.quickstart.dittowrapper.aidl.IObserverCallback
 import live.ditto.quickstart.dittowrapper.aidl.QueryResult
 
 /**
@@ -248,6 +249,56 @@ class DittoServiceConnection(private val context: Context) {
     }
 
     /**
+     * Register an observer with a callback for result updates
+     * @param query DQL query string
+     * @param args Query arguments (optional)
+     * @param onResult Callback function to handle result updates
+     * @return UUID string to reference this observer, or null if failed
+     */
+    fun registerObserver(
+        query: String,
+        args: Map<String, Any>? = null,
+        onResult: (List<String>) -> Unit
+    ): String? {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call registerObserver - service not bound")
+            return null
+        }
+
+        return try {
+            Log.d(TAG, "Calling registerObserver on remote service...")
+            val callback = object : IObserverCallback.Stub() {
+                override fun onResult(resultJson: List<String>) {
+                    onResult(resultJson)
+                }
+            }
+            val argsBundle = args?.toBundle()
+            dittoManager?.registerObserver(query, argsBundle, callback)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling registerObserver", e)
+            null
+        }
+    }
+
+    /**
+     * Close an observer on the remote service
+     * @param uuid UUID string reference to the observer
+     */
+    fun closeObserver(uuid: String) {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call closeObserver - service not bound")
+            return
+        }
+
+        try {
+            Log.d(TAG, "Calling closeObserver on remote service...")
+            dittoManager?.closeObserver(uuid)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling closeObserver", e)
+        }
+    }
+
+    /**
      * Convert Map to Bundle for AIDL calls
      */
     private fun Map<String, Any>.toBundle(): Bundle {
@@ -275,7 +326,7 @@ class DittoServiceConnection(private val context: Context) {
     }
 
     companion object {
-        private val TAG = "DittoServiceConnection"
+        private const val TAG = "DittoServiceConnection"
     }
 
 }

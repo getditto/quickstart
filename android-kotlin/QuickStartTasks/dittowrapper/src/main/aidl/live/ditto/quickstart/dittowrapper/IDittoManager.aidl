@@ -1,6 +1,7 @@
 package live.ditto.quickstart.dittowrapper;
 
 import live.ditto.quickstart.dittowrapper.QueryResult;
+import live.ditto.quickstart.dittowrapper.IObserverCallback;
 
 interface IDittoManager {
 
@@ -25,5 +26,16 @@ interface IDittoManager {
     void stopSync();
 
     QueryResult execute(String query, in Bundle args);
+
+    /**
+     * Register an observer with a callback for result updates
+     * @param query DQL query string
+     * @param args Query arguments as Bundle (can be null for no args)
+     * @param callback Callback interface to receive query results
+     * @return UUID string to reference this observer
+     */
+    String registerObserver(String query, in Bundle args, IObserverCallback callback);
+
+    void closeObserver(String uuid);
 
 }

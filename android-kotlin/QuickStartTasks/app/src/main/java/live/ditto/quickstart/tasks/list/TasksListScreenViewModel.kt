@@ -39,6 +39,7 @@ class TasksListScreenViewModel(
     val syncEnabled: LiveData<Boolean> = _syncEnabled
 
     private var syncSubscriptionReferenceUUID: String? = null
+    private var observerReferenceUUID: String? = null
 
     fun setSyncEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -79,9 +80,13 @@ class TasksListScreenViewModel(
 
             // Register observer, which runs against the local database on this peer
             // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-            ditto.store.registerObserver(QUERY) { result ->
-                val list = result.items.map { item -> Task.fromJson(item.jsonString()) }
-                tasks.postValue(list)
+            try {
+                observerReferenceUUID = dittoServiceConnection.registerObserver(QUERY) { resultJson ->
+                    val list = resultJson.map { json -> Task.fromJson(json) }
+                    tasks.postValue(list)
+                }
+            } catch (e: RemoteException) {
+                Log.e(TAG, "Unable to register observer", e)
             }
 
             setSyncEnabled(
@@ -104,7 +109,7 @@ class TasksListScreenViewModel(
                 try {
                     // Add tasks into the ditto collection using DQL INSERT statement
                     // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
-                    ditto.store.execute(
+                    dittoServiceConnection.execute(
                         "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
                         mapOf(
                             "task" to mapOf(
@@ -115,7 +120,7 @@ class TasksListScreenViewModel(
                             )
                         )
                     )
-                } catch (e: DittoError) {
+                } catch (e: RemoteException) {
                     Log.e(TAG, "Unable to insert initial document", e)
                 }
             }
@@ -125,23 +130,27 @@ class TasksListScreenViewModel(
     fun toggle(taskId: String) {
         viewModelScope.launch {
             try {
-                val doc = ditto.store.execute(
+                val result = dittoServiceConnection.execute(
                     "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
                     mapOf("_id" to taskId)
-                ).items.first()
-
-                val done = doc.value["done"] as Boolean
-
-                // Update tasks into the ditto collection using DQL UPDATE statement
-                // https://docs.ditto.live/sdk/latest/crud/update#updating
-                ditto.store.execute(
-                    "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
-                    mapOf(
-                        "toggled" to !done,
-                        "_id" to taskId
-                    )
                 )
-            } catch (e: DittoError) {
+
+                val taskJson = result?.resultJson?.firstOrNull()
+                if (taskJson != null) {
+                    val task = Task.fromJson(taskJson)
+                    val done = task.done
+
+                    // Update tasks into the ditto collection using DQL UPDATE statement
+                    // https://docs.ditto.live/sdk/latest/crud/update#updating
+                    dittoServiceConnection.execute(
+                        "UPDATE tasks SET done = :toggled WHERE _id = :_id AND NOT deleted",
+                        mapOf(
+                            "toggled" to !done,
+                            "_id" to taskId
+                        )
+                    )
+                }
+            } catch (e: RemoteException) {
                 Log.e(TAG, "Unable to toggle done state", e)
             }
         }
@@ -152,12 +161,24 @@ class TasksListScreenViewModel(
             try {
                 // UPDATE DQL Statement using Soft-Delete pattern
                 // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
-                ditto.store.execute(
+                dittoServiceConnection.execute(
                     "UPDATE tasks SET deleted = true WHERE _id = :id",
                     mapOf("id" to taskId)
                 )
-            } catch (e: DittoError) {
+            } catch (e: RemoteException) {
                 Log.e(TAG, "Unable to set deleted=true", e)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Clean up observer when ViewModel is destroyed
+        observerReferenceUUID?.let { uuid ->
+            try {
+                dittoServiceConnection.closeObserver(uuid)
+            } catch (e: RemoteException) {
+                Log.e(TAG, "Unable to close observer", e)
             }
         }
     }
