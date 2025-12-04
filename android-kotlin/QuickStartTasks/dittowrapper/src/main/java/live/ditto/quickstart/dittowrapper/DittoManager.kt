@@ -82,6 +82,16 @@ class DittoManager(private val applicationContext: Context) {
         subscription?.close()
     }
 
+    suspend fun execute(query: String, args: Map<String, Any>?): QueryResult {
+        val result = ditto.store.execute(query, args)
+        return result.use { dittoQueryResult ->
+            QueryResult(
+                resultJson = dittoQueryResult.items.map { it.jsonString() },
+                mutatedIds = dittoQueryResult.mutatedDocumentIds().map { it.toString() }
+            )
+        }
+    }
+
     companion object {
         private const val TAG = "DittoManager"
     }

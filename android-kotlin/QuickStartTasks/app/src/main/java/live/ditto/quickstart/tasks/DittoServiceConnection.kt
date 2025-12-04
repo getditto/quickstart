@@ -10,6 +10,7 @@ import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import live.ditto.quickstart.dittowrapper.aidl.IDittoManager
+import live.ditto.quickstart.dittowrapper.aidl.QueryResult
 
 /**
  * Helper class to manage connection to the AIDL DittoService
@@ -221,6 +222,55 @@ class DittoServiceConnection(private val context: Context) {
             dittoManager?.closeSubscription(uuid)
         } catch (e: Exception) {
             Log.e(TAG, "Error calling closeSubscription", e)
+        }
+    }
+
+    /**
+     * Execute a DQL query on the remote service
+     * @param query DQL query string
+     * @param args Query arguments as Map (optional)
+     * @return QueryResult containing the result JSON and mutated IDs, or null if failed
+     */
+    fun execute(query: String, args: Map<String, Any>? = null): QueryResult? {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call execute - service not bound")
+            return null
+        }
+
+        return try {
+            Log.d(TAG, "Calling execute on remote service...")
+            val argsBundle = args?.toBundle()
+            dittoManager?.execute(query, argsBundle)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling execute", e)
+            null
+        }
+    }
+
+    /**
+     * Convert Map to Bundle for AIDL calls
+     */
+    private fun Map<String, Any>.toBundle(): Bundle {
+        return Bundle().apply {
+            this@toBundle.forEach { (key, value) ->
+                when (value) {
+                    is String -> putString(key, value)
+                    is Int -> putInt(key, value)
+                    is Long -> putLong(key, value)
+                    is Double -> putDouble(key, value)
+                    is Float -> putFloat(key, value)
+                    is Boolean -> putBoolean(key, value)
+                    is ArrayList<*> -> {
+                        @Suppress("UNCHECKED_CAST")
+                        when {
+                            value.all { it is String } -> putStringArrayList(key, value as ArrayList<String>)
+                            value.all { it is Int } -> putIntegerArrayList(key, value as ArrayList<Int>)
+                            else -> throw IllegalArgumentException("Unsupported ArrayList type for key: $key")
+                        }
+                    }
+                    else -> throw IllegalArgumentException("Unsupported value type for key: $key, type: ${value::class.java}")
+                }
+            }
         }
     }
 

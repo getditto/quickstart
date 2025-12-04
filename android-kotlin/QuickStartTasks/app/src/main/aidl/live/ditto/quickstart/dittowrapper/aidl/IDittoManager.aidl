@@ -1,5 +1,7 @@
 package live.ditto.quickstart.dittowrapper.aidl;
 
+import live.ditto.quickstart.dittowrapper.aidl.QueryResult;
+
 interface IDittoManager {
 
     boolean isSyncActive();
@@ -21,4 +23,6 @@ interface IDittoManager {
     void closeSubscription(String uuid);
 
     void stopSync();
+
+    QueryResult execute(String query, in Bundle args);
 }
