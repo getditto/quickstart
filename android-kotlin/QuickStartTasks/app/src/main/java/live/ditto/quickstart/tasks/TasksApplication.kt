@@ -2,6 +2,7 @@ package live.ditto.quickstart.tasks
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +23,8 @@ class TasksApplication : Application() {
 
 
     companion object {
+
+        private const val TAG = "TasksApplication"
         private var instance: TasksApplication? = null
 
         fun applicationContext(): Context {
@@ -33,13 +36,46 @@ class TasksApplication : Application() {
         instance = this
     }
 
+    // AIDL Service Connection
+    private lateinit var dittoServiceConnection: DittoServiceConnection
+
     override fun onCreate() {
         super.onCreate()
+
+        // Bind to AIDL service
+        dittoServiceConnection = DittoServiceConnection(this)
+        dittoServiceConnection.bind()
+
+        // Wait for service to bind, then call initDitto
         ioScope.launch {
+            // Original Ditto setup (keep this for now)
             setupDitto()
+
+            // Wait for the service connection to complete
+            Log.d(TAG, "Waiting for AIDL service connection...")
+            val connected = dittoServiceConnection.awaitConnection()
+
+            if (connected) {
+                Log.d(TAG, "AIDL service connected successfully!")
+                // Call initDitto with placeholder values
+                dittoServiceConnection.initDitto(
+                    appId = BuildConfig.DITTO_APP_ID,
+                    token = BuildConfig.DITTO_PLAYGROUND_TOKEN,
+                    customAuthUrl = BuildConfig.DITTO_AUTH_URL,
+                    webSocketUrl = BuildConfig.DITTO_WEBSOCKET_URL
+                )
+            } else {
+                Log.e(TAG, "Failed to connect to AIDL service. Make sure dittowrapper APK is installed.")
+            }
         }
     }
 
+    override fun onTerminate() {
+        super.onTerminate()
+        dittoServiceConnection.unbind()
+    }
+
+    //todo: remove when aidl setup is complete
     private suspend fun setupDitto() {
         val androidDependencies = DefaultAndroidDittoDependencies(applicationContext)
 
@@ -74,4 +110,5 @@ class TasksApplication : Application() {
         // disable sync with v3 peers, required for DQL
         ditto.disableSyncWithV3()
     }
+
 }

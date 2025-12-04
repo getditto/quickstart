@@ -20,6 +20,16 @@
             </intent-filter>
         </activity>
 
+        <!-- AIDL Service for Ditto functionality -->
+        <service
+            android:name=".DittoService"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="live.ditto.quickstart.dittowrapper.DittoService" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

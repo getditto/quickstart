@@ -98,6 +98,7 @@ android {
     buildFeatures {
         buildConfig = true
         compose = true
+        aidl = true
     }
     
     composeOptions {
@@ -140,5 +141,8 @@ dependencies {
     // Debug
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    //todo: remove
+    implementation(libs.live.ditto)
 }
 
