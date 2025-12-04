@@ -26,6 +26,10 @@ class TasksApplication : Application() {
         fun applicationContext(): Context {
             return instance!!.applicationContext
         }
+
+        fun getInstance(): TasksApplication {
+            return instance!!
+        }
     }
 
     init {

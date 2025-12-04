@@ -1,6 +1,7 @@
 package live.ditto.quickstart.tasks.list
 
 import android.content.Context
+import android.os.RemoteException
 import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -12,8 +13,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import live.ditto.DittoError
-import live.ditto.DittoSyncSubscription
+import live.ditto.quickstart.tasks.DittoServiceConnection
 import live.ditto.quickstart.tasks.TasksApplication
 import live.ditto.quickstart.tasks.data.Task
 
@@ -21,7 +21,9 @@ import live.ditto.quickstart.tasks.data.Task
 private val Context.preferencesDataStore by preferencesDataStore("tasks_list_settings")
 private val SYNC_ENABLED_KEY = booleanPreferencesKey("sync_enabled")
 
-class TasksListScreenViewModel : ViewModel() {
+class TasksListScreenViewModel(
+    private val dittoServiceConnection: DittoServiceConnection = TasksApplication.getInstance().dittoServiceConnection
+) : ViewModel() {
 
     companion object {
         private const val TAG = "TasksListScreenViewModel"
@@ -36,7 +38,7 @@ class TasksListScreenViewModel : ViewModel() {
     private val _syncEnabled = MutableLiveData(true)
     val syncEnabled: LiveData<Boolean> = _syncEnabled
 
-    private var syncSubscription: DittoSyncSubscription? = null
+    private var syncSubscriptionReferenceUUID: String? = null
 
     fun setSyncEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -45,24 +47,26 @@ class TasksListScreenViewModel : ViewModel() {
             }
             _syncEnabled.value = enabled
 
-            if (enabled && !ditto.isSyncActive) {
+            if (enabled && !dittoServiceConnection.isSyncActive()) {
                 try {
                     // starting sync
                     // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
-                    ditto.startSync()
+                    dittoServiceConnection.startSync()
 
                     // Register a subscription, which determines what data syncs to this peer
                     // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-                    syncSubscription = ditto.sync.registerSubscription(QUERY)
-                } catch (e: DittoError) {
+                    syncSubscriptionReferenceUUID = dittoServiceConnection.registerSubscription(QUERY)
+                } catch (e: RemoteException) {
                     Log.e(TAG, "Unable to start sync", e)
                 }
-            } else if (ditto.isSyncActive) {
+            } else if (dittoServiceConnection.isSyncActive()) {
                 try {
-                    syncSubscription?.close()
-                    syncSubscription = null
-                    ditto.stopSync()
-                } catch (e: DittoError) {
+                    syncSubscriptionReferenceUUID?.let { uuid ->
+                        dittoServiceConnection.closeSubscription(uuid)
+                    }
+                    syncSubscriptionReferenceUUID = null
+                    dittoServiceConnection.stopSync()
+                } catch (e: RemoteException) {
                     Log.e(TAG, "Unable to stop sync", e)
                 }
             }

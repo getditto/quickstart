@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
@@ -15,12 +16,10 @@ import live.ditto.quickstart.dittowrapper.aidl.IDittoManager
  */
 class DittoServiceConnection(private val context: Context) {
 
-    private val TAG = "DittoServiceConnection"
-
     private var dittoManager: IDittoManager? = null
+
     private var bound = false
     private val connectionDeferred = CompletableDeferred<Boolean>()
-
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             Log.d(TAG, "Service connected: $name")
@@ -132,6 +131,101 @@ class DittoServiceConnection(private val context: Context) {
             Log.e(TAG, "Error calling getMissingPermissions", e)
             emptyList()
         }
+    }
+
+    /**
+     * Check if sync is currently active
+     * @return true if sync is active, false otherwise
+     */
+    fun isSyncActive(): Boolean {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call isSyncActive - service not bound")
+            return false
+        }
+
+        return try {
+            dittoManager?.isSyncActive() ?: false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling isSyncActive", e)
+            false
+        }
+    }
+
+    /**
+     * Start sync on the remote service
+     */
+    fun startSync() {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call startSync - service not bound")
+            return
+        }
+
+        try {
+            Log.d(TAG, "Calling startSync on remote service...")
+            dittoManager?.startSync()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling startSync", e)
+        }
+    }
+
+    /**
+     * Stop sync on the remote service
+     */
+    fun stopSync() {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call stopSync - service not bound")
+            return
+        }
+
+        try {
+            Log.d(TAG, "Calling stopSync on remote service...")
+            dittoManager?.stopSync()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling stopSync", e)
+        }
+    }
+
+    /**
+     * Register a subscription with the remote service
+     * @param subscriptionQuery DQL query string
+     * @param args Query arguments (optional)
+     * @return UUID string to reference this subscription, or null if failed
+     */
+    fun registerSubscription(subscriptionQuery: String, args: Bundle? = null): String? {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call registerSubscription - service not bound")
+            return null
+        }
+
+        return try {
+            Log.d(TAG, "Calling registerSubscription on remote service...")
+            dittoManager?.registerSubscription(subscriptionQuery, args)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling registerSubscription", e)
+            null
+        }
+    }
+
+    /**
+     * Close a subscription on the remote service
+     * @param uuid UUID string reference to the subscription
+     */
+    fun closeSubscription(uuid: String) {
+        if (!bound || dittoManager == null) {
+            Log.e(TAG, "Cannot call closeSubscription - service not bound")
+            return
+        }
+
+        try {
+            Log.d(TAG, "Calling closeSubscription on remote service...")
+            dittoManager?.closeSubscription(uuid)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling closeSubscription", e)
+        }
+    }
+
+    companion object {
+        private val TAG = "DittoServiceConnection"
     }
 
 }

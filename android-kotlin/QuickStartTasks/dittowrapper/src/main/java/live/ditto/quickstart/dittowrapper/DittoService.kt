@@ -2,6 +2,7 @@ package live.ditto.quickstart.dittowrapper
 
 import android.app.Service
 import android.content.Intent
+import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +21,8 @@ class DittoService : Service() {
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val binder = object : IDittoManager.Stub() {
+        override fun isSyncActive(): Boolean = dittoManager.isSyncActive
+
         override fun initDitto(
             appId: String,
             token: String,
@@ -42,6 +45,35 @@ class DittoService : Service() {
         }
 
         override fun getMissingPermissions(): List<String> = dittoManager.getMissingPermissions()
+
+        override fun startSync() {
+            dittoManager.startSync()
+        }
+
+        @Suppress("DEPRECATION")
+        override fun registerSubscription(subscriptionQuery: String, args: Bundle?): String {
+
+            // Convert Bundle to Map<String, Any>?
+            val argsMap: Map<String, Any>? = args?.let { bundle ->
+                bundle.keySet().associateWith { key ->
+                    bundle.get(key) ?: throw IllegalStateException("Could not get bundle value for key=$key")
+                }
+            }
+
+            return dittoManager.registerSubscription(
+                query = subscriptionQuery,
+                args = argsMap
+            )
+        }
+
+        override fun closeSubscription(uuid: String) {
+            dittoManager.closeSubscription(uuid)
+        }
+
+        override fun stopSync() {
+            dittoManager.stopSync()
+        }
+
     }
 
     override fun onCreate() {
