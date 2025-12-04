@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import live.ditto.DittoError
-import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.data.Task
 
 class EditScreenViewModel : ViewModel() {

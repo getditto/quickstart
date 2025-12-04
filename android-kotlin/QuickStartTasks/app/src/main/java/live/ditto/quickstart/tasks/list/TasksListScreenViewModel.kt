@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import live.ditto.DittoError
 import live.ditto.DittoSyncSubscription
-import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.TasksApplication
 import live.ditto.quickstart.tasks.data.Task
 
