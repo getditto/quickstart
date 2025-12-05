@@ -161,10 +161,9 @@ public class DittoTaskService {
                                             return this.itemToTask(item);
                                         } catch (Exception e) {
                                             emitter.error(e);
-                                            return null;
+                                            throw new RuntimeException(e);
                                         }
                                     })
-                                    .filter(Objects::nonNull)
                                     .toList()
                             )
                         );
