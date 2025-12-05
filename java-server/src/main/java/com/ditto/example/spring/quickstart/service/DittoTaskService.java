@@ -110,7 +110,7 @@ public class DittoTaskService {
                 )
                 .toCompletableFuture()
                 .join();
-        } catch (Error e) {
+        } catch (Error | DittoException e) {
             throw new RuntimeException(e);
         }
     }
