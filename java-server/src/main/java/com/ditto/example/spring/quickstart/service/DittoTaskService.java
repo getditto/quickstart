@@ -3,15 +3,13 @@ package com.ditto.example.spring.quickstart.service;
 import com.ditto.java.*;
 import com.ditto.java.serialization.DittoCborSerializable;
 import jakarta.annotation.Nonnull;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 public class DittoTaskService {
@@ -26,7 +24,7 @@ public class DittoTaskService {
 
     public void addTask(@Nonnull String title) {
         try {
-            dittoService
+            DittoQueryResult result = dittoService
                 .getDitto()
                 .getStore()
                 .execute(
@@ -47,14 +45,16 @@ public class DittoTaskService {
                 )
                 .toCompletableFuture()
                 .join();
-        } catch (Error e) {
+             result.close();
+        } catch (Error | DittoException e) {
             throw new RuntimeException(e);
         }
     }
 
     public void toggleTaskDone(@Nonnull String taskId) {
         try {
-            DittoQueryResult tasks = dittoService
+            boolean isDone;
+            try (DittoQueryResult tasks = dittoService
                 .getDitto()
                 .getStore()
                 .execute(
@@ -66,16 +66,17 @@ public class DittoTaskService {
                         .build()
                 )
                 .toCompletableFuture()
-                .join();
+                .join()
+            ) {
+                isDone = tasks
+                    .getItems()
+                    .get(0)
+                    .getValue()
+                    .get("done")
+                    .asBoolean();
+            }
 
-            boolean isDone = tasks
-                .getItems()
-                .get(0)
-                .getValue()
-                .get("done")
-                .asBoolean();
-
-            dittoService
+            DittoQueryResult result = dittoService
                 .getDitto()
                 .getStore()
                 .execute(
@@ -89,6 +90,7 @@ public class DittoTaskService {
                 )
                 .toCompletableFuture()
                 .join();
+            result.close();
         } catch (Error | DittoException e) {
             throw new RuntimeException(e);
         }
@@ -96,7 +98,7 @@ public class DittoTaskService {
 
     public void deleteTask(@Nonnull String taskId) {
         try {
-            dittoService
+            DittoQueryResult result = dittoService
                 .getDitto()
                 .getStore()
                 .execute(
@@ -110,14 +112,15 @@ public class DittoTaskService {
                 )
                 .toCompletableFuture()
                 .join();
-        } catch (Error e) {
+            result.close();
+        } catch (Error | DittoException e) {
             throw new RuntimeException(e);
         }
     }
 
     public void updateTask(@Nonnull String taskId, @Nonnull String newTitle) {
         try {
-            dittoService
+            DittoQueryResult result = dittoService
                 .getDitto()
                 .getStore()
                 .execute(
@@ -131,7 +134,8 @@ public class DittoTaskService {
                 )
                 .toCompletableFuture()
                 .join();
-        } catch (Error e) {
+            result.close();
+        } catch (Error| DittoException e) {
             throw new RuntimeException(e);
         }
     }
@@ -146,9 +150,12 @@ public class DittoTaskService {
             emitter -> {
                 Ditto ditto = dittoService.getDitto();
                 try {
+                    @SuppressWarnings("resource")
                     DittoSyncSubscription subscription = ditto
                         .getSync()
                         .registerSubscription(subscriptionQuery);
+
+                    @SuppressWarnings("resource")
                     DittoStoreObserver observer = ditto
                         .getStore()
                         .registerObserver(displayQuery, results ->
