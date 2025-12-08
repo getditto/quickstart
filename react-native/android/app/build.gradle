@@ -78,12 +78,17 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.dittoreactnativesampleapp"
+
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId "com.dittoreactnativesampleapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        buildConfigField("boolean", "IS_EDGE_TO_EDGE_ENABLED", "false")
     }
     signingConfigs {
         debug {

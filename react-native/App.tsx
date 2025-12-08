@@ -5,10 +5,10 @@ import {
   PermissionsAndroid,
   Platform,
   View,
-  SafeAreaView,
   FlatList,
   Button,
 } from 'react-native';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {
   Authenticator,
   Ditto,
@@ -216,41 +216,43 @@ const App = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {!hasPermissions && (
-        <View style={styles.permissionBanner}>
-          <Text style={styles.permissionText}>
-            ⚠️ Limited functionality: Grant Bluetooth & WiFi permissions for peer-to-peer sync
-          </Text>
-        </View>
-      )}
-      <DittoInfo appId={DITTO_APP_ID} token={DITTO_PLAYGROUND_TOKEN} />
-      <DittoSync value={syncEnabled} onChange={toggleSync} />
-      <Fab onPress={() => setModalVisible(true)} />
-      <NewTaskModal
-        visible={modalVisible}
-        onSubmit={task => {
-          createTask(task);
-          setModalVisible(false);
-        }}
-        onClose={() => setModalVisible(false)}
-      />
-      <EditTaskModal
-        visible={editingTask !== null}
-        task={editingTask}
-        onSubmit={(taskId, newTitle) => {
-          updateTaskTitle(taskId, newTitle);
-          setEditingTask(null);
-        }}
-        onClose={() => setEditingTask(null)}
-      />
-      <FlatList
-        contentContainerStyle={styles.listContainer}
-        data={tasks}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-      />
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        {!hasPermissions && (
+          <View style={styles.permissionBanner}>
+            <Text style={styles.permissionText}>
+              ⚠️ Limited functionality: Grant Bluetooth & WiFi permissions for peer-to-peer sync
+            </Text>
+          </View>
+        )}
+        <DittoInfo appId={DITTO_APP_ID} token={DITTO_PLAYGROUND_TOKEN} />
+        <DittoSync value={syncEnabled} onChange={toggleSync} />
+        <Fab onPress={() => setModalVisible(true)} />
+        <NewTaskModal
+          visible={modalVisible}
+          onSubmit={task => {
+            createTask(task);
+            setModalVisible(false);
+          }}
+          onClose={() => setModalVisible(false)}
+        />
+        <EditTaskModal
+          visible={editingTask !== null}
+          task={editingTask}
+          onSubmit={(taskId, newTitle) => {
+            updateTaskTitle(taskId, newTitle);
+            setEditingTask(null);
+          }}
+          onClose={() => setEditingTask(null)}
+        />
+        <FlatList
+          contentContainerStyle={styles.listContainer}
+          data={tasks}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+        />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
