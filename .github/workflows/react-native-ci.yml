@@ -138,6 +138,13 @@ jobs:
         with:
           xcode-version: "16.4"
 
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: react-native
+
       - name: Install Ruby gems
         working-directory: react-native
         run: bundle install

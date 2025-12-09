@@ -2,6 +2,9 @@ name: Android Java CI
 
 on:
   pull_request:
+    paths:
+      - "android-java/**"
+      - ".github/workflows/android-java-ci.yml"
   workflow_dispatch:
 
 concurrency:
