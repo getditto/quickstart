@@ -23,7 +23,7 @@ class DqlBuilder extends StatefulWidget {
 
 class _DqlBuilderState extends State<DqlBuilder> {
   // https://docs.ditto.live/sdk/latest/crud/observing-data-changes
-  StoreObserver? _observer;
+  StoreObserverV2? _observer;
 
   // https://docs.ditto.live/sdk/latest/sync/syncing-data
   SyncSubscription? _subscription;
@@ -34,7 +34,7 @@ class _DqlBuilderState extends State<DqlBuilder> {
 
     // Register observer, which runs against the local database on this peer
     // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-    final observer = widget.ditto.store.registerObserver(
+    final observer = widget.ditto.store.registerObserverV2(
       widget.query,
       arguments: widget.queryArgs ?? {},
     );
@@ -65,7 +65,7 @@ class _DqlBuilderState extends State<DqlBuilder> {
 
       // Register observer, which runs against the local database on this peer
       // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-      final observer = widget.ditto.store.registerObserver(
+      final observer = widget.ditto.store.registerObserverV2(
         widget.query,
         arguments: widget.queryArgs ?? {},
       );
