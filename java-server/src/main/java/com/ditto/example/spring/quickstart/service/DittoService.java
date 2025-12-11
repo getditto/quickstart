@@ -47,6 +47,7 @@ public class DittoService implements DisposableBean {
          */
 
         DittoConfig dittoConfig = new DittoConfig.Builder(DittoSecretsConfiguration.DITTO_APP_ID)
+                .persistenceDirectory("C:\\ditto-quickstart")
                 .serverConnect(DittoSecretsConfiguration.DITTO_AUTH_URL)
                 .build();
 
@@ -60,7 +61,7 @@ public class DittoService implements DisposableBean {
                         ).thenRun(() -> { })
         );
 
-        this.ditto.setDeviceName("Spring Java");
+        this.ditto.setDeviceName("Java");
 
         this.ditto.updateTransportConfig(config -> {
             config.connect(connect -> {
@@ -99,8 +100,8 @@ public class DittoService implements DisposableBean {
     }
 
     public void toggleSync() {
+        boolean currentSyncState = mutableSyncStatePublisher.asFlux().blockFirst();
         try {
-            boolean currentSyncState = mutableSyncStatePublisher.asFlux().blockFirst();
             setSyncStateIntoDittoStore(!currentSyncState);
         } catch (DittoException e) {
             throw new RuntimeException(e);
@@ -145,15 +146,14 @@ public class DittoService implements DisposableBean {
                     (result) -> {
                         List<? extends DittoQueryResultItem> items = result.getItems();
                         boolean newSyncState = false;
-                        if (!items.isEmpty()) {
-                            try {
+                        try {
+                            if (!items.isEmpty()) {
                                 newSyncState = items.get(0).getValue()
                                         .get(DITTO_SYNC_STATE_ID)
                                         .asBoolean();
-                            } catch (DittoException e) {
-                                logger.error(e.getMessage());
-                                throw new RuntimeException(e);
                             }
+                        } catch (DittoException e) {
+                            System.err.println("Error: " + e);
                         }
 
                         if (newSyncState) {
