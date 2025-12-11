@@ -1,8 +1,8 @@
 PODS:
-  - ditto_live (4.12.4):
-    - DittoFlutter (= 4.12.4)
+  - ditto_live (4.13.1):
+    - DittoFlutter (= 4.13.1)
     - Flutter
-  - DittoFlutter (4.12.4)
+  - DittoFlutter (4.13.1)
   - Flutter (1.0.0)
   - integration_test (0.0.1):
     - Flutter
@@ -36,8 +36,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
 
 SPEC CHECKSUMS:
-  ditto_live: f3bb10807a90bc9e8110945052aa791a6fd4fa78
-  DittoFlutter: cd4812358982d87e6cc69f9a2d4d53f2d21e74ab
+  ditto_live: 93459c7d7c067ba16d4104925ea80c54dd13bf67
+  DittoFlutter: 26e21d5665e9bcc11660c4eceb1ec66b8ba64667
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46

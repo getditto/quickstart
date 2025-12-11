@@ -176,6 +176,7 @@ const APP_CONFIGS = {
       "flutter clean",
       "flutter pub get",
       "pod repo update",
+      "flutter precache --ios --macos",
       "(cd ios && pod update DittoFlutter)",
       "(cd macos && pod update DittoFlutter)",
     ],

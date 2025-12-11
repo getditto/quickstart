@@ -1,7 +1,7 @@
 PODS:
   - boost (1.84.0)
-  - DittoReactNative (4.12.4):
-    - DittoReactNativeIOS (= 4.12.4)
+  - DittoReactNative (4.13.1):
+    - DittoReactNativeIOS (= 4.13.1)
     - DoubleConversion
     - glog
     - hermes-engine
@@ -25,7 +25,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - DittoReactNativeIOS (4.12.4)
+  - DittoReactNativeIOS (4.13.1)
   - DoubleConversion (1.1.6)
   - EXConstants (17.1.7):
     - ExpoModulesCore
@@ -2346,8 +2346,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
-  DittoReactNative: aec2d4a98473ae995b20d3fcb2df809fc18ef94f
-  DittoReactNativeIOS: 9f170c67265a2438e8a466ea21cec9e49db6fd47
+  DittoReactNative: d976795078d24a8ad8e07b164e840af611bb4a3f
+  DittoReactNativeIOS: abf1a8d2479b73e04f963eac46000ac7cfb21e20
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   EXConstants: 9d62a46a36eae6d28cb978efcbc68aef354d1704
   Expo: 9fd4973ed0baa42f7418917152d86b39ef466104
