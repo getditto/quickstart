@@ -146,14 +146,11 @@ public class DittoService implements DisposableBean {
                     (result) -> {
                         List<? extends DittoQueryResultItem> items = result.getItems();
                         boolean newSyncState = false;
-                        if (!items.isEmpty()) {
-                            try {
+                        try {
+                            if (!items.isEmpty()) {
                                 newSyncState = items.get(0).getValue()
                                         .get(DITTO_SYNC_STATE_ID)
                                         .asBoolean();
-                            } catch (DittoException e) {
-                                logger.error(e.getMessage());
-                                throw new RuntimeException(e);
                             }
                         } catch (DittoException e) {
                             System.err.println("Error: " + e);
