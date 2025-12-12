@@ -1,0 +1,52 @@
+# justfile
+# Recipes for java-server project
+
+_default:
+    @just --list
+
+# Run linter (PMD + SpotBugs)
+lint:
+    ./gradlew pmdMain pmdTest spotbugsMain
+
+# Clean build artifacts
+clean:
+    ./gradlew clean
+
+# Build the Spring Boot JAR
+build:
+    ./gradlew bootJar
+
+# Run the Spring Boot application locally
+run:
+    ./gradlew bootRun
+
+# Run tests
+test:
+    ./gradlew test
+
+# Start the Docker container with interactive bash shell
+docker:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🐳 Starting Java Server container..."
+    echo ""
+    echo "Mounts:"
+    echo "  - ~/.m2 (read-only) -> /root/.m2"
+    echo "  - Current directory -> /workspace"
+    echo ""
+    echo "Port 8080 will be accessible at http://localhost:8080"
+    echo ""
+    docker compose run --rm --service-ports java-server
+    echo ""
+    echo "✅ Container session ended"
+
+# Build and start the Docker container, then run bootRun inside it
+docker-run:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🐳 Building and running Spring Boot in Docker..."
+    docker compose run --rm --service-ports java-server ./gradlew bootRun
+
+# Stop any running Docker containers for this project
+docker-stop:
+    docker compose down
