@@ -1,0 +1,23 @@
+# Docker Compose configuration for Java Server development
+# Usage: docker compose run --rm --service-ports java-server
+
+services:
+  java-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/arm64
+    working_dir: /workspace
+    volumes:
+      # Mount local Maven repository (read-only to prevent accidental modifications)
+      - ${HOME}/.m2:/root/.m2:ro
+      # Mount current directory for development
+      - .:/workspace:rw
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_HOME=/opt/java/openjdk
+      - MAVEN_OPTS=-Xmx1024m
+    command: bash
+    stdin_open: true
+    tty: true
