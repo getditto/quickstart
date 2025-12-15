@@ -8,11 +8,10 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
-android
-ios/Pods/
-ios/build/
-ios/.xcode.env.local
-ios/DerivedData/
+
+# generated native folders
+/ios
+/android
 
 # Native
 *.orig.*

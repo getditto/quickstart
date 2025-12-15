@@ -5,10 +5,10 @@ import {
   PermissionsAndroid,
   Platform,
   View,
-  SafeAreaView,
   FlatList,
   Button,
 } from "react-native";
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {
   Authenticator,
   Ditto,
@@ -168,6 +168,8 @@ const App = () => {
 
       ditto.current.sync.start();
 
+      await ditto.current.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
+
       taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
       taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC', response => {
@@ -189,7 +191,7 @@ const App = () => {
     (async () => {
       const granted =
         Platform.OS === "android" ? await requestPermissions() : true;
-      
+
       setHasPermissions(granted);
       initDitto();
     })();
@@ -212,7 +214,8 @@ const App = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
       {!hasPermissions && (
         <View style={styles.permissionBanner}>
           <Text style={styles.permissionText}>
@@ -247,7 +250,8 @@ const App = () => {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
