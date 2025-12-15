@@ -1,6 +1,6 @@
 PODS:
-  - DittoReactNative (4.13.0):
-    - DittoReactNativeIOS (= 4.13.0)
+  - DittoReactNative (4.13.1):
+    - DittoReactNativeIOS (= 4.13.1)
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -22,7 +22,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - DittoReactNativeIOS (4.13.0)
+  - DittoReactNativeIOS (4.13.1)
   - EXConstants (18.0.10):
     - ExpoModulesCore
   - Expo (54.0.25):
@@ -2316,8 +2316,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  DittoReactNative: 0c3f3bc9ed410930ab4cbf260366df4c7189209e
-  DittoReactNativeIOS: b5e8ca1759137a131c416f2e7bcea2ce549e90af
+  DittoReactNative: 23798b0e98b0269765ca6526c1aa5bc972aecbbf
+  DittoReactNativeIOS: abf1a8d2479b73e04f963eac46000ac7cfb21e20
   EXConstants: fd688cef4e401dcf798a021cfb5d87c890c30ba3
   Expo: 111394d38f32be09385d4c7f70cc96d2da438d0d
   ExpoAsset: d839c8eae8124470332408427327e8f88beb2dfd
