@@ -63,7 +63,8 @@ info:
 jre-bundle:
     ./gradlew createJreBundle
 
-# Build deployment package directory (works with or without App-V)
+# Build deployment package directory on Unix/macOS
+[unix]
 build-appv-package: build jre-bundle
     #!/usr/bin/env bash
     set -euo pipefail
@@ -84,6 +85,11 @@ build-appv-package: build jre-bundle
     echo "Deployment package created: deploy/DittoQuickstart/"
     echo ""
     echo "Next step: Run 'just zip-package' to create distribution archive"
+
+# Build deployment package directory on Windows
+[windows]
+build-appv-package: build jre-bundle
+    powershell -NoLogo -Command "Write-Host 'Creating deployment package...'; if (Test-Path deploy/DittoQuickstart) { Remove-Item -Recurse -Force deploy/DittoQuickstart }; New-Item -ItemType Directory -Path deploy/DittoQuickstart -Force | Out-Null; Copy-Item -Recurse build/jre-bundle deploy/DittoQuickstart/; Copy-Item 'build/libs/quickstart-java-{{ version }}.jar' deploy/DittoQuickstart/; Copy-Item launch.bat deploy/DittoQuickstart/; Copy-Item install.bat deploy/DittoQuickstart/; Copy-Item uninstall.bat deploy/DittoQuickstart/; if (Test-Path .env) { Copy-Item .env deploy/DittoQuickstart/ } else { Write-Host 'Warning: .env file not found. Copy manually to deploy/DittoQuickstart/' }; Write-Host ''; Write-Host 'Deployment package created: deploy/DittoQuickstart/'; Write-Host ''; Write-Host 'Next step: Run just zip-package to create distribution archive'"
 
 # Create ZIP archive on Unix/macOS
 [unix]
