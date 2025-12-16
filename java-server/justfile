@@ -86,23 +86,6 @@ build-appv-package: build jre-bundle
     echo ""
     echo "Next step: Run 'just zip-package' to create distribution archive"
 
-# Build deployment package directory on Windows
-[windows]
-build-appv-package: build jre-bundle
-    @echo Creating deployment package...
-    @if exist deploy\DittoQuickstart rmdir /S /Q deploy\DittoQuickstart
-    @mkdir deploy\DittoQuickstart
-    @xcopy /E /I /Q build\jre-bundle deploy\DittoQuickstart\jre-bundle
-    @copy /Y "build\libs\quickstart-java-{{ version }}.jar" deploy\DittoQuickstart\
-    @copy /Y launch.bat deploy\DittoQuickstart\
-    @copy /Y install.bat deploy\DittoQuickstart\
-    @copy /Y uninstall.bat deploy\DittoQuickstart\
-    @if exist .env (copy /Y .env deploy\DittoQuickstart\) else (echo Warning: .env file not found. Copy manually to deploy/DittoQuickstart/)
-    @echo.
-    @echo Deployment package created: deploy\DittoQuickstart\
-    @echo.
-    @echo Next step: Run 'just zip-package' to create distribution archive
-
 # Create ZIP archive on Unix/macOS
 [unix]
 zip-package: build-appv-package
