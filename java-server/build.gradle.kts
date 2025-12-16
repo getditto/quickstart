@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("war")
     id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
     id("pmd")
@@ -65,6 +66,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("io.projectreactor:reactor-core")
+    providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
     runtimeOnly("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
