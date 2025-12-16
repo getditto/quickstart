@@ -1,6 +1,7 @@
 .kotlin/
 bin/
 build/
+deploy/
 ditto-service.err.log
 ditto-service.exe
 ditto-service.out.log

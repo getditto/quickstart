@@ -78,3 +78,51 @@ dependencies {
     // Jackson YAML for reading browserstack-devices.yml
     testImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.2")
 }
+
+// Task to create a minimal JRE for App-V deployment
+tasks.register("createJreBundle") {
+    group = "distribution"
+    description = "Creates a minimal JRE bundle for App-V deployment using jlink"
+
+    val jreOutputDir = layout.buildDirectory.dir("jre-bundle").get().asFile
+
+    doLast {
+        delete(jreOutputDir)
+
+        val javaHome = System.getProperty("java.home")
+        val jlinkExecutable = if (System.getProperty("os.name").lowercase().contains("windows")) {
+            "$javaHome/bin/jlink.exe"
+        } else {
+            "$javaHome/bin/jlink"
+        }
+
+        // Modules required for Spring Boot application
+        val modules = listOf(
+            "java.base",
+            "java.sql",
+            "java.naming",
+            "java.desktop",
+            "java.management",
+            "java.instrument",
+            "java.net.http",
+            "java.security.jgss",
+            "java.xml",
+            "jdk.crypto.ec",
+            "jdk.unsupported" // Required for some native libraries
+        ).joinToString(",")
+
+        exec {
+            commandLine(
+                jlinkExecutable,
+                "--add-modules", modules,
+                "--strip-debug",
+                "--no-man-pages",
+                "--no-header-files",
+                "--compress=2",
+                "--output", jreOutputDir.absolutePath
+            )
+        }
+
+        println("JRE bundle created at: ${jreOutputDir.absolutePath}")
+    }
+}
