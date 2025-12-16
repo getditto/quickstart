@@ -1,0 +1,53 @@
+# Justfile for java-server quickstart
+
+# List available recipes
+@_default:
+    just --list
+
+# Build both JAR and WAR artifacts (skips tests)
+build:
+    ./gradlew bootJar bootWar -x test
+
+# Build and run tests (requires Chrome browser for Selenium tests)
+build-test:
+    ./gradlew build
+
+# Clean build artifacts
+clean:
+    ./gradlew clean
+
+# Build with compilation checks but skip tests (recommended for local dev)
+check:
+    ./gradlew assemble check -x test
+
+# Run the application (standalone JAR with embedded Tomcat)
+run:
+    ./gradlew bootRun
+
+# Run the application Tomcat
+run-war: build
+    java -jar build/libs/quickstart-java-0.0.1-SNAPSHOT.war
+
+# Build and run the JAR file directly
+run-jar: build
+    java -jar build/libs/quickstart-java-0.0.1-SNAPSHOT.jar
+
+# Run integration tests (requires Chrome browser)
+test:
+    ./gradlew test
+
+# Run integration tests with BrowserStack (requires BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY)
+test-browserstack:
+    ./gradlew test -DBROWSERSTACK_USERNAME="${BROWSERSTACK_USERNAME}" -DBROWSERSTACK_ACCESS_KEY="${BROWSERSTACK_ACCESS_KEY}"
+
+# Run linting checks
+lint:
+    ./gradlew pmdMain pmdTest spotbugsMain spotbugsTest
+
+# Format code (if formatter is configured)
+format:
+    @echo "No formatter configured for this project"
+
+# Show build info
+info:
+    ./gradlew -v
