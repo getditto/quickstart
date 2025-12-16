@@ -9,6 +9,13 @@ echo Ditto Quickstart Server - Installation
 echo ========================================
 echo.
 
+REM Get the directory where this script is located
+set "SOURCE_DIR=%~dp0"
+cd /d "%SOURCE_DIR%"
+
+echo Source directory: %SOURCE_DIR%
+echo.
+
 REM Check for admin rights
 net session >nul 2>&1
 if %errorLevel% neq 0 (
@@ -20,7 +27,6 @@ if %errorLevel% neq 0 (
     set "INSTALL_DIR=%ProgramFiles%\DittoQuickstart"
 )
 
-echo.
 echo Installation directory: !INSTALL_DIR!
 echo.
 
