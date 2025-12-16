@@ -11,25 +11,35 @@ This guide explains how to package and deploy the Ditto Quickstart Java Server a
 
 ## Building the Self-Contained Package
 
-### Step 1: Build the Application JAR
+### Step 1: Configure Ditto Credentials
 
-```bash
-# Build the Spring Boot JAR
-./gradlew clean bootJar -x test
+Edit `.env` in the project root with your Ditto credentials:
+
+```env
+DITTO_APP_ID=your-app-id
+DITTO_PLAYGROUND_TOKEN=your-token
+DITTO_AUTH_URL=https://cloud.ditto.live/
+DITTO_WEBSOCKET_URL=wss://cloud.ditto.live/ws/v1
 ```
 
-This creates: `build/libs/quickstart-java-0.0.1-SNAPSHOT.jar`
-
-### Step 2: Create the JRE Bundle
+### Step 2: Build the Package
 
 ```bash
-# Create a minimal JRE using jlink
-./gradlew createJreBundle
+# Build deployment package (without ZIP archive)
+just build-appv-package
 ```
 
-This creates: `build/jre-bundle/` (approximately 50-70 MB)
+This creates `deploy/DittoQuickstart/` containing:
 
-The JRE includes only necessary modules:
+- `jre-bundle/` - Minimal Java Runtime (~50-70 MB)
+- `quickstart-java-0.0.1-SNAPSHOT.jar` - Application (~150 MB)
+- `launch.bat` - Launcher script
+- `install.bat` - Installation script
+- `uninstall.bat` - Uninstallation script
+- `.env` - Ditto credentials
+
+The JRE bundle includes only necessary modules:
+
 - `java.base` - Core Java functionality
 - `java.sql` - Database access (H2)
 - `java.naming` - JNDI support
@@ -42,47 +52,7 @@ The JRE includes only necessary modules:
 - `jdk.crypto.ec` - Elliptic curve cryptography
 - `jdk.unsupported` - Required for some native libraries
 
-### Step 3: Prepare the Deployment Package
-
-Create a deployment directory structure:
-
-```
-DittoQuickstart/
-├── jre-bundle/                          (from build/jre-bundle/)
-├── quickstart-java-0.0.1-SNAPSHOT.jar   (from build/libs/)
-├── launch.bat                           (launcher script)
-└── .env                                 (Ditto credentials)
-```
-
-Copy files:
-
-```bash
-# Create deployment directory
-mkdir -p deploy/DittoQuickstart
-
-# Copy JRE bundle
-cp -r build/jre-bundle deploy/DittoQuickstart/
-
-# Copy JAR
-cp build/libs/quickstart-java-0.0.1-SNAPSHOT.jar deploy/DittoQuickstart/
-
-# Copy launcher
-cp launch.bat deploy/DittoQuickstart/
-
-# Copy environment file (contains Ditto credentials)
-cp .env deploy/DittoQuickstart/
-```
-
-### Step 4: Configure Environment Variables
-
-Edit `deploy/DittoQuickstart/.env` with your Ditto credentials:
-
-```env
-DITTO_APP_ID=your-app-id
-DITTO_PLAYGROUND_TOKEN=your-token
-DITTO_AUTH_URL=https://cloud.ditto.live/
-DITTO_WEBSOCKET_URL=wss://cloud.ditto.live/ws/v1
-```
+**Note**: For App-V sequencing, you only need the directory. If you need a ZIP archive for distribution, run `just zip-package` instead.
 
 ## App-V Sequencing
 
@@ -188,6 +158,7 @@ DITTO_WEBSOCKET_URL
 ### Application Won't Start
 
 **Check JRE Bundle**:
+
 ```cmd
 dir /s jre-bundle\bin\java.exe
 ```
@@ -197,6 +168,7 @@ If missing, rebuild with `./gradlew createJreBundle`
 ### Data Directory Issues
 
 **Verify writable path**:
+
 ```cmd
 echo %LOCALAPPDATA%\DittoQuickstart\data
 ```
@@ -206,6 +178,7 @@ This should resolve to: `C:\Users\<username>\AppData\Local\DittoQuickstart\data`
 ### Network Connectivity
 
 **Test port 8080**:
+
 ```cmd
 netstat -an | findstr :8080
 ```

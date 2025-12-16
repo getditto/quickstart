@@ -63,20 +63,44 @@ info:
 jre-bundle:
     ./gradlew createJreBundle
 
-# Build App-V deployment package
+# Build deployment package directory (works with or without App-V)
 build-appv-package: build jre-bundle
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "Creating App-V deployment package..."
+    echo "Creating deployment package..."
     rm -rf deploy/DittoQuickstart
     mkdir -p deploy/DittoQuickstart
     cp -r build/jre-bundle deploy/DittoQuickstart/
     cp "build/libs/quickstart-java-{{ version }}.jar" deploy/DittoQuickstart/
     cp launch.bat deploy/DittoQuickstart/
+    cp install.bat deploy/DittoQuickstart/
+    cp uninstall.bat deploy/DittoQuickstart/
     if [ -f .env ]; then
         cp .env deploy/DittoQuickstart/
     else
         echo "Warning: .env file not found. Copy manually to deploy/DittoQuickstart/"
     fi
-    echo "App-V package prepared in: deploy/DittoQuickstart/"
-    echo "See APP-V-DEPLOYMENT.md for sequencing instructions"
+    echo ""
+    echo "Deployment package created: deploy/DittoQuickstart/"
+    echo ""
+    echo "Next step: Run 'just zip-package' to create distribution archive"
+
+# Create ZIP archive on Unix/macOS
+[unix]
+zip-package: build-appv-package
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Creating ZIP archive..."
+    cd deploy && zip -r ../build/DittoQuickstart-{{ version }}.zip DittoQuickstart/
+    echo ""
+    echo "Distribution package created:"
+    echo "  ZIP: build/DittoQuickstart-{{ version }}.zip"
+    echo ""
+    echo "Deployment options:"
+    echo "  1. Windows (without App-V): See WINDOWS-DEPLOYMENT.md"
+    echo "  2. App-V Sequencer: See APP-V-DEPLOYMENT.md"
+
+# Create ZIP archive on Windows
+[windows]
+zip-package: build-appv-package
+    powershell -NoLogo -Command "Write-Host 'Creating ZIP archive...'; Compress-Archive -Path deploy/DittoQuickstart -DestinationPath build/DittoQuickstart-{{ version }}.zip -Force; Write-Host ''; Write-Host 'Distribution package created:'; Write-Host '  ZIP: build/DittoQuickstart-{{ version }}.zip'; Write-Host ''; Write-Host 'Deployment options:'; Write-Host '  1. Windows (without App-V): See WINDOWS-DEPLOYMENT.md'; Write-Host '  2. App-V Sequencer: See APP-V-DEPLOYMENT.md'"
