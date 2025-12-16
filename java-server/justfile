@@ -89,7 +89,19 @@ build-appv-package: build jre-bundle
 # Build deployment package directory on Windows
 [windows]
 build-appv-package: build jre-bundle
-    powershell -NoLogo -Command "Write-Host 'Creating deployment package...'; if (Test-Path deploy/DittoQuickstart) { Remove-Item -Recurse -Force deploy/DittoQuickstart }; New-Item -ItemType Directory -Path deploy/DittoQuickstart -Force | Out-Null; Copy-Item -Recurse build/jre-bundle deploy/DittoQuickstart/; Copy-Item 'build/libs/quickstart-java-{{ version }}.jar' deploy/DittoQuickstart/; Copy-Item launch.bat deploy/DittoQuickstart/; Copy-Item install.bat deploy/DittoQuickstart/; Copy-Item uninstall.bat deploy/DittoQuickstart/; if (Test-Path .env) { Copy-Item .env deploy/DittoQuickstart/ } else { Write-Host 'Warning: .env file not found. Copy manually to deploy/DittoQuickstart/' }; Write-Host ''; Write-Host 'Deployment package created: deploy/DittoQuickstart/'; Write-Host ''; Write-Host 'Next step: Run just zip-package to create distribution archive'"
+    @echo Creating deployment package...
+    @if exist deploy\DittoQuickstart rmdir /S /Q deploy\DittoQuickstart
+    @mkdir deploy\DittoQuickstart
+    @xcopy /E /I /Q build\jre-bundle deploy\DittoQuickstart\jre-bundle
+    @copy /Y "build\libs\quickstart-java-{{ version }}.jar" deploy\DittoQuickstart\
+    @copy /Y launch.bat deploy\DittoQuickstart\
+    @copy /Y install.bat deploy\DittoQuickstart\
+    @copy /Y uninstall.bat deploy\DittoQuickstart\
+    @if exist .env (copy /Y .env deploy\DittoQuickstart\) else (echo Warning: .env file not found. Copy manually to deploy/DittoQuickstart/)
+    @echo.
+    @echo Deployment package created: deploy\DittoQuickstart\
+    @echo.
+    @echo Next step: Run 'just zip-package' to create distribution archive
 
 # Create ZIP archive on Unix/macOS
 [unix]
