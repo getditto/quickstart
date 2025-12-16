@@ -1,8 +1,10 @@
 # Justfile for java-server quickstart
-# Extract version from gradle.properties
+# Use PowerShell on Windows, bash on Unix
+
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 artifact_base_path := "build/libs/quickstart-java"
-version := `grep '^version' gradle.properties | cut -d'=' -f2 | tr -d ' '`
+version := if os() == "windows" { `(Get-Content gradle.properties | Select-String '^version' | ForEach-Object { $_ -replace 'version\s*=\s*', '' }).Trim()` } else { `grep '^version' gradle.properties | cut -d'=' -f2 | tr -d ' '` }
 
 # List available recipes
 @_default:
