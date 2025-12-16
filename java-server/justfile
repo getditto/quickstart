@@ -30,13 +30,13 @@ check:
 run:
     ./gradlew bootRun
 
-# Run the application Tomcat
-run-war: build
-    java -jar {{ artifact_base_path }}-{{ version }}.war
-
 # Build and run the JAR file directly
 run-jar: build
-    java -jar {{ artifact_base_path }}-{{ version }}.jar
+    java -jar "{{ artifact_base_path }}-{{ version }}.jar"
+
+# Run the application Tomcat
+run-war: build
+    java -jar "{{ artifact_base_path }}-{{ version }}.war"
 
 # Run integration tests (requires Chrome browser)
 test:
