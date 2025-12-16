@@ -1,4 +1,8 @@
 # Justfile for java-server quickstart
+# Extract version from gradle.properties
+
+artifact_base_path := "build/libs/quickstart-java"
+version := `grep '^version' gradle.properties | cut -d'=' -f2 | tr -d ' '`
 
 # List available recipes
 @_default:
@@ -26,11 +30,11 @@ run:
 
 # Run the application Tomcat
 run-war: build
-    java -jar build/libs/quickstart-java-0.0.1-SNAPSHOT.war
+    java -jar {{ artifact_base_path }}-{{ version }}.war
 
 # Build and run the JAR file directly
 run-jar: build
-    java -jar build/libs/quickstart-java-0.0.1-SNAPSHOT.jar
+    java -jar {{ artifact_base_path }}-{{ version }}.jar
 
 # Run integration tests (requires Chrome browser)
 test:
@@ -38,7 +42,8 @@ test:
 
 # Run integration tests with BrowserStack (requires BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY)
 test-browserstack:
-    ./gradlew test -DBROWSERSTACK_USERNAME="${BROWSERSTACK_USERNAME}" -DBROWSERSTACK_ACCESS_KEY="${BROWSERSTACK_ACCESS_KEY}"
+    ./gradlew test -DBROWSERSTACK_USERNAME="${BROWSERSTACK_USERNAME}" \
+      -DBROWSERSTACK_ACCESS_KEY="${BROWSERSTACK_ACCESS_KEY}"
 
 # Run linting checks
 lint:
