@@ -109,4 +109,4 @@ zip-package: build-appv-package
 # Create ZIP archive on Windows
 [windows]
 zip-package: build-appv-package
-    powershell -NoLogo -Command "Write-Host 'Creating ZIP archive...'; Compress-Archive -Path deploy/DittoQuickstart -DestinationPath build/DittoQuickstart-{{ version }}.zip -Force; Write-Host ''; Write-Host 'Distribution package created:'; Write-Host '  ZIP: build/DittoQuickstart-{{ version }}.zip'; Write-Host ''; Write-Host 'Deployment options:'; Write-Host '  1. Windows (without App-V): See WINDOWS-DEPLOYMENT.md'; Write-Host '  2. App-V Sequencer: See APP-V-DEPLOYMENT.md'"
+    powershell.exe -ExecutionPolicy Bypass -File build-zip-package.ps1 -Version "{{ version }}"
