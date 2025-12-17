@@ -86,6 +86,11 @@ build-appv-package: build jre-bundle
     echo ""
     echo "Next step: Run 'just zip-package' to create distribution archive"
 
+# Build deployment package directory on Windows
+[windows]
+build-appv-package: build jre-bundle
+    powershell.exe -ExecutionPolicy Bypass -File build-deploy-package.ps1 -Version "{{ version }}"
+
 # Create ZIP archive on Unix/macOS
 [unix]
 zip-package: build-appv-package
