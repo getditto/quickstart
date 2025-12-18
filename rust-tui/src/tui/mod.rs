@@ -26,8 +26,10 @@ impl TuiTask {
         shutdown: Shutdown,
         terminal: Terminal<CrosstermBackend<Stdout>>,
         ditto: Ditto,
+        websocket_url: String,
+        client_name: Option<String>,
     ) -> Result<TuiTask> {
-        let todolist_state = Todolist::new(ditto)?;
+        let todolist_state = Todolist::new(ditto, websocket_url, client_name)?;
         let task_context = TuiContext {
             terminal,
             shutdown,

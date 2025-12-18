@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
 
     ditto.update_transport_config(|config| {
         config.enable_all_peer_to_peer();
-        config.connect.websocket_urls.insert(websocket_url);
+        config.connect.websocket_urls.insert(websocket_url.clone());
     });
 
     // Disable sync with v3 peers and DQL strict mode
@@ -60,7 +60,8 @@ async fn main() -> Result<()> {
     println!("✅ Created Ditto instance and started sync");
 
     // Create todolist instance (loads the app)
-    let todolist = Todolist::new(ditto)?;
+    let client_name = env::var("DITTO_CLIENT_NAME").ok();
+    let todolist = Todolist::new(ditto, websocket_url, client_name)?;
     println!("📝 App loaded - Created todolist instance");
 
     // Wait for sync and check for the seeded task
