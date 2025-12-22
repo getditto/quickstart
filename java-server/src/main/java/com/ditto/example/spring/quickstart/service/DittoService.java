@@ -99,7 +99,7 @@ public class DittoService implements DisposableBean {
     }
 
     public void toggleSync() {
-        boolean currentSyncState = mutableSyncStatePublisher.asFlux().blockFirst();
+        boolean currentSyncState = Boolean.TRUE.equals(mutableSyncStatePublisher.asFlux().blockFirst());
         try {
             setSyncStateIntoDittoStore(!currentSyncState);
         } catch (DittoException e) {
