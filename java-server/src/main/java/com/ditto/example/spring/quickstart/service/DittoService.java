@@ -100,11 +100,7 @@ public class DittoService implements DisposableBean {
 
     public void toggleSync() {
         boolean currentSyncState = Boolean.TRUE.equals(mutableSyncStatePublisher.asFlux().blockFirst());
-        try {
-            setSyncStateIntoDittoStore(!currentSyncState);
-        } catch (DittoException e) {
-            throw new RuntimeException(e);
-        }
+        setSyncStateIntoDittoStore(!currentSyncState);
     }
 
     private DittoAsyncCancellable observePeersPresence() {
@@ -172,7 +168,7 @@ public class DittoService implements DisposableBean {
         }
     }
 
-    private void setSyncStateIntoDittoStore(boolean newState) throws DittoException {
+    private void setSyncStateIntoDittoStore(boolean newState) {
         CompletionStage<DittoQueryResult> future = ditto.getStore().execute(
                 "UPDATE %s SET %s = :syncState".formatted(DITTO_SYNC_STATE_COLLECTION, DITTO_SYNC_STATE_ID),
                 DittoCborSerializable.buildDictionary()
