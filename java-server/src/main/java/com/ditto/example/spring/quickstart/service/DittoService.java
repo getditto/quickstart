@@ -46,7 +46,6 @@ public class DittoService implements DisposableBean {
          *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
          */
         DittoConfig dittoConfig = new DittoConfig.Builder(DittoSecretsConfiguration.DITTO_APP_ID)
-//                .persistenceDirectory("/tmp/ditto-quickstart")
                 .serverConnect(DittoSecretsConfiguration.DITTO_AUTH_URL)
                 .build();
 
