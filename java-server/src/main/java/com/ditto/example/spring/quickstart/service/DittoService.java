@@ -152,7 +152,7 @@ public class DittoService implements DisposableBean {
                                         .asBoolean();
                             }
                         } catch (DittoException e) {
-                            System.err.println("Error: " + e);
+                            logger.error("Error: {}", String.valueOf(e));
                         }
 
                         if (newSyncState) {
