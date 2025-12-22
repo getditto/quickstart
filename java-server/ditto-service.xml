@@ -1,0 +1,24 @@
+<service>
+  <id>ditto-service</id>
+  <name>Ditto Java Quickstart App</name>
+  <description>Description of your application</description>
+
+  <executable>java</executable>
+  <arguments>-jar "%BASE%\build\libs\quickstart-java-0.0.1-SNAPSHOT.jar"</arguments>
+
+  <!-- Optional: Set working directory -->
+  <workingdirectory>%BASE%</workingdirectory>
+
+  <!-- JVM options -->
+  <env name="JAVA_OPTS" value="-Xmx512m -Xms256m"/>
+
+  <!-- Logging -->
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+
+  <!-- Service restart behavior -->
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="20 sec"/>
+</service>
