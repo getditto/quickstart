@@ -58,10 +58,10 @@ public class DittoTaskService {
                     "UPDATE %s SET done = :done WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
                     DittoCborSerializable.Dictionary.buildDictionary()
                             .put("done", !isDone)
-                            .put("taskId",  taskId)
+                            .put("taskId", taskId)
                             .build()
             ).toCompletableFuture().join();
-        } catch (Error e) {
+        } catch (Error | DittoException e) {
             throw new RuntimeException(e);
         }
     }
@@ -115,11 +115,11 @@ public class DittoTaskService {
                     }
                     try {
                         observer.close();
-                    } catch (DittoError e) {
+                    } catch (DittoException e) {
                         throw new RuntimeException(e);
                     }
                 });
-            } catch (DittoError e) {
+            } catch (DittoException e) {
                 emitter.error(e);
             }
         }, FluxSink.OverflowStrategy.LATEST);
@@ -127,11 +127,15 @@ public class DittoTaskService {
 
     private Task itemToTask(@Nonnull DittoQueryResultItem item) {
         DittoCborSerializable.Dictionary value = item.getValue();
-        return new Task(
-                value.get("_id").asString(),
-                value.get("title").asString(),
-                value.get("done").asBoolean(),
-                value.get("deleted").asBoolean()
-        );
+        try {
+            return new Task(
+                    value.get("_id").asString(),
+                    value.get("title").asString(),
+                    value.get("done").asBoolean(),
+                    value.get("deleted").asBoolean()
+            );
+        } catch (DittoException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
