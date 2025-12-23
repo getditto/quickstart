@@ -28,6 +28,10 @@ pub struct Cli {
     #[clap(long, env = "DITTO_CLIENT_NAME")]
     client_name: Option<String>,
 
+    /// Enable peer-to-peer transports (LAN, Bluetooth). Set to false to force all communication through Big Peer.
+    #[clap(long, env = "DITTO_P2P_ENABLED", default_value = "true")]
+    p2p_enabled: bool,
+
     /// Path to write logs on disk
     #[clap(long, default_value = "/tmp/ditto-quickstart.log")]
     log: PathBuf,
@@ -61,6 +65,7 @@ async fn main() -> Result<()> {
         cli.token,
         cli.custom_auth_url,
         cli.websocket_url.clone(),
+        cli.p2p_enabled,
     )
     .await?;
     let _tui_task = TuiTask::try_spawn(
@@ -105,6 +110,7 @@ async fn try_init_ditto(
     token: String,
     custom_auth_url: String,
     websocket_url: String,
+    p2p_enabled: bool,
 ) -> Result<Ditto> {
     // We use a temporary directory to store Ditto's local database.
     // This means that data will not be persistent between runs of the
@@ -127,11 +133,16 @@ async fn try_init_ditto(
         .build()?;
 
     ditto.update_transport_config(|config| {
-        // Explicitly disable all peer-to-peer transports - only use Big Peer
-        config.peer_to_peer.bluetooth_le.enabled = false;
-        config.peer_to_peer.lan.enabled = false;
+        if p2p_enabled {
+            // Enable all peer-to-peer transports (original behavior)
+            config.enable_all_peer_to_peer();
+        } else {
+            // Explicitly disable all peer-to-peer transports - only use Big Peer
+            config.peer_to_peer.bluetooth_le.enabled = false;
+            config.peer_to_peer.lan.enabled = false;
+        }
 
-        // Keep only the WebSocket connection to Big Peer
+        // Set WebSocket URL for Big Peer connection
         config.connect.websocket_urls.insert(websocket_url);
     });
 
