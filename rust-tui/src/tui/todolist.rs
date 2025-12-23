@@ -181,7 +181,9 @@ impl Todolist {
                     .border_type(BorderType::Rounded)
                     .title_top(Line::raw(" Tasks (j↓, k↑, ⏎ toggle done) ").left_aligned())
                     .title_top(sync_line.right_aligned())
-                    .title_bottom(Line::raw(" (c: create) (d: delete) (e: edit) (q: quit) ").left_aligned())
+                    .title_bottom(
+                        Line::raw(" (c: create) (d: delete) (e: edit) (q: quit) ").left_aligned(),
+                    )
                     .title_bottom(connection_line.right_aligned()),
             );
         StatefulWidget::render(table, area, buf, &mut self.table_state);
