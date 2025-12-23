@@ -1,3 +1,7 @@
 .kotlin/
 bin/
 build/
+ditto-service.err.log
+ditto-service.exe
+ditto-service.out.log
+ditto-service.wrapper.log
