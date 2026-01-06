@@ -24,6 +24,14 @@ pub struct Cli {
     #[clap(long, env = "DITTO_WEBSOCKET_URL")]
     websocket_url: String,
 
+    /// Optional client name to display in the TUI
+    #[clap(long, env = "DITTO_CLIENT_NAME")]
+    client_name: Option<String>,
+
+    /// Enable peer-to-peer transports (LAN, Bluetooth). Set to false to force all communication through Big Peer.
+    #[clap(long, env = "DITTO_P2P_ENABLED", default_value = "true")]
+    p2p_enabled: bool,
+
     /// Path to write logs on disk
     #[clap(long, default_value = "/tmp/ditto-quickstart.log")]
     log: PathBuf,
@@ -56,11 +64,18 @@ async fn main() -> Result<()> {
         cli.app_id,
         cli.token,
         cli.custom_auth_url,
-        cli.websocket_url,
+        cli.websocket_url.clone(),
+        cli.p2p_enabled,
     )
     .await?;
-    let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, ditto)
-        .context("failed to start tui task")?;
+    let _tui_task = TuiTask::try_spawn(
+        shutdown.clone(),
+        terminal,
+        ditto,
+        cli.websocket_url,
+        cli.client_name,
+    )
+    .context("failed to start tui task")?;
     tracing::info!(success = true, "Initialized!");
 
     // Wait for shutdown trigger
@@ -95,6 +110,7 @@ async fn try_init_ditto(
     token: String,
     custom_auth_url: String,
     websocket_url: String,
+    p2p_enabled: bool,
 ) -> Result<Ditto> {
     // We use a temporary directory to store Ditto's local database.
     // This means that data will not be persistent between runs of the
@@ -117,8 +133,16 @@ async fn try_init_ditto(
         .build()?;
 
     ditto.update_transport_config(|config| {
-        config.enable_all_peer_to_peer();
-        //set websocket url
+        if p2p_enabled {
+            // Enable all peer-to-peer transports (original behavior)
+            config.enable_all_peer_to_peer();
+        } else {
+            // Explicitly disable all peer-to-peer transports - only use Big Peer
+            config.peer_to_peer.bluetooth_le.enabled = false;
+            config.peer_to_peer.lan.enabled = false;
+        }
+
+        // Set WebSocket URL for Big Peer connection
         config.connect.websocket_urls.insert(websocket_url);
     });
 

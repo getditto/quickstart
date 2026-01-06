@@ -37,6 +37,13 @@ pub struct Todolist {
     /// Subscriptions cause Ditto to sync selected data from other peers
     pub tasks_subscription: Arc<SyncSubscription>,
 
+    // Connection info for display
+    /// The WebSocket URL this client is connected to
+    pub websocket_url: String,
+
+    /// Optional client name for display purposes
+    pub client_name: Option<String>,
+
     // TUI state below
     pub mode: TodoMode,
 
@@ -82,7 +89,7 @@ impl TodoItem {
 }
 
 impl Todolist {
-    pub fn new(ditto: Ditto) -> Result<Self> {
+    pub fn new(ditto: Ditto, websocket_url: String, client_name: Option<String>) -> Result<Self> {
         let (tasks_tx, tasks_rx) = watch::channel(Vec::new());
 
         // Register a subscription, which determines what data syncs to this peer
@@ -110,6 +117,8 @@ impl Todolist {
             tasks_rx,
             tasks_observer,
             tasks_subscription,
+            websocket_url,
+            client_name,
             mode: TodoMode::Normal,
             create_task_title: None,
             edit_task: None,
@@ -155,6 +164,14 @@ impl Todolist {
             .into_iter()
             .collect::<Line>();
 
+        // Format connection info: "client_name@websocket_url" or just "websocket_url"
+        let connection_info = if let Some(ref client_name) = self.client_name {
+            format!(" {}@{} ", client_name, self.websocket_url)
+        } else {
+            format!(" {} ", self.websocket_url)
+        };
+        let connection_line = Line::raw(connection_info).cyan();
+
         let table = Table::new(rows, Constraint::from_percentages([30, 70]))
             .header(header)
             .highlight_symbol("❯❯ ")
@@ -164,7 +181,10 @@ impl Todolist {
                     .border_type(BorderType::Rounded)
                     .title_top(Line::raw(" Tasks (j↓, k↑, ⏎ toggle done) ").left_aligned())
                     .title_top(sync_line.right_aligned())
-                    .title_bottom(" (c: create) (d: delete) (e: edit) (q: quit) "),
+                    .title_bottom(
+                        Line::raw(" (c: create) (d: delete) (e: edit) (q: quit) ").left_aligned(),
+                    )
+                    .title_bottom(connection_line.right_aligned()),
             );
         StatefulWidget::render(table, area, buf, &mut self.table_state);
     }
