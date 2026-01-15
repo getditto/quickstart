@@ -39,7 +39,7 @@ const log = {
 // Configuration for each app directory
 const APP_CONFIGS = {
   "react-native": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "package.json",
@@ -57,7 +57,7 @@ const APP_CONFIGS = {
   },
 
   "react-native-expo": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "package.json",
@@ -70,7 +70,7 @@ const APP_CONFIGS = {
   },
 
   "javascript-tui": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "package.json",
@@ -83,7 +83,7 @@ const APP_CONFIGS = {
   },
 
   "javascript-web": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "package.json",
@@ -96,7 +96,7 @@ const APP_CONFIGS = {
   },
 
   "android-kotlin": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "QuickStartTasks/gradle/libs.versions.toml",
@@ -108,7 +108,7 @@ const APP_CONFIGS = {
   },
 
   "android-java": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "gradle/libs.versions.toml",
@@ -120,7 +120,7 @@ const APP_CONFIGS = {
   },
 
   "android-cpp": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "QuickStartTasksCPP/app/build.gradle.kts",
@@ -135,7 +135,7 @@ const APP_CONFIGS = {
   },
 
   "cpp-tui": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "taskscpp/Makefile",
@@ -148,7 +148,7 @@ const APP_CONFIGS = {
   },
 
   swift: {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "Tasks.xcodeproj/project.pbxproj",
@@ -183,7 +183,7 @@ const APP_CONFIGS = {
   },
 
   "rust-tui": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "Cargo.toml",
@@ -196,7 +196,7 @@ const APP_CONFIGS = {
   },
 
   "dotnet-tui": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "DittoDotNetTasksConsole/DittoDotNetTasksConsole.csproj",
@@ -215,7 +215,7 @@ const APP_CONFIGS = {
   },
 
   "dotnet-maui": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "DittoMauiTasksApp/DittoMauiTasksApp.csproj",
@@ -228,7 +228,7 @@ const APP_CONFIGS = {
   },
 
   "dotnet-winforms": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "TasksApp/DittoTasksApp.csproj",
