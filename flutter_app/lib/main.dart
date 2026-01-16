@@ -25,7 +25,7 @@ class DittoExample extends StatefulWidget {
 
 class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
-  final appID =
+  final databaseID =
       dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
   final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
       (throw Exception("env not found"));
@@ -46,11 +46,10 @@ class _DittoExampleState extends State<DittoExample> {
   /// This function:
   /// 1. Requests required Bluetooth and WiFi permissions on mobile platforms (Android/iOS)
   /// 2. Initializes the Ditto SDK
-  /// 3. Sets up online playground identity with the provided app ID and token
-  /// 4. Enables peer-to-peer communication on non-web platforms
-  /// 5. Configures WebSocket connection to Ditto cloud
-  /// 6. Disables DQL strict mode
-  /// 7. Starts sync and updates the app state with the configured Ditto instance
+  /// 3. Creates a DittoConfig with the database ID and connect server URL
+  /// 4. Opens a Ditto peer with the provided database ID and auth URL
+  /// 5. Sets up an authentication expiration handler that authenticates the peer periodically
+  /// 6. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
     // Skip permissions in test mode - they block integration tests
     const isTestMode =
@@ -70,26 +69,23 @@ class _DittoExampleState extends State<DittoExample> {
 
     await Ditto.init();
 
-    final identity = OnlinePlaygroundIdentity(
-        appID: appID,
+    final config = DittoConfig(
+      databaseID: databaseID,
+      connect: DittoConfigConnectServer(
+        url: authUrl!,
+      ),
+    );
+    final ditto = await Ditto.open(config);
+
+    ditto.auth.setExpirationHandler((ditto, secondsRemaining) {
+      ditto.auth.login(
         token: token,
-        enableDittoCloudSync:
-            false, // This is required to be set to false to use the correct URLs
-        customAuthUrl: authUrl);
-
-    final ditto = await Ditto.open(identity: identity);
-
-    ditto.updateTransportConfig((config) {
-      // Note: this will not enable peer-to-peer sync on the web platform
-      config.setAllPeerToPeerEnabled(true);
-      config.connect.webSocketUrls.add(websocketUrl);
+        // FIXME: Should be a çonstant (see SDKS-2594)
+        provider: "__playgroundProvider",
+      );
     });
 
-    // Disable DQL strict mode
-    // https://docs.ditto.live/dql/strict-mode
-    await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
-
-    ditto.startSync();
+    ditto.sync.start();
 
     if (mounted) {
       setState(() => _ditto = ditto);
@@ -161,18 +157,18 @@ class _DittoExampleState extends State<DittoExample> {
       );
 
   Widget get _portalInfo => Column(children: [
-        Text("AppID: $appID"),
+        Text("DatabaseID: $databaseID"),
         Text("Token: $token"),
       ]);
 
   Widget get _syncTile => SwitchListTile(
         title: const Text("Sync Active"),
-        value: _ditto!.isSyncActive,
+        value: _ditto!.sync.isActive,
         onChanged: (value) {
           if (value) {
-            setState(() => _ditto!.startSync());
+            setState(() => _ditto!.sync.start());
           } else {
-            setState(() => _ditto!.stopSync());
+            setState(() => _ditto!.sync.stop());
           }
         },
       );
