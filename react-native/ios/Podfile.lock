@@ -1,8 +1,8 @@
 PODS:
   - boost (1.84.0)
-  - DittoReactNative (4.13.0):
+  - DittoReactNative (4.13.3-rc.1):
     - boost
-    - DittoReactNativeIOS (= 4.13.0)
+    - DittoReactNativeIOS (= 4.13.3-rc.1)
     - DoubleConversion
     - fast_float
     - fmt
@@ -29,7 +29,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - DittoReactNativeIOS (4.13.0)
+  - DittoReactNativeIOS (4.13.3-rc.1)
   - DoubleConversion (1.1.6)
   - fast_float (8.0.0)
   - FBLazyVector (0.82.1)
@@ -2680,8 +2680,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
-  DittoReactNative: 391a0dcf80ad3314edf3e244a8dd1a422ce89c0d
-  DittoReactNativeIOS: b5e8ca1759137a131c416f2e7bcea2ce549e90af
+  DittoReactNative: d739034b9e6a2407a858cc255d92e044c42ff04c
+  DittoReactNativeIOS: e3c133f9da0cb9892ace3bbba453d39e4b379d25
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: b32c788ed9c6a8c584d114d0047beda9664e7cc6
   FBLazyVector: 0aa6183b9afe3c31fc65b5d1eeef1f3c19b63bfa
@@ -2759,4 +2759,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: ff2132ccdcc939b053036fe3936d992a9faf7272
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2
