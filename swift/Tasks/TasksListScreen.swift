@@ -24,10 +24,9 @@ class TasksListScreenViewModel: ObservableObject {
         // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
         storeObserver = try? ditto?.store.registerObserver(query: observerQuery) { [weak self] result in
             guard let self = self else { return }
-            DispatchQueue.main.async {
-                self.tasks = result.items.compactMap {
-                    TaskModel($0.jsonData())
-                }
+            let mappedTasks = result.items.compactMap { TaskModel($0.jsonData()) }
+            Task { @MainActor [weak self] in
+                self?.tasks = mappedTasks
             }
         }
     }
