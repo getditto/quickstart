@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ditto" Version="4.13.1" />
+    <PackageReference Include="Ditto" Version="5.0.0-dev-weekly.20260126.180" />
     <PackageReference Include="Terminal.Gui" Version="1.17.1" />
   </ItemGroup>
 

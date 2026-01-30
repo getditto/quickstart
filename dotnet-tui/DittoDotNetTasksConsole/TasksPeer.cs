@@ -6,20 +6,24 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 using DittoSDK;
+using DittoSDK.Auth;
+using DittoSDK.Store;
 
 /// <summary>
 /// Encapsulates use of the Ditto SDK and the 'tasks' collection.
-/// </summary>
+/// </summary
 public class TasksPeer : IDisposable
 {
     private const string Query = "SELECT * FROM tasks WHERE NOT deleted";
 
     public string AppId { get; private set; }
     public string PlaygroundToken { get; private set; }
+    public string AuthUrl { get; private set; }
+    public string WebsocketUrl { get; private set; }
 
-    public bool IsSyncActive => _ditto.IsSyncActive;
+    public bool IsSyncActive => _ditto.Sync.IsActive;
 
-    private Ditto _ditto;
+    private readonly Ditto _ditto;
 
     /// <summary>
     /// Creates a new synchronizing TasksPeer instance.
@@ -31,12 +35,33 @@ public class TasksPeer : IDisposable
         string websocketUrl)
     {
         var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
-        await peer.DisableStrictMode();
+        peer.Authenticate();
         peer.RegisterSubscription();
         await peer.InsertInitialTasks();
         peer.StartSync();
 
         return peer;
+    }
+
+    private void Authenticate()
+    {
+        _ditto.Auth.ExpirationHandler = async (ditto, secondsRemaining) =>
+        {
+            // Authenticate when token is expiring
+            try
+            {
+                await ditto.Auth.LoginAsync(
+                    // Your development token, replace with your actual token
+                    PlaygroundToken,
+                    // Use DittoAuthenticationProvider.Development for playground, or your actual provider
+                    DittoAuthenticationProvider.Development
+                );
+            }
+            catch (Exception error)
+            {
+                Console.WriteLine($"Authentication failed: {error}");
+            }
+        };
     }
 
     /// <summary>
@@ -72,54 +97,21 @@ public class TasksPeer : IDisposable
     {
         AppId = appId;
         PlaygroundToken = playgroundToken;
+        AuthUrl = authUrl;
+        WebsocketUrl = websocketUrl;
 
-        // We use a temporary directory to store Ditto's local database.  This
-        // means that data will not be persistent between runs of the
-        // application, but it allows us to run multiple instances of the
-        // application concurrently on the same machine.  For a production
-        // application, we would want to store the database in a more permanent
-        // location, and if multiple instances are needed, ensure that each
-        // instance has its own persistence directory.
-        var tempDir = Path.Combine(
-            Path.GetTempPath(),
-            "DittoDotNetTasksConsole-" + Guid.NewGuid().ToString());
-        Directory.CreateDirectory(tempDir);
+        var config = new DittoConfig(
+            AppId,
+            new DittoConfigConnect.Server(new Uri(authUrl))
+        );
 
-        var identity = DittoIdentity.OnlinePlayground(
-            appId,
-            playgroundToken,
-            false, // This is required to be set to false to use the correct URLs
-            authUrl);
-
-        _ditto = new Ditto(identity, tempDir);
-
-        _ditto.UpdateTransportConfig(config =>
-        {
-            // Add the websocket URL to the transport configuration.
-            config.Connect.WebsocketUrls.Add(websocketUrl);
-        });
-
-        // disable sync with v3 peers, required for DQL
-        _ditto.DisableSyncWithV3();
+        _ditto = Ditto.Open(config);
     }
 
     public void Dispose()
     {
         _ditto.Dispose();
-        _ditto = null;
         GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Disables DQL strict mode to allow flexible query operations without requiring
-    /// predefined collection schemas. This enables the application to work with
-    /// dynamic document structures and perform queries that return all fields by default.
-    /// </summary>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <seealso href="https://docs.ditto.live/dql/strict-mode"/>
-    private async Task DisableStrictMode()
-    {
-        await _ditto.Store.ExecuteAsync("ALTER SYSTEM SET DQL_STRICT_MODE = false");
     }
 
     /// <summary>
@@ -246,7 +238,7 @@ public class TasksPeer : IDisposable
     }
 
     /// <summary>
-    /// Specify a handler to be called asynchronously when the tasks collection changes.
+    /// Specify a handler to be called asynchronously when the task collection changes.
     /// </summary>
     public DittoStoreObserver ObserveTasksCollection(Func<IList<ToDoTask>, Task> handler)
     {
@@ -259,7 +251,7 @@ public class TasksPeer : IDisposable
                 // Deserialize the JSON documents into ToDoTask objects
                 var tasks = queryResult.Items.Select(d =>
                     JsonSerializer.Deserialize<ToDoTask>(d.JsonString())
-                ).OrderBy(t => t.Id).ToList();
+                ).OrderBy(t => t?.Id).ToList();
 
                 await handler(tasks);
             }
@@ -275,7 +267,7 @@ public class TasksPeer : IDisposable
     /// </summary>
     public void StartSync()
     {
-        _ditto.StartSync();
+        _ditto.Sync.Start();
     }
 
     /// <summary>
@@ -287,6 +279,6 @@ public class TasksPeer : IDisposable
         {
             subscription.Cancel();
         }
-        _ditto.StopSync();
+        _ditto.Sync.Stop();
     }
 }
