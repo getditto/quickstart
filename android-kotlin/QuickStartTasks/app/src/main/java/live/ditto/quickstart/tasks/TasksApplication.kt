@@ -6,20 +6,22 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import live.ditto.Ditto
-import live.ditto.DittoIdentity
-import live.ditto.android.DefaultAndroidDittoDependencies
+import com.ditto.kotlin.Ditto
+import com.ditto.kotlin.DittoAuthenticationProvider
+import com.ditto.kotlin.DittoConfig
+import com.ditto.kotlin.DittoConnection
+import com.ditto.kotlin.DittoFactory
+import com.ditto.kotlin.DittoLog
+import com.ditto.kotlin.error.DittoException
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 
 class TasksApplication : Application() {
 
     // Create a CoroutineScope
     // Use SupervisorJob so if one coroutine launched in this scope fails, it doesn't cancel the scope
-    //
-    // https://developer.android.com/kotlin/coroutines/coroutines-adv
-    // Dispatchers.IO - This dispatcher is optimized to perform disk or network I/O outside of the main thread.
-    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
+    // SDKS-1294: Don't create Ditto in a scope using Dispatchers.IO
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val tag = "TaskApplication"
 
     companion object {
         private var instance: TasksApplication? = null
@@ -35,43 +37,58 @@ class TasksApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        ioScope.launch {
-            setupDitto()
+
+        // Initialize Ditto synchronously - completes before UI loads
+        initializeDitto()
+
+        // Perform authentication asynchronously - can happen in background
+        scope.launch {
+            performAuthentication()
         }
     }
 
-    private suspend fun setupDitto() {
-        val androidDependencies = DefaultAndroidDittoDependencies(applicationContext)
+    private fun initializeDitto() {
+        try {
+            val appId = BuildConfig.DITTO_APP_ID
+            val authUrl = BuildConfig.DITTO_AUTH_URL
 
-        //read values from build.gradle.kts (Module:app) which reads from environment file
-        val appId = BuildConfig.DITTO_APP_ID
-        val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
-        val authUrl = BuildConfig.DITTO_AUTH_URL
-        val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
+            val config = DittoConfig(
+                databaseId = appId,
+                connect = DittoConfig.Connect.Server(url = authUrl)
+            )
 
-        val enableDittoCloudSync = false
+            DittoHandler.initialize(config)
+            DittoLog.d(tag, "Ditto instance created successfully")
 
-        /*
-         *  Setup Ditto Identity
-         *  https://docs.ditto.live/sdk/latest/install-guides/kotlin#integrating-and-initializing
-         */
-        val identity = DittoIdentity.OnlinePlayground(
-            dependencies = androidDependencies,
-            appId = appId,
-            token = token,
-            customAuthUrl = authUrl,
-            enableDittoCloudSync = enableDittoCloudSync // This is required to be set to false to use the correct URLs
-        )
-
-        ditto = Ditto(androidDependencies, identity)
-        ditto.updateTransportConfig { config ->
-            // Set the Ditto Websocket URL
-            config.connect.websocketUrls.add(webSocketURL)
+        } catch (ex: Throwable) {
+            DittoLog.e(tag, "Failed to initialize Ditto: $ex")
+            ex.printStackTrace()
+            throw ex
         }
+    }
 
-        ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false")
+    private suspend fun performAuthentication() {
+        try {
+            val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
 
-        // disable sync with v3 peers, required for DQL
-        ditto.disableSyncWithV3()
+            DittoHandler.ditto.auth?.setExpirationHandler { ditto, _ ->
+                try {
+                    val clientInfo = ditto.auth?.login(
+                        token = token,
+                        provider = DittoAuthenticationProvider.development()
+                    )
+                    DittoLog.d(tag, "Auth response: $clientInfo")
+                } catch (ex: Throwable) {
+                    DittoLog.e(tag, "Authentication failed: $ex")
+                    ex.printStackTrace()
+                }
+            }
+
+            DittoLog.d(tag, "Ditto authentication setup complete")
+
+        } catch (ex: Throwable) {
+            DittoLog.e(tag, "Failed to setup authentication: $ex")
+            ex.printStackTrace()
+        }
     }
 }

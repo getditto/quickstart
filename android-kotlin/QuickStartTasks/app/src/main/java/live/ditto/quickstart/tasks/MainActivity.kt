@@ -3,7 +3,7 @@ package live.ditto.quickstart.tasks
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import live.ditto.transports.DittoSyncPermissions
+import com.ditto.kotlin.transports.DittoSyncPermissions
 import android.os.StrictMode
 
 class MainActivity : ComponentActivity() {
