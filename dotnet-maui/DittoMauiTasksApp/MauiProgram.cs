@@ -46,15 +46,15 @@ public static class MauiProgram
 
         // New Initialization code - https://docs.ditto.live/sdk/latest/ditto-config
         var dittoConfig = new DittoConfig(
-            AppId, 
+            AppId,
             new DittoConfigConnect.Server(
                 new Uri(authUrl)
-                ),  
+                ),
             Path.Combine(FileSystem.Current.AppDataDirectory, "ditto")
             );
 
         var ditto = Ditto.Open(dittoConfig);
-        
+
         // Set up authentication expiration handler (required for server connections)
         ditto.Auth.ExpirationHandler = async (dittoAuth, secondsRemaining) =>
         {
@@ -63,7 +63,7 @@ public static class MauiProgram
             {
                 await dittoAuth.Auth.LoginAsync(
                     // Your development token, replace with your actual token
-                    PlaygroundToken, 
+                    PlaygroundToken,
                     // Use DittoAuthenticationProvider.Development for playground, or your actual provider
                     DittoAuthenticationProvider.Development
                 );
@@ -74,7 +74,7 @@ public static class MauiProgram
                 Console.WriteLine($"Authentication failed: {error}");
             }
         };
-        
+
         return ditto;
     }
 
