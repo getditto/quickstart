@@ -28,7 +28,7 @@
 	<uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
 
 	<uses-sdk android:minSdkVersion="24" 
-			  android:targetSdkVersion="35" 
-			  android:compileSdkVersion="35"/>
+			  android:targetSdkVersion="36" 
+			  android:compileSdkVersion="36"/>
 </manifest>
 
