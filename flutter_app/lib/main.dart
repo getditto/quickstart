@@ -29,7 +29,8 @@ class _DittoExampleState extends State<DittoExample> {
       dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
   final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
       (throw Exception("env not found"));
-  final authUrl = dotenv.env['DITTO_AUTH_URL'] ?? (throw Exception("env not found"));
+  final authUrl =
+      dotenv.env['DITTO_AUTH_URL'] ?? (throw Exception("env not found"));
   final websocketUrl =
       dotenv.env['DITTO_WEBSOCKET_URL'] ?? (throw Exception("env not found"));
 
@@ -74,13 +75,15 @@ class _DittoExampleState extends State<DittoExample> {
     DittoLogger.minimumLogLevel = LogLevel.debug;
 
     //new configuration -  https://docs.ditto.live/sdk/latest/ditto-config
-    final config = DittoConfig(databaseID: appID, connect: DittoConfigConnectServer(url: authUrl));
+    final config = DittoConfig(
+        databaseID: appID, connect: DittoConfigConnectServer(url: authUrl));
     final ditto = await Ditto.open(config);
     await ditto.auth.setExpirationHandler((ditto, timeUntilExpiration) async {
-        final authResult = await ditto.auth.login(token: token, provider: Authenticator.developmentProvider);
-        if (authResult.exception != null){
-          throw authResult.exception!;
-        }
+      final authResult = await ditto.auth
+          .login(token: token, provider: Authenticator.developmentProvider);
+      if (authResult.exception != null) {
+        throw authResult.exception!;
+      }
     });
 
     ditto.sync.start();
