@@ -26,7 +26,7 @@ dotnet restore
 These commands will build and run the app on the default iOS target:
 
 ```sh
-dotnet build -t:Run -f net9.0-ios
+dotnet build -t:Run -f net10.0-ios
 ```
 
 ### Building and Running the App on Android
@@ -34,19 +34,19 @@ dotnet build -t:Run -f net9.0-ios
 These commands will build and run the app on the default Android target:
 
 ```sh
-dotnet build -t:Run -f net9.0-android
+dotnet build -t:Run -f net10.0-android
 ```
 
 ### Building and Running the App on MacOS 
 
 ```sh
-dotnet build -t:Run -f net9.0-maccatalyst 
+dotnet build -t:Run -f net10.0-maccatalyst 
 ```
 
 ### Building and Running the App on Windows 
 
 ```sh
-dotnet build -t:Run -f net9.0-windows10.0.19041.0 
+dotnet build -t:Run -f net10.0-windows10.0.19041.0 
 ```
 
 ### Other MAUI Platforms

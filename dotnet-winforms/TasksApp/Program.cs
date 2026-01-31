@@ -1,5 +1,6 @@
 using System.Reflection;
 using DittoSDK;
+using DittoSDK.Logging;
 
 namespace DittoTasksApp
 {
@@ -19,9 +20,8 @@ namespace DittoTasksApp
 
             using var peer = await TasksPeer.Create(appId, playgroundToken, authUrl, websocketUrl);
 
-            // Disable Ditto's standard-error logging, which would interfere
-            // with the the Terminal.Gui UI.
-            DittoLogger.SetLoggingEnabled(false);
+            // Disable Ditto's standard-error logging
+            DittoLogger.IsEnabled = true;
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
