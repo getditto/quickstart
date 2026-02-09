@@ -43,5 +43,5 @@ DITTO_WEBSOCKET_URL=""
 Next, run the quickstart app with the following command:
 
 ```
-npm && npm run dev
+npm install && npm run dev
 ```

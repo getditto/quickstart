@@ -114,10 +114,10 @@ const TodoApp = ({ditto}) => {
 			}
 			if (input === 's') {
 				if (syncEnabled) {
-					ditto.stopSync();
+					ditto.sync.stop();
 					setSyncEnabled(false);
 				} else {
-					ditto.startSync();
+					ditto.sync.start();
 					setSyncEnabled(true);
 				}
 			}
