@@ -96,11 +96,11 @@ impl Todolist {
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
         let tasks_subscription = ditto
             .sync()
-            .register_subscription_v2("SELECT * FROM tasks")?;
+            .register_subscription("SELECT * FROM tasks")?;
 
         // register observer for live query
         // Register observer, which runs against the local database on this peer
-        let tasks_observer = ditto.store().register_observer_v2(
+        let tasks_observer = ditto.store().register_observer(
             "SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC",
             move |query_result| {
                 let docs = query_result
@@ -155,7 +155,7 @@ impl Todolist {
             })
             .collect::<Vec<_>>();
 
-        let sync_state = if self.ditto.is_sync_active() {
+        let sync_state = if self.ditto.sync().is_active() {
             " 🟢 Sync Active ".green()
         } else {
             " 🔴 Sync Inactive ".red()
@@ -305,10 +305,10 @@ impl Todolist {
     }
 
     fn toggle_sync(&mut self) -> Result<()> {
-        if self.ditto.is_sync_active() {
-            self.ditto.stop_sync();
+        if self.ditto.sync().is_active() {
+            self.ditto.sync().stop();
         } else {
-            self.ditto.start_sync()?;
+            self.ditto.sync().start()?;
         }
         Ok(())
     }
@@ -329,7 +329,7 @@ impl Todolist {
         let done = selected_task.done;
         self.ditto
             .store()
-            .execute_v2((
+            .execute((
                 "UPDATE tasks SET done=:done WHERE _id=:id",
                 serde_json::json!({
                     "id": id,
@@ -356,7 +356,7 @@ impl Todolist {
         let id = selected_task.id;
         self.ditto
             .store()
-            .execute_v2((
+            .execute((
                 "UPDATE tasks SET deleted=true WHERE _id=:id",
                 serde_json::json!({
                     "id": id
@@ -372,7 +372,7 @@ impl Todolist {
         let task = TodoItem::new(title);
         self.ditto
             .store()
-            .execute_v2((
+            .execute((
                 "INSERT INTO tasks DOCUMENTS (:task)",
                 serde_json::json!({
                     "task": task
@@ -386,7 +386,7 @@ impl Todolist {
     pub async fn try_edit_todo(&mut self, id: &str, title: &str) -> Result<()> {
         self.ditto
             .store()
-            .execute_v2((
+            .execute((
                 "UPDATE tasks SET title=:title WHERE _id=:id",
                 serde_json::json!({
                     "title": title,
