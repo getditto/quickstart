@@ -94,9 +94,7 @@ impl Todolist {
 
         // Register a subscription, which determines what data syncs to this peer
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-        let tasks_subscription = ditto
-            .sync()
-            .register_subscription("SELECT * FROM tasks")?;
+        let tasks_subscription = ditto.sync().register_subscription("SELECT * FROM tasks")?;
 
         // register observer for live query
         // Register observer, which runs against the local database on this peer

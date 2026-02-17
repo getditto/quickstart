@@ -13,11 +13,9 @@ async fn main() -> Result<()> {
     // Load environment variables
     dotenvy::dotenv().ok();
 
-    let database_id = env::var("DITTO_APP_ID")
-        .context("DITTO_APP_ID not found")?;
-        
-    let token =
-        env::var("DITTO_PLAYGROUND_TOKEN").context("DITTO_PLAYGROUND_TOKEN not found")?;
+    let database_id = env::var("DITTO_APP_ID").context("DITTO_APP_ID not found")?;
+
+    let token = env::var("DITTO_PLAYGROUND_TOKEN").context("DITTO_PLAYGROUND_TOKEN not found")?;
     let custom_auth_url =
         env::var("DITTO_AUTH_URL").unwrap_or_else(|_| "https://auth.cloud.ditto.live".to_string());
 
@@ -34,13 +32,17 @@ async fn main() -> Result<()> {
         url: custom_auth_url.parse().unwrap(),
     };
 
-    let config = DittoConfig::new(database_id, connect_config).with_persistence_directory(Arc::new(TempRoot::new()).root_path());
+    let config = DittoConfig::new(database_id, connect_config)
+        .with_persistence_directory(Arc::new(TempRoot::new()).root_path());
 
     // Create Ditto instance (using same pattern as main.rs)
     let ditto = Ditto::open_sync(config)?;
 
     //use token to authenticate with Ditto Cloud
-    ditto.auth().unwrap().login(token.as_str(), &identity::get_development_provider())?;
+    ditto
+        .auth()
+        .unwrap()
+        .login(token.as_str(), &identity::get_development_provider())?;
 
     ditto.update_transport_config(|config| {
         config.enable_all_peer_to_peer();

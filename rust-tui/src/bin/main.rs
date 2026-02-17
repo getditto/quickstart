@@ -3,8 +3,8 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
-use dittolive_ditto::{fs::TempRoot, Ditto};
 use dittolive_ditto::prelude::*;
+use dittolive_ditto::{fs::TempRoot, Ditto};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
@@ -113,8 +113,6 @@ async fn try_init_ditto(
     websocket_url: String,
     p2p_enabled: bool,
 ) -> Result<Ditto> {
-
-
     //create connect https://software.ditto.live/rust/Ditto/5.0.0-preview.4/x86_64-unknown-linux-gnu/docs/dittolive_ditto/enum.DittoConfigConnect.html
     let connect_config = DittoConfigConnect::Server {
         url: custom_auth_url.parse().unwrap(),
@@ -127,12 +125,16 @@ async fn try_init_ditto(
     // application, we would want to store the database in a more permanent
     // location, and if multiple instances are needed, ensure that each
     // instance has its own persistence directory.
-    let config = DittoConfig::new(database_id.clone(), connect_config).with_persistence_directory(Arc::new(TempRoot::new()).root_path());
+    let config = DittoConfig::new(database_id.clone(), connect_config)
+        .with_persistence_directory(Arc::new(TempRoot::new()).root_path());
 
     // https://software.ditto.live/rust/Ditto/5.0.0-preview.4/x86_64-unknown-linux-gnu/docs/dittolive_ditto/index.html#playground-quickstart
     let ditto = Ditto::open_sync(config)?;
 
-    ditto.auth().unwrap().login(token.as_str(), &identity::get_development_provider())?;
+    ditto
+        .auth()
+        .unwrap()
+        .login(token.as_str(), &identity::get_development_provider())?;
 
     ditto.update_transport_config(|config| {
         if p2p_enabled {
