@@ -106,6 +106,23 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+struct TokenHandler {
+    token: String,
+}
+
+impl DittoAuthExpirationHandler for TokenHandler {
+    async fn on_expiration(&self, ditto: &Ditto, _duration_remaining: Duration) {
+        match ditto
+            .auth()
+            .unwrap()
+            .login(self.token.as_str(), &identity::get_development_provider())
+        {
+            Ok(_) => println!("Authentication successful"),
+            Err(e) => println!("Authentication failed: {}", e),
+        }
+    }
+}
+
 async fn try_init_ditto(
     database_id: String,
     token: String,
@@ -132,9 +149,10 @@ async fn try_init_ditto(
     let ditto = Ditto::open_sync(config)?;
 
     ditto
-        .auth()
-        .unwrap()
-        .login(token.as_str(), &identity::get_development_provider())?;
+    .auth()
+    .unwrap()
+    .set_expiration_handler(TokenHandler { token: token.clone() });
+   
 
     ditto.update_transport_config(|config| {
         if p2p_enabled {
