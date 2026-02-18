@@ -148,11 +148,9 @@ async fn try_init_ditto(
     // https://software.ditto.live/rust/Ditto/5.0.0-preview.4/x86_64-unknown-linux-gnu/docs/dittolive_ditto/index.html#playground-quickstart
     let ditto = Ditto::open_sync(config)?;
 
-    ditto
-    .auth()
-    .unwrap()
-    .set_expiration_handler(TokenHandler { token: token.clone() });
-   
+    ditto.auth().unwrap().set_expiration_handler(TokenHandler {
+        token: token.clone(),
+    });
 
     ditto.update_transport_config(|config| {
         if p2p_enabled {
