@@ -1,9 +1,9 @@
 use anyhow::Context;
 use anyhow::Result;
 use crossterm::event::Event;
+use dittolive_ditto::Ditto;
 use dittolive_ditto::store::StoreObserver;
 use dittolive_ditto::sync::SyncSubscription;
-use dittolive_ditto::Ditto;
 use ratatui::prelude::*;
 use ratatui::widgets::Block;
 use ratatui::widgets::BorderType;

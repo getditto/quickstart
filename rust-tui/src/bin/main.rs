@@ -1,10 +1,10 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use clap::Parser;
-use ditto_quickstart::{term, tui::TuiTask, Shutdown};
+use ditto_quickstart::{Shutdown, term, tui::TuiTask};
 use dittolive_ditto::prelude::*;
-use dittolive_ditto::{fs::TempRoot, Ditto};
+use dittolive_ditto::{Ditto, fs::TempRoot};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]

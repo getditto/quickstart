@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use ditto_quickstart::tui::Todolist;
 use dittolive_ditto::prelude::*;
-use dittolive_ditto::{fs::TempRoot, Ditto};
+use dittolive_ditto::{Ditto, fs::TempRoot};
 use std::time::Duration;
 use std::{env, sync::Arc};
 use tokio::time::sleep;
