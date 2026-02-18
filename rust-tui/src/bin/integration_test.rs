@@ -38,11 +38,9 @@ async fn main() -> Result<()> {
     // Create Ditto instance (using same pattern as main.rs)
     let ditto = Ditto::open_sync(config)?;
 
-    //use token to authenticate with Ditto Cloud
-    ditto
-        .auth()
-        .unwrap()
-        .login(token.as_str(), &identity::get_development_provider())?;
+    ditto.auth().unwrap().set_expiration_handler(TokenHandler {
+        token: token.clone(),
+    });
 
     ditto.update_transport_config(|config| {
         config.enable_all_peer_to_peer();
@@ -100,4 +98,21 @@ async fn main() -> Result<()> {
 
     println!("🎉 Integration test passed! App loads and syncs with Ditto Cloud successfully.");
     Ok(())
+}
+
+struct TokenHandler {
+    token: String,
+}
+
+impl DittoAuthExpirationHandler for TokenHandler {
+    async fn on_expiration(&self, ditto: &Ditto, _duration_remaining: Duration) {
+        match ditto
+            .auth()
+            .unwrap()
+            .login(self.token.as_str(), &identity::get_development_provider())
+        {
+            Ok(_) => println!("Authentication successful"),
+            Err(e) => println!("Authentication failed: {}", e),
+        }
+    }
 }
