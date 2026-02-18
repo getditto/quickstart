@@ -33,8 +33,6 @@ async function createDittoInstance() {
 		config.connect.websocketURLs = [websocketURL];
 	});
 
-	await ditto.disableSyncWithV3();
-
 	if (connectConfig.mode === 'server') {
 		await ditto.auth.setExpirationHandler(
 			async (dittoInstance, timeUntilExpiration) => {
@@ -72,14 +70,7 @@ async function createDittoInstance() {
 		}
 	}
 
-	try {
-		await ditto.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
-	} catch (error) {
-		console.error('Integration test DQL setup failed:', error);
-		throw error;
-	}
-
-	ditto.startSync();
+	ditto.sync.start();
 	return ditto;
 }
 

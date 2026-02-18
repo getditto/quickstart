@@ -60,23 +60,21 @@ const App = () => {
         ditto.current = await Ditto.open(config);
 
         // Step 4: Set up authentication expiration handler (required for server connections)
-        await ditto.current.auth.setExpirationHandler(
-          async (dittoInstance, _) => {
-            // Authenticate when token is expiring. Any errors will be logged in the Ditto logger.
-            const loginResult = await dittoInstance.auth.login(
-              import.meta.env.DITTO_PLAYGROUND_TOKEN,
-              Authenticator.DEVELOPMENT_PROVIDER,
+        await ditto.current.auth.setExpirationHandler(async (dittoInstance) => {
+          // Authenticate when token is expiring. Any errors will be logged in the Ditto logger.
+          const loginResult = await dittoInstance.auth.login(
+            import.meta.env.DITTO_PLAYGROUND_TOKEN,
+            Authenticator.DEVELOPMENT_PROVIDER,
+          );
+          if (loginResult.error) {
+            console.error('❌ Re-authentication failed:', loginResult.error);
+          } else {
+            console.log(
+              '✅ Successfully re-authenticated with info:',
+              loginResult,
             );
-            if (loginResult.error) {
-              console.error('❌ Re-authentication failed:', loginResult.error);
-            } else {
-              console.log(
-                '✅ Successfully re-authenticated with info:',
-                loginResult,
-              );
-            }
-          },
-        );
+          }
+        });
 
         // Step 5: Configure transport
         ditto.current.updateTransportConfig((config) => {
