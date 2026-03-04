@@ -150,6 +150,33 @@ curl http://localhost:8080/my_server/logs -o edge-server-logs.tar.gz
 curl http://localhost:8080/my_server/docs
 ```
 
+## API Reference
+
+### OpenAPI Specification
+
+The Edge Server automatically generates an OpenAPI 3.1 specification that documents all available HTTP endpoints. You can access it in two ways:
+
+**Option 1: Runtime Access**
+```bash
+# View the OpenAPI spec while server is running
+curl http://localhost:8080/my_server/docs/edge_server_api.json | jq .
+```
+
+**Option 2: Generate Offline**
+```bash
+# Generate the spec without starting the server
+./edge-server config open-api --config quickstart_config.yaml
+
+# Save to a file
+./edge-server config open-api --config quickstart_config.yaml --output openapi.json
+```
+
+The OpenAPI spec can be used with tools like:
+- **Swagger UI** - Interactive API documentation
+- **Postman** - Import the spec to auto-generate requests
+- **openapi-generator** - Generate client SDKs in various languages
+- **Redoc** - Generate static API documentation
+
 ## Configuration
 
 The Edge Server uses `quickstart_config.yaml` for configuration. Key settings include:
@@ -158,6 +185,26 @@ The Edge Server uses `quickstart_config.yaml` for configuration. Key settings in
 - **Authentication**: Uses playground provider (development only)
 - **HTTP Server**: Listens on port 8080 with `/my_server` base path
 - **Subscription**: Monitors all tasks in the database
+
+### Configuration Schema
+
+You can view the full configuration schema to understand all available options:
+
+```bash
+# View schema in JSON format
+./edge-server config schema json
+
+# View schema in YAML format
+./edge-server config schema yaml
+
+# Save to a file for IDE autocomplete
+./edge-server config schema json > edge-server-config-schema.json
+```
+
+**Tip**: Many IDEs support YAML schema validation. Add this comment at the top of your config file:
+```yaml
+# yaml-language-server: $schema=./edge-server-config-schema.json
+```
 
 ### Important Security Note
 
