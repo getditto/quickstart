@@ -154,7 +154,15 @@ curl http://localhost:8080/my_server/docs
 
 ### OpenAPI Specification
 
-The Edge Server automatically generates an OpenAPI 3.1 specification that documents all available HTTP endpoints. You can access it in two ways:
+The Edge Server automatically generates a **comprehensive OpenAPI 3.1 specification** that documents all HTTP endpoints with complete request/response schemas, authentication, and error handling. The spec is generated directly from the actual HTTP handlers, ensuring it stays in sync with the server's behavior.
+
+**What's included in the spec:**
+- Complete request and response schemas for all endpoints
+- All HTTP status codes (200, 401, 403, 413, 429, 431, 500, etc.)
+- Authentication requirements (Bearer token format)
+- Error response formats with detailed descriptions
+- Type-safe schemas for all data structures (21+ schema definitions)
+- Request/response examples
 
 **Option 1: Runtime Access**
 ```bash
@@ -162,20 +170,25 @@ The Edge Server automatically generates an OpenAPI 3.1 specification that docume
 curl http://localhost:8080/my_server/docs/edge_server_api.json | jq .
 ```
 
-**Option 2: Generate Offline**
+**Option 2: Generate Offline (Recommended for CI/CD)**
 ```bash
-# Generate the spec without starting the server
+# Generate the spec without starting the server (<100ms)
 ./edge-server config open-api --config quickstart_config.yaml
 
-# Save to a file
+# Save to a file for use with external tools
 ./edge-server config open-api --config quickstart_config.yaml --output openapi.json
+
+# Pipe to tools for analysis
+./edge-server config open-api --config quickstart_config.yaml | jq '.paths | keys'
 ```
 
-The OpenAPI spec can be used with tools like:
-- **Swagger UI** - Interactive API documentation
-- **Postman** - Import the spec to auto-generate requests
-- **openapi-generator** - Generate client SDKs in various languages
-- **Redoc** - Generate static API documentation
+**Use cases for the OpenAPI spec:**
+- **Swagger UI / ReDoc** - Interactive API documentation with try-it-out features
+- **Postman / Insomnia** - Import spec to auto-generate HTTP request collections
+- **openapi-generator** - Generate type-safe client SDKs (TypeScript, Python, Go, Rust, etc.)
+- **Contract testing** - Validate API responses match the spec (Pact, Dredd)
+- **API Gateway integration** - Import into Kong, AWS API Gateway, or similar
+- **Documentation sites** - Generate static docs with complete API reference
 
 ## Configuration
 
