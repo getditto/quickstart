@@ -112,6 +112,44 @@ just update-task <task-id> false
 just delete-task <task-id>
 ```
 
+## Additional HTTP API Endpoints
+
+The Edge Server provides additional endpoints for advanced operations:
+
+### Execute DQL Queries
+
+```bash
+# Execute custom DQL statements
+curl -X POST http://localhost:8080/my_server/execute \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT * FROM tasks"}'
+```
+
+### Attachments
+
+```bash
+# Upload an attachment
+curl -X POST http://localhost:8080/my_server/attachments/upload \
+  -F "file=@/path/to/file"
+
+# Download an attachment
+curl http://localhost:8080/my_server/attachments/{attachment-id} \
+  -o downloaded-file
+```
+
+### Monitoring & Diagnostics
+
+```bash
+# View presence graph
+curl http://localhost:8080/my_server/presence
+
+# Download logs (returns .tar.gz)
+curl http://localhost:8080/my_server/logs -o edge-server-logs.tar.gz
+
+# View API documentation
+curl http://localhost:8080/my_server/docs
+```
+
 ## Configuration
 
 The Edge Server uses `quickstart_config.yaml` for configuration. Key settings include:
@@ -124,6 +162,19 @@ The Edge Server uses `quickstart_config.yaml` for configuration. Key settings in
 ### Important Security Note
 
 ⚠️ **Development Only**: This quickstart uses playground authentication which is **NOT** secure or suitable for production. For production deployments, configure proper authentication using "Online with Authentication" identity.
+
+### Advanced Security Features
+
+For production deployments, Edge Server supports:
+
+- **HTTPS/TLS**: TLS 1.2 and TLS 1.3 support for encrypted communications
+- **API Key Authentication**: Generate and manage API keys for client authentication
+- **Permission-Based Access Control**: Configure operation-based permissions for fine-grained access control
+- **Audit Logging**: Track and retrieve access logs for security compliance
+- **HTTP Request Throttling**: Configure rate limiting on a per-endpoint basis
+- **Configurable Limits**: Set TCP connection limits, backlog limits, request timeouts, and keepalive settings
+
+See the [Edge Server documentation](https://docs.ditto.live/edge-server) for configuration details.
 
 ## Troubleshooting
 
