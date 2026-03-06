@@ -120,20 +120,20 @@ The Edge Server provides additional endpoints for advanced operations:
 
 ```bash
 # Execute custom DQL statements
-curl -X POST http://localhost:8080/my_server/execute \
+curl -X POST http://localhost:8080/execute \
   -H "Content-Type: application/json" \
-  -d '{"query": "SELECT * FROM tasks"}'
+  -d '{"statement": "SELECT * FROM tasks"}'
 ```
 
 ### Attachments
 
 ```bash
 # Upload an attachment
-curl -X POST http://localhost:8080/my_server/attachments/upload \
+curl -X POST http://localhost:8080/attachments/upload \
   -F "file=@/path/to/file"
 
 # Download an attachment
-curl http://localhost:8080/my_server/attachments/{attachment-id} \
+curl http://localhost:8080/attachments/{attachment-id} \
   -o downloaded-file
 ```
 
@@ -141,13 +141,13 @@ curl http://localhost:8080/my_server/attachments/{attachment-id} \
 
 ```bash
 # View presence graph
-curl http://localhost:8080/my_server/presence
+curl http://localhost:8080/presence
 
 # Download logs (returns .tar.gz)
-curl http://localhost:8080/my_server/logs -o edge-server-logs.tar.gz
+curl http://localhost:8080/logs -o edge-server-logs.tar.gz
 
-# View API documentation
-curl http://localhost:8080/my_server/docs
+# View API documentation (interactive Swagger UI)
+open http://localhost:8080/docs
 ```
 
 ## API Reference
@@ -166,8 +166,8 @@ The Edge Server automatically generates a **comprehensive OpenAPI 3.1 specificat
 
 **Option 1: Runtime Access**
 ```bash
-# View the OpenAPI spec while server is running
-curl http://localhost:8080/my_server/docs/edge_server_api.json | jq .
+# View the OpenAPI spec while server is running (requires serve_docs: true in config)
+curl http://localhost:8080/docs/edge_server_api.json | jq .
 ```
 
 **Option 2: Generate Offline (Recommended for CI/CD)**
@@ -196,7 +196,7 @@ The Edge Server uses `quickstart_config.yaml` for configuration. Key settings in
 
 - **Ditto Database**: Configured with app ID and device name
 - **Authentication**: Uses playground provider (development only)
-- **HTTP Server**: Listens on port 8080 with `/my_server` base path
+- **HTTP Server**: Listens on port 8080 with REST API and healthcheck endpoints
 - **Subscription**: Monitors all tasks in the database
 
 ### Configuration Schema

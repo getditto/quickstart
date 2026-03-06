@@ -15,6 +15,7 @@ http_server:
   tls_config: dev_mode
   http_api: true
   enable_healthcheck: true
+  serve_docs: true
 
 auth: dev_mode
 
