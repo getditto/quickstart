@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ditto" Version="5.0.0-dev-weekly.20260126.180" />
+    <PackageReference Include="Ditto" Version="5.0.0-preview.5" />
     <PackageReference Include="System.Text.Json" Version="9.0.4" />
   </ItemGroup>
 
