@@ -540,7 +540,7 @@
 			repositoryURL = "https://github.com/getditto/DittoSwiftPackage";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = "5.0.0-preview.5";
+				minimumVersion = "5.0.0-rc.1";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
