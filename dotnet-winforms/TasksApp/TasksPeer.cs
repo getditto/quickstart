@@ -105,7 +105,7 @@ namespace DittoTasksApp
             AuthUrl = authUrl;
             WebsocketUrl = websocketUrl;
 
-            var config = new DittoConfig (
+            var config = new DittoConfig(
                 AppId,
                 new DittoConfigConnect.Server(new Uri(authUrl))
             );
