@@ -14,12 +14,16 @@ import 'package:flutter_quickstart/main.dart';
 void main() {
   setUpAll(() async {
     // Initialize dotenv for testing
-    dotenv.testLoad(fileInput: '''
-DITTO_APP_ID=test_app_id
-DITTO_PLAYGROUND_TOKEN=test_playground_token
-DITTO_AUTH_URL=https://auth.example.com
-DITTO_WEBSOCKET_URL=wss://websocket.example.com
-''');
+    await dotenv.load(
+      fileName: '.env',
+      mergeWith: {
+        'DITTO_APP_ID': 'test_app_id',
+        'DITTO_PLAYGROUND_TOKEN': 'test_playground_token',
+        'DITTO_AUTH_URL': 'https://auth.example.com',
+        'DITTO_WEBSOCKET_URL': 'wss://websocket.example.com',
+      },
+      isOptional: true,
+    );
   });
 
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
