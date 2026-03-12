@@ -17,21 +17,15 @@ void main() {
         (WidgetTester tester) async {
       // Initialize app
       await app.main();
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      // Allow up to 10 seconds for Ditto to initialise and the first sync
+      // exchange to complete. pumpAndSettle returns as soon as the UI is
+      // idle, so on fast devices this resolves much sooner.
+      await tester.pumpAndSettle(const Duration(seconds: 10));
 
-      // Tap "OK" button if Bluetooth permission dialog appears (iOS)
-      final okButton = find.text('OK');
-      if (okButton.evaluate().isNotEmpty) {
-        await tester.tap(okButton);
-        await tester.pumpAndSettle(const Duration(seconds: 2));
-      }
-
-      // Tap "Allow" button if local network permission dialog appears (iOS)
-      final allowButton = find.text('Allow');
-      if (allowButton.evaluate().isNotEmpty) {
-        await tester.tap(allowButton);
-        await tester.pumpAndSettle(const Duration(seconds: 2));
-      }
+      // NOTE: iOS system permission dialogs (Bluetooth, Local Network) are
+      // native UIAlertControllers and cannot be found or tapped via Flutter's
+      // widget-tree finders.  They are handled at the XCTest layer in
+      // ios/RunnerTests/RunnerTests.m via addUIInterruptionMonitor.
 
       // Verify app title is present
       expect(find.text('Ditto Tasks'), findsOneWidget);
@@ -45,11 +39,9 @@ void main() {
       // Verify clear button is present
       expect(find.byIcon(Icons.clear), findsOneWidget);
 
-      // Wait for sync to complete
-      await Future.delayed(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-
-      // Look for the test document that should be synced from Ditto cloud
+      // Look for the test document that should be synced from Ditto cloud.
+      // The playground can accumulate many documents from previous CI runs,
+      // so we poll rather than waiting a fixed amount of time.
       const testTitle = String.fromEnvironment('TASK_TO_FIND');
 
       if (testTitle.isEmpty) {
@@ -57,9 +49,23 @@ void main() {
             'Build with: --dart-define=TASK_TO_FIND=<task_title>');
       }
 
-      expect(find.text(testTitle), findsOneWidget,
+      // Poll every 500 ms for up to 45 seconds to give the cloud sync
+      // enough time to deliver and write all documents to the local store.
+      const syncTimeout = Duration(seconds: 45);
+      final deadline = DateTime.now().add(syncTimeout);
+      bool taskFound = false;
+
+      while (DateTime.now().isBefore(deadline)) {
+        await tester.pump(const Duration(milliseconds: 500));
+        if (find.text(testTitle).evaluate().isNotEmpty) {
+          taskFound = true;
+          break;
+        }
+      }
+
+      expect(taskFound, isTrue,
           reason:
-              'Should find test document with title: $testTitle synced from Ditto cloud');
+              'Should find test document with title: $testTitle synced from Ditto cloud within ${syncTimeout.inSeconds}s');
     });
   });
 }

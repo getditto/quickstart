@@ -86,6 +86,15 @@ class _DittoExampleState extends State<DittoExample> {
       }
     });
 
+    // Register the tasks subscription before starting sync so it is
+    // included in the very first sync exchange with the cloud.
+    // Without this, the subscription is registered later when the
+    // DqlBuilder widget builds, causing a 5–10 second delay on the
+    // first sync cycle.
+    ditto.sync.registerSubscription(
+      "SELECT * FROM tasks WHERE deleted = false",
+    );
+
     ditto.sync.start();
 
     if (mounted) {
