@@ -22,7 +22,13 @@
     "react-native-safe-area-context": "^5.5.2"
   },
   "resolutions": {
-    "image-size": "1.2.1"
+    "image-size": "1.2.1",
+    "fast-xml-parser": "4.5.4",
+    "glob/minimatch": "3.1.5",
+    "eslint/minimatch": "3.1.5",
+    "test-exclude/minimatch": "3.1.5",
+    "@typescript-eslint/typescript-estree/minimatch": "9.0.9",
+    "@expo/config-plugins/glob": "10.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
