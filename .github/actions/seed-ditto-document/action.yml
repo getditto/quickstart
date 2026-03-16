@@ -3,11 +3,11 @@ description: 'Creates a test document in Ditto Cloud with inverted timestamp for
 author: 'Ditto'
 
 inputs:
-  ditto-api-key:
-    description: 'Ditto API key for authentication'
+  ditto-app-id:
+    description: 'Ditto App ID'
     required: true
-  ditto-api-url:
-    description: 'Ditto API URL (e.g., cloud.ditto.live)'
+  ditto-playground-token:
+    description: 'Ditto Playground Token for authentication'
     required: true
   app-name:
     description: 'Name of the app/platform being tested (e.g., android-kotlin, swift, etc.)'
@@ -47,7 +47,7 @@ runs:
         # Insert document using Ditto API v4
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ inputs.ditto-api-key }}" \
+          -H "Authorization: Bearer ${{ inputs.ditto-playground-token }}" \
           -d "{
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
@@ -59,7 +59,7 @@ runs:
               }
             }
           }" \
-          "https://${{ inputs.ditto-api-url }}/api/v4/store/execute")
+          "https://${{ inputs.ditto-app-id }}.cloud.ditto.live/api/v4/store/execute")
 
         # Extract HTTP status code and response body (portable version)
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)

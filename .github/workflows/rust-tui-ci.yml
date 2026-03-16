@@ -112,8 +112,8 @@ jobs:
         id: seed
         uses: ./.github/actions/seed-ditto-document
         with:
-          ditto-api-key: ${{ secrets.DITTO_API_KEY }}
-          ditto-api-url: ${{ secrets.DITTO_API_URL }}
+          ditto-app-id: ${{ secrets.DITTO_APP_ID }}
+          ditto-playground-token: ${{ secrets.DITTO_PLAYGROUND_TOKEN }}
           app-name: 'rust-tui'
       
       - name: Build and run integration test
