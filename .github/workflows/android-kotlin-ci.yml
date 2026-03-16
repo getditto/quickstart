@@ -188,9 +188,9 @@ jobs:
             echo "Seeding test task to Ditto Cloud..."
             TIMESTAMP=$(date +%s)
             INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
-            SEED_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            SEED_RESPONSE=$(curl -fSs -w "\n%{http_code}" -X POST \
               -H 'Content-type: application/json' \
-              -H "Authorization: Bearer ${{ secrets.DITTO_API_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.DITTO_PLAYGROUND_TOKEN }}" \
               -d "{
                 \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
                 \"args\": {
@@ -202,7 +202,7 @@ jobs:
                   }
                 }
               }" \
-              "https://${{ secrets.DITTO_API_URL }}/api/v4/store/execute")
+              "https://${{ secrets.DITTO_APP_ID }}.cloud.ditto.live/api/v4/store/execute")
 
             HTTP_CODE=$(echo "$SEED_RESPONSE" | tail -n1)
             BODY=$(echo "$SEED_RESPONSE" | sed '$d')

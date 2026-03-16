@@ -31,6 +31,7 @@ runs:
       id: seed
       shell: bash
       run: |
+        set -euo pipefail
         # Generate inverted timestamp for top position in list
         TIMESTAMP=$(date +%s)
         INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
@@ -45,7 +46,7 @@ runs:
         echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
 
         # Insert document using Ditto API v4
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+        RESPONSE=$(curl -fSs -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
           -H "Authorization: Bearer ${{ inputs.ditto-playground-token }}" \
           -d "{
