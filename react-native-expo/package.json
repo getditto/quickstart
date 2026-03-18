@@ -60,10 +60,14 @@
     "typescript": "~5.9.2"
   },
   "resolutions": {
-    "tar": "7.5.11"
+    "tar": "7.5.11",
+    "undici": "6.24.1",
+    "flatted": "3.4.2"
   },
   "overrides": {
-    "tar": "7.5.11"
+    "tar": "7.5.11",
+    "undici": "6.24.1",
+    "flatted": "3.4.2"
   },
   "private": true
 }
