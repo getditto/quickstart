@@ -286,3 +286,19 @@ If you want to run the edge server as a raw binary for either `aarch64-unknown-l
 
    ```bash
    just run-bin
+   ```
+
+---
+
+## ⚠️ Production Deployment
+
+> [!IMPORTANT]
+> **This quickstart configuration is NOT secure and should NOT be used in production.**
+>
+> The quickstart uses playground authentication for ease of setup, which does not provide proper security. Before deploying to production, you must configure proper authentication, TLS, and other security measures.
+>
+> **Continue to the [Ditto Edge Server Documentation](https://docs.ditto.live/edge-server/overview) for detailed instructions on:**
+> - Configuring secure authentication
+> - Setting up TLS/SSL certificates
+> - Production deployment best practices
+> - Monitoring and observability
