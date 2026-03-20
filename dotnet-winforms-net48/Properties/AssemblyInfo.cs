@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("Taskapp.WinForms.Net48")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Pixel Machinery")]
+[assembly: AssemblyCompany("Ditto")]
 [assembly: AssemblyProduct("Taskapp.WinForms.Net48")]
-[assembly: AssemblyCopyright("Copyright © Pixel Machinery 2026")]
+[assembly: AssemblyCopyright("Copyright © Ditto Live 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
