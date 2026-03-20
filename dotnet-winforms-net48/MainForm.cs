@@ -51,6 +51,11 @@ namespace Taskapp.WinForms.Net48
 
             try
             {
+                // Filter out null tasks and tasks with null/empty Id
+                var validTasks = tasks
+                    .Where(t => t != null && !string.IsNullOrEmpty(t.Id))
+                    .ToList();
+
                 // Create dictionary of current items by ID for quick lookup
                 var currentItems = new Dictionary<string, ListViewItem>();
                 foreach (ListViewItem item in tasksListView.Items)
@@ -60,10 +65,10 @@ namespace Taskapp.WinForms.Net48
                 }
 
                 // Create dictionary of incoming tasks by ID
-                var incomingTasks = tasks.ToDictionary(t => t.Id);
+                var incomingTasks = validTasks.ToDictionary(t => t.Id);
 
                 // Update existing items and add new ones
-                foreach (var task in tasks)
+                foreach (var task in validTasks)
                 {
                     if (currentItems.ContainsKey(task.Id))
                     {
@@ -189,15 +194,15 @@ namespace Taskapp.WinForms.Net48
             }
         }
 
-        private async void tasksListView_ItemCheck(object sender, ItemCheckEventArgs e)
+        private async void tasksListView_ItemChecked(object sender, ItemCheckedEventArgs e)
         {
-            // Prevent recursive updates
+            // Prevent recursive updates (including the revert flip below)
             if (_isUpdatingListView)
                 return;
 
-            var item = tasksListView.Items[e.Index];
+            var item = e.Item;
             var taskId = item.SubItems[2].Text;
-            var newCheckedState = e.NewValue == CheckState.Checked;
+            var newCheckedState = item.Checked;
 
             try
             {
@@ -206,8 +211,10 @@ namespace Taskapp.WinForms.Net48
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to update task status: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                // Revert the check state
-                e.NewValue = e.CurrentValue;
+                // Revert the check state; guard prevents this flip from re-entering
+                _isUpdatingListView = true;
+                item.Checked = !newCheckedState;
+                _isUpdatingListView = false;
             }
         }
 

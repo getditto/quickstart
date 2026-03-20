@@ -58,7 +58,7 @@
             this.tasksListView.TabIndex = 0;
             this.tasksListView.UseCompatibleStateImageBehavior = false;
             this.tasksListView.View = System.Windows.Forms.View.Details;
-            this.tasksListView.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.tasksListView_ItemCheck);
+            this.tasksListView.ItemChecked += new System.Windows.Forms.ItemCheckedEventHandler(this.tasksListView_ItemChecked);
             //
             // doneColumn
             //
