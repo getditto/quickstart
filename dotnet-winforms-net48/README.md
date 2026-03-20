@@ -8,7 +8,7 @@
 
 1. Install the .NET 4.8 SDK from <https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48>
 2. Create an application at <https://portal.ditto.live>. Make note of the app ID and online playground token
-3. Copy the `.env.sample` file at the top level of the quickstart repo to `.env` and add your app ID and online playground token, and place file in the same folder as teh solution and csproj file.
+3. Copy the `.env.sample` file at the top level of the quickstart repo to `.env` and add your app ID and online playground token, and place file in the same folder as the solution and csproj file.
 
 
 ## Documentation
