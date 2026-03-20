@@ -87,6 +87,13 @@ namespace Taskapp.WinForms.Net48
         public DittoStoreObserver ObserveTasksCollection(Func<IList<ToDoTask>, Task> handler)
         {
             EnsureInitialized();
+
+            // Cancel any existing observer before registering a new one
+            if (_observer != null)
+            {
+                _observer.Cancel();
+                _observer = null;
+            }
             _observer = _tasksPeer.ObserveTasksCollection(handler);
             return _observer;
         }
