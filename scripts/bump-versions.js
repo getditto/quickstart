@@ -119,21 +119,6 @@ const APP_CONFIGS = {
     lockCommands: ["./gradlew --refresh-dependencies"],
   },
 
-  "android-cpp": {
-    skip: false,
-    files: [
-      {
-        path: "QuickStartTasksCPP/app/build.gradle.kts",
-        regex:
-          /(implementation\("live\.ditto:ditto-cpp:)[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?("\))/g,
-        replacement: (match, prefix, suffix) => `${prefix}VERSION${suffix}`,
-      },
-    ],
-    lockCommands: [
-      "(cd QuickStartTasksCPP && ./gradlew --refresh-dependencies)",
-    ],
-  },
-
   "cpp-tui": {
     skip: false,
     files: [
