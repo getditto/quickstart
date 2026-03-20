@@ -19,4 +19,4 @@
 
 ## .NET Windows Forms Application 
 
-This is a Windows Form Application is targeting .NET 4.8.  It will NOT run on MacOS or Linux and will not run on modern .NET.  To run the app open the TasksApp folder in Visual Studio for Windows and select the solution file in it (DittoTaskApp.sln). 
+This is a Windows Form Application is targeting .NET 4.8.  It will NOT run on MacOS or Linux and will not run on modern .NET.  To run the app, open the `dotnet-winforms-net48` folder in Visual Studio for Windows and select the solution file in it (`Taskapp.WinForms.Net48.sln`). 
