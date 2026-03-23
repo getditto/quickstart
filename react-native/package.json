@@ -23,7 +23,8 @@
   },
   "resolutions": {
     "image-size": "1.2.1",
-    "fast-xml-parser": "4.5.4",
+    "fast-xml-parser": "5.5.6",
+    "flatted": "3.4.2",
     "glob/minimatch": "3.1.5",
     "eslint/minimatch": "3.1.5",
     "test-exclude/minimatch": "3.1.5",
