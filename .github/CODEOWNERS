@@ -7,7 +7,6 @@
 * @getditto/sdk-engineers
 
 # SDK-specific owners
-/android-cpp/            @kristopherjohnson @teodorciuraru
 /android-java/           @russhwolf @phatblat @busec0
 /android-kotlin/         @russhwolf @phatblat @busec0
 /cpp-tui/                @kristopherjohnson @teodorciuraru

@@ -7,8 +7,6 @@
 - ✅ **Linux (x64)**: Ubuntu 20.04 LTS and later
 - ✅ **Linux (AArch64)**: Ubuntu 22.04 LTS and later
 
-For Android development, see the separate `android-cpp` project.
-
 ## Prerequisites
 
 After you have completed the [common prerequisites] you will need the following:
