@@ -45,7 +45,7 @@ androidComponents {
         buildConfigFields.forEach { (key, description) ->
             it.buildConfigFields.put(
                 key,
-                BuildConfigField("String", "\"${prop[key]}\"", description)
+                BuildConfigField("String", "${prop[key]}", description)
             )
         }
     }
@@ -61,7 +61,7 @@ android {
 
     defaultConfig {
         applicationId = "live.ditto.quickstart.tasks"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -83,12 +83,12 @@ android {
     }
     
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
     
     buildFeatures {
@@ -132,7 +132,7 @@ dependencies {
     implementation(libs.koin.androidx.compose.navigation)
 
     // Ditto SDK
-    implementation(libs.live.ditto)
+    implementation(libs.com.ditto)
 
     // Testing
     testImplementation(libs.junit)

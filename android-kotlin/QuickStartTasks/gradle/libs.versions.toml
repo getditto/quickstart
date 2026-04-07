@@ -14,7 +14,7 @@ appcompat = "1.7.1"
 datastorePreferences = "1.1.7"
 koin-bom = "4.1.0"
 coroutines-tests = "1.10.2"
-ditto = "4.13.1"
+ditto = "5.0.0-dev-weekly.20260126.180"
 monitor = "1.7.2"
 
 [libraries]
@@ -41,7 +41,7 @@ koin-core = { group = "io.insert-koin", name = "koin-core" }
 koin-android = { group = "io.insert-koin", name = "koin-android" }
 koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose" }
 koin-androidx-compose-navigation = { group = "io.insert-koin", name = "koin-androidx-compose-navigation" }
-live-ditto = { group = "live.ditto", name = "ditto", version.ref = "ditto" }
+com-ditto = { group = "com.ditto", name = "ditto-kotlin", version.ref = "ditto" }
 kotlinx-coroutines = {group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-tests" }
 androidx-monitor = { group = "androidx.test", name = "monitor", version.ref = "monitor" }
 
