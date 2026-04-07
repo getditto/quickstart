@@ -1,19 +1,15 @@
 # Ditto Rust Quickstart App 🚀
 
-This directory contains Ditto's quickstart app for the Rust SDK.
-This app is a Terminal User Interface (TUI) that allows for creating
-a todo list that syncs between multiple peers.
+This directory contains Ditto's quickstart app for the Rust SDK.  This app is a Terminal User Interface (TUI) that allows for creating a todo list that syncs between multiple peers.
 
 ## Getting Started
 
-To get started, you'll first need to create an app in the [Ditto Portal][0]
-with the "Online Playground" authentication type. You'll need to find your
+To get started, you'll first need to create an app in the [Ditto Portal][0] with the "Online Playground" authentication type. You'll need to find your
 AppID and Online Playground Token, Auth URL, and Websocket URL in order to use this quickstart.
 
 [0]: https://portal.ditto.live
 
-From the repo root, copy the `.env.sample` file to `.env`, and fill in the
-fields with your AppID, Online Playground Token, Auth URL, and Websocket URL:
+From the repo root, copy the `.env.sample` file to `.env`, and fill in the fields with your AppID, Online Playground Token, Auth URL, and Websocket URL:
 
 ```
 cp .sample.env .env

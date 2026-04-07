@@ -1,7 +1,7 @@
 [package]
 name = "ditto-quickstart"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 default-run = "ditto-quickstart"
 
 [lib]
@@ -18,7 +18,7 @@ path = "src/bin/integration_test.rs"
 
 [dependencies]
 # Ditto dependenceis
-dittolive-ditto = "4.13.1"
+dittolive-ditto = "=5.0.0-preview.4"
 
 # External dependencies
 anyhow = "1"
