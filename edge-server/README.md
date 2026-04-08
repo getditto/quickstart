@@ -112,18 +112,129 @@ just update-task <task-id> false
 just delete-task <task-id>
 ```
 
+## Additional HTTP API Endpoints
+
+The Edge Server provides additional endpoints for advanced operations:
+
+### Execute DQL Queries
+
+```bash
+# Execute custom DQL statements
+curl -X POST http://localhost:8080/execute \
+  -H "Content-Type: application/json" \
+  -d '{"statement": "SELECT * FROM tasks"}'
+```
+
+### Attachments
+
+```bash
+# Upload an attachment
+curl -X POST http://localhost:8080/attachments/upload \
+  -F "file=@/path/to/file"
+
+# Download an attachment
+curl http://localhost:8080/attachments/{attachment-id} \
+  -o downloaded-file
+```
+
+### Monitoring & Diagnostics
+
+```bash
+# View presence graph
+curl http://localhost:8080/presence
+
+# Download logs (returns .tar.gz)
+curl http://localhost:8080/logs -o edge-server-logs.tar.gz
+
+# View API documentation (interactive Swagger UI)
+open http://localhost:8080/docs
+```
+
+## API Reference
+
+### OpenAPI Specification
+
+The Edge Server automatically generates a **comprehensive OpenAPI 3.1 specification** that documents all HTTP endpoints with complete request/response schemas, authentication, and error handling. The spec is generated directly from the actual HTTP handlers, ensuring it stays in sync with the server's behavior.
+
+**What's included in the spec:**
+- Complete request and response schemas for all endpoints
+- All HTTP status codes (200, 401, 403, 413, 429, 431, 500, etc.)
+- Authentication requirements (Bearer token format)
+- Error response formats with detailed descriptions
+- Type-safe schemas for all data structures (21+ schema definitions)
+- Request/response examples
+
+**Option 1: Runtime Access**
+```bash
+# View the OpenAPI spec while server is running (requires serve_docs: true in config)
+curl http://localhost:8080/docs/edge_server_api.json | jq .
+```
+
+**Option 2: Generate Offline (Recommended for CI/CD)**
+```bash
+# Generate the spec without starting the server (<100ms)
+./edge-server config open-api --config quickstart_config.yaml
+
+# Save to a file for use with external tools
+./edge-server config open-api --config quickstart_config.yaml --output openapi.json
+
+# Pipe to tools for analysis
+./edge-server config open-api --config quickstart_config.yaml | jq '.paths | keys'
+```
+
+**Use cases for the OpenAPI spec:**
+- **Swagger UI / ReDoc** - Interactive API documentation with try-it-out features
+- **Postman / Insomnia** - Import spec to auto-generate HTTP request collections
+- **openapi-generator** - Generate type-safe client SDKs (TypeScript, Python, Go, Rust, etc.)
+- **Contract testing** - Validate API responses match the spec (Pact, Dredd)
+- **API Gateway integration** - Import into Kong, AWS API Gateway, or similar
+- **Documentation sites** - Generate static docs with complete API reference
+
 ## Configuration
 
 The Edge Server uses `quickstart_config.yaml` for configuration. Key settings include:
 
 - **Ditto Database**: Configured with app ID and device name
 - **Authentication**: Uses playground provider (development only)
-- **HTTP Server**: Listens on port 8080 with `/my_server` base path
+- **HTTP Server**: Listens on port 8080 with REST API and healthcheck endpoints
 - **Subscription**: Monitors all tasks in the database
+
+### Configuration Schema
+
+You can view the full configuration schema to understand all available options:
+
+```bash
+# View schema in JSON format
+./edge-server config schema json
+
+# View schema in YAML format
+./edge-server config schema yaml
+
+# Save to a file for IDE autocomplete
+./edge-server config schema json > edge-server-config-schema.json
+```
+
+**Tip**: Many IDEs support YAML schema validation. Add this comment at the top of your config file:
+```yaml
+# yaml-language-server: $schema=./edge-server-config-schema.json
+```
 
 ### Important Security Note
 
 ⚠️ **Development Only**: This quickstart uses playground authentication which is **NOT** secure or suitable for production. For production deployments, configure proper authentication using "Online with Authentication" identity.
+
+### Advanced Security Features
+
+For production deployments, Edge Server supports:
+
+- **HTTPS/TLS**: TLS 1.2 and TLS 1.3 support for encrypted communications
+- **API Key Authentication**: Generate and manage API keys for client authentication
+- **Permission-Based Access Control**: Configure operation-based permissions for fine-grained access control
+- **Audit Logging**: Track and retrieve access logs for security compliance
+- **HTTP Request Throttling**: Configure rate limiting on a per-endpoint basis
+- **Configurable Limits**: Set TCP connection limits, backlog limits, request timeouts, and keepalive settings
+
+See the [Edge Server documentation](https://docs.ditto.live/edge-server) for configuration details.
 
 ## Troubleshooting
 
@@ -175,3 +286,19 @@ If you want to run the edge server as a raw binary for either `aarch64-unknown-l
 
    ```bash
    just run-bin
+   ```
+
+---
+
+## ⚠️ Production Deployment
+
+> [!IMPORTANT]
+> **This quickstart configuration is NOT secure and should NOT be used in production.**
+>
+> The quickstart uses playground authentication for ease of setup, which does not provide proper security. Before deploying to production, you must configure proper authentication, TLS, and other security measures.
+>
+> **Continue to the [Ditto Edge Server Documentation](https://docs.ditto.live/edge-server/overview) for detailed instructions on:**
+> - Configuring secure authentication
+> - Setting up TLS/SSL certificates
+> - Production deployment best practices
+> - Monitoring and observability

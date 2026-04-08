@@ -32,7 +32,7 @@ create-task *title:
     --header "Content-Type: application/json" \
     --data @- \
     --fail-with-body \
-    http://127.0.0.1:8080/my_server/execute \
+    http://127.0.0.1:8080/execute \
     | jq .
 
 # Gets all non-deleted tasks
@@ -42,7 +42,7 @@ get-tasks:
     --header "Content-Type: application/json" \
     --data @requests/get.json \
     --fail-with-body \
-    http://127.0.0.1:8080/my_server/execute \
+    http://127.0.0.1:8080/execute \
     | jq .
 
 # Updates a task's completion status
@@ -54,7 +54,7 @@ update-task id done="false":
     --request POST \
     --header "Content-Type: application/json" \
     --data @- \
-    http://127.0.0.1:8080/my_server/execute \
+    http://127.0.0.1:8080/execute \
     | jq .
 
 # Soft deletes a task
@@ -65,7 +65,7 @@ delete-task id:
     --request POST \
     --header "Content-Type: application/json" \
     --data @- \
-    http://127.0.0.1:8080/my_server/execute \
+    http://127.0.0.1:8080/execute \
     | jq .
 
 alias download-bin := z-download-binary
