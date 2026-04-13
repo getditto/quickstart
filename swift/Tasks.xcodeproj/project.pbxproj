@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4170A8552CED346F00043F5A /* DittoObjC in Frameworks */ = {isa = PBXBuildFile; productRef = 4170A8542CED346F00043F5A /* DittoObjC */; };
-		4170A8572CED346F00043F5A /* DittoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 4170A8562CED346F00043F5A /* DittoSwift */; };
+		0D19ADAF2F319E1B004D866D /* DittoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 0D19ADAE2F319E1B004D866D /* DittoSwift */; };
 		ABCDEF012345678900000001 /* TasksUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDEF012345678900000002 /* TasksUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -55,8 +54,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4170A8552CED346F00043F5A /* DittoObjC in Frameworks */,
-				4170A8572CED346F00043F5A /* DittoSwift in Frameworks */,
+				0D19ADAF2F319E1B004D866D /* DittoSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,11 +68,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0D40BBA52F2AAE8A006A72A4 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		41F869812CECF42500DC7268 = {
 			isa = PBXGroup;
 			children = (
 				41F8698C2CECF42500DC7268 /* Tasks */,
 				ABCDEF012345678900000005 /* TasksUITests */,
+				0D40BBA52F2AAE8A006A72A4 /* Frameworks */,
 				41F8698B2CECF42500DC7268 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -118,8 +124,7 @@
 			);
 			name = Tasks;
 			packageProductDependencies = (
-				4170A8542CED346F00043F5A /* DittoObjC */,
-				4170A8562CED346F00043F5A /* DittoSwift */,
+				0D19ADAE2F319E1B004D866D /* DittoSwift */,
 			);
 			productName = Tasks;
 			productReference = 41F8698A2CECF42500DC7268 /* Tasks.app */;
@@ -151,7 +156,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1610;
-				LastUpgradeCheck = 1610;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					41F869892CECF42500DC7268 = {
 						CreatedOnToolsVersion = 16.1;
@@ -168,7 +173,7 @@
 			mainGroup = 41F869812CECF42500DC7268;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				4170A8532CED346F00043F5A /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */,
+				0D19ADAD2F319E10004D866D /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 41F8698B2CECF42500DC7268 /* Products */;
@@ -326,6 +331,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -382,6 +388,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -395,11 +402,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Tasks/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = E3FRN9JNGJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tasks/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ditto Tasks";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Uses Bluetooth to connect and sync with nearby devices";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Uses Bluetooth to connect and sync with nearby devices";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Uses WiFi to connect and sync with nearby devices";
@@ -430,11 +438,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Tasks/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = E3FRN9JNGJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tasks/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ditto Tasks";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Uses Bluetooth to connect and sync with nearby devices";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Uses Bluetooth to connect and sync with nearby devices";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Uses WiFi to connect and sync with nearby devices";
@@ -526,25 +535,20 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		4170A8532CED346F00043F5A /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */ = {
+		0D19ADAD2F319E10004D866D /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/getditto/DittoSwiftPackage";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 4.13.1;
+				minimumVersion = "5.0.0-rc.3";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		4170A8542CED346F00043F5A /* DittoObjC */ = {
+		0D19ADAE2F319E1B004D866D /* DittoSwift */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 4170A8532CED346F00043F5A /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */;
-			productName = DittoObjC;
-		};
-		4170A8562CED346F00043F5A /* DittoSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4170A8532CED346F00043F5A /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */;
+			package = 0D19ADAD2F319E10004D866D /* XCRemoteSwiftPackageReference "DittoSwiftPackage" */;
 			productName = DittoSwift;
 		};
 /* End XCSwiftPackageProductDependency section */

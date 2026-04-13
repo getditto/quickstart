@@ -22,11 +22,11 @@ class TasksListScreenViewModel: ObservableObject {
 
         // Register observer, which runs against the local database on this peer
         // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-        storeObserver = try? ditto.store.registerObserver(query: observerQuery) {
-            [weak self] result in
+        storeObserver = try? ditto?.store.registerObserver(query: observerQuery) { [weak self] result in
             guard let self = self else { return }
-            self.tasks = result.items.compactMap {
-                TaskModel($0.jsonData())
+            let mappedTasks = result.items.compactMap { TaskModel($0.jsonData()) }
+            Task { @MainActor [weak self] in
+                self?.tasks = mappedTasks
             }
         }
     }
@@ -38,26 +38,32 @@ class TasksListScreenViewModel: ObservableObject {
         storeObserver?.cancel()
         storeObserver = nil
 
-        if ditto.isSyncActive {
-            DittoManager.shared.ditto.stopSync()
+        if let ditto = self.ditto {
+            if ditto.sync.isActive {
+                ditto.sync.stop()
+            }
         }
     }
 
     func setSyncEnabled(_ newValue: Bool) throws {
-        if !ditto.isSyncActive && newValue {
-            try startSync()
-        } else if ditto.isSyncActive && !newValue {
-            stopSync()
+        if let ditto = self.ditto {
+            if !ditto.sync.isActive && newValue {
+                try startSync()
+            } else if ditto.sync.isActive && !newValue {
+                stopSync()
+            }
         }
     }
 
     private func startSync() throws {
         do {
-            try ditto.startSync()
+            if let ditto = self.ditto {
+                try ditto.sync.start()
 
-            // Register a subscription, which determines what data syncs to this peer
-            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-            subscription = try ditto.sync.registerSubscription(query: subscriptionQuery)
+                // Register a subscription, which determines what data syncs to this peer
+                // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+                subscription = try ditto.sync.registerSubscription(query: subscriptionQuery)
+            }
         } catch {
             print(
                 "TaskListScreenVM.\(#function) - ERROR starting sync operations: \(error.localizedDescription)"
@@ -69,8 +75,9 @@ class TasksListScreenViewModel: ObservableObject {
     private func stopSync() {
         subscription?.cancel()
         subscription = nil
-
-        ditto.stopSync()
+        if let ditto = self.ditto {
+            ditto.sync.stop()
+        }
     }
 
     func toggleComplete(task: TaskModel) {
@@ -83,10 +90,12 @@ class TasksListScreenViewModel: ObservableObject {
                 """
 
             do {
-                try await ditto.store.execute(
-                    query: query,
-                    arguments: ["done": done, "_id": task._id]
-                )
+                if let ditto = self.ditto {
+                    try await ditto.store.execute(
+                        query: query,
+                        arguments: ["done": done, "_id": task._id]
+                    )
+                }
             } catch {
                 print(
                     "TaskListScreenVM.\(#function) - ERROR toggling task: \(error.localizedDescription)"
@@ -106,15 +115,17 @@ class TasksListScreenViewModel: ObservableObject {
                 """
 
             do {
-                try await ditto.store.execute(
-                    query: query,
-                    arguments: [
-                        "title": task.title,
-                        "done": task.done,
-                        "deleted": task.deleted,
-                        "_id": task._id
-                    ]
-                )
+                if let ditto = self.ditto {
+                    try await ditto.store.execute(
+                        query: query,
+                        arguments: [
+                            "title": task.title,
+                            "done": task.done,
+                            "deleted": task.deleted,
+                            "_id": task._id
+                        ]
+                    )
+                }
             } catch {
                 print(
                     "TaskListScreenVM.\(#function) - ERROR updating task: \(error.localizedDescription)"
@@ -129,8 +140,10 @@ class TasksListScreenViewModel: ObservableObject {
             let query = "INSERT INTO tasks DOCUMENTS (:newTask)"
 
             do {
-                try await ditto.store.execute(
-                    query: query, arguments: ["newTask": newTask])
+                if let ditto = self.ditto {
+                    try await ditto.store.execute(
+                        query: query, arguments: ["newTask": newTask])
+                }
             } catch {
                 print(
                     "TaskListScreenVM.\(#function) - ERROR creating new task: \(error.localizedDescription)"
@@ -143,8 +156,10 @@ class TasksListScreenViewModel: ObservableObject {
         Task {
             let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
             do {
-                try await ditto.store.execute(
-                    query: query, arguments: ["_id": task._id])
+                if let ditto = self.ditto {
+                    try await ditto.store.execute(
+                        query: query, arguments: ["_id": task._id])
+                }
             } catch {
                 print(
                     "TaskListScreenVM.\(#function) - ERROR deleting task: \(error.localizedDescription)"
@@ -172,18 +187,20 @@ class TasksListScreenViewModel: ObservableObject {
 
             for task in initialTasks {
                 do {
-                    try await ditto.store.execute(
-                        query: "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
-                        arguments: [
-                            "task":
-                                [
-                                    "_id": task._id,
-                                    "title": task.title,
-                                    "done": task.done,
-                                    "deleted": task.deleted
-                                ]
-                        ]
-                    )
+                    if let ditto = self.ditto {
+                        try await ditto.store.execute(
+                            query: "INSERT INTO tasks INITIAL DOCUMENTS (:task)",
+                            arguments: [
+                                "task":
+                                    [
+                                        "_id": task._id,
+                                        "title": task.title,
+                                        "done": task.done,
+                                        "deleted": task.deleted
+                                    ]
+                            ]
+                        )
+                    }
                 } catch {
                     print(
                         "TaskListScreenVM.\(#function) - ERROR creating initial task: \(error.localizedDescription)"
@@ -243,7 +260,7 @@ struct TasksListScreen: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack {
-                        Toggle("Sync", isOn: $syncEnabled)
+                        Toggle("  Sync", isOn: $syncEnabled)
                             .toggleStyle(SwitchToggleStyle())
                             .onChange(of: syncEnabled) { newSyncEnabled in
                                 Self.saveSyncEnabledState(newSyncEnabled)
@@ -255,20 +272,16 @@ struct TasksListScreen: View {
                             }
                     }
                 }
-                ToolbarItem(placement: .bottomBar) {
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            viewModel.onNewTask()
-                        }, label: {
-                            HStack {
-                                Image(systemName: "plus")
-                                Text("New Task")
-                            }
-                        })
-                        .buttonStyle(.borderedProminent)
-                        .padding(.bottom)
-                    }
+                ToolbarItemGroup(placement: .bottomBar) {
+                    Spacer()
+                    Button(action: {
+                        viewModel.onNewTask()
+                    }, label: {
+                        Label("New Task", systemImage: "plus")
+                    })
+                    .buttonStyle(.borderedProminent)
+                    .padding(.bottom)
+                    .padding(.trailing, 100)
                 }
             }
             .sheet(
