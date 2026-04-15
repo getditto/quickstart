@@ -36,8 +36,7 @@
   },
   "overrides": {
     "flatted": "3.4.2",
-    "@xmldom/xmldom": ">=0.8.12",
-    "brace-expansion": ">=1.1.13",
-    "yaml": ">=2.8.3"
+    "@xmldom/xmldom": "0.8.12",
+    "yaml": "2.8.3"
   }
 }
