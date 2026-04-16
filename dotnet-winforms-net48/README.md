@@ -4,7 +4,7 @@
 - Microsoft Windows 11, this uses .NET 4.8 for Windows only
 - Visual Studio 2019 or higher (tested on Visual Studio 2019/2026)
 - x64 version of Windows (does NOT support 32-bit Windows)
-- Does not support ARM64 (however can run on Windows on Windows with x64 emulation if supported by OS/hardware).  ARM64 is not officially supported by Ditto for use with the .NET 4.8 framework.  
+- Does not support ARM64 (however, it can run on Windows on ARM using x64 emulation if supported by the OS/hardware). ARM64 is not officially supported by Ditto for use with the .NET 4.8 framework.  
 
 1. Install the .NET 4.8 SDK from <https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48>
 2. Create an application at <https://portal.ditto.live>. Make note of the app ID and online playground token
