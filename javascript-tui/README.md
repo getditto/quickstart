@@ -1,7 +1,12 @@
 # Ditto Javascript Quickstart App
 
-This app is a TUI built using [Ink](https://github.com/vadimdemedes/ink) with React that demonstrates how to
-create a peer-to-peer tasks app using the [Ditto v5 SDK](https://docs.ditto.live).
+This app is a TUI built using [Ink](https://github.com/vadimdemedes/ink) with React that demonstrates how to create a peer-to-peer tasks app using the [Ditto v5 SDK](https://docs.ditto.live).
+
+## Documentation
+
+- [Javascript Install Guide](https://docs.ditto.live/sdk/latest/install-guides/js)
+- [Javascript API Reference](https://software.ditto.live/js/Ditto/5.0.0-rc.2/api-reference/)
+- [Javascript Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
 ## Prerequisites
 
