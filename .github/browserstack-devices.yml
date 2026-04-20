@@ -38,7 +38,7 @@ flutter:
       - "Google Pixel 6-12.0"      # Android 12 support
   ios:
     devices:
-      - "iPhone 13-15"  # iOS 15 support
+      - "iPhone 13-16"  # iOS 16 support (min deployment target is 15.6)
       - "iPhone 14-16"  # iOS 16 current
       - "iPhone 12-17"  # iOS 17 latest
 

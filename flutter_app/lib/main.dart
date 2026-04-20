@@ -29,7 +29,8 @@ class _DittoExampleState extends State<DittoExample> {
       dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
   final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
       (throw Exception("env not found"));
-  final authUrl = dotenv.env['DITTO_AUTH_URL'];
+  final authUrl =
+      dotenv.env['DITTO_AUTH_URL'] ?? (throw Exception("env not found"));
   final websocketUrl =
       dotenv.env['DITTO_WEBSOCKET_URL'] ?? (throw Exception("env not found"));
 
@@ -70,26 +71,31 @@ class _DittoExampleState extends State<DittoExample> {
 
     await Ditto.init();
 
-    final identity = OnlinePlaygroundIdentity(
-        appID: appID,
-        token: token,
-        enableDittoCloudSync:
-            false, // This is required to be set to false to use the correct URLs
-        customAuthUrl: authUrl);
+    DittoLogger.isEnabled = true;
+    DittoLogger.minimumLogLevel = LogLevel.debug;
 
-    final ditto = await Ditto.open(identity: identity);
-
-    ditto.updateTransportConfig((config) {
-      // Note: this will not enable peer-to-peer sync on the web platform
-      config.setAllPeerToPeerEnabled(true);
-      config.connect.webSocketUrls.add(websocketUrl);
+    //new configuration -  https://docs.ditto.live/sdk/latest/ditto-config
+    final config = DittoConfig(
+        databaseID: appID, connect: DittoConfigConnectServer(url: authUrl));
+    final ditto = await Ditto.open(config);
+    await ditto.auth.setExpirationHandler((ditto, timeUntilExpiration) async {
+      final authResult = await ditto.auth
+          .login(token: token, provider: Authenticator.developmentProvider);
+      if (authResult.exception != null) {
+        throw authResult.exception!;
+      }
     });
 
-    // Disable DQL strict mode
-    // https://docs.ditto.live/dql/strict-mode
-    await ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false");
+    // Register the tasks subscription before starting sync so it is
+    // included in the very first sync exchange with the cloud.
+    // Without this, the subscription is registered later when the
+    // DqlBuilder widget builds, causing a 5–10 second delay on the
+    // first sync cycle.
+    ditto.sync.registerSubscription(
+      "SELECT * FROM tasks WHERE deleted = false",
+    );
 
-    ditto.startSync();
+    ditto.sync.start();
 
     if (mounted) {
       setState(() => _ditto = ditto);
@@ -167,19 +173,20 @@ class _DittoExampleState extends State<DittoExample> {
 
   Widget get _syncTile => SwitchListTile(
         title: const Text("Sync Active"),
-        value: _ditto!.isSyncActive,
+        value: _ditto!.sync.isActive,
         onChanged: (value) {
           if (value) {
-            setState(() => _ditto!.startSync());
+            setState(() => _ditto!.sync.start());
           } else {
-            setState(() => _ditto!.stopSync());
+            setState(() => _ditto!.sync.stop());
           }
         },
       );
 
+  //TODO review to see if we want to add in the order by title asc back in by making the dql builder use two queries.
   Widget get _tasksList => DqlBuilder(
         ditto: _ditto!,
-        query: "SELECT * FROM tasks WHERE deleted = false ORDER BY title ASC",
+        query: "SELECT * FROM tasks WHERE deleted = false",
         builder: (context, result) {
           final tasks = result.items.map((r) => r.value).map(Task.fromJson);
           return ListView(
@@ -194,7 +201,8 @@ class _DittoExampleState extends State<DittoExample> {
           // Use the Soft-Delete pattern
           // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
           await _ditto!.store.execute(
-            "UPDATE tasks SET deleted = true WHERE _id = '${task.id}'",
+            "UPDATE tasks SET deleted = true WHERE _id = :id",
+            arguments: {"id": task.id},
           );
 
           if (mounted) {
@@ -209,7 +217,8 @@ class _DittoExampleState extends State<DittoExample> {
           title: Text(task.title),
           value: task.done,
           onChanged: (value) => _ditto!.store.execute(
-            "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",
+            "UPDATE tasks SET done = :done WHERE _id = :id",
+            arguments: {"done": value, "id": task.id},
           ),
           secondary: IconButton(
             icon: const Icon(Icons.edit),
@@ -220,7 +229,8 @@ class _DittoExampleState extends State<DittoExample> {
 
               // https://docs.ditto.live/sdk/latest/crud/update
               _ditto!.store.execute(
-                "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
+                "UPDATE tasks SET title = :title WHERE _id = :id",
+                arguments: {"title": newTask.title, "id": task.id},
               );
             },
           ),

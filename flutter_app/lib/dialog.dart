@@ -21,6 +21,12 @@ class _DialogState extends State<_Dialog> {
   late var _done = widget.taskToEdit?.done ?? false;
 
   @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => AlertDialog(
         icon: const Icon(Icons.add_task),
         title: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
