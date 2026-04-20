@@ -3,7 +3,6 @@ import SwiftUI
 @main
 struct TasksApp: App {
     @State private var isLoading = true
-    private let ditto = DittoManager.shared.ditto
 
     var body: some Scene {
         WindowGroup {
@@ -16,14 +15,10 @@ struct TasksApp: App {
             }
             .task {
                 do {
-                    // Disable DQL strict mode. When set to false, collection
-                    // definitions are no longer required. SELECT queries will
-                    // return and display all fields by default.
-                    // https://docs.ditto.live/dql/strict-mode
-                    try await ditto.store.execute(query: "ALTER SYSTEM SET DQL_STRICT_MODE = false")
+                    try await DittoManager.shared.initDitto()
                     isLoading = false
                 } catch {
-                    fatalError("Internal inconsistency, expected setting DQL strict mode to false to always succeed but it failed: \(error)")
+                    fatalError("Failed to initialize Ditto: \(error)")
                 }
             }
         }
