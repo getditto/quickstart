@@ -43,9 +43,10 @@ androidComponents {
         )
         
         buildConfigFields.forEach { (key, description) ->
+            val rawValue = prop[key]?.toString()?.trim('"') ?: ""
             it.buildConfigFields.put(
                 key,
-                BuildConfigField("String", "${prop[key]}", description)
+                BuildConfigField("String", "\"$rawValue\"", description)
             )
         }
     }
