@@ -29,7 +29,9 @@ async fn main() -> Result<()> {
     println!("🔍 Looking for task: {}", task_to_find);
 
     let connect_config = DittoConfigConnect::Server {
-        url: custom_auth_url.parse().unwrap(),
+        url: custom_auth_url
+            .parse()
+            .context("failed to parse custom auth URL")?,
     };
 
     let config = DittoConfig::new(database_id, connect_config)
@@ -38,18 +40,19 @@ async fn main() -> Result<()> {
     // Create Ditto instance (using same pattern as main.rs)
     let ditto = Ditto::open_sync(config)?;
 
-    ditto.auth().unwrap().set_expiration_handler(TokenHandler {
-        token: token.clone(),
-    });
+    ditto
+        .auth()
+        .context("failed to get authenticator")?
+        .set_expiration_handler(TokenHandler {
+            token: token.clone(),
+        });
 
     ditto.update_transport_config(|config| {
         config.enable_all_peer_to_peer();
     });
 
-    // Disable sync with v3 peers and DQL strict mode
-
     // Start sync
-    let _ = ditto.sync().start();
+    ditto.sync().start()?;
     println!("✅ Created Ditto instance and started sync");
 
     // Create todolist instance (loads the app)
@@ -106,13 +109,13 @@ struct TokenHandler {
 
 impl DittoAuthExpirationHandler for TokenHandler {
     async fn on_expiration(&self, ditto: &Ditto, _duration_remaining: Duration) {
-        match ditto
-            .auth()
-            .unwrap()
-            .login(self.token.as_str(), &identity::get_development_provider())
-        {
+        let Some(auth) = ditto.auth() else {
+            eprintln!("Failed to get authenticator during token refresh");
+            return;
+        };
+        match auth.login(self.token.as_str(), &identity::get_development_provider()) {
             Ok(_) => println!("Authentication successful"),
-            Err(e) => println!("Authentication failed: {}", e),
+            Err(e) => eprintln!("Authentication failed: {e}"),
         }
     }
 }

@@ -49,15 +49,6 @@ pub struct Todolist {
 
     /// Table scrolling state
     pub table_state: TableState,
-
-    /// Holds the contents of a "new todo" dialog
-    ///
-    /// When this is "None", the dialog is closed. When "Some", it contains
-    /// the title being typed by the user.
-    pub create_task_title: Option<String>,
-
-    /// Holds the contents of an existing TODO title to be edited
-    pub edit_task: Option<(String, String)>, // (ID, title)
 }
 
 /// Mode enum used to decide how to interpret keystrokes
@@ -96,7 +87,6 @@ impl Todolist {
         // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
         let tasks_subscription = ditto.sync().register_subscription("SELECT * FROM tasks")?;
 
-        // register observer for live query
         // Register observer, which runs against the local database on this peer
         let tasks_observer = ditto.store().register_observer(
             "SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC",
@@ -118,15 +108,13 @@ impl Todolist {
             websocket_url,
             client_name,
             mode: TodoMode::Normal,
-            create_task_title: None,
-            edit_task: None,
         })
     }
 
     /// Top-level render function for the Todolist
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         self.render_todo_table(area, buf);
-        self.render_new_todo_prompt(area, buf);
+        self.render_todo_prompt(area, buf);
     }
 
     /// Render a table displaying each todo and its current status
@@ -187,11 +175,11 @@ impl Todolist {
         StatefulWidget::render(table, area, buf, &mut self.table_state);
     }
 
-    /// Render "new todo" prompt if `create_task_title` is "Some"
-    fn render_new_todo_prompt(&self, area: Rect, buf: &mut Buffer) {
-        let title = match &self.mode {
-            TodoMode::CreateTask { buffer } => buffer,
-            TodoMode::EditTask { buffer, .. } => buffer,
+    /// Render create/edit prompt dialog when in CreateTask or EditTask mode
+    fn render_todo_prompt(&self, area: Rect, buf: &mut Buffer) {
+        let (dialog_title, input) = match &self.mode {
+            TodoMode::CreateTask { buffer } => (" New Todo ", buffer),
+            TodoMode::EditTask { buffer, .. } => (" Edit Todo ", buffer),
             _ => {
                 return;
             }
@@ -201,12 +189,12 @@ impl Todolist {
         Clear.render(space, buf);
         Block::bordered()
             .border_type(BorderType::Rounded)
-            .title(" New Todo ")
+            .title(dialog_title)
             .title_bottom(" (Esc: back) ")
             .padding(Padding::uniform(1))
             .render(space, buf);
         let space = space.inner(Margin::new(2, 2));
-        Line::raw(title).render(space, buf);
+        Line::raw(input).render(space, buf);
     }
 
     /// Apply a terminal event to update the todolist state

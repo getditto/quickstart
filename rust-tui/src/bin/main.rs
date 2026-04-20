@@ -112,13 +112,13 @@ struct TokenHandler {
 
 impl DittoAuthExpirationHandler for TokenHandler {
     async fn on_expiration(&self, ditto: &Ditto, _duration_remaining: Duration) {
-        match ditto
-            .auth()
-            .unwrap()
-            .login(self.token.as_str(), &identity::get_development_provider())
-        {
-            Ok(_) => println!("Authentication successful"),
-            Err(e) => println!("Authentication failed: {}", e),
+        let Some(auth) = ditto.auth() else {
+            tracing::error!("Failed to get authenticator during token refresh");
+            return;
+        };
+        match auth.login(self.token.as_str(), &identity::get_development_provider()) {
+            Ok(_) => tracing::info!("Authentication successful"),
+            Err(e) => tracing::error!(%e, "Authentication failed"),
         }
     }
 }
@@ -130,9 +130,10 @@ async fn try_init_ditto(
     websocket_url: String,
     p2p_enabled: bool,
 ) -> Result<Ditto> {
-    //create connect https://software.ditto.live/rust/Ditto/5.0.0-preview.4/x86_64-unknown-linux-gnu/docs/dittolive_ditto/enum.DittoConfigConnect.html
     let connect_config = DittoConfigConnect::Server {
-        url: custom_auth_url.parse().unwrap(),
+        url: custom_auth_url
+            .parse()
+            .context("failed to parse custom auth URL")?,
     };
 
     // We use a temporary directory to store Ditto's local database.
@@ -145,12 +146,14 @@ async fn try_init_ditto(
     let config = DittoConfig::new(database_id.clone(), connect_config)
         .with_persistence_directory(Arc::new(TempRoot::new()).root_path());
 
-    // https://software.ditto.live/rust/Ditto/5.0.0-preview.4/x86_64-unknown-linux-gnu/docs/dittolive_ditto/index.html#playground-quickstart
     let ditto = Ditto::open_sync(config)?;
 
-    ditto.auth().unwrap().set_expiration_handler(TokenHandler {
-        token: token.clone(),
-    });
+    ditto
+        .auth()
+        .context("failed to get authenticator")?
+        .set_expiration_handler(TokenHandler {
+            token: token.clone(),
+        });
 
     ditto.update_transport_config(|config| {
         if p2p_enabled {
@@ -169,7 +172,7 @@ async fn try_init_ditto(
     // Start sync
     ditto.sync().start()?;
 
-    tracing::info!(database_id = %&database_id, "Started Ditto!");
+    tracing::info!(database_id = %database_id, "Started Ditto!");
     Ok(ditto)
 }
 
