@@ -26,7 +26,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import live.ditto.quickstart.tasks.BuildConfig
@@ -50,8 +50,8 @@ import java.util.UUID
 @Composable
 fun TasksListScreen(navController: NavController) {
     val tasksListViewModel: TasksListScreenViewModel = viewModel()
-    val tasks: List<Task> by tasksListViewModel.tasks.observeAsState(emptyList())
-    val syncEnabled: Boolean by tasksListViewModel.syncEnabled.observeAsState(true)
+    val tasks: List<Task> by tasksListViewModel.tasks.collectAsStateWithLifecycle()
+    val syncEnabled: Boolean by tasksListViewModel.syncEnabled.collectAsStateWithLifecycle()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteDialogTaskId by remember { mutableStateOf("") }

@@ -43,9 +43,10 @@ androidComponents {
         )
         
         buildConfigFields.forEach { (key, description) ->
+            val rawValue = prop[key]?.toString()?.trim('"') ?: ""
             it.buildConfigFields.put(
                 key,
-                BuildConfigField("String", "\"${prop[key]}\"", description)
+                BuildConfigField("String", "\"$rawValue\"", description)
             )
         }
     }
@@ -53,7 +54,7 @@ androidComponents {
 
 android {
     namespace = "live.ditto.quickstart.tasks"
-    compileSdk = 35
+    compileSdk = 36
     
     lint {
         baseline = file("lint-baseline.xml")
@@ -61,7 +62,7 @@ android {
 
     defaultConfig {
         applicationId = "live.ditto.quickstart.tasks"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -83,21 +84,17 @@ android {
     }
     
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
     
     buildFeatures {
         buildConfig = true
         compose = true
-    }
-    
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
     
     packaging {
@@ -111,6 +108,7 @@ dependencies {
     // Core Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.datastore.preferences)
@@ -122,7 +120,6 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.runtime.livedata)
 
     // Dependency Injection
     implementation(platform(libs.koin.bom))
@@ -132,7 +129,7 @@ dependencies {
     implementation(libs.koin.androidx.compose.navigation)
 
     // Ditto SDK
-    implementation(libs.live.ditto)
+    implementation(libs.com.ditto)
 
     // Testing
     testImplementation(libs.junit)

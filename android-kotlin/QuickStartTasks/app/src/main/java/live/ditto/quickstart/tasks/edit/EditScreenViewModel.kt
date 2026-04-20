@@ -1,11 +1,12 @@
 package live.ditto.quickstart.tasks.edit
 
 import android.util.Log
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import live.ditto.DittoError
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.data.Task
 
@@ -17,26 +18,46 @@ class EditScreenViewModel : ViewModel() {
 
     private var _id: String? = null
 
-    var title = MutableLiveData<String>("")
-    var done = MutableLiveData<Boolean>(false)
-    var canDelete = MutableLiveData<Boolean>(false)
+    private val _title = MutableStateFlow("")
+    val title: StateFlow<String> = _title.asStateFlow()
+
+    private val _done = MutableStateFlow(false)
+    val done: StateFlow<Boolean> = _done.asStateFlow()
+
+    private val _canDelete = MutableStateFlow(false)
+    val canDelete: StateFlow<Boolean> = _canDelete.asStateFlow()
+
+    fun setTitle(value: String) {
+        _title.value = value
+    }
+
+    fun setDone(value: Boolean) {
+        _done.value = value
+    }
 
     fun setupWithTask(id: String?) {
-        canDelete.postValue(id != null)
+        check(live.ditto.quickstart.tasks.DittoHandler.isInitialized) {
+            "Ditto must be initialized before ViewModels are created"
+        }
+
+        _canDelete.value = id != null
         val taskId: String = id ?: return
 
         viewModelScope.launch {
             try {
-                val item = ditto.store.execute(
+                val task = ditto.store.execute(
                     "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
                     mapOf("_id" to taskId)
-                ).items.first()
+                ) { result ->
+                    result.items.firstOrNull()?.let { Task.fromJson(it.jsonString()) }
+                }
 
-                val task = Task.fromJson(item.jsonString())
-                _id = task._id
-                title.postValue(task.title)
-                done.postValue(task.done)
-            } catch (e: DittoError) {
+                task?.let {
+                    _id = it._id
+                    _title.value = it.title
+                    _done.value = it.done
+                }
+            } catch (e: Throwable) {
                 Log.e(TAG, "Unable to setup view task data", e)
             }
         }
@@ -45,6 +66,8 @@ class EditScreenViewModel : ViewModel() {
     fun save() {
         viewModelScope.launch {
             try {
+                val titleValue = _title.value
+                val doneValue = _done.value
                 if (_id == null) {
                     // Add tasks into the ditto collection using DQL INSERT statement
                     // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
@@ -52,14 +75,14 @@ class EditScreenViewModel : ViewModel() {
                         "INSERT INTO tasks DOCUMENTS (:doc)",
                         mapOf(
                             "doc" to mapOf(
-                                "title" to title.value,
-                                "done" to done.value,
+                                "title" to titleValue,
+                                "done" to doneValue,
                                 "deleted" to false
                             )
                         )
                     )
                 } else {
-                    // Update tasks into the ditto collection using DQL UPDATE statement
+                    // Update tasks in the ditto collection using DQL UPDATE statement
                     // https://docs.ditto.live/sdk/latest/crud/update#updating
                     _id?.let { id ->
                         ditto.store.execute(
@@ -72,14 +95,14 @@ class EditScreenViewModel : ViewModel() {
                             AND NOT deleted
                             """,
                             mapOf(
-                                "title" to title.value,
-                                "done" to done.value,
+                                "title" to titleValue,
+                                "done" to doneValue,
                                 "id" to id
                             )
                         )
                     }
                 }
-            } catch (e: DittoError) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "Unable to save task", e)
             }
         }
@@ -96,7 +119,7 @@ class EditScreenViewModel : ViewModel() {
                         mapOf("id" to id)
                     )
                 }
-            } catch (e: DittoError) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "Unable to set deleted=true", e)
             }
         }
