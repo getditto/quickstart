@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Text, Spacer, Box, useInput} from 'ink';
 
 const enterAltScreenCommand = '\x1b[?1049h';
@@ -98,9 +98,9 @@ const TodoApp = ({ditto}) => {
 	const [selected, setSelected] = useState(0);
 	const [syncEnabled, setSyncEnabled] = useState(true);
 
-	// Hold onto the subscription and observer in case we need to cancel them
-	const [_subscription, setSubscription] = useState(null);
-	const [_observer, setObserver] = useState(null);
+	// Hold onto the subscription and observer refs for cleanup
+	const subscriptionRef = useRef(null);
+	const observerRef = useRef(null);
 
 	useInput((input, key) => {
 		if (mode === LIST_MODE) {
@@ -130,26 +130,27 @@ const TodoApp = ({ditto}) => {
 	});
 
 	useEffect(() => {
-		// Inline async context
-		(async () => {
-			// Register a subscription, which determines what data syncs to this peer
-			// https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-			const subscription = ditto.sync.registerSubscription(
-				'SELECT * FROM tasks',
-			);
-			setSubscription(subscription);
+		// Register a subscription, which determines what data syncs to this peer
+		// https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+		const subscription = ditto.sync.registerSubscription('SELECT * FROM tasks');
+		subscriptionRef.current = subscription;
 
-			// Register observer, which runs against the local database on this peer
-			// https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-			const observer = ditto.store.registerObserver(
-				'SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC',
-				result => {
-					const tasks = result.items.map(item => item.value);
-					setTasks(tasks);
-				},
-			);
-			setObserver(observer);
-		})(); // End async
+		// Register observer, which runs against the local database on this peer
+		// https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
+		const observer = ditto.store.registerObserver(
+			'SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC',
+			result => {
+				const tasks = result.items.map(item => item.value);
+				setTasks(tasks);
+			},
+		);
+		observerRef.current = observer;
+
+		// Cleanup on unmount: cancel subscription and observer
+		return () => {
+			subscription.cancel();
+			observer.cancel();
+		};
 	}, [ditto]);
 
 	const Prompt = React.memo(({edit}) => {
@@ -230,7 +231,7 @@ const TodoApp = ({ditto}) => {
 
 		return (
 			<Box flexDirection="column">
-				{Array.from(tasks).map((task, i) => {
+				{tasks.map((task, i) => {
 					const done = task.done ? ' 🟢 ' : ' ⚪️ ';
 					const highlight = selected === i ? 'blue' : '';
 					const cursor = selected === i ? '❯ ' : '  ';
@@ -314,7 +315,7 @@ const deleteTask = async (ditto, task) => {
 // https://docs.ditto.live/sdk/latest/crud/update
 const updateTask = async (ditto, id, title) => {
 	await ditto.store.execute('UPDATE tasks SET title=:title WHERE _id=:id', {
-		id: id,
+		id,
 		title,
 	});
 };

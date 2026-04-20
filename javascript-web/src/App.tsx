@@ -6,9 +6,9 @@ import {
   SyncSubscription,
   init,
 } from '@dittolive/ditto';
-import './App.css';
 import DittoInfo from './components/DittoInfo';
-import { useEffect, useRef, useState } from 'react';
+import ErrorMessage from './components/ErrorMessage';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import TaskList from './components/TaskList';
 
 export type Task = {
@@ -79,7 +79,6 @@ const App = () => {
         // Step 5: Configure transport
         ditto.current.updateTransportConfig((config) => {
           config.connect.websocketURLs = [import.meta.env.DITTO_WEBSOCKET_URL];
-          return config;
         });
 
         // Step 6: Start sync
@@ -148,17 +147,19 @@ const App = () => {
     };
   }, []); // Empty deps - run once on mount
 
-  const toggleSync = () => {
-    if (syncActive) {
-      ditto.current?.sync.stop();
-    } else {
-      ditto.current?.sync.start();
-    }
-    setSyncActive(!syncActive);
-  };
+  const toggleSync = useCallback(() => {
+    setSyncActive((prev) => {
+      if (prev) {
+        ditto.current?.sync.stop();
+      } else {
+        ditto.current?.sync.start();
+      }
+      return !prev;
+    });
+  }, []);
 
   // https://docs.ditto.live/sdk/latest/crud/create
-  const createTask = async (title: string) => {
+  const createTask = useCallback(async (title: string) => {
     try {
       await ditto.current?.store.execute(
         'INSERT INTO tasks DOCUMENTS (:task)',
@@ -173,10 +174,10 @@ const App = () => {
     } catch (error) {
       console.error('Failed to create task:', error);
     }
-  };
+  }, []);
 
   // https://docs.ditto.live/sdk/latest/crud/update
-  const editTask = async (id: string, title: string) => {
+  const editTask = useCallback(async (id: string, title: string) => {
     try {
       await ditto.current?.store.execute(
         'UPDATE tasks SET title=:title WHERE _id=:id',
@@ -188,9 +189,9 @@ const App = () => {
     } catch (error) {
       console.error('Failed to edit task:', error);
     }
-  };
+  }, []);
 
-  const toggleTask = async (task: Task) => {
+  const toggleTask = useCallback(async (task: Task) => {
     try {
       await ditto.current?.store.execute(
         'UPDATE tasks SET done=:done WHERE _id=:id',
@@ -202,10 +203,10 @@ const App = () => {
     } catch (error) {
       console.error('Failed to toggle task:', error);
     }
-  };
+  }, []);
 
   // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
-  const deleteTask = async (task: Task) => {
+  const deleteTask = useCallback(async (task: Task) => {
     try {
       await ditto.current?.store.execute(
         'UPDATE tasks SET deleted=true WHERE _id=:id',
@@ -216,28 +217,7 @@ const App = () => {
     } catch (error) {
       console.error('Failed to delete task:', error);
     }
-  };
-
-  const ErrorMessage: React.FC<{ error: Error }> = ({ error }) => {
-    const [dismissed, setDismissed] = useState(false);
-    if (dismissed) return null;
-
-    return (
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-100 text-red-700 p-6 rounded shadow-lg">
-        <div className="flex justify-between items-center">
-          <p>
-            <b>Error</b>: {error.message}
-          </p>
-          <button
-            onClick={() => setDismissed(true)}
-            className="ml-4 text-red-700 hover:text-red-900"
-          >
-            &times;
-          </button>
-        </div>
-      </div>
-    );
-  };
+  }, []);
 
   return (
     <div className="h-screen w-full bg-gray-100">
