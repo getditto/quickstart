@@ -1,47 +1,175 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'package:flutter_quickstart/main.dart';
+import 'package:flutter_quickstart/task.dart';
+import 'package:flutter_quickstart/dialog.dart';
 
 void main() {
-  setUpAll(() async {
-    // Initialize dotenv for testing
-    await dotenv.load(
-      fileName: '.env',
-      mergeWith: {
-        'DITTO_APP_ID': 'test_app_id',
-        'DITTO_PLAYGROUND_TOKEN': 'test_playground_token',
-        'DITTO_AUTH_URL': 'https://auth.example.com',
-        'DITTO_WEBSOCKET_URL': 'wss://websocket.example.com',
-      },
-      isOptional: true,
-    );
+  group('Task model', () {
+    test('fromJson creates a Task with correct fields', () {
+      final json = {
+        '_id': '123',
+        'title': 'Buy groceries',
+        'done': false,
+        'deleted': false,
+      };
+
+      final task = Task.fromJson(json);
+
+      expect(task.id, '123');
+      expect(task.title, 'Buy groceries');
+      expect(task.done, false);
+      expect(task.deleted, false);
+    });
+
+    test('toJson produces correct map', () {
+      const task = Task(
+        id: 'abc',
+        title: 'Walk the dog',
+        done: true,
+        deleted: false,
+      );
+
+      final json = task.toJson();
+
+      expect(json['_id'], 'abc');
+      expect(json['title'], 'Walk the dog');
+      expect(json['done'], true);
+      expect(json['deleted'], false);
+    });
+
+    test('toJson omits null id', () {
+      const task = Task(
+        title: 'New task',
+        done: false,
+        deleted: false,
+      );
+
+      final json = task.toJson();
+
+      expect(json.containsKey('_id'), false);
+    });
+
+    test('fromJson and toJson roundtrip', () {
+      final original = {
+        '_id': 'rt-1',
+        'title': 'Roundtrip test',
+        'done': true,
+        'deleted': true,
+      };
+
+      final task = Task.fromJson(original);
+      final result = task.toJson();
+
+      expect(result['_id'], original['_id']);
+      expect(result['title'], original['title']);
+      expect(result['done'], original['done']);
+      expect(result['deleted'], original['deleted']);
+    });
   });
 
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MaterialApp(
-      home: DittoExample(),
-    ));
+  group('Add task dialog', () {
+    testWidgets('shows Add Task title for new task',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showAddTaskDialog(context),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
 
-    // // Verify that our counter starts at 0.
-    // expect(find.text('0'), findsOneWidget);
-    // expect(find.text('1'), findsNothing);
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
 
-    // // Tap the '+' icon and trigger a frame.
-    // await tester.tap(find.byIcon(Icons.add));
-    // await tester.pump();
+      expect(find.text('Add Task'), findsWidgets);
+      expect(find.text('Name'), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    });
 
-    // // Verify that our counter has incremented.
-    // expect(find.text('0'), findsNothing);
-    // expect(find.text('1'), findsOneWidget);
+    testWidgets('shows Edit Task title when editing existing task',
+        (WidgetTester tester) async {
+      const existing = Task(
+        id: '1',
+        title: 'Existing task',
+        done: true,
+        deleted: false,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showAddTaskDialog(context, existing),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Task'), findsWidgets);
+      expect(find.text('Existing task'), findsOneWidget);
+    });
+
+    testWidgets('cancel returns null', (WidgetTester tester) async {
+      Task? result;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                result = await showAddTaskDialog(context);
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNull);
+    });
+
+    testWidgets('submitting returns a Task', (WidgetTester tester) async {
+      Task? result;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                result = await showAddTaskDialog(context);
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'My new task');
+      await tester.tap(find.text('Add Task').last);
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.title, 'My new task');
+      expect(result!.done, false);
+      expect(result!.deleted, false);
+    });
   });
 }

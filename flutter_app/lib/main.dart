@@ -201,7 +201,8 @@ class _DittoExampleState extends State<DittoExample> {
           // Use the Soft-Delete pattern
           // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
           await _ditto!.store.execute(
-            "UPDATE tasks SET deleted = true WHERE _id = '${task.id}'",
+            "UPDATE tasks SET deleted = true WHERE _id = :id",
+            arguments: {"id": task.id},
           );
 
           if (mounted) {
@@ -216,7 +217,8 @@ class _DittoExampleState extends State<DittoExample> {
           title: Text(task.title),
           value: task.done,
           onChanged: (value) => _ditto!.store.execute(
-            "UPDATE tasks SET done = $value WHERE _id = '${task.id}'",
+            "UPDATE tasks SET done = :done WHERE _id = :id",
+            arguments: {"done": value, "id": task.id},
           ),
           secondary: IconButton(
             icon: const Icon(Icons.edit),
@@ -227,7 +229,8 @@ class _DittoExampleState extends State<DittoExample> {
 
               // https://docs.ditto.live/sdk/latest/crud/update
               _ditto!.store.execute(
-                "UPDATE tasks SET title = '${newTask.title}' where _id = '${task.id}'",
+                "UPDATE tasks SET title = :title WHERE _id = :id",
+                arguments: {"title": newTask.title, "id": task.id},
               );
             },
           ),
