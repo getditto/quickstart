@@ -5,7 +5,7 @@
 	"bin": "dist/cli.js",
 	"type": "module",
 	"engines": {
-		"node": ">=18"
+		"node": ">=20"
 	},
 	"scripts": {
 		"start": "npm run build && node dist/cli.js",
@@ -20,7 +20,7 @@
 		"dist"
 	],
 	"dependencies": {
-		"@dittolive/ditto": "4.13.1",
+		"@dittolive/ditto": "5.0.0-rc.2",
 		"dotenv": "^16.4.5",
 		"ink": "^4.1.0",
 		"meow": "^11.0.0",
