@@ -21,7 +21,6 @@ import {
   DITTO_APP_ID,
   DITTO_PLAYGROUND_TOKEN,
   DITTO_AUTH_URL,
-  DITTO_WEBSOCKET_URL,
 } from '@env';
 
 import Fab from './components/Fab';
@@ -132,11 +131,6 @@ const App = () => {
 
       ditto.current = await Ditto.open(config);
 
-      // Configure websocket URL for transport
-      ditto.current.updateTransportConfig((transportConfig) => {
-        transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
-      });
-
       if (connectConfig.mode === 'server') {
         await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
           console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
@@ -167,8 +161,6 @@ const App = () => {
       }
 
       ditto.current.sync.start();
-
-      await ditto.current.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
 
       taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
 
@@ -225,7 +217,7 @@ const App = () => {
             </Text>
           </View>
         )}
-        <DittoInfo appId={DITTO_APP_ID} token={DITTO_PLAYGROUND_TOKEN} />
+        <DittoInfo databaseId={DITTO_APP_ID} token={DITTO_PLAYGROUND_TOKEN} />
         <DittoSync value={syncEnabled} onChange={toggleSync} />
         <Fab onPress={() => setModalVisible(true)} />
         <NewTaskModal
