@@ -5,13 +5,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DittoMauiTasksApp.Utils;
 using DittoSDK;
+using DittoSDK.Sync;
 using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp.ViewModels
 {
     public partial class TasksPageviewModel : ObservableObject
     {
-        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC";
+        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted";
 
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
@@ -329,7 +330,7 @@ namespace DittoMauiTasksApp.ViewModels
         {
             try
             {
-                ditto.StartSync();
+                ditto.Sync.Start();
 
                 // Register a subscription, which determines what data syncs to this peer
                 // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
@@ -358,7 +359,7 @@ namespace DittoMauiTasksApp.ViewModels
 
             try
             {
-                ditto.StopSync();
+                ditto.Sync.Stop();
             }
             catch (Exception e)
             {
