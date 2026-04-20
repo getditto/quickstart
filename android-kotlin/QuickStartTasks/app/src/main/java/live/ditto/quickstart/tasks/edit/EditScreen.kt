@@ -10,10 +10,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import live.ditto.quickstart.tasks.R
@@ -26,9 +26,9 @@ fun EditScreen(navController: NavController, taskId: String?) {
 
     val topBarTitle = if (taskId == null) "New Task" else "Edit Task"
 
-    val title: String by editScreenViewModel.title.observeAsState("")
-    val done: Boolean by editScreenViewModel.done.observeAsState(initial = false)
-    val canDelete: Boolean by editScreenViewModel.canDelete.observeAsState(initial = false)
+    val title: String by editScreenViewModel.title.collectAsStateWithLifecycle()
+    val done: Boolean by editScreenViewModel.done.collectAsStateWithLifecycle()
+    val canDelete: Boolean by editScreenViewModel.canDelete.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -46,9 +46,9 @@ fun EditScreen(navController: NavController, taskId: String?) {
                 EditForm(
                     canDelete = canDelete,
                     title = title,
-                    onTitleTextChange = { editScreenViewModel.title.value = it },
+                    onTitleTextChange = { editScreenViewModel.setTitle(it) },
                     done = done,
-                    onDoneChanged = { editScreenViewModel.done.value = it },
+                    onDoneChanged = { editScreenViewModel.setDone(it) },
                     onSaveButtonClicked = {
                         editScreenViewModel.save()
                         navController.popBackStack()

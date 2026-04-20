@@ -53,7 +53,7 @@ androidComponents {
 
 android {
     namespace = "live.ditto.quickstart.tasks"
-    compileSdk = 35
+    compileSdk = 36
     
     lint {
         baseline = file("lint-baseline.xml")
@@ -96,10 +96,6 @@ android {
         compose = true
     }
     
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
-    
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -111,6 +107,7 @@ dependencies {
     // Core Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.datastore.preferences)
@@ -122,7 +119,6 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.runtime.livedata)
 
     // Dependency Injection
     implementation(platform(libs.koin.bom))

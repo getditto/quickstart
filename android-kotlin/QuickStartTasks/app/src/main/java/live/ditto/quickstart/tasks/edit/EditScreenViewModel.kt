@@ -1,17 +1,14 @@
 package live.ditto.quickstart.tasks.edit
 
 import android.util.Log
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.ditto.kotlin.error.DittoException
-import com.ditto.kotlin.serialization.toDittoCbor
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.data.Task
-
-import com.ditto.kotlin.serialization.DittoCborSerializable
-import com.ditto.kotlin.serialization.DittoCborSerializable.Utf8String
 
 class EditScreenViewModel : ViewModel() {
 
@@ -21,30 +18,46 @@ class EditScreenViewModel : ViewModel() {
 
     private var _id: String? = null
 
-    var title = MutableLiveData<String>("")
-    var done = MutableLiveData<Boolean>(false)
-    var canDelete = MutableLiveData<Boolean>(false)
+    private val _title = MutableStateFlow("")
+    val title: StateFlow<String> = _title.asStateFlow()
+
+    private val _done = MutableStateFlow(false)
+    val done: StateFlow<Boolean> = _done.asStateFlow()
+
+    private val _canDelete = MutableStateFlow(false)
+    val canDelete: StateFlow<Boolean> = _canDelete.asStateFlow()
+
+    fun setTitle(value: String) {
+        _title.value = value
+    }
+
+    fun setDone(value: Boolean) {
+        _done.value = value
+    }
 
     fun setupWithTask(id: String?) {
         check(live.ditto.quickstart.tasks.DittoHandler.isInitialized) {
             "Ditto must be initialized before ViewModels are created"
         }
 
-        canDelete.postValue(id != null)
+        _canDelete.value = id != null
         val taskId: String = id ?: return
 
         viewModelScope.launch {
             try {
-                val item = ditto.store.execute(
+                val task = ditto.store.execute(
                     "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
-                    mapOf("_id" to taskId).toDittoCbor()
-                ).items.first()
+                    mapOf("_id" to taskId)
+                ) { result ->
+                    result.items.firstOrNull()?.let { Task.fromJson(it.jsonString()) }
+                }
 
-                val task = Task.fromJson(item.jsonString())
-                _id = task._id
-                title.postValue(task.title)
-                done.postValue(task.done)
-            } catch (e: DittoException) {
+                task?.let {
+                    _id = it._id
+                    _title.value = it.title
+                    _done.value = it.done
+                }
+            } catch (e: Throwable) {
                 Log.e(TAG, "Unable to setup view task data", e)
             }
         }
@@ -53,35 +66,25 @@ class EditScreenViewModel : ViewModel() {
     fun save() {
         viewModelScope.launch {
             try {
-                val titleValue = title.value ?: ""
-                val doneValue = done.value ?: false
+                val titleValue = _title.value
+                val doneValue = _done.value
                 if (_id == null) {
                     // Add tasks into the ditto collection using DQL INSERT statement
                     // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
-                    val addMap = DittoCborSerializable.Dictionary(
-                        mapOf(
-                            Utf8String("title") to Utf8String(titleValue),
-                            Utf8String("done") to DittoCborSerializable.BooleanValue(doneValue),
-                            Utf8String("deleted") to DittoCborSerializable.BooleanValue(false)
-                        )
-                    )
                     ditto.store.execute(
                         "INSERT INTO tasks DOCUMENTS (:doc)",
-                        DittoCborSerializable.Dictionary(
-                                mapOf(Utf8String("doc") to addMap)
+                        mapOf(
+                            "doc" to mapOf(
+                                "title" to titleValue,
+                                "done" to doneValue,
+                                "deleted" to false
+                            )
                         )
                     )
                 } else {
-                    // Update tasks into the ditto collection using DQL UPDATE statement
+                    // Update tasks in the ditto collection using DQL UPDATE statement
                     // https://docs.ditto.live/sdk/latest/crud/update#updating
                     _id?.let { id ->
-                        val editMap = DittoCborSerializable.Dictionary(
-                            mapOf(
-                                Utf8String("title") to Utf8String(titleValue),
-                                Utf8String("done") to DittoCborSerializable.BooleanValue(doneValue),
-                                Utf8String("id") to DittoCborSerializable.Utf8String(id)
-                            )
-                        )
                         ditto.store.execute(
                             """
                             UPDATE tasks
@@ -91,7 +94,11 @@ class EditScreenViewModel : ViewModel() {
                             WHERE _id = :id
                             AND NOT deleted
                             """,
-                           arguments = editMap
+                            mapOf(
+                                "title" to titleValue,
+                                "done" to doneValue,
+                                "id" to id
+                            )
                         )
                     }
                 }
@@ -109,11 +116,7 @@ class EditScreenViewModel : ViewModel() {
                 _id?.let { id ->
                     ditto.store.execute(
                         "UPDATE tasks SET deleted = true WHERE _id = :id",
-                        DittoCborSerializable.Dictionary(
-                            mapOf(
-                                Utf8String("id") to Utf8String(id)
-                            )
-                        )
+                        mapOf("id" to id)
                     )
                 }
             } catch (e: Throwable) {

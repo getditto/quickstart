@@ -11,6 +11,13 @@ data class Task(
     val done: Boolean = false,
     val deleted: Boolean = false,
 ) {
+    fun toMap(): Map<String, Any?> = mapOf(
+        "_id" to _id,
+        "title" to title,
+        "done" to done,
+        "deleted" to deleted
+    )
+
     companion object {
         private const val TAG = "Task"
 
