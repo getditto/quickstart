@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use ditto_quickstart::tui::Todolist;
-use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto};
+use dittolive_ditto::prelude::*;
+use dittolive_ditto::{Ditto, fs::TempRoot};
 use std::time::Duration;
 use std::{env, sync::Arc};
 use tokio::time::sleep;
@@ -12,14 +13,12 @@ async fn main() -> Result<()> {
     // Load environment variables
     dotenvy::dotenv().ok();
 
-    let app_id: AppId = env::var("DITTO_APP_ID")
-        .context("DITTO_APP_ID not found")?
-        .parse()
-        .context("Invalid DITTO_APP_ID format")?;
-    let playground_token =
-        env::var("DITTO_PLAYGROUND_TOKEN").context("DITTO_PLAYGROUND_TOKEN not found")?;
+    let database_id = env::var("DITTO_APP_ID").context("DITTO_APP_ID not found")?;
+
+    let token = env::var("DITTO_PLAYGROUND_TOKEN").context("DITTO_PLAYGROUND_TOKEN not found")?;
     let custom_auth_url =
         env::var("DITTO_AUTH_URL").unwrap_or_else(|_| "https://auth.cloud.ditto.live".to_string());
+
     let websocket_url =
         env::var("DITTO_WEBSOCKET_URL").unwrap_or_else(|_| "wss://cloud.ditto.live".to_string());
 
@@ -29,34 +28,31 @@ async fn main() -> Result<()> {
 
     println!("🔍 Looking for task: {}", task_to_find);
 
+    let connect_config = DittoConfigConnect::Server {
+        url: custom_auth_url
+            .parse()
+            .context("failed to parse custom auth URL")?,
+    };
+
+    let config = DittoConfig::new(database_id, connect_config)
+        .with_persistence_directory(Arc::new(TempRoot::new()).root_path());
+
     // Create Ditto instance (using same pattern as main.rs)
-    let ditto = Ditto::builder()
-        .with_root(Arc::new(TempRoot::new()))
-        .with_identity(|root| {
-            OnlinePlayground::new(
-                root,
-                app_id.clone(),
-                playground_token,
-                false,
-                Some(custom_auth_url.as_str()),
-            )
-        })?
-        .build()?;
+    let ditto = Ditto::open_sync(config)?;
+
+    ditto
+        .auth()
+        .context("failed to get authenticator")?
+        .set_expiration_handler(TokenHandler {
+            token: token.clone(),
+        });
 
     ditto.update_transport_config(|config| {
         config.enable_all_peer_to_peer();
-        config.connect.websocket_urls.insert(websocket_url.clone());
     });
 
-    // Disable sync with v3 peers and DQL strict mode
-    let _ = ditto.disable_sync_with_v3();
-    let _ = ditto
-        .store()
-        .execute_v2("ALTER SYSTEM SET DQL_STRICT_MODE = false")
-        .await?;
-
     // Start sync
-    let _ = ditto.start_sync();
+    ditto.sync().start()?;
     println!("✅ Created Ditto instance and started sync");
 
     // Create todolist instance (loads the app)
@@ -100,9 +96,26 @@ async fn main() -> Result<()> {
         anyhow::bail!("Integration test failed - seeded task not found");
     }
 
-    todolist.ditto.stop_sync();
+    todolist.ditto.sync().stop();
     println!("🛑 Stopped sync");
 
     println!("🎉 Integration test passed! App loads and syncs with Ditto Cloud successfully.");
     Ok(())
+}
+
+struct TokenHandler {
+    token: String,
+}
+
+impl DittoAuthExpirationHandler for TokenHandler {
+    async fn on_expiration(&self, ditto: &Ditto, _duration_remaining: Duration) {
+        let Some(auth) = ditto.auth() else {
+            eprintln!("Failed to get authenticator during token refresh");
+            return;
+        };
+        match auth.login(self.token.as_str(), &identity::get_development_provider()) {
+            Ok(_) => println!("Authentication successful"),
+            Err(e) => eprintln!("Authentication failed: {e}"),
+        }
+    }
 }
