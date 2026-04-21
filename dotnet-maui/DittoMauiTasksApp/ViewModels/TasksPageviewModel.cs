@@ -329,7 +329,7 @@ namespace DittoMauiTasksApp.ViewModels
         {
             try
             {
-                ditto.StartSync();
+                ditto.Sync.Start();
 
                 // Register a subscription, which determines what data syncs to this peer
                 // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
@@ -358,7 +358,7 @@ namespace DittoMauiTasksApp.ViewModels
 
             try
             {
-                ditto.StopSync();
+                ditto.Sync.Stop();
             }
             catch (Exception e)
             {

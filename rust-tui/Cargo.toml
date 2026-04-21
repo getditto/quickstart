@@ -17,8 +17,8 @@ name = "integration_test"
 path = "src/bin/integration_test.rs"
 
 [dependencies]
-# Ditto dependenceis
-dittolive-ditto = "4.13.1"
+# Ditto dependencies
+dittolive-ditto = "4.14.3"
 
 # External dependencies
 anyhow = "1"
