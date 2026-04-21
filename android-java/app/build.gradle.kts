@@ -6,7 +6,6 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
 }
 
 fun loadEnvProperties(): Properties {
@@ -38,6 +37,10 @@ fun loadEnvProperties(): Properties {
 //
 // More information can be found here:
 // https://docs.ditto.live/sdk/latest/install-guides/java/android#integrating-and-initializing
+fun envValue(prop: Properties, key: String): String {
+    return prop[key]?.toString()?.trim('"') ?: ""
+}
+
 androidComponents {
     onVariants {
         val prop = loadEnvProperties()
@@ -45,7 +48,7 @@ androidComponents {
             "DITTO_APP_ID",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_APP_ID"]}\"",
+                "\"${envValue(prop, "DITTO_APP_ID")}\"",
                 "Ditto application ID"
             )
         )
@@ -53,7 +56,7 @@ androidComponents {
             "DITTO_PLAYGROUND_TOKEN",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
+                "\"${envValue(prop, "DITTO_PLAYGROUND_TOKEN")}\"",
                 "Ditto online playground authentication token"
             )
         )
@@ -62,7 +65,7 @@ androidComponents {
             "DITTO_AUTH_URL",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_AUTH_URL"]}\"",
+                "\"${envValue(prop, "DITTO_AUTH_URL")}\"",
                 "Ditto Auth URL"
             )
         )
@@ -71,7 +74,7 @@ androidComponents {
             "DITTO_WEBSOCKET_URL",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_WEBSOCKET_URL"]}\"",
+                "\"${envValue(prop, "DITTO_WEBSOCKET_URL")}\"",
                 "Ditto Websocket URL"
             )
         )
@@ -114,7 +117,6 @@ android {
     }
     buildFeatures {
         buildConfig = true
-        compose = true
     }
     // This ensures Ditto can produce meaningful stack traces
     packaging {
@@ -129,12 +131,6 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
     implementation(libs.ditto)
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
@@ -143,8 +139,4 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1")
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }
