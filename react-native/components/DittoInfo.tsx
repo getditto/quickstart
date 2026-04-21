@@ -2,15 +2,15 @@ import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 
 type Props = {
-  appId: string;
+  databaseId: string;
   token: string;
 };
 
-const DittoInfo: React.FC<Props> = ({appId, token}) => {
+const DittoInfo: React.FC<Props> = ({databaseId, token}) => {
   return (
     <View style={styles.view}>
       <Text style={styles.title}>Ditto Tasks</Text>
-      <Text style={styles.info}>{`AppID: ${appId}`}</Text>
+      <Text style={styles.info}>{`Database ID: ${databaseId}`}</Text>
       <Text style={styles.info}>{`Token: ${token}`}</Text>
     </View>
   );

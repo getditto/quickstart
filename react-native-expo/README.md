@@ -5,6 +5,12 @@ Ditto is already installed.
 
 ⚠️ Expo Go and Expo Web are <b>not</b> compatible with Ditto.
 
+## Requirements
+
+- **Xcode 26.2 or lower** — `@dittolive/ditto@5.0.0-rc.2` bundles `fmt 11.0.2` which has a `consteval` compilation bug with Xcode 26.4's Clang. Builds will fail on Xcode 26.3+.
+- **Gradle 9.0+** — Included automatically via the Gradle wrapper.
+- **JDK 17** — Required for Android builds. Install via `brew install openjdk@17` and ensure `JAVA_HOME` is set.
+
 ## Get started
 
 1. Install dependencies

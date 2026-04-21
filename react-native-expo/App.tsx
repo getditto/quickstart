@@ -14,6 +14,7 @@ import {
   Ditto,
   DittoConfig,
   DittoConfigConnect,
+  init,
   StoreObserver,
   SyncSubscription,
 } from "@dittolive/ditto";
@@ -119,6 +120,8 @@ const App = () => {
 
   const initDitto = async () => {
     try {
+      await init();
+
       // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
       const databaseId = DITTO_APP_ID;
       const playgroundToken = DITTO_PLAYGROUND_TOKEN;
