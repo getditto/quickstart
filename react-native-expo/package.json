@@ -33,17 +33,18 @@
     "expo-symbols": "~1.0.7",
     "expo-system-ui": "~6.0.8",
     "expo-web-browser": "~15.0.9",
+    "fast-xml-parser": "5.5.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
     "react-native-bouncy-checkbox": "^4.1.2",
     "react-native-gesture-handler": "~2.28.0",
-    "react-native-worklets": "0.5.1",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-web": "~0.21.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -63,13 +64,15 @@
     "tar": "7.5.11",
     "undici": "6.24.1",
     "flatted": "3.4.2",
-    "fast-xml-parser": "5.5.6"
+    "fast-xml-parser": "5.5.7",
+    "brace-expansion": "2.0.3"
   },
   "overrides": {
     "tar": "7.5.11",
     "undici": "6.24.1",
     "flatted": "3.4.2",
-    "fast-xml-parser": "5.5.6"
+    "fast-xml-parser": "5.5.7",
+    "brace-expansion": "2.0.3"
   },
   "private": true
 }
