@@ -6,7 +6,7 @@ programming languages and platforms.
 See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts/quickstarts-landing)
 documentation for more information.
 
-For support, please contact Ditto Support (<support@ditto.live>).
+For support, please contact Ditto Support (<support@ditto.com>).
 
 ## Obtaining your Ditto Identity
 
