@@ -26,7 +26,7 @@ dotnet restore
 These commands will build and run the app on the default iOS target:
 
 ```sh
-dotnet build -t:Run -f net9.0-ios18.2
+dotnet build -t:Run -f net9.0-ios
 ```
 
 ### Building and Running the App on Android
@@ -40,7 +40,7 @@ dotnet build -t:Run -f net9.0-android
 ### Building and Running the App on MacOS 
 
 ```sh
-dotnet build -t:Run -f net9.0-maccatalyst18.2 
+dotnet build -t:Run -f net9.0-maccatalyst 
 ```
 
 ### Building and Running the App on Windows 
