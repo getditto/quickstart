@@ -57,7 +57,7 @@ const APP_CONFIGS = {
   },
 
   "react-native-expo": {
-    skip: false,
+    skip: true,
     files: [
       {
         path: "package.json",
