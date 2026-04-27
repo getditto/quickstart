@@ -42,7 +42,11 @@
 		"tar": "7.5.11",
 		"undici": "6.24.1",
 		"flatted": "3.4.2",
-		"lodash": "4.18.1"
+		"lodash": "4.18.1",
+		"@xmldom/xmldom": "0.8.13",
+		"brace-expansion": "1.1.14",
+		"postcss": "8.5.12",
+		"uuid": "14.0.0"
 	},
 	"xo": {
 		"extends": "xo-react",
