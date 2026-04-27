@@ -1,0 +1,6 @@
+{
+  "microsoft.net.sdk.ios": "18.2.9173/9.0.100",
+  "microsoft.net.sdk.maccatalyst": "18.2.9173/9.0.100",
+  "microsoft.net.sdk.android": "35.0.39/9.0.100",
+  "microsoft.net.sdk.maui": "9.0.14/9.0.100"
+}
