@@ -36,7 +36,8 @@ jobs:
       - name: Restore workloads and dependencies
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet workload restore --from-rollback-file workload-rollback.json
+          dotnet workload update --from-rollback-file workload-rollback.json
+          dotnet workload restore
           dotnet restore
 
       - name: Run .NET format check
@@ -76,7 +77,8 @@ jobs:
       - name: Restore workloads and dependencies
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet workload restore --from-rollback-file workload-rollback.json
+          dotnet workload update --from-rollback-file workload-rollback.json
+          dotnet workload restore
           dotnet restore
 
       - name: Build Android APK (unsigned Release)
@@ -121,7 +123,8 @@ jobs:
       - name: Restore workloads and dependencies
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet workload restore --from-rollback-file workload-rollback.json
+          dotnet workload update --from-rollback-file workload-rollback.json
+          dotnet workload restore
           dotnet restore --runtime ios-arm64
 
       - name: Build iOS Device (Release for BrowserStack)
