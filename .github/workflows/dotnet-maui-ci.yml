@@ -130,13 +130,13 @@ jobs:
       - name: Build iOS Device (Release for BrowserStack)
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
+          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios18.2 --no-restore \
             /p:RuntimeIdentifier=ios-arm64 \
             /p:EnableCodeSigning=false \
             /p:ArchiveOnBuild=false
 
       - name: Create iOS IPA for BrowserStack
-        working-directory: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64
+        working-directory: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios18.2/ios-arm64
         run: |
           mkdir -p Payload
           cp -r DittoMauiTasksApp.app Payload/
@@ -148,7 +148,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa
+          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios18.2/ios-arm64/DittoMauiTasksApp-device.ipa
           retention-days: 1
 
   browserstack-android:

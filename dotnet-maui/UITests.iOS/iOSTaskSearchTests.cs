@@ -65,12 +65,12 @@ public class iOSTaskSearchTests : TaskSearchTests
     {
         // Look for the .app in the MAUI project's build output
         var projectRoot = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", ".."));
-        var appPath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Debug", "net9.0-ios", "iossimulator-arm64");
+        var appPath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Debug", "net9.0-ios18.2", "iossimulator-arm64");
 
         if (!Directory.Exists(appPath))
         {
             // Fallback to x64 simulator
-            appPath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Debug", "net9.0-ios", "iossimulator-x64");
+            appPath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Debug", "net9.0-ios18.2", "iossimulator-x64");
         }
 
         return appPath;
