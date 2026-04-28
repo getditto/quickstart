@@ -115,7 +115,7 @@ Explore the following links and resources to learn more about Ditto:
 
 #### General Information
 
-- [Ditto Home Page](https://ditto.live)
+- [Ditto Home Page](https://www.ditto.com)
 - [Ditto Documentation Site](https://docs.ditto.live)
 - [Ditto Flutter Install Guide](https://docs.ditto.live/flutter/installation)
 - [Ditto Flutter Quick Start](https://docs.ditto.live/flutter/installation)
