@@ -1,11 +1,13 @@
 use anyhow::{Context, Result};
 use ditto_quickstart::tui::Todolist;
+#[allow(deprecated)]
 use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto};
 use std::time::Duration;
 use std::{env, sync::Arc};
 use tokio::time::sleep;
 
 #[tokio::main]
+#[allow(deprecated)]
 async fn main() -> Result<()> {
     println!("🦀 Starting Rust TUI Integration Test");
 
@@ -56,7 +58,7 @@ async fn main() -> Result<()> {
         .await?;
 
     // Start sync
-    let _ = ditto.start_sync();
+    let _ = ditto.sync().start();
     println!("✅ Created Ditto instance and started sync");
 
     // Create todolist instance (loads the app)
@@ -100,7 +102,7 @@ async fn main() -> Result<()> {
         anyhow::bail!("Integration test failed - seeded task not found");
     }
 
-    todolist.ditto.stop_sync();
+    todolist.ditto.sync().stop();
     println!("🛑 Stopped sync");
 
     println!("🎉 Integration test passed! App loads and syncs with Ditto Cloud successfully.");

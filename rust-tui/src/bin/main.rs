@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
+#[allow(deprecated)]
 use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -105,6 +106,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[allow(deprecated)]
 async fn try_init_ditto(
     app_id: AppId,
     token: String,

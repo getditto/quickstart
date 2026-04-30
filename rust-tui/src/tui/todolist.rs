@@ -155,7 +155,7 @@ impl Todolist {
             })
             .collect::<Vec<_>>();
 
-        let sync_state = if self.ditto.is_sync_active() {
+        let sync_state = if self.ditto.sync().is_active() {
             " 🟢 Sync Active ".green()
         } else {
             " 🔴 Sync Inactive ".red()
@@ -305,10 +305,10 @@ impl Todolist {
     }
 
     fn toggle_sync(&mut self) -> Result<()> {
-        if self.ditto.is_sync_active() {
-            self.ditto.stop_sync();
+        if self.ditto.sync().is_active() {
+            self.ditto.sync().stop();
         } else {
-            self.ditto.start_sync()?;
+            self.ditto.sync().start()?;
         }
         Ok(())
     }
