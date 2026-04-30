@@ -18,7 +18,7 @@ path = "src/bin/integration_test.rs"
 
 [dependencies]
 # Ditto dependencies
-dittolive-ditto = "4.14.3"
+dittolive-ditto = "=4.14.4-rc.4"
 
 # External dependencies
 anyhow = "1"
