@@ -11,7 +11,7 @@ using DittoSDK.Store;
 
 /// <summary>
 /// Encapsulates use of the Ditto SDK and the 'tasks' collection.
-/// </summary
+/// </summary>
 public class TasksPeer : IDisposable
 {
     private const string Query = "SELECT * FROM tasks WHERE NOT deleted";
