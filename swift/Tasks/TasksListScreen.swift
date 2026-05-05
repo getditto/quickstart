@@ -265,7 +265,8 @@ struct TasksListScreen: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack {
-                        Toggle("  Sync", isOn: $syncEnabled)
+                        Toggle("Sync", isOn: $syncEnabled)
+                            .padding(.leading, 8)
                             .toggleStyle(SwitchToggleStyle())
                             .onChange(of: syncEnabled) { newSyncEnabled in
                                 Self.saveSyncEnabledState(newSyncEnabled)
@@ -286,7 +287,7 @@ struct TasksListScreen: View {
                     })
                     .buttonStyle(.borderedProminent)
                     .padding(.bottom)
-                    .padding(.trailing, 100)
+                    Spacer()
                 }
             }
             .sheet(
