@@ -47,8 +47,13 @@ async fn main() -> Result<()> {
             token: token.clone(),
         });
 
+    let transport_websocket_url = websocket_url.clone();
     ditto.update_transport_config(|config| {
         config.enable_all_peer_to_peer();
+        config
+            .connect
+            .websocket_urls
+            .insert(transport_websocket_url.clone());
     });
 
     // Start sync
