@@ -24,7 +24,7 @@ public static class Program
 
             // Disable Ditto's standard-error logging, which would interfere
             // with the the Terminal.Gui UI.
-            DittoLogger.SetLoggingEnabled(false);
+            DittoLogger.IsEnabled = false;
             RunTerminalGui(peer);
         }
         catch (Exception ex)

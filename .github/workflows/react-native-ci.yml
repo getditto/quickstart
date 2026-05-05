@@ -205,6 +205,8 @@ jobs:
 
   browserstack-android:
     name: Test Android - BrowserStack Maestro
+    # Disabled: Ditto Cloud API key expired/invalid since 2026-03-16. See DEVX-759.
+    if: false
     runs-on: ubuntu-latest
     needs: [build-android]
     timeout-minutes: 150
@@ -395,6 +397,8 @@ jobs:
 
   browserstack-ios:
     name: Test iOS - BrowserStack Maestro
+    # Disabled: Ditto Cloud API key expired/invalid since 2026-03-16. See DEVX-759.
+    if: false
     runs-on: ubuntu-latest
     needs: [build-ios]
     timeout-minutes: 150

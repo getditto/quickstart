@@ -6,7 +6,7 @@ programming languages and platforms.
 See Ditto's [Quickstarts](https://docs.ditto.live/sdk/latest/quickstarts/quickstarts-landing)
 documentation for more information.
 
-For support, please contact Ditto Support (<support@ditto.live>).
+For support, please contact Ditto Support (<support@ditto.com>).
 
 ## Obtaining your Ditto Identity
 
@@ -36,7 +36,6 @@ build and run them.
 
 - [Android Kotlin](android-kotlin/README.md)
 - [Android Java](android-java/README.md)
-- [Android C++](android-cpp/README.md)
 - [Java Server](java-server/README.md)
 - [C++ TUI](cpp-tui/README.md)
 - [C# .NET MAUI](dotnet-maui/README.md)

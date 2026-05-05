@@ -33,13 +33,6 @@ runs:
         #   "React Native Expo CI" -> "React Native Expo"
         PLATFORM_NAME=$(echo "$WORKFLOW_FILE" | sed 's/ CI$//')
 
-        # Special case mappings for non-standard names
-        case "$PLATFORM_NAME" in
-          "Android C++")
-            PLATFORM_NAME="Android CPP"
-            ;;
-        esac
-
         PROJECT_NAME="quickstart - $PLATFORM_NAME"
 
         # FIXME: Build name generation is currently broken and doesn't work properly
