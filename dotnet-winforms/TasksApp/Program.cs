@@ -21,7 +21,7 @@ namespace DittoTasksApp
 
             // Disable Ditto's standard-error logging, which would interfere
             // with the the Terminal.Gui UI.
-            DittoLogger.SetLoggingEnabled(false);
+            DittoLogger.IsEnabled = false;
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();

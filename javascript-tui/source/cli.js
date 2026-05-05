@@ -38,8 +38,6 @@ const cli = meow(
 	},
 );
 
-console.log('Flags:', cli.flags);
-
 // We use a temporary directory to store Ditto's local database.  This
 // means that data will not be persistent between runs of the
 // application, but it allows us to run multiple instances of the
@@ -55,17 +53,6 @@ const token = cli.flags.playgroundToken ?? process.env.DITTO_PLAYGROUND_TOKEN;
 const authURL = cli.flags.authURL ?? process.env.DITTO_AUTH_URL;
 const websocketURL = cli.flags.websocketURL ?? process.env.DITTO_WEBSOCKET_URL;
 
-console.log(
-	'Using appId',
-	appID,
-	' and token ',
-	token,
-	' and authURL ',
-	authURL,
-	' and websocketURL ',
-	websocketURL,
-);
-
 // Create a new Ditto instance with the DittoConfig
 // https://docs.ditto.live/sdk/latest/install-guides/nodejs#installing-the-demo-task-app
 const connectConfig = {
@@ -76,13 +63,17 @@ const connectConfig = {
 const config = new DittoConfig(appID, connectConfig, tempdir);
 const ditto = await Ditto.open(config);
 
-// Initialize transport config
+// Initialize transport config — enable LAN P2P and WebSocket.
+// BLE and AWDL are disabled because they require macOS entitlements
+// that are only available to signed app bundles, not Node.js processes.
+// LAN (TCP + mDNS) provides P2P sync with peers on the local network.
 ditto.updateTransportConfig(config => {
-	config.connect.websocketURLs = [websocketURL];
+	config.peerToPeer.bluetoothLE.isEnabled = false;
+	config.peerToPeer.awdl.isEnabled = false;
+	config.peerToPeer.lan.isEnabled = true;
+	config.peerToPeer.lan.isMdnsEnabled = true;
+	config.peerToPeer.lan.isMulticastEnabled = true;
 });
-
-// disable sync with v3 peers, required for DQL
-await ditto.disableSyncWithV3();
 
 // Set up authentication for server mode
 if (connectConfig.mode === 'server') {
@@ -122,17 +113,7 @@ if (connectConfig.mode === 'server') {
 	}
 }
 
-// Disable DQL strict mode
-// when set to false, collection definitions are no longer required. SELECT queries will return and display all fields by default.
-// https://docs.ditto.live/dql/strict-mode
-try {
-	await ditto.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
-} catch (error) {
-	console.error('Failed to disable DQL strict mode:', error);
-	process.exit(1); // Exit the application with a non-zero status code
-}
-
-ditto.startSync();
+ditto.sync.start();
 
 process.on('uncaughtException', err => {
 	console.error('Uncaught Exception:', err);
@@ -142,4 +123,5 @@ process.on('unhandledRejection', reason => {
 	console.error('Unhandled Rejection:', reason);
 });
 
-render(<App ditto={ditto} />);
+const {waitUntilExit} = render(<App ditto={ditto} />);
+await waitUntilExit();
