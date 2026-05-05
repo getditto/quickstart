@@ -31,8 +31,6 @@ class _DittoExampleState extends State<DittoExample> {
       (throw Exception("env not found"));
   final authUrl =
       dotenv.env['DITTO_AUTH_URL'] ?? (throw Exception("env not found"));
-  final websocketUrl =
-      dotenv.env['DITTO_WEBSOCKET_URL'] ?? (throw Exception("env not found"));
 
   @override
   void initState() {
