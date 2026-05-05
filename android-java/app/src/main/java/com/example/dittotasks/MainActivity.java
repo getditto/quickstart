@@ -38,10 +38,9 @@ public class MainActivity extends ComponentActivity {
     DittoSyncSubscription taskSubscription;
     DittoStoreObserver taskObserver;
 
-    private String DITTO_APP_ID = BuildConfig.DITTO_APP_ID;
-    private String DITTO_PLAYGROUND_TOKEN = BuildConfig.DITTO_PLAYGROUND_TOKEN;
-    private String DITTO_AUTH_URL = BuildConfig.DITTO_AUTH_URL;
-    private String DITTO_WEBSOCKET_URL = BuildConfig.DITTO_WEBSOCKET_URL;
+    private final String dittoAppId = BuildConfig.DITTO_APP_ID;
+    private final String dittoPlaygroundToken = BuildConfig.DITTO_PLAYGROUND_TOKEN;
+    private final String dittoAuthUrl = BuildConfig.DITTO_AUTH_URL;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -58,10 +57,10 @@ public class MainActivity extends ComponentActivity {
         // Populate connection info (only in debug builds)
         if(BuildConfig.DEBUG) {
             TextView appId = findViewById(R.id.ditto_app_id);
-            appId.setText(String.format("App ID: %s", DITTO_APP_ID));
+            appId.setText(String.format("App ID: %s", dittoAppId));
 
             TextView playgroundToken = findViewById(R.id.ditto_playground_token);
-            playgroundToken.setText(String.format("Playground Token: %s", DITTO_PLAYGROUND_TOKEN));
+            playgroundToken.setText(String.format("Playground Token: %s", dittoPlaygroundToken));
         } else {
             // Hide credential views in production
             findViewById(R.id.ditto_app_id).setVisibility(View.GONE);
@@ -98,9 +97,9 @@ public class MainActivity extends ComponentActivity {
     void initDitto() {
         Log.d("DittoInit", "=== Starting Ditto initialization ===");
 
-        Log.d("DittoInit", "DITTO_APP_ID: " + DITTO_APP_ID);
-        Log.d("DittoInit", "DITTO_PLAYGROUND_TOKEN: " + (DITTO_PLAYGROUND_TOKEN != null ? "Present" : "NULL"));
-        Log.d("DittoInit", "DITTO_AUTH_URL: " + DITTO_AUTH_URL);
+        Log.d("DittoInit", "DITTO_APP_ID: " + dittoAppId);
+        Log.d("DittoInit", "DITTO_PLAYGROUND_TOKEN: " + (dittoPlaygroundToken != null ? "Present" : "NULL"));
+        Log.d("DittoInit", "DITTO_AUTH_URL: " + dittoAuthUrl);
 
         // Skip permission requests during testing to avoid permission dialogs
         if (!isInstrumentationTest()) {
@@ -115,12 +114,12 @@ public class MainActivity extends ComponentActivity {
             // Create Ditto with server connection
             // https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
             Log.d("DittoInit", "Creating Ditto instance...");
-            ditto = DittoHelper.createDitto(DITTO_APP_ID, DITTO_AUTH_URL);
+            ditto = DittoHelper.createDitto(dittoAppId, dittoAuthUrl);
             Log.d("DittoInit", "Ditto instance created successfully");
 
             // Set up authentication handler (must be set before sync.start())
             Log.d("DittoInit", "Setting up authentication...");
-            DittoHelper.setupAuth(ditto, DITTO_PLAYGROUND_TOKEN);
+            DittoHelper.setupAuth(ditto, dittoPlaygroundToken);
             Log.d("DittoInit", "Authentication configured");
 
             // register subscription
@@ -193,6 +192,11 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void createTask(String title) {
+        if (ditto == null) {
+            Log.i("MainActivity", "Ditto disabled - create task ignored: " + title);
+            return;
+        }
+
         HashMap<String, Object> task = new HashMap<>();
         task.put("title", title);
         task.put("done", false);
@@ -210,6 +214,11 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void editTaskTitle(Task task, String newTitle) {
+        if (ditto == null) {
+            Log.i("MainActivity", "Ditto disabled - edit task ignored: " + task.getTitle());
+            return;
+        }
+
         Map<String, Object> args = Map.of("id", task.getId(), "title", newTitle);
 
         try {

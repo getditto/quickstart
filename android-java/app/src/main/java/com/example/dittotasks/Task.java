@@ -1,24 +1,22 @@
 package com.example.dittotasks;
 
-import java.util.Optional;
-
 import com.ditto.kotlin.DittoQueryResultItem;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Task {
-    private Optional<String> id;
-    private String title;
-    private boolean done;
-    private boolean deleted;
+    private final String id;
+    private final String title;
+    private final boolean done;
+    private final boolean deleted;
 
     public Task(String title) {
         this(null, title, false, false);
     }
 
     public Task(String id, String title, boolean done, boolean deleted) {
-        this.id = Optional.ofNullable(id);
+        this.id = id;
         this.title = title;
         this.done = done;
         this.deleted = deleted;
@@ -28,8 +26,8 @@ public class Task {
         try {
             JSONObject json = new JSONObject(item.jsonString());
             return new Task(
-                    json.optString("_id", null),
-                    json.optString("title", null),
+                    json.isNull("_id") ? null : json.optString("_id", null),
+                    json.isNull("title") ? null : json.optString("title", null),
                     json.optBoolean("done", false),
                     json.optBoolean("deleted", false));
         } catch (JSONException e) {
@@ -38,7 +36,7 @@ public class Task {
     }
 
     public String getId() {
-        return id.orElse(null);
+        return id;
     }
 
     public String getTitle() {

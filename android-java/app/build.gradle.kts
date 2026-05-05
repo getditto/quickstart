@@ -1,7 +1,7 @@
 import com.android.build.api.variant.BuildConfigField
 import java.io.FileInputStream
-import java.io.FileNotFoundException
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
@@ -89,7 +89,7 @@ android {
     defaultConfig {
         applicationId = "com.example.dittotasks"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -112,9 +112,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         buildConfig = true
     }
@@ -124,6 +121,12 @@ android {
             useLegacyPackaging = true
             keepDebugSymbols += "**/libdittoffi.so"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
