@@ -1,6 +1,6 @@
 PODS:
-  - DittoReactNative (5.0.0-rc.2):
-    - DittoReactNativeIOS (= 5.0.0-rc.2)
+  - DittoReactNative (5.0.0):
+    - DittoReactNativeIOS (= 5.0.0)
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -22,7 +22,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - DittoReactNativeIOS (5.0.0-rc.2)
+  - DittoReactNativeIOS (5.0.0)
   - EXConstants (55.0.14):
     - ExpoModulesCore
   - Expo (55.0.15):
@@ -2552,8 +2552,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  DittoReactNative: 6cd567b976871657b53c30c39d83675f2de2844d
-  DittoReactNativeIOS: f78d945686a3a0285e93b3b979490f7ad8800052
+  DittoReactNative: f0325fcfbcb28fd0941683cba236eed6917a25b5
+  DittoReactNativeIOS: 7d60b795fc25f594c21767697f11f07def2ec899
   EXConstants: bfe4ae4e5d882e2e0b130e049665d0af4f4cc1b8
   Expo: a43f44ff1e3a1c73fcabba766e13a38dea22236a
   ExpoAsset: dc4f25f84886120f82b23233bba563ea7afa88f5
@@ -2575,7 +2575,7 @@ SPEC CHECKSUMS:
   ExpoSystemUI: 709410d6e473378d568e5df28fe409cade0ba530
   ExpoWebBrowser: f88a3ba50a025b673236a46d2654a49b985953d6
   FBLazyVector: 061f518bbd81677ed8a8317e2ae60b8779495808
-  hermes-engine: df05d9203af5a33a00fc633747ab3378f6a44601
+  hermes-engine: 59c74feef1fb726d9856fd3ac9401b6a41c74c62
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
@@ -2587,7 +2587,7 @@ SPEC CHECKSUMS:
   React: 3e14066ac707b3e369d09e2e923d8bee7f8c33ff
   React-callinvoker: bd7959a24564feaf5e4c8c11789e64884da13482
   React-Core: f060f4e14e9301685ce63ea65fbe903bf3397e45
-  React-Core-prebuilt: 2025d452272b6196b377fced0d5d68f9ff14c850
+  React-Core-prebuilt: fd9715c1122b4ab53b8b0ae89628ab8f1a3a7e2f
   React-CoreModules: 89a1a544297be88ca4cdff317423f9e0d0c192a4
   React-cxxreact: 81b1bfa305b1b759cc0fe18327644816216e5993
   React-debug: 234fddb309822e13b9b442ef1bdca8d2b8c3cbf2
@@ -2650,7 +2650,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 2b19d66e5ddfe8dc7afb6338a4626156cbf2bab1
   ReactCodegen: 43f0948182edee9407c7b977fb059455dfeb9361
   ReactCommon: c6e81cc1ae185fa84863f3ea1d58caac4be741d7
-  ReactNativeDependencies: fb145c98efa640bac8402aafa1f6b7a3cb5cfca5
+  ReactNativeDependencies: 9c18348438c485fe5ffd5f9e1f1684f6825a14f5
   RNGestureHandler: 0ea8153746a92b3744d4eaadade647debedf646e
   RNReanimated: 86e5991396f1aa514db90d6c79d4c3e37a37bb10
   RNScreens: 02e62f995ceb94ea465864b3bf4d4767b87f0362
