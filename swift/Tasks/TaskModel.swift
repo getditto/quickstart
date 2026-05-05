@@ -1,4 +1,5 @@
 import DittoSwift
+import Foundation
 
 /// A document in the `tasks` collection
 struct TaskModel {
