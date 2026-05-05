@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using DittoMauiTasksApp.Utils;
 using DittoMauiTasksApp.ViewModels;
 using DittoSDK;
+using DittoSDK.Auth;
 
 namespace DittoMauiTasksApp;
 
@@ -42,29 +43,37 @@ public static class MauiProgram
         AppId = envVars["DITTO_APP_ID"];
         PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"];
         var authUrl = envVars["DITTO_AUTH_URL"];
-        var websocketUrl = envVars["DITTO_WEBSOCKET_URL"];
 
-        var ditto = new Ditto(DittoIdentity
-        .OnlinePlayground(
+        // New Initialization code - https://docs.ditto.live/sdk/latest/ditto-config
+        var dittoConfig = new DittoConfig(
             AppId,
-            PlaygroundToken,
-            false,  // This is required to be set to false to use the correct URLs
-            authUrl), Path.Combine(FileSystem.Current.AppDataDirectory, "ditto"));
+            new DittoConfigConnect.Server(
+                new Uri(authUrl)
+                ),
+            Path.Combine(FileSystem.Current.AppDataDirectory, "ditto")
+            );
 
-        // Set the transport configuration
-        // https://docs.ditto.live/sdk/latest/sync/customizing-transport-configurations#enabling-and-disabling-transports
-        ditto.UpdateTransportConfig(config =>
+        var ditto = Ditto.Open(dittoConfig);
+
+        // Set up authentication expiration handler (required for server connections)
+        ditto.Auth.ExpirationHandler = async (dittoAuth, secondsRemaining) =>
         {
-            // Add the websocket URL to the transport configuration.
-            config.Connect.WebsocketUrls.Add(websocketUrl);
-        });
-
-        // disable sync with v3 peers, required for DQL
-        ditto.DisableSyncWithV3();
-
-        // Disable DQL strict mode
-        // https://docs.ditto.live/dql/strict-mode
-        ditto.Store.ExecuteAsync("ALTER SYSTEM SET DQL_STRICT_MODE = false").Wait();
+            // Authenticate when token is expiring
+            try
+            {
+                await dittoAuth.Auth.LoginAsync(
+                    // Your development token, replace with your actual token
+                    PlaygroundToken,
+                    // Use DittoAuthenticationProvider.Development for playground, or your actual provider
+                    DittoAuthenticationProvider.Development
+                );
+                Console.WriteLine("Authentication successful");
+            }
+            catch (Exception error)
+            {
+                Console.WriteLine($"Authentication failed: {error}");
+            }
+        };
 
         return ditto;
     }

@@ -52,6 +52,13 @@ public class AndroidTaskSearchTests : TaskSearchTests
             options.AddAdditionalAppiumOption("newCommandTimeout", 300);
             options.AddAdditionalAppiumOption("autoGrantPermissions", true);
 
+            // Optional: target a specific device when multiple are connected (e.g. APPIUM_UDID=emulator-5554)
+            var explicitUdid = Environment.GetEnvironmentVariable("APPIUM_UDID");
+            if (!string.IsNullOrEmpty(explicitUdid))
+            {
+                options.AddAdditionalAppiumOption("udid", explicitUdid);
+            }
+
             return new AndroidDriver(new Uri("http://127.0.0.1:4723"), options);
         }
     }
@@ -62,13 +69,13 @@ public class AndroidTaskSearchTests : TaskSearchTests
         var apkFileName = "live.ditto.quickstart.mauitasksapp-Signed.apk";
 
         // Look for APK in release directory first (what we just built)
-        var releasePath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Release", "net9.0-android", apkFileName);
+        var releasePath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Release", "net10.0-android", apkFileName);
         if (File.Exists(releasePath))
         {
             return releasePath;
         }
 
-        var debugPath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Debug", "net9.0-android", apkFileName);
+        var debugPath = Path.Combine(projectRoot, "DittoMauiTasksApp", "bin", "Debug", "net10.0-android", apkFileName);
         if (File.Exists(debugPath))
         {
             return debugPath;
