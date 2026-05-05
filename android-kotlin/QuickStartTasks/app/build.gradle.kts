@@ -17,10 +17,9 @@ fun loadEnvProperties(): Properties {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
         val requiredEnvVars = listOf(
-            "DITTO_APP_ID", 
-            "DITTO_PLAYGROUND_TOKEN", 
-            "DITTO_AUTH_URL", 
-            "DITTO_WEBSOCKET_URL"
+            "DITTO_APP_ID",
+            "DITTO_PLAYGROUND_TOKEN",
+            "DITTO_AUTH_URL"
         )
         
         for (envVar in requiredEnvVars) {
@@ -39,7 +38,6 @@ androidComponents {
             "DITTO_APP_ID" to "Ditto application ID",
             "DITTO_PLAYGROUND_TOKEN" to "Ditto playground token",
             "DITTO_AUTH_URL" to "Ditto authentication URL",
-            "DITTO_WEBSOCKET_URL" to "Ditto websocket URL",
             "TEST_DOCUMENT_TITLE" to "Test document title for BrowserStack verification"
         )
         
