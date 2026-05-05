@@ -22,8 +22,8 @@ If you need to test on multiple versions of Flutter, it's recommended to use `fv
 This has been tested with XCode 26.2 on MacOS 26.6 with Flutter 3.29.3 && 3.32.8.
 
 ### Windows Development
-To build the Windows version of this Flutter app requires Visual  Studio 2022 specifically be
-installed and configured with C++ and cmake installed from the Visual Studio Installer.  This has 
+To build the Windows version of this Flutter app requires Visual Studio 2022 specifically be
+installed and configured with C++ and CMake installed from the Visual Studio Installer.  This has 
 been tested with Flutter version 3.29.3 on Windows.
 
 ## Getting Started
