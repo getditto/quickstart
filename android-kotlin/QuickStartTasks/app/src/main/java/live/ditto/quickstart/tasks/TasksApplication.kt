@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import com.ditto.kotlin.DittoAuthenticationProvider
 import com.ditto.kotlin.DittoConfig
-import com.ditto.kotlin.DittoFactory
 import com.ditto.kotlin.DittoLog
 
 class TasksApplication : Application() {
