@@ -17,7 +17,7 @@
     "preset": "jest-expo"
   },
   "dependencies": {
-    "@dittolive/ditto": "5.0.0-rc.2",
+    "@dittolive/ditto": "5.0.0",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/native": "^7.1.8",
@@ -65,14 +65,16 @@
     "undici": "6.24.1",
     "flatted": "3.4.2",
     "fast-xml-parser": "5.7.1",
-    "@tootallnate/once": "3.0.1"
+    "@tootallnate/once": "3.0.1",
+    "postcss": "8.5.14"
   },
   "overrides": {
     "tar": "7.5.11",
     "undici": "6.24.1",
     "flatted": "3.4.2",
     "fast-xml-parser": "5.7.1",
-    "@tootallnate/once": "3.0.1"
+    "@tootallnate/once": "3.0.1",
+    "postcss": "8.5.14"
   },
   "private": true
 }
