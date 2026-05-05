@@ -104,4 +104,4 @@ and this contains the associated code for manipulating data in the Ditto store.
 
 
 ### Android CLI, Android Skills, and AI
-You can use the Android CLI, and Android Skills to programmatically interact with the Android device or emulator and with theDitto SDK running on it.  See the [Android CLI Overview](https://developer.android.com/tools/agents/android-cli) for more information.  Android Skills can be found [here](https://github.com/android/skills).
+You can use the Android CLI, and Android Skills to programmatically interact with the Android device or emulator and with the Ditto SDK running on it.  See the [Android CLI Overview](https://developer.android.com/tools/agents/android-cli) for more information.  Android Skills can be found [here](https://github.com/android/skills).
