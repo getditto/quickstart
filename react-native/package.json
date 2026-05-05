@@ -30,6 +30,15 @@
     "qs": "6.14.2",
     "yaml": "2.8.3"
   },
+  "resolutions": {
+    "ajv": "6.14.0",
+    "brace-expansion": "1.1.13",
+    "fast-xml-parser": "5.7.3",
+    "js-yaml": "4.1.1",
+    "lodash": "4.18.1",
+    "qs": "6.14.2",
+    "yaml": "2.8.3"
+  },
   "devDependencies": {
     "@babel/core": "^7.27.4",
     "@babel/preset-env": "^7.27.2",
