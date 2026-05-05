@@ -7,10 +7,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import live.ditto.quickstart.tasks.DittoHandler
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.data.Task
 
 class EditScreenViewModel : ViewModel() {
+
+    init {
+        check(DittoHandler.isInitialized) {
+            "Ditto must be initialized before ViewModels are created"
+        }
+    }
 
     companion object {
         private const val TAG = "EditScreenViewModel"
@@ -36,10 +43,6 @@ class EditScreenViewModel : ViewModel() {
     }
 
     fun setupWithTask(id: String?) {
-        check(live.ditto.quickstart.tasks.DittoHandler.isInitialized) {
-            "Ditto must be initialized before ViewModels are created"
-        }
-
         _canDelete.value = id != null
         val taskId: String = id ?: return
 

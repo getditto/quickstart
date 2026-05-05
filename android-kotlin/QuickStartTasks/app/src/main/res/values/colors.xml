@@ -11,6 +11,6 @@
     <!-- The following colors were copied from an old sample. -->
     <color name="blue_200">#93C5FD</color>
     <color name="blue_500">#3B82F6</color>
-    <color name="blue_700">#3B82F6</color>
-    <color name="gray">#95a5a6</color>
+    <color name="blue_700">#1D4ED8</color>
+    <color name="gray">#95A5A6</color>
 </resources>

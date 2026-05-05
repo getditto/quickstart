@@ -8,14 +8,13 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ditto.kotlin.DittoSyncSubscription
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import live.ditto.quickstart.tasks.DittoHandler
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 import live.ditto.quickstart.tasks.TasksApplication
 import live.ditto.quickstart.tasks.data.Task
@@ -25,6 +24,13 @@ private val Context.preferencesDataStore by preferencesDataStore("tasks_list_set
 private val SYNC_ENABLED_KEY = booleanPreferencesKey("sync_enabled")
 
 class TasksListScreenViewModel : ViewModel() {
+
+    // Verify Ditto readiness before any property initializer below touches it.
+    init {
+        check(DittoHandler.isInitialized) {
+            "Ditto must be initialized before ViewModels are created"
+        }
+    }
 
     companion object {
         private const val TAG = "TasksListScreenViewModel"
@@ -40,53 +46,55 @@ class TasksListScreenViewModel : ViewModel() {
         result.items.map { item -> Task.fromJson(item.jsonString()) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _syncEnabled = MutableStateFlow(true)
-    val syncEnabled: StateFlow<Boolean> = _syncEnabled.asStateFlow()
+    // Derive sync state directly from DataStore so the UI reflects the persisted value
+    // as soon as it loads, instead of flashing a hardcoded default first.
+    val syncEnabled: StateFlow<Boolean> = preferencesDataStore.data
+        .map { prefs -> prefs[SYNC_ENABLED_KEY] ?: true }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     private var syncSubscription: DittoSyncSubscription? = null
+
+    init {
+        viewModelScope.launch { populateTasksCollection() }
+
+        // Apply the persisted sync preference whenever it changes.
+        viewModelScope.launch {
+            preferencesDataStore.data
+                .map { prefs -> prefs[SYNC_ENABLED_KEY] ?: true }
+                .distinctUntilChanged()
+                .collect { enabled -> applySyncState(enabled) }
+        }
+    }
 
     fun setSyncEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesDataStore.edit { settings ->
                 settings[SYNC_ENABLED_KEY] = enabled
             }
-            _syncEnabled.value = enabled
-
-            if (enabled && !ditto.sync.isActive) {
-                try {
-                    // Starting sync
-                    // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
-                    ditto.sync.start()
-
-                    // Register a subscription, which determines what data syncs to this peer
-                    // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-                    syncSubscription = ditto.sync.registerSubscription(QUERY)
-                } catch (e: Throwable) {
-                    Log.e(TAG, "Unable to start sync", e)
-                }
-            } else if (!enabled && ditto.sync.isActive) {
-                try {
-                    syncSubscription?.close()
-                    syncSubscription = null
-                    ditto.sync.stop()
-                } catch (e: Throwable) {
-                    Log.e(TAG, "Unable to stop sync", e)
-                }
-            }
         }
     }
 
-    init {
-        check(live.ditto.quickstart.tasks.DittoHandler.isInitialized) {
-            "Ditto must be initialized before ViewModels are created"
-        }
+    private fun applySyncState(enabled: Boolean) {
+        if (enabled && !ditto.sync.isActive) {
+            try {
+                // Starting sync
+                // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
+                ditto.sync.start()
 
-        viewModelScope.launch {
-            populateTasksCollection()
-
-            setSyncEnabled(
-                preferencesDataStore.data.map { prefs -> prefs[SYNC_ENABLED_KEY] ?: true }.first()
-            )
+                // Register a subscription, which determines what data syncs to this peer
+                // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
+                syncSubscription = ditto.sync.registerSubscription(QUERY)
+            } catch (e: Throwable) {
+                Log.e(TAG, "Unable to start sync", e)
+            }
+        } else if (!enabled && ditto.sync.isActive) {
+            try {
+                syncSubscription?.close()
+                syncSubscription = null
+                ditto.sync.stop()
+            } catch (e: Throwable) {
+                Log.e(TAG, "Unable to stop sync", e)
+            }
         }
     }
 

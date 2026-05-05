@@ -4,15 +4,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -22,9 +23,15 @@ import live.ditto.quickstart.tasks.R
 @Composable
 fun EditScreen(navController: NavController, taskId: String?) {
     val editScreenViewModel: EditScreenViewModel = viewModel()
-    editScreenViewModel.setupWithTask(id = taskId)
 
-    val topBarTitle = if (taskId == null) "New Task" else "Edit Task"
+    // Run side effects only when taskId actually changes, not on every recomposition.
+    LaunchedEffect(taskId) {
+        editScreenViewModel.setupWithTask(id = taskId)
+    }
+
+    val topBarTitle = stringResource(
+        id = if (taskId == null) R.string.edit_title_new else R.string.edit_title_edit
+    )
 
     val title: String by editScreenViewModel.title.collectAsStateWithLifecycle()
     val done: Boolean by editScreenViewModel.done.collectAsStateWithLifecycle()
@@ -33,16 +40,24 @@ fun EditScreen(navController: NavController, taskId: String?) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(topBarTitle, color = Color.White) },
+                title = {
+                    Text(
+                        text = topBarTitle,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(id = R.color.blue_700)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
         content = { padding ->
-            Column(modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
                 EditForm(
                     canDelete = canDelete,
                     title = title,

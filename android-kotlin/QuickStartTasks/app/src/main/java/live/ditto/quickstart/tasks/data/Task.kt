@@ -25,14 +25,14 @@ data class Task(
             return try {
                 val json = JSONObject(jsonString)
                 Task(
-                    _id = json["_id"].toString(),
-                    title = json["title"].toString(),
-                    done = json["done"] as Boolean,
-                    deleted = json["deleted"] as Boolean
+                    _id = json.optString("_id", UUID.randomUUID().toString()),
+                    title = json.optString("title", ""),
+                    done = json.optBoolean("done", false),
+                    deleted = json.optBoolean("deleted", false)
                 )
             } catch (e: JSONException) {
                 Log.e(TAG, "Unable to convert JSON to Task", e)
-                Task(title = "", done = false, deleted = false)
+                Task(title = "")
             }
         }
     }

@@ -1,6 +1,7 @@
 import com.android.build.api.variant.BuildConfigField
 import java.io.FileInputStream
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
@@ -84,19 +85,28 @@ android {
     }
     
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    
-    kotlinOptions {
-        jvmTarget = "11"
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
-    
+
     buildFeatures {
         buildConfig = true
         compose = true
     }
-    
+
+    testOptions {
+        unitTests {
+            // Lets host-JVM tests call android.util.Log without "Method not mocked" errors.
+            isReturnDefaultValues = true
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -119,6 +129,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
 
     // Dependency Injection
@@ -134,6 +145,8 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines)
+    // Real org.json on the host JVM — Android's stub throws "not mocked".
+    testImplementation(libs.json)
     
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
