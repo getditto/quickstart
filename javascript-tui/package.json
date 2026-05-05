@@ -20,7 +20,7 @@
 		"dist"
 	],
 	"dependencies": {
-		"@dittolive/ditto": "4.13.1",
+		"@dittolive/ditto": "^4.14.3",
 		"dotenv": "^16.4.5",
 		"ink": "^4.1.0",
 		"meow": "^11.0.0",
@@ -37,6 +37,12 @@
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"ink-testing-library": "^4.0.0",
 		"prettier": "^2.8.7"
+	},
+	"overrides": {
+		"tar": "7.5.11",
+		"undici": "6.24.1",
+		"flatted": "3.4.2",
+		"lodash": "4.18.1"
 	},
 	"xo": {
 		"extends": "xo-react",
