@@ -7,7 +7,7 @@ These are the changes required specifically for Expo projects when migrating fro
 The v5 Ditto Expo plugin internally calls `withBuildProperties()` from `expo-build-properties`. If this package is not installed, `expo prebuild` will fail with an import error.
 
 ```bash
-npm install expo-build-properties@~1.0.0
+npm install expo-build-properties@~55.0.13
 ```
 
 ## 2. Configure Kotlin version in `app.json`
