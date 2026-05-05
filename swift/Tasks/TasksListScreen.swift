@@ -9,7 +9,7 @@ class TasksListScreenViewModel: ObservableObject {
     @Published var isPresentingEditScreen: Bool = false
     private(set) var taskToEdit: TaskModel?
 
-    private let ditto = DittoManager.shared.ditto
+    private var ditto: Ditto? { DittoManager.shared.ditto }
     private var subscription: DittoSyncSubscription?
     private var storeObserver: DittoStoreObserver?
 
@@ -31,17 +31,17 @@ class TasksListScreenViewModel: ObservableObject {
         }
     }
 
-    deinit {
+    /// Cancel observers/subscriptions and stop sync. Call from `.onDisappear`
+    /// — `deinit` is `nonisolated` and cannot safely touch `@MainActor` state.
+    func teardown() {
         subscription?.cancel()
         subscription = nil
 
         storeObserver?.cancel()
         storeObserver = nil
 
-        if let ditto = self.ditto {
-            if ditto.sync.isActive {
-                ditto.sync.stop()
-            }
+        if let ditto = self.ditto, ditto.sync.isActive {
+            ditto.sync.stop()
         }
     }
 
@@ -81,7 +81,8 @@ class TasksListScreenViewModel: ObservableObject {
     }
 
     func toggleComplete(task: TaskModel) {
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
             let done = !task.done
             let query = """
                 UPDATE tasks
@@ -104,8 +105,9 @@ class TasksListScreenViewModel: ObservableObject {
         }
     }
 
-    nonisolated func saveEditedTask(_ task: TaskModel) {
-        Task {
+    func saveEditedTask(_ task: TaskModel) {
+        Task { [weak self] in
+            guard let self else { return }
             let query = """
                 UPDATE tasks SET
                     title = :title,
@@ -134,8 +136,9 @@ class TasksListScreenViewModel: ObservableObject {
         }
     }
 
-    nonisolated func saveNewTask(_ task: TaskModel) {
-        Task {
+    func saveNewTask(_ task: TaskModel) {
+        Task { [weak self] in
+            guard let self else { return }
             let newTask = task.value
             let query = "INSERT INTO tasks DOCUMENTS (:newTask)"
 
@@ -152,8 +155,9 @@ class TasksListScreenViewModel: ObservableObject {
         }
     }
 
-    nonisolated func deleteTask(_ task: TaskModel) {
-        Task {
+    func deleteTask(_ task: TaskModel) {
+        Task { [weak self] in
+            guard let self else { return }
             let query = "UPDATE tasks SET deleted = true WHERE _id = :_id"
             do {
                 if let ditto = self.ditto {
@@ -168,8 +172,9 @@ class TasksListScreenViewModel: ObservableObject {
         }
     }
 
-    private nonisolated func populateTasksCollection() {
-        Task {
+    private func populateTasksCollection() {
+        Task { [weak self] in
+            guard let self else { return }
             let initialTasks: [TaskModel] = [
                 TaskModel(
                     _id: "50191411-4C46-4940-8B72-5F8017A04FA7",
@@ -306,6 +311,9 @@ struct TasksListScreen: View {
                 }
             }
         }
+        .onDisappear {
+            viewModel.teardown()
+        }
     }
 
     private func deleteTaskItems(at offsets: IndexSet) {
@@ -325,7 +333,6 @@ struct TasksListScreen: View {
 
     private static func saveSyncEnabledState(_ state: Bool) {
         UserDefaults.standard.set(state, forKey: isSyncEnabledKey)
-        UserDefaults.standard.synchronize()
     }
 }
 

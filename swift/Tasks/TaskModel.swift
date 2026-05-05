@@ -2,7 +2,7 @@ import DittoSwift
 import Foundation
 
 /// A document in the `tasks` collection
-struct TaskModel {
+struct TaskModel: Sendable {
     // swiftlint:disable:next identifier_name
     let _id: String
     var title: String

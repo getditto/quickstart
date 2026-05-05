@@ -2,6 +2,7 @@ import DittoSwift
 import Foundation
 
 /// Owner of the Ditto object
+@MainActor
 class DittoManager: ObservableObject {
     @Published var ditto: Ditto?
     static let shared = DittoManager()
