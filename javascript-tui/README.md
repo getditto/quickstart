@@ -5,7 +5,7 @@ This app is a TUI built using [Ink](https://github.com/vadimdemedes/ink) with Re
 ## Documentation
 
 - [Javascript Install Guide](https://docs.ditto.live/sdk/latest/install-guides/js)
-- [Javascript API Reference](https://software.ditto.live/js/Ditto/5.0.0-rc.2/api-reference/)
+- [Javascript API Reference](https://software.ditto.live/js/Ditto/5.0.0/api-reference/)
 - [Javascript Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
 ## Prerequisites
@@ -27,7 +27,6 @@ cp .env.sample .env
 DITTO_APP_ID=""
 DITTO_PLAYGROUND_TOKEN=""
 DITTO_AUTH_URL=""
-DITTO_WEBSOCKET_URL=""
 ```
 
 Next, install dependencies and run:
