@@ -24,7 +24,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Create test .env file
         run: |
@@ -61,7 +61,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -101,10 +101,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.3"
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Create .env file
         run: |
@@ -159,7 +164,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Download Android APK artifact
         uses: actions/download-artifact@v4
@@ -285,7 +290,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Download iOS IPA artifact
         uses: actions/download-artifact@v4
