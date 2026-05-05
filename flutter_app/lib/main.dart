@@ -181,7 +181,9 @@ class _DittoExampleState extends State<DittoExample> {
         },
       );
 
-  //TODO review to see if we want to add in the order by title asc back in by making the dql builder use two queries.
+  // Ordering is intentionally omitted here because this screen currently uses
+  // a single DqlBuilder query, and reintroducing title-based ordering would
+  // require a different query approach.
   Widget get _tasksList => DqlBuilder(
         ditto: _ditto!,
         query: "SELECT * FROM tasks WHERE deleted = false",
