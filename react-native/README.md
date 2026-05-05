@@ -21,7 +21,7 @@ A sample React Native application that lets you create tasks and sync them with 
 ### Build Tool Requirements
 
 - **Xcode**: 26.2 or lower. Xcode 26.4+ introduces a Clang `consteval` incompatibility with the `fmt` library bundled in the Ditto SDK.
-- **Gradle**: 8.12 or lower with Kotlin 2.1.0. Newer Gradle versions are not yet supported.
+- **Gradle/Kotlin (Android)**: This sample is configured to use Gradle 8.13 with Kotlin 2.1.20.
 
 ## Getting Started
 
