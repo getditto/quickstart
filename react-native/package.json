@@ -15,14 +15,21 @@
     "clean": "rm -rf node_modules && yarn install && cd ios && rm -rf Podfile.lock && rm -rf Pods && pod install && cd .."
   },
   "dependencies": {
-    "@dittolive/ditto": "4.13.1",
+    "@dittolive/ditto": "4.14.3",
     "react": "19.1.1",
     "react-native": "0.82.1",
     "react-native-bouncy-checkbox": "^4.1.2",
     "react-native-safe-area-context": "^5.5.2"
   },
   "resolutions": {
-    "image-size": "1.2.1"
+    "image-size": "1.2.1",
+    "fast-xml-parser": "5.5.6",
+    "flatted": "3.4.2",
+    "glob/minimatch": "3.1.5",
+    "eslint/minimatch": "3.1.5",
+    "test-exclude/minimatch": "3.1.5",
+    "@typescript-eslint/typescript-estree/minimatch": "9.0.9",
+    "@expo/config-plugins/glob": "10.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
