@@ -230,7 +230,7 @@ All apps load configuration from the `.env` file at the repository root. The loa
 
 1. **Production Warning**: These apps use "Online Playground" identity which is NOT suitable for production
    - For production environments, configure use the "Online with Authentication" identity to authenticate with
-   your identity system and retrieve a secret token prior to syncing with Ditto. 
+   your identity system and retrieve a secret token prior to syncing with Ditto.
    - Refer to the [Authentication and Authorization](https://docs.ditto.live/key-concepts/authentication-and-authorization#online-with-authentication)
    for detailed instructions on configuring identity for production use.
 2. **Cross-Platform Consistency**: All apps implement the same data model for interoperability (though field names may vary slightly)
@@ -239,3 +239,31 @@ All apps load configuration from the `.env` file at the repository root. The loa
 5. **Data Model Variations**: While conceptually the same, implementations vary in field naming:
    - Some use `text`/`isCompleted`, others use `title`/`done`
    - Some include soft delete functionality with a `deleted` field
+
+---
+
+## Security Patching
+
+When patching Dependabot alerts, bundle ALL fixes across ALL apps into a single PR.
+
+### Discovery
+
+Use `gh api 'repos/getditto/quickstart/dependabot/alerts?state=open&severity=critical,high&per_page=100'` to get open alerts. Group by manifest file.
+
+### Fix priority order (try in sequence, stop at first success)
+
+1. **Use the package manager's audit fix** — `npm audit fix`, `bundle audit`, `cargo audit fix`, etc. Use `--legacy-peer-deps` for npm if peer conflicts arise.
+2. **Add a resolution/override** — Only when the parent's declared semver range already includes the patched version but the lockfile pins an old resolution. Use `"overrides"` (npm) or `"resolutions"` (yarn) in `package.json`. For other ecosystems, use the equivalent mechanism.
+3. **Bump the parent dependency** — When the parent's range excludes the patched version. Prefer patch/minor bumps within the same major version.
+4. **Flag for manual intervention** — If none of the above work, do NOT force a fix. Commit all other successful patches and add a `## MANUAL INTERVENTION REQUIRED` section to the PR body listing: the alert, what was tried, why each approach failed, and a suggested fix.
+
+### Verification
+
+After patching, verify each affected app still builds using the build commands from "Common Development Commands" above. If a build fails, revert that patch and fall back to the next approach.
+
+### Repo-specific notes
+
+- `yarn` is not globally installed. Use `npx yarn` everywhere.
+- `react-native-expo/` has both `package-lock.json` and `yarn.lock` — both must be patched independently.
+- `npx yarn upgrade <pkg>@<version>` adds the package as a direct dep. Use bare `npx yarn upgrade <pkg>` to avoid this.
+- Native builds (Xcode, Android SDK, .NET) may not be available in CI or on your machine. For those apps, verify lockfile/manifest integrity and dependency resolution only.

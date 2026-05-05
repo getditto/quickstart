@@ -13,11 +13,6 @@
 # - Mobile devices: https://www.browserstack.com/docs/app-automate/api-reference/appium/devices
 # - Desktop browsers: https://www.browserstack.com/docs/automate/api-reference/selenium/list-of-browsers-and-platforms
 
-# Android C++ QuickStart
-android-cpp:
-  devices:
-    - "Google Pixel 7-13.0"  # Android 13 baseline
-
 # Android Java QuickStart
 android-java:
   devices:
