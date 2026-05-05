@@ -3,7 +3,7 @@
 
     <!-- Tasks list screen -->
     <string name="tasks_title">Ditto Tasks</string>
-    <string name="tasks_app_id">App ID: %1$s</string>
+    <string name="tasks_app_id">Database ID: %1$s</string>
     <string name="tasks_token">Token: %1$s</string>
     <string name="tasks_sync_label">Sync</string>
     <string name="tasks_new">New Task</string>
