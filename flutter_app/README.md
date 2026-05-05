@@ -8,15 +8,18 @@ This is a basic task application that demonstrates how to use Ditto's peer-to-pe
 
 - Dart SDK installed
 - Flutter SDK installed (tested on 3.29)
-- Java Virtual Machine (JVM) 11 installed 
+- Java Virtual Machine (JVM) 11 or greater installed 
 - Git command line installed (Windows requirement)
 - XCode installed (for iOS development)
 - Android Studio installed (for managing the Android SDK)
 - Android SDK installed
 - IDE of choice (Android Studio, VS Code, etc)
 
+### Flutter Version Manager
+If you need to test on multiple versions of Flutter, it's recommended to use `fvm` (Flutter Version Manager).  You can find documentation [here](https://fvm.app/documentation/getting-started/overview).
+
 ### MacOS Development
-This has been tested with XCode 26.2 on MacOS 26.6 with Flutter 3.29.3.
+This has been tested with XCode 26.2 on MacOS 26.6 with Flutter 3.29.3 && 3.32.8.
 
 ### Windows Development
 To build the Windows version of this Flutter app requires Visual  Studio 2022 specifically be
