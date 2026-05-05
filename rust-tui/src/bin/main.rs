@@ -61,7 +61,11 @@ async fn main() -> Result<()> {
     let (terminal, _cleanup) = term::init_crossterm()?;
 
     // Initialize and launch app
-    let ditto = try_init_ditto(
+    //
+    // `_temp_root` must outlive `ditto` — `TempRoot` deletes its directory on
+    // drop, so binding it here keeps the persistence directory alive for the
+    // process lifetime.
+    let (ditto, _temp_root) = try_init_ditto(
         cli.database_id,
         cli.token,
         cli.custom_auth_url,
@@ -129,7 +133,7 @@ async fn try_init_ditto(
     custom_auth_url: String,
     websocket_url: String,
     p2p_enabled: bool,
-) -> Result<Ditto> {
+) -> Result<(Ditto, Arc<TempRoot>)> {
     let connect_config = DittoConfigConnect::Server {
         url: custom_auth_url
             .parse()
@@ -143,8 +147,13 @@ async fn try_init_ditto(
     // application, we would want to store the database in a more permanent
     // location, and if multiple instances are needed, ensure that each
     // instance has its own persistence directory.
+    //
+    // `TempRoot` deletes its directory when the last `Arc` is dropped, so we
+    // must keep the `Arc<TempRoot>` alive for at least the lifetime of the
+    // `Ditto` instance — we return it to the caller for that purpose.
+    let temp_root = Arc::new(TempRoot::new());
     let config = DittoConfig::new(database_id.clone(), connect_config)
-        .with_persistence_directory(Arc::new(TempRoot::new()).root_path());
+        .with_persistence_directory(temp_root.root_path());
 
     let ditto = Ditto::open_sync(config)?;
 
@@ -173,7 +182,7 @@ async fn try_init_ditto(
     ditto.sync().start()?;
 
     tracing::info!(database_id = %database_id, "Started Ditto!");
-    Ok(ditto)
+    Ok((ditto, temp_root))
 }
 
 /// Load .env file from git repo root rather than `rust/`

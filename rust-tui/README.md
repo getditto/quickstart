@@ -18,7 +18,7 @@ The `.env` file should look like this (with your fields filled in):
 #!/usr/bin/env bash
 
 # Copy this file from ".env.sample" to ".env", then fill in these values
-# A Ditto AppID, Online Playground Token, and Auth URL can be obtained from https://portal.ditto.live
+# A Ditto DatabaseID (used to be called AppID), Online Playground Token, and Auth URL can be obtained from https://portal.ditto.live
 export DITTO_APP_ID=""
 export DITTO_PLAYGROUND_TOKEN=""
 export DITTO_AUTH_URL = "";

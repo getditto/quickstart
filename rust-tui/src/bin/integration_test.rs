@@ -34,8 +34,12 @@ async fn main() -> Result<()> {
             .context("failed to parse custom auth URL")?,
     };
 
+    // `TempRoot` deletes its directory when the last `Arc` is dropped, so we
+    // bind it to a local that lives until the end of `main` to keep the
+    // persistence directory alive for the duration of the test.
+    let _temp_root = Arc::new(TempRoot::new());
     let config = DittoConfig::new(database_id, connect_config)
-        .with_persistence_directory(Arc::new(TempRoot::new()).root_path());
+        .with_persistence_directory(_temp_root.root_path());
 
     // Create Ditto instance (using same pattern as main.rs)
     let ditto = Ditto::open_sync(config)?;
