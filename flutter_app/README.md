@@ -7,7 +7,7 @@ This is a basic task application that demonstrates how to use Ditto's peer-to-pe
 ## Prerequisites
 
 - Dart SDK installed
-- Flutter SDK installed (tested on 3.29)
+- Flutter SDK installed (tested on 3.29/3.32)
 - Java Virtual Machine (JVM) 11 or greater installed 
 - Git command line installed (Windows requirement)
 - XCode installed (for iOS development)
