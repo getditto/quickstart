@@ -1,6 +1,17 @@
 import DittoSwift
 import Foundation
 
+enum DittoManagerError: LocalizedError {
+    case invalidAuthURL(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidAuthURL(let value):
+            return "DITTO_AUTH_URL is missing or not a valid URL: \"\(value)\". Check your .env configuration."
+        }
+    }
+}
+
 /// Owner of the Ditto object
 @MainActor
 class DittoManager: ObservableObject {
@@ -11,10 +22,20 @@ class DittoManager: ObservableObject {
 
     /// Initializes Ditto and configures logging. Handles thrown errors.
     func initDitto() async throws {
+         // Configure logging for non-preview runs
+        let isPreview: Bool = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+        if !isPreview {
+            DittoLogger.minimumLogLevel = .debug
+        }
+
+        guard let authURL = URL(string: Env.DITTO_AUTH_URL) else {
+            throw DittoManagerError.invalidAuthURL(Env.DITTO_AUTH_URL)
+        }
+
         // https://docs.ditto.live/sdk/latest/ditto-config
         let config = DittoConfig(
             databaseID: Env.DITTO_APP_ID,
-            connect: .server(url: URL(string: Env.DITTO_AUTH_URL)!))
+            connect: .server(url: authURL))
 
         do {
             let dittoOpened = try await Ditto.open(config: config)
@@ -37,12 +58,6 @@ class DittoManager: ObservableObject {
         } catch {
             self.ditto = nil
             throw error
-        }
-
-        // Configure logging for non-preview runs
-        let isPreview: Bool = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
-        if !isPreview {
-            DittoLogger.minimumLogLevel = .debug
         }
     }
 }
