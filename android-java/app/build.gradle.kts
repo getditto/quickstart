@@ -18,8 +18,7 @@ fun loadEnvProperties(): Properties {
         val requiredEnvVars = listOf(
             "DITTO_APP_ID",
             "DITTO_PLAYGROUND_TOKEN",
-            "DITTO_AUTH_URL",
-            "DITTO_WEBSOCKET_URL"
+            "DITTO_AUTH_URL"
         )
 
         for (envVar in requiredEnvVars) {
@@ -32,8 +31,7 @@ fun loadEnvProperties(): Properties {
 }
 
 // Define BuildConfig.DITTO_APP_ID, BuildConfig.DITTO_PLAYGROUND_TOKEN,
-// BuildConfig.DITTO_CUSTOM_AUTH_URL, BuildConfig.DITTO_WEBSOCKET_URL
-// based on values in the .env file
+// and BuildConfig.DITTO_AUTH_URL based on values in the .env file
 //
 // More information can be found here:
 // https://docs.ditto.live/sdk/latest/install-guides/java/android#integrating-and-initializing
@@ -67,15 +65,6 @@ androidComponents {
                 "String",
                 "\"${envValue(prop, "DITTO_AUTH_URL")}\"",
                 "Ditto Auth URL"
-            )
-        )
-
-        it.buildConfigFields.put(
-            "DITTO_WEBSOCKET_URL",
-            BuildConfigField(
-                "String",
-                "\"${envValue(prop, "DITTO_WEBSOCKET_URL")}\"",
-                "Ditto Websocket URL"
             )
         )
     }

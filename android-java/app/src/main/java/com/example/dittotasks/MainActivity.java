@@ -24,6 +24,7 @@ import com.ditto.kotlin.DittoSyncSubscription;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +91,7 @@ public class MainActivity extends ComponentActivity {
         taskAdapter.setOnTaskLongPressListener(this::showEditTaskModal);
         
         // Initialize empty list - Ditto observer will populate it
-        taskAdapter.setTasks(List.of());
+        taskAdapter.setTasks(Collections.emptyList());
     }
 
 
@@ -202,7 +203,7 @@ public class MainActivity extends ComponentActivity {
         task.put("done", false);
         task.put("deleted", false);
 
-        Map<String, Object> args = Map.of("task", task);
+        Map<String, Object> args = Collections.singletonMap("task", task);
 
         try {
             // Add tasks into the ditto collection using DQL INSERT statement
@@ -219,7 +220,9 @@ public class MainActivity extends ComponentActivity {
             return;
         }
 
-        Map<String, Object> args = Map.of("id", task.getId(), "title", newTitle);
+        Map<String, Object> args = new HashMap<>();
+        args.put("id", task.getId());
+        args.put("title", newTitle);
 
         try {
             // Update tasks into the ditto collection using DQL UPDATE statement
@@ -236,7 +239,9 @@ public class MainActivity extends ComponentActivity {
             return;
         }
 
-        Map<String, Object> args = Map.of("id", task.getId(), "done", !task.isDone());
+        Map<String, Object> args = new HashMap<>();
+        args.put("id", task.getId());
+        args.put("done", !task.isDone());
 
         try {
             // Update tasks into the ditto collection using DQL UPDATE statement
@@ -253,7 +258,7 @@ public class MainActivity extends ComponentActivity {
             return;
         }
 
-        Map<String, Object> args = Map.of("id", task.getId());
+        Map<String, Object> args = Collections.singletonMap("id", task.getId());
 
         try {
             // UPDATE DQL Statement using Soft-Delete pattern
