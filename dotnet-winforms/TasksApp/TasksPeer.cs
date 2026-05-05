@@ -20,7 +20,7 @@ public class TasksPeer : IDisposable
     public string AuthUrl { get; private set; }
     public string WebsocketUrl { get; private set; }
 
-    public bool IsSyncActive => _ditto.IsSyncActive;
+    public bool IsSyncActive => _ditto.Sync.IsActive;
 
     private Ditto _ditto;
 
@@ -267,7 +267,7 @@ public class TasksPeer : IDisposable
     /// </summary>
     public void StartSync()
     {
-        _ditto.StartSync();
+        _ditto.Sync.Start();
     }
 
     /// <summary>
@@ -279,6 +279,6 @@ public class TasksPeer : IDisposable
         {
             subscription.Cancel();
         }
-        _ditto.StopSync();
+        _ditto.Sync.Stop();
     }
 }
