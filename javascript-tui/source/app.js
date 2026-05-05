@@ -102,6 +102,16 @@ const TodoApp = ({ditto}) => {
 	const subscriptionRef = useRef(null);
 	const observerRef = useRef(null);
 
+	useEffect(() => {
+		return () => {
+			const subscription = subscriptionRef.current;
+			const observer = observerRef.current;
+
+			void subscription;
+			void observer;
+		};
+	}, []);
+
 	useInput((input, key) => {
 		if (mode === LIST_MODE) {
 			if (input === 'c') {
