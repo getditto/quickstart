@@ -12,6 +12,7 @@ export type DittoIdentity = {
 
 export type DittoApi = {
   getInfo: () => Promise<DittoIdentity>;
+  getTasks: () => Promise<Task[]>;
   createTask: (title: string) => Promise<void>;
   editTask: (id: string, title: string) => Promise<void>;
   toggleTask: (id: string, done: boolean) => Promise<void>;
@@ -23,6 +24,7 @@ export type DittoApi = {
 
 export const IPC = {
   TASKS_GET_INFO: 'tasks:getInfo',
+  TASKS_GET: 'tasks:get',
   TASKS_CREATE: 'tasks:create',
   TASKS_EDIT: 'tasks:edit',
   TASKS_TOGGLE: 'tasks:toggle',

@@ -5,6 +5,7 @@ import type { DittoApi, DittoIdentity, Task } from '../types';
 
 const api: DittoApi = {
   getInfo: (): Promise<DittoIdentity> => ipcRenderer.invoke(IPC.TASKS_GET_INFO),
+  getTasks: (): Promise<Task[]> => ipcRenderer.invoke(IPC.TASKS_GET),
   createTask: (title: string): Promise<void> =>
     ipcRenderer.invoke(IPC.TASKS_CREATE, title),
   editTask: (id: string, title: string): Promise<void> =>

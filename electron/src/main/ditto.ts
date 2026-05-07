@@ -12,6 +12,7 @@ import type { DittoIdentity, Task } from '../types';
 let ditto: Ditto | null = null;
 let subscription: SyncSubscription | null = null;
 let observer: StoreObserver | null = null;
+let currentTasks: Task[] = [];
 
 export async function initDitto(
   onTasksUpdated: (tasks: Task[]) => void,
@@ -57,13 +58,22 @@ export async function initDitto(
   observer = ditto.store.registerObserver<Task>(
     'SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC',
     (results) => {
-      onTasksUpdated(results.items.map((item) => item.value));
+      currentTasks = results.items.map((item) => item.value);
+      onTasksUpdated(currentTasks);
     },
   );
 }
 
 export function getInfo(): DittoIdentity {
   return { appId: env.appId, token: env.token };
+}
+
+// Returns the latest observed task list. Lets the renderer hydrate its
+// initial state after registering its onTasksUpdated listener, closing
+// the race where the observer may have fired during cloud sync before
+// the BrowserWindow was ready to receive IPC events.
+export function getTasks(): Task[] {
+  return currentTasks;
 }
 
 // https://docs.ditto.com/sdk/latest/crud/create
@@ -108,6 +118,7 @@ export async function shutdown(): Promise<void> {
   subscription?.cancel();
   observer = null;
   subscription = null;
+  currentTasks = [];
   if (ditto) {
     try {
       ditto.close();

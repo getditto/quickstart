@@ -22,9 +22,14 @@ const App = () => {
         if (!isMounted) return;
         setAppId(info.appId);
         setToken(info.token);
+        // Subscribe before fetching initial state so updates that arrive
+        // during the round-trip aren't missed.
         unsubscribe = window.ditto.onTasksUpdated((updated) => {
           if (isMounted) setTasks(updated);
         });
+        const initial = await window.ditto.getTasks();
+        if (!isMounted) return;
+        setTasks(initial);
         setIsInitialized(true);
       } catch (e) {
         if (isMounted) setError(e as Error);

@@ -10,7 +10,7 @@ This directory contains Ditto's quickstart app for [Electron](https://www.electr
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) v20 or later
+- [Node.js](https://nodejs.org/) v22.12 or later (matches the floor of the bundled Electron runtime)
 
 ## Supported platforms
 

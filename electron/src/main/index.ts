@@ -7,6 +7,7 @@ import {
   deleteTask,
   editTask,
   getInfo,
+  getTasks,
   initDitto,
   shutdown,
   startSync,
@@ -31,10 +32,9 @@ function createWindow(): BrowserWindow {
     title: 'Ditto Tasks',
     backgroundColor: '#f3f4f6',
     webPreferences: {
-      preload: resolve(__dirname, '../preload/index.mjs'),
+      preload: resolve(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
     },
   });
 
@@ -48,6 +48,7 @@ function createWindow(): BrowserWindow {
 }
 
 ipcMain.handle(IPC.TASKS_GET_INFO, () => getInfo());
+ipcMain.handle(IPC.TASKS_GET, () => getTasks());
 ipcMain.handle(IPC.TASKS_CREATE, (_event, title: string) => createTask(title));
 ipcMain.handle(IPC.TASKS_EDIT, (_event, id: string, title: string) =>
   editTask(id, title),
