@@ -803,10 +803,10 @@
     "@deno/shim-deno-test" "^0.4.0"
     which "^2.0.2"
 
-"@dittolive/ditto@4.13.4-preview.2":
-  version "4.13.4-preview.2"
-  resolved "https://registry.npmjs.org/@dittolive/ditto/-/ditto-4.13.4-preview.2.tgz"
-  integrity sha512-bwZou2K69+SFeb3BMPqTmbhMouflRfYG9veanOwgtbYUY6vS4YpxnMNpteWvZtnuZU3tXiHKP9oOEu31HKzL2A==
+"@dittolive/ditto@4.13.4-rc.2":
+  version "4.13.4-rc.2"
+  resolved "https://registry.npmjs.org/@dittolive/ditto/-/ditto-4.13.4-rc.2.tgz"
+  integrity sha512-o0/xKeEMO9ZvGZKj5p1BbERfM/z/QBL3hHLbsWWIS7kXZAaG8PuBnQWYQH4Ifq++rZKpaCvO/dZS0zn9jCRX3w==
   dependencies:
     "@expo/config-plugins" "^9.0.11"
     cbor-redux "^1.0.0"
