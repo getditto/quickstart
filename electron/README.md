@@ -79,7 +79,7 @@ npm run dev
 
 ### Troubleshooting: `Error: Electron uninstall`
 
-If `npm run dev` fails with `Error: Electron uninstall`, the Electron binary was not downloaded during `npm install` (this can happen if scripts were skipped or a network error occurred). Fix it by running the install script manually:
+If `npm run dev` fails with `Error: Electron uninstall`, the Electron binary was not downloaded during `npm install` (this can happen if scripts were skipped or a network error occurred) on Windows. Fix it by running the install script manually:
 
 ```
 node node_modules/electron/install.js
