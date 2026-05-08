@@ -1,3 +1,0 @@
-{
-  "statement": "SELECT * FROM tasks WHERE deleted=false"
-}
