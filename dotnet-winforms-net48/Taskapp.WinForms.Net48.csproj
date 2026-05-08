@@ -39,16 +39,16 @@
       <HintPath>packages\PeterO.Cbor.4.5.2\lib\net40\CBOR.dll</HintPath>
     </Reference>
     <Reference Include="Ditto, Version=4.14.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Ditto.4.14.4-experimental-net-framework-support.1\lib\netstandard2.0\Ditto.dll</HintPath>
+      <HintPath>packages\Ditto.4.14.4\lib\netstandard2.0\Ditto.dll</HintPath>
     </Reference>
     <Reference Include="Ditto.Native.Linux, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Ditto.Native.Linux.4.14.4-experimental-net-framework-support.1\lib\netstandard2.0\Ditto.Native.Linux.dll</HintPath>
+      <HintPath>packages\Ditto.Native.Linux.4.14.4\lib\netstandard2.0\Ditto.Native.Linux.dll</HintPath>
     </Reference>
     <Reference Include="Ditto.Native.MacOS, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Ditto.Native.MacOS.4.14.4-experimental-net-framework-support.1\lib\netstandard2.0\Ditto.Native.MacOS.dll</HintPath>
+      <HintPath>packages\Ditto.Native.MacOS.4.14.4\lib\netstandard2.0\Ditto.Native.MacOS.dll</HintPath>
     </Reference>
     <Reference Include="Ditto.Native.Win, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Ditto.Native.Win.4.14.4-experimental-net-framework-support.1\lib\netstandard2.0\Ditto.Native.Win.dll</HintPath>
+      <HintPath>packages\Ditto.Native.Win.4.14.4\lib\netstandard2.0\Ditto.Native.Win.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.HashCode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.Bcl.HashCode.1.1.1\lib\net461\Microsoft.Bcl.HashCode.dll</HintPath>
@@ -137,7 +137,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="packages\Ditto.Native.Win.4.14.4-experimental-net-framework-support.1\runtimes\win-x64\native\dittoffi.dll">
+    <Content Include="packages\Ditto.Native.Win.4.14.4\runtimes\win-x64\native\dittoffi.dll">
       <Link>dittoffi.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

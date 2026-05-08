@@ -26,12 +26,12 @@ namespace Taskapp.WinForms.Net48
         /// <summary>
         /// Initializes the TasksPeer with configuration values
         /// </summary>
-        public async Task InitializeAsync(string appId, string playgroundToken, string authUrl, string websocketUrl)
+        public async Task InitializeAsync(string appId, string playgroundToken, string authUrl)
         {
             if (_isInitialized)
                 throw new InvalidOperationException("TasksPeerService is already initialized");
 
-            _tasksPeer = await TasksPeer.Create(appId, playgroundToken, authUrl, websocketUrl);
+            _tasksPeer = await TasksPeer.Create(appId, playgroundToken, authUrl);
             _isInitialized = true;
         }
 

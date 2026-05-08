@@ -20,7 +20,6 @@ namespace Taskapp.WinForms.Net48
         public string AppId { get; private set; }
         public string PlaygroundToken { get; private set; }
         public string AuthUrl { get; private set; }
-        public string WebsocketUrl { get; private set; }
 
         public bool IsSyncActive => _ditto.Sync.IsActive;
 
@@ -32,11 +31,11 @@ namespace Taskapp.WinForms.Net48
         public static async Task<TasksPeer> Create(
             string appId,
             string playgroundToken,
-            string authUrl,
-            string websocketUrl)
+            string authUrl)
         {
-            var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
+            var peer = new TasksPeer(appId, playgroundToken, authUrl);
             peer.Authenticate();
+            await peer.DisableStrictMode();
             peer.RegisterSubscription();
             await peer.InsertInitialTasks();
             peer.StartSync();
@@ -94,13 +93,11 @@ namespace Taskapp.WinForms.Net48
         /// <param name="appId">Ditto application ID</param>
         /// <param name="playgroundToken">Ditto online playground token</param>
         /// <param name="authUrl">Ditto Auth URL</param>
-        /// <param name="websocketUrl">Ditto Websocket URL</param>
-        private TasksPeer(string appId, string playgroundToken, string authUrl, string websocketUrl)
+        private TasksPeer(string appId, string playgroundToken, string authUrl)
         {
             AppId = appId;
             PlaygroundToken = playgroundToken;
             AuthUrl = authUrl;
-            WebsocketUrl = websocketUrl;
 
             var config = new DittoConfig(
                 AppId,
@@ -108,7 +105,19 @@ namespace Taskapp.WinForms.Net48
             );
 
             _ditto = Ditto.Open(config);
+            // Required on the 4.x SDK to allow DQL usage; not needed in v5.
             _ditto.DisableSyncWithV3();
+        }
+
+        /// <summary>
+        /// Disables DQL strict mode to simplify queries — lets <c>SELECT *</c> and
+        /// other ad-hoc queries run without pre-declaring a collection schema.
+        /// Strict mode is on by default in the 4.x SDK; the default flips in v5.
+        /// </summary>
+        /// <seealso href="https://docs.ditto.live/dql/strict-mode"/>
+        private async Task DisableStrictMode()
+        {
+            await _ditto.Store.ExecuteAsync("ALTER SYSTEM SET DQL_STRICT_MODE = false");
         }
 
         public void Dispose()

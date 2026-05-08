@@ -12,7 +12,6 @@ namespace Taskapp.WinForms.Net48
         public static string AppId { get; private set; }
         public static string PlaygroundToken { get; private set; }
         public static string AuthUrl { get; private set; }
-        public static string WebsocketUrl { get; private set; }
 
         /// <summary>
         /// Loads configuration from .env file in the application directory
@@ -52,9 +51,6 @@ namespace Taskapp.WinForms.Net48
                         case "DITTO_AUTH_URL":
                             AuthUrl = value;
                             break;
-                        case "DITTO_WEBSOCKET_URL":
-                            WebsocketUrl = value;
-                            break;
                     }
                 }
             }
@@ -66,8 +62,6 @@ namespace Taskapp.WinForms.Net48
                 throw new InvalidOperationException("DITTO_PLAYGROUND_TOKEN is required in .env file");
             if (string.IsNullOrWhiteSpace(AuthUrl))
                 throw new InvalidOperationException("DITTO_AUTH_URL is required in .env file");
-            if (string.IsNullOrWhiteSpace(WebsocketUrl))
-                throw new InvalidOperationException("DITTO_WEBSOCKET_URL is required in .env file");
         }
     }
 }
