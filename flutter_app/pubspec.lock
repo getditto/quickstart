@@ -69,10 +69,10 @@ packages:
     dependency: "direct main"
     description:
       name: ditto_live
-      sha256: faaed71d83f88b4a44f9dac345acc2ce9830706c8f3be9e384dad40a3ebc87ff
+      sha256: a5d94740853ef33b3974b631ef728b5a7a19a0a9201d72c7a0c6b14fdd2f39d6
       url: "https://pub.dev"
     source: hosted
-    version: "4.13.4-preview.2"
+    version: "4.13.4-rc.2"
   equatable:
     dependency: "direct main"
     description:
