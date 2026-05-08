@@ -24,7 +24,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Create test .env file
         run: |
@@ -61,7 +61,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -82,13 +82,13 @@ jobs:
       - name: Build Android APK (unsigned Release)
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-android --no-restore
+          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net10.0-android --no-restore
 
       - name: Upload Android APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-android/live.ditto.quickstart.mauitasksapp-Signed.apk
+          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net10.0-android/live.ditto.quickstart.mauitasksapp-Signed.apk
           retention-days: 1
 
   build-ios:
@@ -101,10 +101,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.3"
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Create .env file
         run: |
@@ -122,13 +127,13 @@ jobs:
       - name: Build iOS Device (Release for BrowserStack)
         working-directory: dotnet-maui/DittoMauiTasksApp
         run: |
-          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net9.0-ios --no-restore \
+          dotnet build DittoMauiTasksApp.csproj --configuration Release --framework net10.0-ios --no-restore \
             /p:RuntimeIdentifier=ios-arm64 \
             /p:EnableCodeSigning=false \
             /p:ArchiveOnBuild=false
 
       - name: Create iOS IPA for BrowserStack
-        working-directory: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64
+        working-directory: dotnet-maui/DittoMauiTasksApp/bin/Release/net10.0-ios/ios-arm64
         run: |
           mkdir -p Payload
           cp -r DittoMauiTasksApp.app Payload/
@@ -140,7 +145,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net9.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa
+          path: dotnet-maui/DittoMauiTasksApp/bin/Release/net10.0-ios/ios-arm64/DittoMauiTasksApp-device.ipa
           retention-days: 1
 
   browserstack-android:
@@ -159,7 +164,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Download Android APK artifact
         uses: actions/download-artifact@v4
@@ -285,7 +290,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          global-json-file: dotnet-maui/global.json
 
       - name: Download iOS IPA artifact
         uses: actions/download-artifact@v4

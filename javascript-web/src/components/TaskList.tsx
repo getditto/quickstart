@@ -112,6 +112,7 @@ const TaskItem: React.FC<ItemProps> = React.memo(
     );
   },
 );
+TaskItem.displayName = 'TaskItem';
 
 type ListProps = {
   tasks: Task[] | null;
@@ -256,7 +257,7 @@ const TaskList: React.FC<ListProps> = ({
       <div className="bg-white shadow-md overflow-y-auto">{taskList}</div>
 
       {/* New Task Input */}
-      <div className="bg-white shadow-md rounded-b-lg flex focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent pt-">
+      <div className="bg-white shadow-md rounded-b-lg flex focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
         <input
           type="text"
           placeholder="What needs to be done?"

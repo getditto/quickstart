@@ -33,30 +33,12 @@ async function createDittoInstance() {
 		config.connect.websocketURLs = [websocketURL];
 	});
 
-	await ditto.disableSyncWithV3();
-
 	if (connectConfig.mode === 'server') {
 		await ditto.auth.setExpirationHandler(
 			async (dittoInstance, timeUntilExpiration) => {
-				console.log(
-					'Authentication expiring soon, time until expiration:',
-					timeUntilExpiration,
-				);
-
 				if (dittoInstance.auth.loginSupported) {
 					const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
-					const reLoginResult = await dittoInstance.auth.login(
-						token,
-						devProvider,
-					);
-					if (reLoginResult.error) {
-						console.error('Re-authentication failed:', reLoginResult.error);
-					} else {
-						console.log(
-							'Successfully re-authenticated with info:',
-							reLoginResult,
-						);
-					}
+					await dittoInstance.auth.login(token, devProvider);
 				}
 			},
 		);
@@ -65,25 +47,17 @@ async function createDittoInstance() {
 			const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
 			const loginResult = await ditto.auth.login(token, devProvider);
 			if (loginResult.error) {
-				console.error('Login failed:', loginResult.error);
-			} else {
-				console.log('Successfully logged in with info:', loginResult);
+				throw new Error(`Login failed: ${loginResult.error}`);
 			}
 		}
 	}
 
-	try {
-		await ditto.store.execute('ALTER SYSTEM SET DQL_STRICT_MODE = false');
-	} catch (error) {
-		console.error('Integration test DQL setup failed:', error);
-		throw error;
-	}
-
-	ditto.startSync();
+	ditto.sync.start();
 	return ditto;
 }
 
 async function runIntegrationTest() {
+	let ditto;
 	try {
 		const expectedTitle = process.env.DITTO_CLOUD_TASK_TITLE;
 
@@ -91,7 +65,7 @@ async function runIntegrationTest() {
 			throw new Error('Missing DITTO_CLOUD_TASK_TITLE environment variable');
 		}
 
-		const ditto = await createDittoInstance();
+		ditto = await createDittoInstance();
 		const {stdout} = render(React.createElement(App, {ditto}));
 
 		for (let i = 1; i <= MAX_WAIT_ITERATIONS; i++) {
@@ -108,11 +82,14 @@ async function runIntegrationTest() {
 			}
 		}
 
-		await ditto.close();
 		console.error('FAILURE: Integration test conditions not met');
+		await ditto.close();
 		process.exit(1);
 	} catch (error) {
 		console.error('Integration test error:', error);
+		if (ditto) {
+			await ditto.close();
+		}
 		process.exit(1);
 	}
 }

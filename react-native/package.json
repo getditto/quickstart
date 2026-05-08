@@ -15,7 +15,7 @@
     "clean": "rm -rf node_modules && yarn install && cd ios && rm -rf Podfile.lock && rm -rf Pods && pod install && cd .."
   },
   "dependencies": {
-    "@dittolive/ditto": "4.13.1",
+    "@dittolive/ditto": "4.14.3",
     "react": "19.1.1",
     "react-native": "0.82.1",
     "react-native-bouncy-checkbox": "^4.1.2",
@@ -23,7 +23,8 @@
   },
   "resolutions": {
     "image-size": "1.2.1",
-    "fast-xml-parser": "4.5.4",
+    "fast-xml-parser": "5.5.6",
+    "flatted": "3.4.2",
     "glob/minimatch": "3.1.5",
     "eslint/minimatch": "3.1.5",
     "test-exclude/minimatch": "3.1.5",
