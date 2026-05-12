@@ -176,3 +176,11 @@ After each of the four PRs above merges, rebase that app's offline switch
 on top of it. The fastest path is probably one small follow-up PR per
 migrated app rather than a single bundled one — each rebase is mechanical
 but touches a different language.
+
+## Cleanup
+
+Once all four apps above have the offline branch re-applied on top of
+their v5 migrations, **delete this file** in the final follow-up PR. This
+is a transient planning doc, not durable documentation — leaving it in
+the repo after the work is done invites confusion when someone reads it
+months later and wonders whether the listed PRs are still open.
