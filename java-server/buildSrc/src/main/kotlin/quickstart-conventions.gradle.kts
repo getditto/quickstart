@@ -45,6 +45,11 @@ val generateSecretProperties by tasks.registering {
             """.trimIndent())
         }
 
+        // Optional keys default to empty string so generated code always
+        // compiles. DITTO_OFFLINE_LICENSE_TOKEN is the offline-mode toggle:
+        // non-empty after trim means "init in offline mode."
+        properties.putIfAbsent("DITTO_OFFLINE_LICENSE_TOKEN", "")
+
         val javaSource = """
             |package com.ditto.example.spring.quickstart.configuration;
             |

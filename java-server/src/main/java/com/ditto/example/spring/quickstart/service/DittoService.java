@@ -60,7 +60,11 @@ public class DittoService implements DisposableBean {
         this.ditto = DittoFactory.create(dittoConfig);
 
         if (isOffline) {
-            this.ditto.setOfflineOnlyLicenseToken(offlineLicenseToken);
+            try {
+                this.ditto.setOfflineOnlyLicenseToken(offlineLicenseToken);
+            } catch (DittoException e) {
+                throw new RuntimeException("Failed to activate offline license token", e);
+            }
         } else {
             this.ditto.getAuth().setExpirationHandler((expiringDitto, _timeUntilExpiration) ->
                     expiringDitto.getAuth()

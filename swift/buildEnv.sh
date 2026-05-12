@@ -17,6 +17,8 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
+has_offline_token=0
+
 if [ -f "$1" ]; then
     while IFS='' read -r line || [[ -n "$line" ]]; do
         line="${line//[$'\r\n']}"
@@ -24,6 +26,9 @@ if [ -f "$1" ]; then
         if [ -n "$trimline" ] && [[ $trimline != \#* ]]; then
             KEY="${line%%=*}"
             VALUE="$(echo "${line#*=}" | sed 's/^[[:space:]]*//; s/^"//; s/"$//')"
+            if [ "$KEY" = "DITTO_OFFLINE_LICENSE_TOKEN" ]; then
+                has_offline_token=1
+            fi
             code=$(cat <<EOS
         $code
     static let $KEY = "$VALUE"
@@ -31,6 +36,17 @@ EOS
 )
         fi
     done < "$1"
+fi
+
+# Always emit DITTO_OFFLINE_LICENSE_TOKEN — empty by default — so the
+# offline-mode switch in DittoManager.swift compiles even when the user
+# has not added the key to .env.
+if [ $has_offline_token -eq 0 ]; then
+    code=$(cat <<EOS
+$code
+    static let DITTO_OFFLINE_LICENSE_TOKEN = ""
+EOS
+)
 fi
 
 code=$(cat <<EOS
