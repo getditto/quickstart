@@ -16,6 +16,7 @@
     <!-- Reference the shared source files from TasksApp -->
     <Compile Include="..\TasksApp\ToDoTask.cs" Link="Shared\ToDoTask.cs" />
     <Compile Include="..\TasksApp\TasksPeer.cs" Link="Shared\TasksPeer.cs" />
+    <Compile Include="..\TasksApp\DittoMode.cs" Link="Shared\DittoMode.cs" />
   </ItemGroup>
 
   <ItemGroup>
