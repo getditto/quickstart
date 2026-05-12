@@ -126,6 +126,24 @@ async fn try_init_ditto(
 ) -> Result<Ditto> {
     let mode = select_mode(&offline_license_token);
 
+    if mode == DittoMode::OnlinePlayground {
+        let missing: Vec<&str> = [
+            ("DITTO_PLAYGROUND_TOKEN", token.trim()),
+            ("DITTO_AUTH_URL", custom_auth_url.trim()),
+            ("DITTO_WEBSOCKET_URL", websocket_url.trim()),
+        ]
+        .into_iter()
+        .filter(|(_, v)| v.is_empty())
+        .map(|(k, _)| k)
+        .collect();
+        if !missing.is_empty() {
+            anyhow::bail!(
+                "Online Playground mode requires: {}. Set DITTO_OFFLINE_LICENSE_TOKEN to use offline mode instead.",
+                missing.join(", ")
+            );
+        }
+    }
+
     // We use a temporary directory to store Ditto's local database.
     // This means that data will not be persistent between runs of the
     // application, but it allows us to run multiple instances of the

@@ -73,6 +73,20 @@ class _DittoExampleState extends State<DittoExample> {
 
     await Ditto.init();
 
+    if (mode == DittoMode.onlinePlayground) {
+      final missing = <String>[
+        if (token.trim().isEmpty) 'DITTO_PLAYGROUND_TOKEN',
+        if ((authUrl ?? '').trim().isEmpty) 'DITTO_AUTH_URL',
+        if (websocketUrl.trim().isEmpty) 'DITTO_WEBSOCKET_URL',
+      ];
+      if (missing.isNotEmpty) {
+        throw Exception(
+          'Online Playground mode requires: ${missing.join(', ')}. '
+          'Set DITTO_OFFLINE_LICENSE_TOKEN to use offline mode instead.',
+        );
+      }
+    }
+
     final Identity identity;
     if (mode == DittoMode.offline) {
       // Site IDs distinguish peers; generate a per-run value to avoid collisions

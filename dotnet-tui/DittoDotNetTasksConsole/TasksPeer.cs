@@ -114,6 +114,20 @@ public class TasksPeer : IDisposable
         OfflineLicenseToken = (offlineLicenseToken ?? string.Empty).Trim();
         Mode = DittoModeSelector.Select(OfflineLicenseToken);
 
+        if (Mode == DittoMode.OnlinePlayground)
+        {
+            var missing = new List<string>();
+            if (string.IsNullOrWhiteSpace(playgroundToken)) missing.Add("DITTO_PLAYGROUND_TOKEN");
+            if (string.IsNullOrWhiteSpace(authUrl)) missing.Add("DITTO_AUTH_URL");
+            if (string.IsNullOrWhiteSpace(websocketUrl)) missing.Add("DITTO_WEBSOCKET_URL");
+            if (missing.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Online Playground mode requires: {string.Join(", ", missing)}. " +
+                    "Set DITTO_OFFLINE_LICENSE_TOKEN to use offline mode instead.");
+            }
+        }
+
         DittoConfigConnect connect = Mode == DittoMode.Offline
             ? new DittoConfigConnect.SmallPeersOnly()
             : new DittoConfigConnect.Server(new Uri(authUrl));

@@ -15,17 +15,34 @@ fun loadEnvProperties(): Properties {
     if (envFile.exists()) {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
-        val requiredEnvVars = listOf(
+        // Read every var we know about from the process env. DITTO_APP_ID is
+        // always required; the playground/auth/websocket trio is only required
+        // when DITTO_OFFLINE_LICENSE_TOKEN is unset.
+        val knownEnvVars = listOf(
             "DITTO_APP_ID",
             "DITTO_PLAYGROUND_TOKEN",
             "DITTO_AUTH_URL",
-            "DITTO_WEBSOCKET_URL"
+            "DITTO_WEBSOCKET_URL",
+            "DITTO_OFFLINE_LICENSE_TOKEN"
         )
-
-        for (envVar in requiredEnvVars) {
-            val value = System.getenv(envVar)
-                ?: throw RuntimeException("Required environment variable $envVar not found")
-            properties[envVar] = value
+        for (envVar in knownEnvVars) {
+            System.getenv(envVar)?.let { properties[envVar] = it }
+        }
+        val appId = properties["DITTO_APP_ID"] as String?
+        if (appId.isNullOrBlank()) {
+            throw RuntimeException("Required environment variable DITTO_APP_ID not found")
+        }
+        val offlineToken = (properties["DITTO_OFFLINE_LICENSE_TOKEN"] as String? ?: "").trim()
+        if (offlineToken.isEmpty()) {
+            for (envVar in listOf("DITTO_PLAYGROUND_TOKEN", "DITTO_AUTH_URL", "DITTO_WEBSOCKET_URL")) {
+                val value = properties[envVar] as String?
+                if (value.isNullOrBlank()) {
+                    throw RuntimeException(
+                        "Required environment variable $envVar not found " +
+                            "(set DITTO_OFFLINE_LICENSE_TOKEN to use offline mode instead)"
+                    )
+                }
+            }
         }
     }
     // Offline mode is opt-in; treat missing var as empty so the

@@ -40,13 +40,32 @@ public static class MauiProgram
     private static Ditto SetupDitto()
     {
         var envVars = LoadEnvVariables();
-        AppId = envVars["DITTO_APP_ID"];
-        PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"];
+        AppId = envVars.TryGetValue("DITTO_APP_ID", out var rawAppId) ? rawAppId : "";
+        PlaygroundToken = envVars.TryGetValue("DITTO_PLAYGROUND_TOKEN", out var rawToken1) ? rawToken1 : "";
         var authUrl = envVars.TryGetValue("DITTO_AUTH_URL", out var rawAuthUrl) ? rawAuthUrl : "";
+        var websocketUrl = envVars.TryGetValue("DITTO_WEBSOCKET_URL", out var rawWsUrl) ? rawWsUrl : "";
         var offlineLicenseToken = envVars.TryGetValue("DITTO_OFFLINE_LICENSE_TOKEN", out var rawToken)
             ? rawToken.Trim()
             : "";
         var isOffline = !string.IsNullOrEmpty(offlineLicenseToken);
+
+        if (string.IsNullOrWhiteSpace(AppId))
+        {
+            throw new InvalidOperationException("DITTO_APP_ID is required.");
+        }
+        if (!isOffline)
+        {
+            var missing = new List<string>();
+            if (string.IsNullOrWhiteSpace(PlaygroundToken)) missing.Add("DITTO_PLAYGROUND_TOKEN");
+            if (string.IsNullOrWhiteSpace(authUrl)) missing.Add("DITTO_AUTH_URL");
+            if (string.IsNullOrWhiteSpace(websocketUrl)) missing.Add("DITTO_WEBSOCKET_URL");
+            if (missing.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Online Playground mode requires: {string.Join(", ", missing)}. " +
+                    "Set DITTO_OFFLINE_LICENSE_TOKEN to use offline mode instead.");
+            }
+        }
 
         // New Initialization code - https://docs.ditto.live/sdk/latest/ditto-config
         DittoConfigConnect connect = isOffline
