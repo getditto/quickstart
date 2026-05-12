@@ -14,7 +14,7 @@ public enum DittoMode
 
 public static class DittoModeSelector
 {
-    public static DittoMode Select(string? offlineLicenseToken)
+    public static DittoMode Select(string offlineLicenseToken)
     {
         return string.IsNullOrWhiteSpace(offlineLicenseToken)
             ? DittoMode.OnlinePlayground
