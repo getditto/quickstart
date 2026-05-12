@@ -86,9 +86,14 @@ func main() {
 	appID := os.Getenv("DITTO_APP_ID")
 	token := os.Getenv("DITTO_PLAYGROUND_TOKEN")
 	authURL := os.Getenv("DITTO_AUTH_URL")
+	offlineLicenseToken := strings.TrimSpace(os.Getenv("DITTO_OFFLINE_LICENSE_TOKEN"))
+	isOffline := offlineLicenseToken != ""
 
-	if appID == "" || token == "" || authURL == "" {
-		log.Fatal("Missing required environment variables. Please set DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, and DITTO_AUTH_URL")
+	if appID == "" {
+		log.Fatal("Missing required environment variable DITTO_APP_ID")
+	}
+	if !isOffline && (token == "" || authURL == "") {
+		log.Fatal("Missing required environment variables. Please set DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, and DITTO_AUTH_URL (or set DITTO_OFFLINE_LICENSE_TOKEN to run in offline mode)")
 	}
 
 	// Create temp directory for persistence
@@ -98,11 +103,19 @@ func main() {
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Initialize Ditto with Server connection API
+	// Initialize Ditto. In offline mode the SmallPeersOnly connect variant is used
+	// and the app activates with the offline-only license token; otherwise we use
+	// the Server connect variant and authenticate with the playground token.
+	var connect ditto.DittoConfigConnect
+	if isOffline {
+		connect = &ditto.DittoConfigConnectSmallPeersOnly{}
+	} else {
+		connect = &ditto.DittoConfigConnectServer{URL: authURL}
+	}
 	config := ditto.DefaultDittoConfig().
 		WithDatabaseID(appID).
 		WithPersistenceDirectory(tempDir).
-		WithConnect(&ditto.DittoConfigConnectServer{URL: authURL})
+		WithConnect(connect)
 
 	d, err := ditto.Open(config)
 	if err != nil {
@@ -110,24 +123,30 @@ func main() {
 	}
 	defer d.Close()
 
-	// Set up authentication handler for development mode
-	if auth := d.Auth(); auth != nil {
-		auth.SetExpirationHandler(
-			func(d *ditto.Ditto, timeUntilExpiration time.Duration) {
-				log.Printf("Expiration handler called with time until expiration: %v", timeUntilExpiration)
+	if isOffline {
+		if err := d.SetOfflineOnlyLicenseToken(offlineLicenseToken); err != nil {
+			log.Fatal("Failed to set offline-only license token:", err)
+		}
+	} else {
+		// Set up authentication handler for development mode
+		if auth := d.Auth(); auth != nil {
+			auth.SetExpirationHandler(
+				func(d *ditto.Ditto, timeUntilExpiration time.Duration) {
+					log.Printf("Expiration handler called with time until expiration: %v", timeUntilExpiration)
 
-				// For development mode, login with the playground token
-				provider := ditto.DevelopmentAuthenticationProvider()
-				clientInfoJSON, err := d.Auth().Login(token, provider)
-				if err != nil {
-					log.Printf("Failed to login: %v", err)
-				} else {
-					log.Printf("Login successful")
-					if clientInfoJSON != "" {
-						log.Printf("Client info: %s", clientInfoJSON)
+					// For development mode, login with the playground token
+					provider := ditto.DevelopmentAuthenticationProvider()
+					clientInfoJSON, err := d.Auth().Login(token, provider)
+					if err != nil {
+						log.Printf("Failed to login: %v", err)
+					} else {
+						log.Printf("Login successful")
+						if clientInfoJSON != "" {
+							log.Printf("Client info: %s", clientInfoJSON)
+						}
 					}
-				}
-			})
+				})
+		}
 	}
 
 	// Start sync (authentication handler will be called automatically if needed)

@@ -22,6 +22,7 @@ import {
   DITTO_PLAYGROUND_TOKEN,
   DITTO_AUTH_URL,
   DITTO_WEBSOCKET_URL,
+  DITTO_OFFLINE_LICENSE_TOKEN,
 } from "@env";
 
 import Fab from "./components/Fab";
@@ -122,22 +123,25 @@ const App = () => {
       // https://docs.ditto.live/sdk/latest/install-guides/react-native#onlineplayground
       const databaseId = DITTO_APP_ID;
       const playgroundToken = DITTO_PLAYGROUND_TOKEN;
+      const offlineLicenseToken = (DITTO_OFFLINE_LICENSE_TOKEN ?? '').trim();
+      const isOffline = offlineLicenseToken.length > 0;
 
-      const connectConfig: DittoConfigConnect = {
-        mode: 'server',
-        url: DITTO_AUTH_URL,
-      };
+      const connectConfig: DittoConfigConnect = isOffline
+        ? {mode: 'smallPeersOnly'}
+        : {mode: 'server', url: DITTO_AUTH_URL};
 
       const config = new DittoConfig(databaseId, connectConfig, 'custom-folder');
 
       ditto.current = await Ditto.open(config);
 
-      // Configure websocket URL for transport
-      ditto.current.updateTransportConfig((transportConfig) => {
-        transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
-      });
+      if (isOffline) {
+        ditto.current.setOfflineOnlyLicenseToken(offlineLicenseToken);
+      } else {
+        // Configure websocket URL for transport (online mode only)
+        ditto.current.updateTransportConfig((transportConfig) => {
+          transportConfig.connect.websocketURLs = [DITTO_WEBSOCKET_URL];
+        });
 
-      if (connectConfig.mode === 'server') {
         await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
           console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
 

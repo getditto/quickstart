@@ -22,3 +22,11 @@ For more information, see - [Kotlin Multiplatform Install Guide](https://docs.di
 
 - [Kotlin Multiplatform Roadmap and Support Policy](https://docs.ditto.live/sdk/latest/install-guides/kotlin/multiplatform-roadmap)
 - [API Reference](https://software.ditto.live/java/ditto-java/5.0.0-preview.3/api-reference/)
+
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

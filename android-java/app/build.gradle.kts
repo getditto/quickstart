@@ -67,6 +67,15 @@ androidComponents {
                 "Ditto Auth URL"
             )
         )
+
+        it.buildConfigFields.put(
+            "DITTO_OFFLINE_LICENSE_TOKEN",
+            BuildConfigField(
+                "String",
+                "\"${envValue(prop, "DITTO_OFFLINE_LICENSE_TOKEN")}\"",
+                "Optional offline-only license token; when non-empty, app runs in offline mode"
+            )
+        )
     }
 }
 

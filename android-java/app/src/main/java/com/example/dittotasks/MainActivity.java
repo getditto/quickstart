@@ -42,6 +42,8 @@ public class MainActivity extends ComponentActivity {
     private final String dittoAppId = BuildConfig.DITTO_APP_ID;
     private final String dittoPlaygroundToken = BuildConfig.DITTO_PLAYGROUND_TOKEN;
     private final String dittoAuthUrl = BuildConfig.DITTO_AUTH_URL;
+    private final String dittoOfflineLicenseToken = BuildConfig.DITTO_OFFLINE_LICENSE_TOKEN.trim();
+    private final DittoMode dittoMode = DittoMode.select(dittoOfflineLicenseToken);
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -110,18 +112,24 @@ public class MainActivity extends ComponentActivity {
             Log.d("DittoInit", "Skipping permissions during instrumentation test");
         }
 
-        Log.d("DittoInit", "Starting Ditto SDK initialization...");
+        Log.d("DittoInit", "Starting Ditto SDK initialization in mode: " + dittoMode);
         try {
-            // Create Ditto with server connection
+            // Create Ditto in the selected mode.
             // https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
             Log.d("DittoInit", "Creating Ditto instance...");
-            ditto = DittoHelper.createDitto(dittoAppId, dittoAuthUrl);
+            if (dittoMode == DittoMode.OFFLINE) {
+                ditto = DittoHelper.createOfflineDitto(dittoAppId, dittoOfflineLicenseToken);
+            } else {
+                ditto = DittoHelper.createDitto(dittoAppId, dittoAuthUrl);
+            }
             Log.d("DittoInit", "Ditto instance created successfully");
 
-            // Set up authentication handler (must be set before sync.start())
-            Log.d("DittoInit", "Setting up authentication...");
-            DittoHelper.setupAuth(ditto, dittoPlaygroundToken);
-            Log.d("DittoInit", "Authentication configured");
+            if (dittoMode == DittoMode.ONLINE_PLAYGROUND) {
+                // Set up authentication handler (must be set before sync.start())
+                Log.d("DittoInit", "Setting up authentication...");
+                DittoHelper.setupAuth(ditto, dittoPlaygroundToken);
+                Log.d("DittoInit", "Authentication configured");
+            }
 
             // register subscription
             // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions

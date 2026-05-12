@@ -26,6 +26,17 @@ object DittoHelper {
     }
 
     @JvmStatic
+    fun createOfflineDitto(appId: String, offlineLicenseToken: String): Ditto {
+        val config = DittoConfig(
+            databaseId = appId,
+            connect = DittoConfig.Connect.SmallPeersOnly(privateKey = null)
+        )
+        val ditto = DittoFactory.create(config)
+        ditto.setOfflineOnlyLicenseToken(offlineLicenseToken)
+        return ditto
+    }
+
+    @JvmStatic
     fun setupAuth(ditto: Ditto, token: String) {
         ditto.auth?.let { auth ->
             auth.expirationHandler = { dittoInstance, _ ->

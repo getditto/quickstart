@@ -15,6 +15,20 @@ Before working with any app:
    - `DITTO_PLAYGROUND_TOKEN`
    - `DITTO_AUTH_URL`
    - `DITTO_WEBSOCKET_URL`
+   - Optional: `DITTO_OFFLINE_LICENSE_TOKEN` — when non-empty (after trim), the
+     app switches to offline-only mode and the playground/auth/websocket vars
+     above are not used.
+
+## Identity-mode selection
+
+Every quickstart reads `DITTO_OFFLINE_LICENSE_TOKEN` from `.env`. If the value
+is non-empty after trimming whitespace, the app initializes Ditto in offline-only
+mode using the SDK's offline identity (v4: `DittoIdentity.OfflinePlayground`;
+v5: `DittoConfig.Connect.SmallPeersOnly`) and calls
+`setOfflineOnlyLicenseToken` with the trimmed value. Otherwise it falls back to
+the Online Playground identity. In v4 apps, `disableSyncWithV3()` and the DQL
+strict-mode `ALTER SYSTEM` call are kept in both branches — they are
+store-level and apply regardless of identity.
 
 ## Common Development Commands
 

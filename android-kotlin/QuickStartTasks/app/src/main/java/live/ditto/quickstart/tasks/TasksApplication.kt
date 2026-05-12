@@ -10,6 +10,7 @@ import live.ditto.Ditto
 import live.ditto.DittoIdentity
 import live.ditto.android.DefaultAndroidDittoDependencies
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
+import live.ditto.quickstart.tasks.DittoMode
 
 class TasksApplication : Application() {
 
@@ -48,6 +49,7 @@ class TasksApplication : Application() {
         val token = BuildConfig.DITTO_PLAYGROUND_TOKEN
         val authUrl = BuildConfig.DITTO_AUTH_URL
         val webSocketURL = BuildConfig.DITTO_WEBSOCKET_URL
+        val offlineLicenseToken = BuildConfig.DITTO_OFFLINE_LICENSE_TOKEN.trim()
 
         val enableDittoCloudSync = false
 
@@ -55,18 +57,29 @@ class TasksApplication : Application() {
          *  Setup Ditto Identity
          *  https://docs.ditto.live/sdk/latest/install-guides/kotlin#integrating-and-initializing
          */
-        val identity = DittoIdentity.OnlinePlayground(
-            dependencies = androidDependencies,
-            appId = appId,
-            token = token,
-            customAuthUrl = authUrl,
-            enableDittoCloudSync = enableDittoCloudSync // This is required to be set to false to use the correct URLs
-        )
+        val mode = DittoMode.select(offlineLicenseToken)
+        val identity = when (mode) {
+            DittoMode.OFFLINE -> DittoIdentity.OfflinePlayground(
+                dependencies = androidDependencies,
+                appId = appId
+            )
+            DittoMode.ONLINE_PLAYGROUND -> DittoIdentity.OnlinePlayground(
+                dependencies = androidDependencies,
+                appId = appId,
+                token = token,
+                customAuthUrl = authUrl,
+                enableDittoCloudSync = enableDittoCloudSync // This is required to be set to false to use the correct URLs
+            )
+        }
 
         ditto = Ditto(androidDependencies, identity)
-        ditto.updateTransportConfig { config ->
-            // Set the Ditto Websocket URL
-            config.connect.websocketUrls.add(webSocketURL)
+        if (mode == DittoMode.OFFLINE) {
+            ditto.setOfflineOnlyLicenseToken(offlineLicenseToken)
+        } else {
+            ditto.updateTransportConfig { config ->
+                // Set the Ditto Websocket URL (online mode only)
+                config.connect.websocketUrls.add(webSocketURL)
+            }
         }
 
         ditto.store.execute("ALTER SYSTEM SET DQL_STRICT_MODE = false")

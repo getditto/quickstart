@@ -1,6 +1,7 @@
 package com.ditto.example.spring.quickstart.service;
 
 import com.ditto.example.spring.quickstart.configuration.DittoConfigurationKeys;
+import com.ditto.example.spring.quickstart.configuration.DittoMode;
 import com.ditto.example.spring.quickstart.configuration.DittoSecretsConfiguration;
 import com.ditto.java.*;
 import com.ditto.java.serialization.DittoCborSerializable;
@@ -41,32 +42,44 @@ public class DittoService implements DisposableBean {
         File dittoDir = new File(environment.getRequiredProperty(DittoConfigurationKeys.DITTO_DIR));
         dittoDir.mkdirs();
 
+        String offlineLicenseToken = DittoSecretsConfiguration.DITTO_OFFLINE_LICENSE_TOKEN.trim();
+        boolean isOffline = DittoMode.select(offlineLicenseToken) == DittoMode.OFFLINE;
+
         /*
          *  Setup Ditto Config
          *  https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
          */
-        DittoConfig dittoConfig = new DittoConfig.Builder(DittoSecretsConfiguration.DITTO_APP_ID)
-//                .persistenceDirectory("/tmp/ditto-quickstart")
-                .serverConnect(DittoSecretsConfiguration.DITTO_AUTH_URL)
-                .build();
+        DittoConfig.Builder configBuilder = new DittoConfig.Builder(DittoSecretsConfiguration.DITTO_APP_ID);
+        if (isOffline) {
+            configBuilder.smallPeersOnlyConnect(null);
+        } else {
+            configBuilder.serverConnect(DittoSecretsConfiguration.DITTO_AUTH_URL);
+        }
+        DittoConfig dittoConfig = configBuilder.build();
 
         this.ditto = DittoFactory.create(dittoConfig);
 
-        this.ditto.getAuth().setExpirationHandler((expiringDitto, _timeUntilExpiration) ->
-                expiringDitto.getAuth()
-                        .login(
-                                DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
-                                DittoAuthenticationProvider.development()
-                        ).thenRun(() -> { })
-        );
+        if (isOffline) {
+            this.ditto.setOfflineOnlyLicenseToken(offlineLicenseToken);
+        } else {
+            this.ditto.getAuth().setExpirationHandler((expiringDitto, _timeUntilExpiration) ->
+                    expiringDitto.getAuth()
+                            .login(
+                                    DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
+                                    DittoAuthenticationProvider.development()
+                            ).thenRun(() -> { })
+            );
+        }
 
         this.ditto.setDeviceName("Java");
 
         this.ditto.updateTransportConfig(config -> {
-            config.connect(connect -> {
-                // Set the Ditto Websocket URL
-                connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
-            });
+            if (!isOffline) {
+                config.connect(connect -> {
+                    // Set the Ditto Websocket URL
+                    connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
+                });
+            }
             config.peerToPeer(p2p -> {
                 p2p.bluetoothLe().isEnabled(true);
                 p2p.lan().isEnabled(true);

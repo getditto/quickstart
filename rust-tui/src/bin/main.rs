@@ -3,7 +3,11 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ditto_quickstart::{term, tui::TuiTask, Shutdown};
-use dittolive_ditto::{fs::TempRoot, identity::OnlinePlayground, AppId, Ditto};
+use dittolive_ditto::{
+    fs::TempRoot,
+    identity::{OfflinePlayground, OnlinePlayground},
+    AppId, Ditto,
+};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
@@ -13,16 +17,22 @@ pub struct Cli {
     app_id: AppId,
 
     /// The Online Playground token this app should use for authentication
-    #[clap(long, env = "DITTO_PLAYGROUND_TOKEN")]
+    #[clap(long, env = "DITTO_PLAYGROUND_TOKEN", default_value = "")]
     token: String,
 
     /// The custom auth URL this app should use for authentication
-    #[clap(long, env = "DITTO_AUTH_URL")]
+    #[clap(long, env = "DITTO_AUTH_URL", default_value = "")]
     custom_auth_url: String,
 
     /// The websocket URL this app should use for authentication
-    #[clap(long, env = "DITTO_WEBSOCKET_URL")]
+    #[clap(long, env = "DITTO_WEBSOCKET_URL", default_value = "")]
     websocket_url: String,
+
+    /// Optional offline-only license token. When non-empty, the app
+    /// initializes in offline-only mode and the playground/auth/websocket
+    /// values above are not used.
+    #[clap(long, env = "DITTO_OFFLINE_LICENSE_TOKEN", default_value = "")]
+    offline_license_token: String,
 
     /// Optional client name to display in the TUI
     #[clap(long, env = "DITTO_CLIENT_NAME")]
@@ -65,6 +75,7 @@ async fn main() -> Result<()> {
         cli.token,
         cli.custom_auth_url,
         cli.websocket_url.clone(),
+        cli.offline_license_token.clone(),
         cli.p2p_enabled,
     )
     .await?;
@@ -110,8 +121,11 @@ async fn try_init_ditto(
     token: String,
     custom_auth_url: String,
     websocket_url: String,
+    offline_license_token: String,
     p2p_enabled: bool,
 ) -> Result<Ditto> {
+    let mode = select_mode(&offline_license_token);
+
     // We use a temporary directory to store Ditto's local database.
     // This means that data will not be persistent between runs of the
     // application, but it allows us to run multiple instances of the
@@ -119,18 +133,27 @@ async fn try_init_ditto(
     // application, we would want to store the database in a more permanent
     // location, and if multiple instances are needed, ensure that each
     // instance has its own persistence directory.
-    let ditto = Ditto::builder()
-        .with_root(Arc::new(TempRoot::new()))
-        .with_identity(|root| {
-            OnlinePlayground::new(
-                root,
-                app_id.clone(),
-                token,
-                false, // This is required to be set to false to use the correct URLs
-                Some(custom_auth_url.as_str()),
-            )
-        })?
-        .build()?;
+    let builder = Ditto::builder().with_root(Arc::new(TempRoot::new()));
+    let ditto = match mode {
+        DittoMode::Offline => builder
+            .with_identity(|root| OfflinePlayground::new(root, app_id.clone()))?
+            .build()?,
+        DittoMode::OnlinePlayground => builder
+            .with_identity(|root| {
+                OnlinePlayground::new(
+                    root,
+                    app_id.clone(),
+                    token,
+                    false, // This is required to be set to false to use the correct URLs
+                    Some(custom_auth_url.as_str()),
+                )
+            })?
+            .build()?,
+    };
+
+    if let DittoMode::Offline = mode {
+        ditto.set_offline_only_license_token(offline_license_token.trim())?;
+    }
 
     ditto.update_transport_config(|config| {
         if p2p_enabled {
@@ -142,8 +165,10 @@ async fn try_init_ditto(
             config.peer_to_peer.lan.enabled = false;
         }
 
-        // Set WebSocket URL for Big Peer connection
-        config.connect.websocket_urls.insert(websocket_url);
+        if let DittoMode::OnlinePlayground = mode {
+            // Set WebSocket URL for Big Peer connection (online mode only)
+            config.connect.websocket_urls.insert(websocket_url);
+        }
     });
 
     // disable sync with v3 peers, required for DQL
@@ -161,6 +186,43 @@ async fn try_init_ditto(
 
     tracing::info!(%app_id, "Started Ditto!");
     Ok(ditto)
+}
+
+/// Identity-mode selection based on env vars. Non-empty
+/// `DITTO_OFFLINE_LICENSE_TOKEN` (after trim) selects [`DittoMode::Offline`];
+/// otherwise the app uses [`DittoMode::OnlinePlayground`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DittoMode {
+    OnlinePlayground,
+    Offline,
+}
+
+pub fn select_mode(offline_license_token: &str) -> DittoMode {
+    if offline_license_token.trim().is_empty() {
+        DittoMode::OnlinePlayground
+    } else {
+        DittoMode::Offline
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_token_selects_online() {
+        assert_eq!(DittoMode::OnlinePlayground, select_mode(""));
+    }
+
+    #[test]
+    fn whitespace_only_token_selects_online() {
+        assert_eq!(DittoMode::OnlinePlayground, select_mode("   \t\n  "));
+    }
+
+    #[test]
+    fn non_empty_token_selects_offline() {
+        assert_eq!(DittoMode::Offline, select_mode("any-real-license-token"));
+    }
 }
 
 /// Load .env file from git repo root rather than `rust/`

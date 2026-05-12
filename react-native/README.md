@@ -96,3 +96,11 @@ Should you encounter any issues, please refer to the [Ditto documentation](https
 ### Contact
 
 For support or queries, reach out to us via [support@ditto.com](mailto:support@ditto.com).
+
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

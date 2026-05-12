@@ -52,16 +52,23 @@ const appID = cli.flags.appId ?? process.env.DITTO_APP_ID;
 const token = cli.flags.playgroundToken ?? process.env.DITTO_PLAYGROUND_TOKEN;
 const authURL = cli.flags.authURL ?? process.env.DITTO_AUTH_URL;
 const websocketURL = cli.flags.websocketURL ?? process.env.DITTO_WEBSOCKET_URL;
+const offlineLicenseToken = (
+	process.env.DITTO_OFFLINE_LICENSE_TOKEN ?? ''
+).trim();
+const isOffline = offlineLicenseToken.length > 0;
 
 // Create a new Ditto instance with the DittoConfig
 // https://docs.ditto.live/sdk/latest/install-guides/nodejs#installing-the-demo-task-app
-const connectConfig = {
-	mode: 'server',
-	url: authURL,
-};
+const connectConfig = isOffline
+	? {mode: 'smallPeersOnly'}
+	: {mode: 'server', url: authURL};
 
 const config = new DittoConfig(appID, connectConfig, tempdir);
 const ditto = await Ditto.open(config);
+
+if (isOffline) {
+	ditto.setOfflineOnlyLicenseToken(offlineLicenseToken);
+}
 
 // Initialize transport config — enable LAN P2P and WebSocket.
 // BLE and AWDL are disabled because they require macOS entitlements

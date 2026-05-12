@@ -125,3 +125,11 @@ Explore the following links and resources to learn more about Ditto:
 - [Ditto Data Store CRUD](https://docs.ditto.live/crud/create)
 - [Ditto Data Sync Subscriptions](https://docs.ditto.live/sync/subscriptions-management)
 - [Ditto Query Language](https://docs.ditto.live/dql)
+
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

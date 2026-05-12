@@ -22,8 +22,9 @@ namespace Taskapp.WinForms.Net48
                 // Initialize TasksPeerService asynchronously
                 var initTask = TasksPeerService.Instance.InitializeAsync(
                     AppConfiguration.AppId,
-                    AppConfiguration.PlaygroundToken,
-                    AppConfiguration.AuthUrl
+                    AppConfiguration.PlaygroundToken ?? string.Empty,
+                    AppConfiguration.AuthUrl ?? string.Empty,
+                    AppConfiguration.OfflineLicenseToken ?? string.Empty
                 );
 
                 // Show loading form while initializing

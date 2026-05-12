@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+using DittoDotNetTasksConsole;
 using DittoSDK;
 using DittoSDK.Auth;
 using DittoSDK.Store;
@@ -20,6 +21,8 @@ public class TasksPeer : IDisposable
     public string PlaygroundToken { get; private set; }
     public string AuthUrl { get; private set; }
     public string WebsocketUrl { get; private set; }
+    public string OfflineLicenseToken { get; private set; }
+    public DittoMode Mode { get; private set; }
 
     public bool IsSyncActive => _ditto.Sync.IsActive;
 
@@ -32,10 +35,11 @@ public class TasksPeer : IDisposable
         string appId,
         string playgroundToken,
         string authUrl,
-        string websocketUrl)
+        string websocketUrl,
+        string offlineLicenseToken = "")
     {
-        var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl);
-        peer.Authenticate();
+        var peer = new TasksPeer(appId, playgroundToken, authUrl, websocketUrl, offlineLicenseToken);
+        peer.Activate();
         peer.RegisterSubscription();
         await peer.InsertInitialTasks();
         peer.StartSync();
@@ -43,25 +47,32 @@ public class TasksPeer : IDisposable
         return peer;
     }
 
-    private void Authenticate()
+    private void Activate()
     {
-        _ditto.Auth.ExpirationHandler = async (ditto, secondsRemaining) =>
+        if (Mode == DittoMode.Offline)
         {
-            // Authenticate when token is expiring
-            try
+            _ditto.SetOfflineOnlyLicenseToken(OfflineLicenseToken);
+        }
+        else
+        {
+            _ditto.Auth.ExpirationHandler = async (ditto, secondsRemaining) =>
             {
-                await ditto.Auth.LoginAsync(
-                    // Your development token, replace with your actual token
-                    PlaygroundToken,
-                    // Use DittoAuthenticationProvider.Development for playground, or your actual provider
-                    DittoAuthenticationProvider.Development
-                );
-            }
-            catch (Exception error)
-            {
-                Console.WriteLine($"Authentication failed: {error}");
-            }
-        };
+                // Authenticate when token is expiring
+                try
+                {
+                    await ditto.Auth.LoginAsync(
+                        // Your development token, replace with your actual token
+                        PlaygroundToken,
+                        // Use DittoAuthenticationProvider.Development for playground, or your actual provider
+                        DittoAuthenticationProvider.Development
+                    );
+                }
+                catch (Exception error)
+                {
+                    Console.WriteLine($"Authentication failed: {error}");
+                }
+            };
+        }
     }
 
     /// <summary>
@@ -93,17 +104,21 @@ public class TasksPeer : IDisposable
     /// <param name="playgroundToken">Ditto online playground token</param>
     /// <param name="authUrl">Ditto Auth URL</param>
     /// <param name="websocketUrl">Ditto Websocket URL</param>
-    private TasksPeer(string appId, string playgroundToken, string authUrl, string websocketUrl)
+    /// <param name="offlineLicenseToken">Optional offline-only license token. When non-empty, the peer initializes in offline-only mode.</param>
+    private TasksPeer(string appId, string playgroundToken, string authUrl, string websocketUrl, string offlineLicenseToken)
     {
         AppId = appId;
         PlaygroundToken = playgroundToken;
         AuthUrl = authUrl;
         WebsocketUrl = websocketUrl;
+        OfflineLicenseToken = (offlineLicenseToken ?? string.Empty).Trim();
+        Mode = DittoModeSelector.Select(OfflineLicenseToken);
 
-        var config = new DittoConfig(
-            AppId,
-            new DittoConfigConnect.Server(new Uri(authUrl))
-        );
+        DittoConfigConnect connect = Mode == DittoMode.Offline
+            ? new DittoConfigConnect.SmallPeersOnly()
+            : new DittoConfigConnect.Server(new Uri(authUrl));
+
+        var config = new DittoConfig(AppId, connect);
 
         _ditto = Ditto.Open(config);
     }

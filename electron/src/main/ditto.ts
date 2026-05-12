@@ -17,31 +17,42 @@ let currentTasks: Task[] = [];
 export async function initDitto(
   onTasksUpdated: (tasks: Task[]) => void,
 ): Promise<void> {
+  const connect =
+    env.mode === 'offline'
+      ? ({ mode: 'smallPeersOnly' } as const)
+      : ({ mode: 'server', url: env.authUrl } as const);
+
   const config = new DittoConfig(
     env.appId,
-    { mode: 'server', url: env.authUrl },
+    connect,
     app.getPath('userData'),
   );
 
   ditto = await Ditto.open(config);
 
-  // Authenticate with the playground token, and re-authenticate when it expires.
-  await ditto.auth.setExpirationHandler(async (instance) => {
-    const result = await instance.auth.login(
-      env.token,
-      Authenticator.DEVELOPMENT_PROVIDER,
-    );
-    if (result.error) {
-      console.error('Re-authentication failed:', result.error);
-    }
-  });
+  if (env.mode === 'offline') {
+    ditto.setOfflineOnlyLicenseToken(env.offlineLicenseToken);
+  } else {
+    // Authenticate with the playground token, and re-authenticate when it expires.
+    await ditto.auth.setExpirationHandler(async (instance) => {
+      const result = await instance.auth.login(
+        env.token,
+        Authenticator.DEVELOPMENT_PROVIDER,
+      );
+      if (result.error) {
+        console.error('Re-authentication failed:', result.error);
+      }
+    });
+  }
 
   // BLE and AWDL require macOS entitlements that only signed app bundles get,
   // so they're disabled here for unsigned `npm run dev` builds. LAN (TCP +
   // mDNS) provides peer-to-peer sync across the local network; the websocket
-  // URL provides cloud sync to Ditto's Big Peer.
+  // URL provides cloud sync to Ditto's Big Peer (skipped in offline mode).
   ditto.updateTransportConfig((cfg) => {
-    cfg.connect.websocketURLs = [env.websocketUrl];
+    if (env.mode !== 'offline') {
+      cfg.connect.websocketURLs = [env.websocketUrl];
+    }
     cfg.peerToPeer.bluetoothLE.isEnabled = false;
     cfg.peerToPeer.awdl.isEnabled = false;
     cfg.peerToPeer.lan.isEnabled = true;

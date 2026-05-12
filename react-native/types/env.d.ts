@@ -4,4 +4,5 @@ declare module '@env' {
   export const DITTO_PLAYGROUND_TOKEN: string;
   export const DITTO_AUTH_URL: string;
   export const DITTO_WEBSOCKET_URL: string;
+  export const DITTO_OFFLINE_LICENSE_TOKEN: string;
 }

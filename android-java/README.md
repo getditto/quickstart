@@ -59,3 +59,11 @@ ditto = "5.0.0"
 ```
 
 To use a newer version of the SDK, change the version number on this line.
+
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

@@ -29,6 +29,18 @@ To obtain your Ditto identity and configure the quickstart apps with it, follow 
    - in a macOS Finder window, press `⇧⌘.` (SHIFT+CMD+period) to show hidden files.
 1. Save your App ID, Online Playground Token, Auth URL, and WebSocket URL in the `.env` file.
 
+## Offline-only mode (optional)
+
+The quickstart apps can also run in offline-only mode, where peers sync directly
+with each other over Bluetooth/LAN/etc. and do not connect to Ditto's cloud.
+This requires an offline-only license token, which you can request by contacting
+<support@ditto.com>.
+
+To run in offline mode, set `DITTO_OFFLINE_LICENSE_TOKEN` in your `.env` file.
+When this variable is non-empty, the app initializes in offline-only mode and
+ignores the playground/auth/websocket variables. When it is empty or unset,
+the app uses Online Playground as before.
+
 Please see the app-specific README files for details on the tools necessary to
 build and run them.
 

@@ -20,6 +20,8 @@ namespace Taskapp.WinForms.Net48
         public string AppId { get; private set; }
         public string PlaygroundToken { get; private set; }
         public string AuthUrl { get; private set; }
+        public string OfflineLicenseToken { get; private set; }
+        public bool IsOffline { get; private set; }
 
         public bool IsSyncActive => _ditto.Sync.IsActive;
 
@@ -31,10 +33,11 @@ namespace Taskapp.WinForms.Net48
         public static async Task<TasksPeer> Create(
             string appId,
             string playgroundToken,
-            string authUrl)
+            string authUrl,
+            string offlineLicenseToken = "")
         {
-            var peer = new TasksPeer(appId, playgroundToken, authUrl);
-            peer.Authenticate();
+            var peer = new TasksPeer(appId, playgroundToken, authUrl, offlineLicenseToken);
+            peer.Activate();
             await peer.DisableStrictMode();
             peer.RegisterSubscription();
             await peer.InsertInitialTasks();
@@ -43,8 +46,13 @@ namespace Taskapp.WinForms.Net48
             return peer;
         }
 
-        private void Authenticate()
+        private void Activate()
         {
+            if (IsOffline)
+            {
+                _ditto.SetOfflineOnlyLicenseToken(OfflineLicenseToken);
+                return;
+            }
             _ditto.Auth.ExpirationHandler = async (ditto, secondsRemaining) =>
             {
                 // Authenticate when token is expiring
@@ -93,16 +101,20 @@ namespace Taskapp.WinForms.Net48
         /// <param name="appId">Ditto application ID</param>
         /// <param name="playgroundToken">Ditto online playground token</param>
         /// <param name="authUrl">Ditto Auth URL</param>
-        private TasksPeer(string appId, string playgroundToken, string authUrl)
+        /// <param name="offlineLicenseToken">Optional offline-only license token. When non-empty, the peer initializes in offline-only mode.</param>
+        private TasksPeer(string appId, string playgroundToken, string authUrl, string offlineLicenseToken)
         {
             AppId = appId;
             PlaygroundToken = playgroundToken;
             AuthUrl = authUrl;
+            OfflineLicenseToken = (offlineLicenseToken ?? string.Empty).Trim();
+            IsOffline = !string.IsNullOrEmpty(OfflineLicenseToken);
 
-            var config = new DittoConfig(
-                AppId,
-                new DittoConfigConnect.Server(new Uri(authUrl))
-            );
+            DittoConfigConnect connect = IsOffline
+                ? (DittoConfigConnect)new DittoConfigConnect.SmallPeersOnly()
+                : new DittoConfigConnect.Server(new Uri(authUrl));
+
+            var config = new DittoConfig(AppId, connect);
 
             _ditto = Ditto.Open(config);
             // Required on the 4.x SDK to allow DQL usage; not needed in v5.

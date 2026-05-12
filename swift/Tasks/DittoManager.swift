@@ -28,28 +28,42 @@ class DittoManager: ObservableObject {
             DittoLogger.minimumLogLevel = .debug
         }
 
-        guard let authURL = URL(string: Env.DITTO_AUTH_URL) else {
-            throw DittoManagerError.invalidAuthURL(Env.DITTO_AUTH_URL)
-        }
+        let offlineLicenseToken = Env.DITTO_OFFLINE_LICENSE_TOKEN
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let isOffline = !offlineLicenseToken.isEmpty
 
         // https://docs.ditto.live/sdk/latest/ditto-config
-        let config = DittoConfig(
-            databaseID: Env.DITTO_APP_ID,
-            connect: .server(url: authURL))
+        let config: DittoConfig
+        if isOffline {
+            config = DittoConfig(
+                databaseID: Env.DITTO_APP_ID,
+                connect: .smallPeersOnly(privateKey: nil))
+        } else {
+            guard let authURL = URL(string: Env.DITTO_AUTH_URL) else {
+                throw DittoManagerError.invalidAuthURL(Env.DITTO_AUTH_URL)
+            }
+            config = DittoConfig(
+                databaseID: Env.DITTO_APP_ID,
+                connect: .server(url: authURL))
+        }
 
         do {
             let dittoOpened = try await Ditto.open(config: config)
-            dittoOpened.auth?.expirationHandler = { ditto, secondsRemaining in
-                // Authenticate when token is expiring. This closure must not throw.
-                ditto.auth?.login(token: Env.DITTO_PLAYGROUND_TOKEN,
-                                  provider: .development) { clientInfo, error in
-                    if let error = error {
-                        // Cannot throw from here; log the error instead.
-                        print(
-                            "Ditto auth refresh failed: \(error), " +
-                            "client info: \(String(describing: clientInfo)), " +
-                            "seconds remaining \(secondsRemaining)"
-                        )
+            if isOffline {
+                try dittoOpened.setOfflineOnlyLicenseToken(offlineLicenseToken)
+            } else {
+                dittoOpened.auth?.expirationHandler = { ditto, secondsRemaining in
+                    // Authenticate when token is expiring. This closure must not throw.
+                    ditto.auth?.login(token: Env.DITTO_PLAYGROUND_TOKEN,
+                                      provider: .development) { clientInfo, error in
+                        if let error = error {
+                            // Cannot throw from here; log the error instead.
+                            print(
+                                "Ditto auth refresh failed: \(error), " +
+                                "client info: \(String(describing: clientInfo)), " +
+                                "seconds remaining \(secondsRemaining)"
+                            )
+                        }
                     }
                 }
             }

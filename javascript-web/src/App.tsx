@@ -50,36 +50,58 @@ const App = () => {
         // Step 1: Initialize WASM (MUST be first)
         await init();
 
+        const offlineLicenseToken = (
+          import.meta.env.DITTO_OFFLINE_LICENSE_TOKEN ?? ''
+        ).trim();
+        const isOffline = offlineLicenseToken.length > 0;
+
         // Step 2: Create config (AFTER init)
-        const config = new DittoConfig(import.meta.env.DITTO_APP_ID, {
-          mode: 'server',
-          url: import.meta.env.DITTO_AUTH_URL,
-        });
+        const config = isOffline
+          ? new DittoConfig(import.meta.env.DITTO_APP_ID, {
+              mode: 'smallPeersOnly',
+            })
+          : new DittoConfig(import.meta.env.DITTO_APP_ID, {
+              mode: 'server',
+              url: import.meta.env.DITTO_AUTH_URL,
+            });
 
         // Step 3: Open Ditto instance
         ditto.current = await Ditto.open(config);
 
-        // Step 4: Set up authentication expiration handler (required for server connections)
-        await ditto.current.auth.setExpirationHandler(async (dittoInstance) => {
-          // Authenticate when token is expiring. Any errors will be logged in the Ditto logger.
-          const loginResult = await dittoInstance.auth.login(
-            import.meta.env.DITTO_PLAYGROUND_TOKEN,
-            Authenticator.DEVELOPMENT_PROVIDER,
+        if (isOffline) {
+          // Step 4 (offline): activate with the offline-only license token.
+          ditto.current.setOfflineOnlyLicenseToken(offlineLicenseToken);
+        } else {
+          // Step 4 (online): set up authentication expiration handler
+          // (required for server connections).
+          await ditto.current.auth.setExpirationHandler(
+            async (dittoInstance) => {
+              // Authenticate when token is expiring. Any errors will be logged in the Ditto logger.
+              const loginResult = await dittoInstance.auth.login(
+                import.meta.env.DITTO_PLAYGROUND_TOKEN,
+                Authenticator.DEVELOPMENT_PROVIDER,
+              );
+              if (loginResult.error) {
+                console.error(
+                  '❌ Re-authentication failed:',
+                  loginResult.error,
+                );
+              } else {
+                console.log(
+                  '✅ Successfully re-authenticated with info:',
+                  loginResult,
+                );
+              }
+            },
           );
-          if (loginResult.error) {
-            console.error('❌ Re-authentication failed:', loginResult.error);
-          } else {
-            console.log(
-              '✅ Successfully re-authenticated with info:',
-              loginResult,
-            );
-          }
-        });
 
-        // Step 5: Configure transport
-        ditto.current.updateTransportConfig((config) => {
-          config.connect.websocketURLs = [import.meta.env.DITTO_WEBSOCKET_URL];
-        });
+          // Step 5: Configure transport (websocket URL is online-only)
+          ditto.current.updateTransportConfig((config) => {
+            config.connect.websocketURLs = [
+              import.meta.env.DITTO_WEBSOCKET_URL,
+            ];
+          });
+        }
 
         // Step 6: Start sync
         ditto.current.sync.start();

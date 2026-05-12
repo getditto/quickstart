@@ -137,3 +137,11 @@ The app follows an event-driven architecture:
 - Manual text input handling for create/edit modes
 - Async updates from Ditto observers via Go channels
 - Real-time sync with other Ditto peers running the same app
+
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

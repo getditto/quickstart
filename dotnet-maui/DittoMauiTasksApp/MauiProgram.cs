@@ -42,38 +42,51 @@ public static class MauiProgram
         var envVars = LoadEnvVariables();
         AppId = envVars["DITTO_APP_ID"];
         PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"];
-        var authUrl = envVars["DITTO_AUTH_URL"];
+        var authUrl = envVars.TryGetValue("DITTO_AUTH_URL", out var rawAuthUrl) ? rawAuthUrl : "";
+        var offlineLicenseToken = envVars.TryGetValue("DITTO_OFFLINE_LICENSE_TOKEN", out var rawToken)
+            ? rawToken.Trim()
+            : "";
+        var isOffline = !string.IsNullOrEmpty(offlineLicenseToken);
 
         // New Initialization code - https://docs.ditto.live/sdk/latest/ditto-config
+        DittoConfigConnect connect = isOffline
+            ? new DittoConfigConnect.SmallPeersOnly()
+            : new DittoConfigConnect.Server(new Uri(authUrl));
+
         var dittoConfig = new DittoConfig(
             AppId,
-            new DittoConfigConnect.Server(
-                new Uri(authUrl)
-                ),
+            connect,
             Path.Combine(FileSystem.Current.AppDataDirectory, "ditto")
             );
 
         var ditto = Ditto.Open(dittoConfig);
 
-        // Set up authentication expiration handler (required for server connections)
-        ditto.Auth.ExpirationHandler = async (dittoAuth, secondsRemaining) =>
+        if (isOffline)
         {
-            // Authenticate when token is expiring
-            try
+            ditto.SetOfflineOnlyLicenseToken(offlineLicenseToken);
+        }
+        else
+        {
+            // Set up authentication expiration handler (required for server connections)
+            ditto.Auth.ExpirationHandler = async (dittoAuth, secondsRemaining) =>
             {
-                await dittoAuth.Auth.LoginAsync(
-                    // Your development token, replace with your actual token
-                    PlaygroundToken,
-                    // Use DittoAuthenticationProvider.Development for playground, or your actual provider
-                    DittoAuthenticationProvider.Development
-                );
-                Console.WriteLine("Authentication successful");
-            }
-            catch (Exception error)
-            {
-                Console.WriteLine($"Authentication failed: {error}");
-            }
-        };
+                // Authenticate when token is expiring
+                try
+                {
+                    await dittoAuth.Auth.LoginAsync(
+                        // Your development token, replace with your actual token
+                        PlaygroundToken,
+                        // Use DittoAuthenticationProvider.Development for playground, or your actual provider
+                        DittoAuthenticationProvider.Development
+                    );
+                    Console.WriteLine("Authentication successful");
+                }
+                catch (Exception error)
+                {
+                    Console.WriteLine($"Authentication failed: {error}");
+                }
+            };
+        }
 
         return ditto;
     }

@@ -11,22 +11,27 @@ plugins {
 fun loadEnvProperties(): Properties {
     val properties = Properties()
     val envFile = rootProject.file("../../.env")
-    
+
     if (envFile.exists()) {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
         val requiredEnvVars = listOf(
-            "DITTO_APP_ID", 
-            "DITTO_PLAYGROUND_TOKEN", 
-            "DITTO_AUTH_URL", 
+            "DITTO_APP_ID",
+            "DITTO_PLAYGROUND_TOKEN",
+            "DITTO_AUTH_URL",
             "DITTO_WEBSOCKET_URL"
         )
-        
+
         for (envVar in requiredEnvVars) {
-            val value = System.getenv(envVar) 
+            val value = System.getenv(envVar)
                 ?: throw RuntimeException("Required environment variable $envVar not found")
             properties[envVar] = value
         }
+    }
+    // Offline mode is opt-in; treat missing var as empty so the
+    // BuildConfig field always exists.
+    if (!properties.containsKey("DITTO_OFFLINE_LICENSE_TOKEN")) {
+        properties["DITTO_OFFLINE_LICENSE_TOKEN"] = System.getenv("DITTO_OFFLINE_LICENSE_TOKEN") ?: ""
     }
     return properties
 }
@@ -39,13 +44,14 @@ androidComponents {
             "DITTO_PLAYGROUND_TOKEN" to "Ditto playground token",
             "DITTO_AUTH_URL" to "Ditto authentication URL",
             "DITTO_WEBSOCKET_URL" to "Ditto websocket URL",
+            "DITTO_OFFLINE_LICENSE_TOKEN" to "Optional offline-only license token; when non-empty, app runs in offline mode",
             "TEST_DOCUMENT_TITLE" to "Test document title for BrowserStack verification"
         )
-        
+
         buildConfigFields.forEach { (key, description) ->
             it.buildConfigFields.put(
                 key,
-                BuildConfigField("String", "\"${prop[key]}\"", description)
+                BuildConfigField("String", "\"${prop[key] ?: ""}\"", description)
             )
         }
     }

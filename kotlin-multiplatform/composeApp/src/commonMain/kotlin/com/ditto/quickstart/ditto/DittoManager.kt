@@ -46,23 +46,37 @@ class DittoManager(
             ditto = try {
                 DittoLogger.minimumLogLevel = DittoLogLevel.Info
 
-                val config = DittoConfig(
-                    databaseId = secrets.DITTO_APP_ID,
-                    connect = DittoConfig.Connect.Server(
-                        url = secrets.DITTO_AUTH_URL,
-                    ),
-                )
+                val offlineLicenseToken = secrets.DITTO_OFFLINE_LICENSE_TOKEN.trim()
+                val isOffline = offlineLicenseToken.isNotEmpty()
+
+                val config = if (isOffline) {
+                    DittoConfig(
+                        databaseId = secrets.DITTO_APP_ID,
+                        connect = DittoConfig.Connect.SmallPeersOnly(privateKey = null),
+                    )
+                } else {
+                    DittoConfig(
+                        databaseId = secrets.DITTO_APP_ID,
+                        connect = DittoConfig.Connect.Server(
+                            url = secrets.DITTO_AUTH_URL,
+                        ),
+                    )
+                }
 
                 createDitto(
                     config = config
                 ).apply {
-                    auth?.setExpirationHandler { ditto, _ ->
-                        // Authenticate when a token is expiring
-                        val clientInfo = ditto.auth?.login(
-                            token = secrets.DITTO_PLAYGROUND_TOKEN,
-                            provider = DittoAuthenticationProvider.development(),
-                        )
-                        DittoLog.d(TAG, "Auth response: $clientInfo")
+                    if (isOffline) {
+                        setOfflineOnlyLicenseToken(offlineLicenseToken)
+                    } else {
+                        auth?.setExpirationHandler { ditto, _ ->
+                            // Authenticate when a token is expiring
+                            val clientInfo = ditto.auth?.login(
+                                token = secrets.DITTO_PLAYGROUND_TOKEN,
+                                provider = DittoAuthenticationProvider.development(),
+                            )
+                            DittoLog.d(TAG, "Auth response: $clientInfo")
+                        }
                     }
                     updateTransportConfig { config ->
                         config.peerToPeer.lan.enabled = true

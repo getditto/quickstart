@@ -1,8 +1,10 @@
 import 'dart:io' show Platform;
+import 'dart:math';
 
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
+import 'package:flutter_quickstart/ditto_mode.dart';
 import 'package:flutter_quickstart/dql_builder.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
@@ -27,11 +29,12 @@ class _DittoExampleState extends State<DittoExample> {
   Ditto? _ditto;
   final appID =
       dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
-  final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
-      (throw Exception("env not found"));
+  final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ?? '';
   final authUrl = dotenv.env['DITTO_AUTH_URL'];
-  final websocketUrl =
-      dotenv.env['DITTO_WEBSOCKET_URL'] ?? (throw Exception("env not found"));
+  final websocketUrl = dotenv.env['DITTO_WEBSOCKET_URL'] ?? '';
+  final offlineLicenseToken =
+      (dotenv.env['DITTO_OFFLINE_LICENSE_TOKEN'] ?? '').trim();
+  late final DittoMode mode = selectDittoMode(offlineLicenseToken);
 
   @override
   void initState() {
@@ -70,19 +73,35 @@ class _DittoExampleState extends State<DittoExample> {
 
     await Ditto.init();
 
-    final identity = OnlinePlaygroundIdentity(
+    final Identity identity;
+    if (mode == DittoMode.offline) {
+      // Site IDs distinguish peers; generate a per-run value to avoid collisions
+      // when multiple offline instances run on the same machine.
+      identity = OfflinePlaygroundIdentity(
         appID: appID,
-        token: token,
-        enableDittoCloudSync:
-            false, // This is required to be set to false to use the correct URLs
-        customAuthUrl: authUrl);
+        siteID: SiteID.fromInt(2 + Random().nextInt(0x7FFFFFFF)),
+      );
+    } else {
+      identity = OnlinePlaygroundIdentity(
+          appID: appID,
+          token: token,
+          enableDittoCloudSync:
+              false, // This is required to be set to false to use the correct URLs
+          customAuthUrl: authUrl);
+    }
 
     final ditto = await Ditto.open(identity: identity);
+
+    if (mode == DittoMode.offline) {
+      ditto.setOfflineOnlyLicenseToken(offlineLicenseToken);
+    }
 
     ditto.updateTransportConfig((config) {
       // Note: this will not enable peer-to-peer sync on the web platform
       config.setAllPeerToPeerEnabled(true);
-      config.connect.webSocketUrls.add(websocketUrl);
+      if (mode == DittoMode.onlinePlayground) {
+        config.connect.webSocketUrls.add(websocketUrl);
+      }
     });
 
     // Disable DQL strict mode
