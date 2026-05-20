@@ -1,43 +1,49 @@
-// This is a basic Flutter widget test.
+// Domain-model unit test. Earlier this file held a gutted smoke test that
+// instantiated `DittoExample` directly; with the layered refactor the View
+// requires a configured `TasksViewModel`, so testing the View at this level
+// would need a fake repository — out of scope for a unit test.
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Integration coverage lives in `integration_test/app_test.dart`, which
+// drives the real app against the cloud.
 
-import 'package:flutter/material.dart';
+import 'package:flutter_quickstart/domain/models/task.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-import 'package:flutter_quickstart/main.dart';
 
 void main() {
-  setUpAll(() async {
-    // Initialize dotenv for testing
-    dotenv.testLoad(fileInput: '''
-DITTO_APP_ID=test_app_id
-DITTO_PLAYGROUND_TOKEN=test_playground_token
-DITTO_AUTH_URL=https://auth.example.com
-DITTO_WEBSOCKET_URL=wss://websocket.example.com
-''');
-  });
+  group('Task domain model', () {
+    test('toJson omits null id', () {
+      const task = Task(title: 'Buy milk', done: false, deleted: false);
+      final json = task.toJson();
+      expect(json.containsKey('_id'), isFalse);
+      expect(json['title'], 'Buy milk');
+      expect(json['done'], false);
+      expect(json['deleted'], false);
+    });
 
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MaterialApp(
-      home: DittoExample(),
-    ));
+    test('toJson includes id when present', () {
+      const task = Task(
+        id: 'task-123',
+        title: 'Buy milk',
+        done: true,
+        deleted: false,
+      );
+      final json = task.toJson();
+      expect(json['_id'], 'task-123');
+      expect(json['done'], true);
+    });
 
-    // // Verify that our counter starts at 0.
-    // expect(find.text('0'), findsOneWidget);
-    // expect(find.text('1'), findsNothing);
-
-    // // Tap the '+' icon and trigger a frame.
-    // await tester.tap(find.byIcon(Icons.add));
-    // await tester.pump();
-
-    // // Verify that our counter has incremented.
-    // expect(find.text('0'), findsNothing);
-    // expect(find.text('1'), findsOneWidget);
+    test('fromJson round-trips', () {
+      const original = Task(
+        id: 'task-123',
+        title: 'Buy milk',
+        done: true,
+        deleted: false,
+      );
+      final roundTripped = Task.fromJson(original.toJson());
+      expect(roundTripped.id, original.id);
+      expect(roundTripped.title, original.title);
+      expect(roundTripped.done, original.done);
+      expect(roundTripped.deleted, original.deleted);
+    });
   });
 }
