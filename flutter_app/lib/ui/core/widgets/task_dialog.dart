@@ -19,39 +19,39 @@ class _DialogState extends State<_Dialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    icon: const Icon(Icons.add_task),
-    title: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
-    contentPadding: EdgeInsets.zero,
-    content: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [_textInput(_name, "Name"), _doneSwitch],
-    ),
-    actions: [
-      TextButton(
-        child: const Text("Cancel"),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      ElevatedButton(
-        child: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
-        onPressed: () {
-          final task = Task(title: _name.text, done: _done, deleted: false);
-          Navigator.of(context).pop(task);
-        },
-      ),
-    ],
-  );
+        icon: const Icon(Icons.add_task),
+        title: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
+        contentPadding: EdgeInsets.zero,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [_textInput(_name, "Name"), _doneSwitch],
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          ElevatedButton(
+            child: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
+            onPressed: () {
+              final task = Task(title: _name.text, done: _done, deleted: false);
+              Navigator.of(context).pop(task);
+            },
+          ),
+        ],
+      );
 
   Widget _textInput(TextEditingController controller, String label) => ListTile(
-    title: TextField(
-      controller: controller,
-      decoration: InputDecoration(labelText: label),
-    ),
-  );
+        title: TextField(
+          controller: controller,
+          decoration: InputDecoration(labelText: label),
+        ),
+      );
 
   Widget get _doneSwitch => SwitchListTile(
-    title: const Text("Done"),
-    value: _done,
-    onChanged: (value) => setState(() => _done = value),
-  );
+        title: const Text("Done"),
+        value: _done,
+        onChanged: (value) => setState(() => _done = value),
+      );
 }

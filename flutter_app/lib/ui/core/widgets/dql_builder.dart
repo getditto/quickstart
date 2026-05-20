@@ -62,8 +62,7 @@ class _DqlBuilderState extends State<DqlBuilder> {
   void didUpdateWidget(covariant DqlBuilder oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final isSame =
-        widget.query == oldWidget.query &&
+    final isSame = widget.query == oldWidget.query &&
         widget.queryArgs == oldWidget.queryArgs;
 
     if (!isSame) {

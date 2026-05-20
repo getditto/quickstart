@@ -9,9 +9,9 @@ class TasksViewModel extends ChangeNotifier {
   TasksViewModel({
     required TasksRepository repository,
     required DittoService service,
-  }) : _repository = repository,
-       _service = service,
-       _isSyncActive = service.isSyncActive {
+  })  : _repository = repository,
+        _service = service,
+        _isSyncActive = service.isSyncActive {
     _subscription = _repository.watchTasks().listen(_onTasks);
   }
 

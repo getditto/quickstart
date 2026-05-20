@@ -11,7 +11,7 @@ import 'package:flutter_quickstart/domain/models/task.dart';
 /// is included in the first sync round-trip with the cloud.
 class TasksRepository {
   TasksRepository(this._service)
-    : _subscription = _service.ditto.sync.registerSubscription(_tasksQuery);
+      : _subscription = _service.ditto.sync.registerSubscription(_tasksQuery);
 
   static const _tasksQuery =
       'SELECT * FROM tasks WHERE deleted = false ORDER BY title ASC';
@@ -33,9 +33,9 @@ class TasksRepository {
   }
 
   Future<void> addTask(Task task) => _service.ditto.store.execute(
-    'INSERT INTO tasks DOCUMENTS (:task)',
-    arguments: {'task': task.toJson()},
-  );
+        'INSERT INTO tasks DOCUMENTS (:task)',
+        arguments: {'task': task.toJson()},
+      );
 
   Future<void> setDone({required String id, required bool done}) =>
       _service.ditto.store.execute(
@@ -50,9 +50,9 @@ class TasksRepository {
       );
 
   Future<void> softDelete(String id) => _service.ditto.store.execute(
-    'UPDATE tasks SET deleted = true WHERE _id = :id',
-    arguments: {'id': id},
-  );
+        'UPDATE tasks SET deleted = true WHERE _id = :id',
+        arguments: {'id': id},
+      );
 
   Future<void> evictAll() =>
       _service.ditto.store.execute('EVICT FROM tasks WHERE true');

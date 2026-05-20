@@ -100,32 +100,33 @@ class _TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Dismissible(
-    key: Key('${task.id}-${task.title}'),
-    onDismissed: (_) async {
-      if (task.id == null) return;
-      await viewModel.softDelete(task.id!);
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Deleted Task ${task.title}')));
-      }
-    },
-    background: const _DismissBackground(primary: true),
-    secondaryBackground: const _DismissBackground(primary: false),
-    child: CheckboxListTile(
-      title: Text(task.title),
-      value: task.done,
-      onChanged: (value) {
-        if (value == null || task.id == null) return;
-        viewModel.setDone(id: task.id!, done: value);
-      },
-      secondary: IconButton(
-        icon: const Icon(Icons.edit),
-        tooltip: 'Edit Task',
-        onPressed: () => _onEditPressed(context),
-      ),
-    ),
-  );
+        key: Key('${task.id}-${task.title}'),
+        onDismissed: (_) async {
+          if (task.id == null) return;
+          await viewModel.softDelete(task.id!);
+          if (context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(
+                SnackBar(content: Text('Deleted Task ${task.title}')));
+          }
+        },
+        background: const _DismissBackground(primary: true),
+        secondaryBackground: const _DismissBackground(primary: false),
+        child: CheckboxListTile(
+          title: Text(task.title),
+          value: task.done,
+          onChanged: (value) {
+            if (value == null || task.id == null) return;
+            viewModel.setDone(id: task.id!, done: value);
+          },
+          secondary: IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit Task',
+            onPressed: () => _onEditPressed(context),
+          ),
+        ),
+      );
 
   Future<void> _onEditPressed(BuildContext context) async {
     final updated = await showAddTaskDialog(context, task);
@@ -141,13 +142,13 @@ class _DismissBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: Colors.red,
-    child: Align(
-      alignment: primary ? Alignment.centerLeft : Alignment.centerRight,
-      child: const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Icon(Icons.delete),
-      ),
-    ),
-  );
+        color: Colors.red,
+        child: Align(
+          alignment: primary ? Alignment.centerLeft : Alignment.centerRight,
+          child: const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Icon(Icons.delete),
+          ),
+        ),
+      );
 }
