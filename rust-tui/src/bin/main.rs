@@ -47,8 +47,8 @@ impl Cli {
 
         // The Ditto SDK's C internals write directly to fd 2, bypassing Rust's
         // tracing system. Redirect stderr to the log file so those writes don't
-        // corrupt the TUI. Only redirect when stderr is a terminal; if the
-        // caller has already redirected stderr (e.g. `cargo run 2>file`), we
+        // corrupt the TUI. Only redirect when stderr is currently a terminal;
+        // if stderr is already non-terminal (for example, `cargo run 2>file`),
         // leave it alone.
         #[cfg(unix)]
         {
