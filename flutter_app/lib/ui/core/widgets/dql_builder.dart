@@ -1,6 +1,12 @@
 import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter/material.dart';
 
+/// Reactive [Widget] that registers a DQL observer + subscription inline.
+///
+/// Kept for reference — this app's primary tasks query is now owned by
+/// `TasksRepository`, which is the recommended pattern for any query whose
+/// results back a [ChangeNotifier]-driven view. Use [DqlBuilder] only for
+/// one-off, view-local queries that don't justify a repository.
 class DqlBuilder extends StatefulWidget {
   final Ditto ditto;
   final String query;
@@ -56,7 +62,8 @@ class _DqlBuilderState extends State<DqlBuilder> {
   void didUpdateWidget(covariant DqlBuilder oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final isSame = widget.query == oldWidget.query &&
+    final isSame =
+        widget.query == oldWidget.query &&
         widget.queryArgs == oldWidget.queryArgs;
 
     if (!isSame) {
@@ -98,12 +105,13 @@ class _DqlBuilderState extends State<DqlBuilder> {
     if (stream == null) return placeholder;
 
     return StreamBuilder(
-        stream: stream,
-        builder: (context, snapshot) {
-          final response = snapshot.data;
-          if (response == null) return widget.loading ?? _defaultLoading;
-          return widget.builder(context, response);
-        });
+      stream: stream,
+      builder: (context, snapshot) {
+        final response = snapshot.data;
+        if (response == null) return widget.loading ?? _defaultLoading;
+        return widget.builder(context, response);
+      },
+    );
   }
 }
 
