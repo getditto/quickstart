@@ -44,6 +44,22 @@ impl Cli {
             .append(true)
             .open(&self.log)
             .with_context(|| format!("failed to open logfile {}", self.log.display()))?;
+
+        // The Ditto SDK's C internals write directly to fd 2, bypassing Rust's
+        // tracing system. Redirect stderr to the log file so those writes don't
+        // corrupt the TUI. Only redirect when stderr is a terminal; if the
+        // caller has already redirected stderr (e.g. `cargo run 2>file`), we
+        // leave it alone.
+        #[cfg(unix)]
+        {
+            use std::os::unix::io::AsRawFd;
+            unsafe {
+                if libc::isatty(libc::STDERR_FILENO) == 1 {
+                    libc::dup2(logfile.as_raw_fd(), libc::STDERR_FILENO);
+                }
+            }
+        }
+
         tracing_subscriber::registry()
             .with(tracing_subscriber::fmt::layer().with_writer(logfile))
             .try_init()?;

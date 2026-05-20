@@ -35,10 +35,6 @@ export DITTO_WEBSOCKET_URL = "";
 Next, run the quickstart app with the following command:
 
 ```
-cargo run 2>/dev/null
+cargo run
 ```
-
-> NOTE: The `2>/dev/null` is a workaround to silence output on `stderr`, since
-> that would interfere with the TUI application. Without it, the screen will
-> quickly become garbled.
 
