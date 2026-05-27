@@ -143,7 +143,10 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "16.4"
+          # Xcode 26.x ships Swift 6.2, required by expo-modules-core 55.x which
+          # uses `@MainActor` on protocol conformance (Swift 6.2 syntax). 16.4
+          # ships Swift 6.0 and produces "unknown attribute 'MainActor'" errors.
+          xcode-version: "26.3"
 
       - name: Install CocoaPods
         working-directory: react-native-expo/ios
