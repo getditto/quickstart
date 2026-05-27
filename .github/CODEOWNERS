@@ -24,6 +24,3 @@
 /react-native-expo/      @kristopherjohnson
 /rust-tui/               @kristopherjohnson
 /swift/                  @SausCode @busec0
-
-# TODO: Enable once we have 2 reviewers for Edge Server
-# /edge-server/            @baxterjo

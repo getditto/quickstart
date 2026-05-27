@@ -5,13 +5,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DittoMauiTasksApp.Utils;
 using DittoSDK;
+using DittoSDK.Sync;
 using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp.ViewModels
 {
     public partial class TasksPageviewModel : ObservableObject
     {
-        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC";
+        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted";
 
         private readonly Ditto ditto;
         private readonly IPopupService popupService;
