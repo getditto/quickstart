@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,7 +52,7 @@ fun TaskRow(
                 ImageVector.vectorResource(
                     id = iconId
                 ),
-                "Toggle",
+                contentDescription = stringResource(id = R.string.cd_toggle_done),
                 colorFilter = ColorFilter.tint(colorResource(id = color)),
                 modifier = Modifier
                     .clickable { onToggle?.invoke(task) },
@@ -63,13 +64,13 @@ fun TaskRow(
                 IconButton(onClick = { onClickEdit?.invoke(task) }) {
                     Icon(
                         imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Delete"
+                        contentDescription = stringResource(id = R.string.action_edit)
                     )
                 }
                 IconButton(onClick = { onClickDelete?.invoke(task) }) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = stringResource(id = R.string.action_delete)
                     )
                 }
             }
