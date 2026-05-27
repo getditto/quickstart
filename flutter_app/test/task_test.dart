@@ -1,7 +1,7 @@
-// Domain-model unit test. Earlier this file held a gutted smoke test that
-// instantiated `DittoExample` directly; with the layered refactor the View
-// requires a configured `TasksViewModel`, so testing the View at this level
-// would need a fake repository — out of scope for a unit test.
+// Unit tests for the [Task] domain model. Earlier this file lived at
+// `test/widget_test.dart` and held a gutted smoke test that instantiated
+// `DittoExample` directly; the layered refactor removed `DittoExample`, so
+// the file's coverage moved to round-tripping `Task` JSON.
 //
 // Integration coverage lives in `integration_test/app_test.dart`, which
 // drives the real app against the cloud.

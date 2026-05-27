@@ -10,8 +10,7 @@ class TasksViewModel extends ChangeNotifier {
     required TasksRepository repository,
     required DittoService service,
   })  : _repository = repository,
-        _service = service,
-        _isSyncActive = service.isSyncActive {
+        _service = service {
     _subscription = _repository.watchTasks().listen(_onTasks);
   }
 
@@ -26,8 +25,10 @@ class TasksViewModel extends ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  bool _isSyncActive;
-  bool get isSyncActive => _isSyncActive;
+  // Read live from the service so rapid toggles can't drift the UI off the
+  // SDK's actual state. (The cached form regressed against the original code's
+  // direct read of `ditto.isSyncActive`.)
+  bool get isSyncActive => _service.isSyncActive;
 
   void _onTasks(List<Task> tasks) {
     _tasks = tasks;
@@ -48,12 +49,11 @@ class TasksViewModel extends ChangeNotifier {
   Future<void> clearAll() => _repository.evictAll();
 
   void toggleSync() {
-    if (_isSyncActive) {
+    if (_service.isSyncActive) {
       _service.stopSync();
     } else {
       _service.startSync();
     }
-    _isSyncActive = _service.isSyncActive;
     notifyListeners();
   }
 
