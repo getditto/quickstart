@@ -1,3 +1,28 @@
 <resources>
     <string name="app_name">QS Tasks</string>
+
+    <!-- Tasks list screen -->
+    <string name="tasks_title">Ditto Tasks</string>
+    <string name="tasks_app_id">Database ID: %1$s</string>
+    <string name="tasks_token">Token: %1$s</string>
+    <string name="tasks_sync_label">Sync</string>
+    <string name="tasks_new">New Task</string>
+    <string name="tasks_confirm_delete_title">Confirm Deletion</string>
+    <string name="tasks_confirm_delete_message">Are you sure you want to delete this item?</string>
+
+    <!-- Edit screen -->
+    <string name="edit_title_new">New Task</string>
+    <string name="edit_title_edit">Edit Task</string>
+    <string name="edit_field_title">Title:</string>
+    <string name="edit_field_is_complete">Is Complete:</string>
+
+    <!-- Common actions -->
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_edit">Edit</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_warning">Warning</string>
+    <string name="cd_toggle_done">Toggle done</string>
 </resources>
