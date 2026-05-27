@@ -13,7 +13,7 @@ After you have completed the [common prerequisites] you will need the following:
 ## Documentation
 
 - [Install Guide](https://docs.ditto.live/sdk/latest/install-guides/java/android)
-- [API Reference](https://software.ditto.live/android/Ditto/4.11.1/api-reference/)
+- [API Reference](https://software.ditto.live/android/Ditto/5.0.0/api-reference/)
 - [SDK Release Notes](https://docs.ditto.live/sdk/latest/release-notes/java)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -23,8 +23,8 @@ After you have completed the [common prerequisites] you will need the following:
 Assuming you have Android Studio and other prerequisites installed, you can
 build and run the app by following these steps:
 
-1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
-2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your App ID, Online Playground Token, Auth URL, and Websocket URL.
+1. Create an application at <https://portal.ditto.live/>.  Make note of the database ID (used to be called app ID) and online playground token.
+2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your Database ID (used to be called AppId), Online Playground Token, and Auth URL.
 3. Launch Android Studio and open the `quickstart/android-java` directory.
 4. In Android Studio, select a connected Android device, or create and launch an Android emulator and select it as the destination, then choose the **Run > Run 'app'** menu item.
 
@@ -36,8 +36,9 @@ Compatible with Android Automotive OS (AAOS)
 
 ## A Guided Tour of the Android App Source Code
 
-The Android app is a simple to-do list app that demonstrates how to use the Ditto Android SDK to sync data with other devices.
-It is implemented using Java and Android Views using an Activity and a programmatically implemented RecyclerView.
+The Android app is a simple to-do list app that demonstrates how to use the Ditto Android SDK to sync data with other devices.  It is implemented using Java and Android Views using an Activity and a programmatically implemented RecyclerView.
+
+The Ditto v5 SDK ships as a Kotlin module (`com.ditto:ditto-kotlin-android`) and exposes some APIs as `suspend` functions. To keep the application code idiomatic Java, this project uses a small Kotlin bridge file, `DittoHelper.kt`, that wraps the suspending APIs with `runBlocking` and exposes `@JvmStatic` entry points. All application logic — `MainActivity`, `Task`, and `TaskAdapter` — remains in Java.
 
 It is assumed that the reader is familiar with Android development and with Java/Activity/RecyclerView, but needs some guidance on how to use Ditto.  The following is a summary of the key parts of integration with Ditto.
 
@@ -54,7 +55,7 @@ This line in `gradle/libs.versions.toml` specifies which version of the Ditto
 SDK to use:
 
 ```kotlin
-ditto = "4.11.1"
+ditto = "5.0.0"
 ```
 
 To use a newer version of the SDK, change the version number on this line.
