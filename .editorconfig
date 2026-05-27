@@ -1,0 +1,48 @@
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cjs,js,json,ts}]
+indent_size = 2
+
+[{*.go,*.go2}]
+indent_style = tab
+
+[*.sh]
+# like -i=4
+indent_style = space
+indent_size = 4
+switch_case_indent = false
+
+# YAML files
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+quote_type = single
+
+[.github/workflows/**]
+ignore = false
+
+[{.cxx,gradlew*,node_modules}]
+ignore = true
+
+[target/**]
+ignore = true
+
+[.direnv/**]
+ignore = true
+
+[**/Pods/**]
+ignore = true
+
+[**/node_modules/**]
+ignore = true
