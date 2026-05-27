@@ -202,6 +202,15 @@ All applications implement the same "Tasks" functionality:
 - Shared business logic across platforms
 - Task model uses `text` and `isCompleted` fields
 
+#### Flutter
+- Layered MVVM + Repository architecture (closest sibling: `kotlin-multiplatform/`)
+- Material 3 widgets, `ListenableBuilder` driven by `ChangeNotifier` view models
+- `lib/` layout: `data/{services,repositories}/`, `domain/models/`, `ui/{core/widgets,features/<feature>/{view_models,views}}/`
+- Environment variables loaded via `flutter_dotenv`
+- Parameterized DQL — all CRUD goes through `TasksRepository` with `:name` placeholders, no string interpolation against user input
+- Task model uses `title`, `done`, and `deleted` fields (matches `android-kotlin/`)
+- Unit tests live in `test/`; integration tests in `integration_test/` (real-device, real-Ditto)
+
 ## Key Development Considerations
 
 ### Environment Variables
