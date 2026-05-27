@@ -26,19 +26,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import live.ditto.quickstart.tasks.BuildConfig
@@ -50,8 +47,8 @@ import java.util.UUID
 @Composable
 fun TasksListScreen(navController: NavController) {
     val tasksListViewModel: TasksListScreenViewModel = viewModel()
-    val tasks: List<Task> by tasksListViewModel.tasks.observeAsState(emptyList())
-    val syncEnabled: Boolean by tasksListViewModel.syncEnabled.observeAsState(true)
+    val tasks: List<Task> by tasksListViewModel.tasks.collectAsStateWithLifecycle()
+    val syncEnabled: Boolean by tasksListViewModel.syncEnabled.collectAsStateWithLifecycle()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteDialogTaskId by remember { mutableStateOf("") }
@@ -67,31 +64,39 @@ fun TasksListScreen(navController: NavController) {
                     ) {
                         Column {
                             Text(
-                                text = "Ditto Tasks",
+                                text = stringResource(id = R.string.tasks_title),
                                 style = MaterialTheme.typography.titleMedium
                             )
-                            Text(
-                                text = "App ID: ${BuildConfig.DITTO_APP_ID}",
-                                style = TextStyle(fontSize = 10.sp)
-                            )
-                            Text(
-                                text = "Token: ${BuildConfig.DITTO_PLAYGROUND_TOKEN}",
-                                style = TextStyle(fontSize = 10.sp)
-                            )
+                            if (BuildConfig.DEBUG) {
+                                Text(
+                                    text = stringResource(
+                                        id = R.string.tasks_app_id,
+                                        BuildConfig.DITTO_APP_ID
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                Text(
+                                    text = stringResource(
+                                        id = R.string.tasks_token,
+                                        BuildConfig.DITTO_PLAYGROUND_TOKEN
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(id = R.color.blue_700),
-                    titleContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Sync",
+                            text = stringResource(id = R.string.tasks_sync_label),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(end = 10.dp),
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                         Switch(
                             checked = syncEnabled,
@@ -105,11 +110,22 @@ fun TasksListScreen(navController: NavController) {
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                icon = { Icon(Icons.Filled.Add, "", tint = Color.White) },
-                text = { Text(text = "New Task", color = Color.White) },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                },
+                text = {
+                    Text(
+                        text = stringResource(id = R.string.tasks_new),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                },
                 onClick = { navController.navigate("tasks/edit") },
                 elevation = FloatingActionButtonDefaults.elevation(8.dp),
-                containerColor = colorResource(id = R.color.blue_500)
+                containerColor = MaterialTheme.colorScheme.primaryContainer
             )
         },
         floatingActionButtonPosition = FabPosition.End,
@@ -141,18 +157,18 @@ fun TasksListScreen(navController: NavController) {
             icon = {
                 Icon(
                     imageVector = Icons.Filled.Warning,
-                    contentDescription = "Warning",
+                    contentDescription = stringResource(id = R.string.cd_warning),
                     tint = MaterialTheme.colorScheme.error
                 )
             },
             title = {
                 Text(
-                    text = "Confirm Deletion",
+                    text = stringResource(id = R.string.tasks_confirm_delete_title),
                     style = MaterialTheme.typography.titleLarge
                 )
             },
             text = {
-                Text(text = "Are you sure you want to delete this item?")
+                Text(text = stringResource(id = R.string.tasks_confirm_delete_message))
             },
             confirmButton = {
                 TextButton(
@@ -161,12 +177,12 @@ fun TasksListScreen(navController: NavController) {
                         tasksListViewModel.delete(deleteDialogTaskId)
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(id = R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.action_cancel))
                 }
             }
         )
@@ -181,7 +197,7 @@ fun TasksList(
     onClickDelete: ((taskId: String) -> Unit)? = null,
 ) {
     LazyColumn {
-        items(tasks) { task ->
+        items(tasks, key = { it._id }) { task ->
             TaskRow(
                 task = task,
                 onToggle = { onToggle?.invoke(it._id) },

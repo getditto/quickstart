@@ -1,16 +1,18 @@
 package live.ditto.quickstart.tasks
 
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.Assert.assertTrue
 
 /**
  * UI tests for the Tasks application targeting BrowserStack device testing.
+ *
+ * Must run against an emulator or physical device. The test does NOT silently pass
+ * when run without a compose hierarchy — that would mask real failures in CI.
  */
 @RunWith(AndroidJUnit4::class)
 class TasksUITest {
@@ -20,50 +22,44 @@ class TasksUITest {
 
     @Test
     fun testDocumentSyncAndVerification() {
-        // Get test document title from BrowserStack instrumentationOptions, BuildConfig, or fallback
-        val args = InstrumentationRegistry.getArguments()
-        val fromInstrumentation = args?.getString("DITTO_CLOUD_TASK_TITLE")
-        val fromBuildConfig = try {
-            BuildConfig.TEST_DOCUMENT_TITLE
-        } catch (e: NoSuchFieldError) {
-            null
-        } catch (e: ExceptionInInitializerError) {
-            null
-        }
+        val testDocumentTitle = resolveTestDocumentTitle()
 
-        val testDocumentTitle = fromInstrumentation?.takeIf { it.isNotEmpty() }
-            ?: fromBuildConfig?.takeIf { it.isNotEmpty() }
-            ?: throw IllegalStateException("No test document title provided. Expected via instrumentationOptions 'DITTO_CLOUD_TASK_TITLE' or BuildConfig.TEST_DOCUMENT_TITLE")
-
-        try {
-            // Wait for app initialization and Ditto sync with intelligent polling
-            composeTestRule.waitForIdle()
-            composeTestRule.waitUntil(
-                condition = {
-                    composeTestRule.onAllNodes(hasText(testDocumentTitle)).fetchSemanticsNodes().isNotEmpty()
-                },
-                timeoutMillis = 18000 // Wait up to 18 seconds for app init and Ditto sync
-            )
-
-            // Final verification that document exists
+        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(timeoutMillis = SYNC_TIMEOUT_MS) {
             composeTestRule
-                .onNode(hasText(testDocumentTitle))
-                .assertExists("Document with title '$testDocumentTitle' should exist in the task list")
-
-            println("✅ DOCUMENT FOUND: '$testDocumentTitle'")
-
-        } catch (e: IllegalStateException) {
-            if (e.message?.contains("No compose hierarchies found") == true) {
-                // Local environment fallback - validate parameter passing works
-                println("⚠️ Local environment: UI not available, validating parameter passing")
-                assertTrue("Environment variable retrieval should work", testDocumentTitle.isNotEmpty())
-                println("✅ DOCUMENT PARAMETER VALIDATED: '$testDocumentTitle'")
-            } else {
-                throw e
-            }
-        } catch (e: AssertionError) {
-            println("❌ DOCUMENT NOT FOUND: '$testDocumentTitle'")
-            throw e
+                .onAllNodes(hasText(testDocumentTitle))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
         }
+
+        composeTestRule
+            .onNode(hasText(testDocumentTitle))
+            .assertExists("Document with title '$testDocumentTitle' should exist in the task list")
+    }
+
+    /**
+     * Resolves the document title we expect Ditto to sync down. Prefer the
+     * instrumentation argument (set by BrowserStack), then BuildConfig fallback.
+     */
+    private fun resolveTestDocumentTitle(): String {
+        val fromInstrumentation = InstrumentationRegistry.getArguments()
+            ?.getString(INSTRUMENTATION_ARG)
+            ?.takeIf { it.isNotEmpty() }
+        if (fromInstrumentation != null) return fromInstrumentation
+
+        val fromBuildConfig = runCatching { BuildConfig.TEST_DOCUMENT_TITLE }
+            .getOrNull()
+            ?.takeIf { it.isNotEmpty() }
+        if (fromBuildConfig != null) return fromBuildConfig
+
+        throw IllegalStateException(
+            "No test document title provided. Expected via instrumentationOptions " +
+                    "'$INSTRUMENTATION_ARG' or BuildConfig.TEST_DOCUMENT_TITLE"
+        )
+    }
+
+    companion object {
+        private const val INSTRUMENTATION_ARG = "DITTO_CLOUD_TASK_TITLE"
+        private const val SYNC_TIMEOUT_MS = 18_000L
     }
 }
