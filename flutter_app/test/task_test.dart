@@ -45,5 +45,41 @@ void main() {
       expect(roundTripped.done, original.done);
       expect(roundTripped.deleted, original.deleted);
     });
+
+    test('fromJson with no _id key produces task with null id', () {
+      // The store returns docs that may pre-date id assignment — tolerate.
+      final task = Task.fromJson(const {
+        'title': 'Buy milk',
+        'done': false,
+        'deleted': false,
+      });
+      expect(task.id, isNull);
+      expect(task.title, 'Buy milk');
+      expect(task.done, false);
+      expect(task.deleted, false);
+    });
+
+    test('fromJson preserves deleted=true (soft-delete tombstone)', () {
+      final task = Task.fromJson(const {
+        '_id': 'task-456',
+        'title': 'Tombstone',
+        'done': false,
+        'deleted': true,
+      });
+      expect(task.deleted, isTrue);
+      // Tombstone titles still round-trip — the query layer filters by
+      // `WHERE deleted = false`, but the model itself is permissive.
+      expect(task.title, 'Tombstone');
+    });
+
+    test('toJson is shaped for INSERT INTO tasks DOCUMENTS (:task)', () {
+      // Asserts the document shape the Repository hands to Ditto. If this
+      // contract drifts (e.g. someone renames `title` to `text`), other
+      // quickstarts' interop breaks per CLAUDE.md cross-platform note.
+      const task = Task(title: 'a', done: false, deleted: false);
+      final json = task.toJson();
+      expect(json.keys.toSet(), {'title', 'done', 'deleted'});
+      expect(json.containsKey('_id'), isFalse);
+    });
   });
 }
