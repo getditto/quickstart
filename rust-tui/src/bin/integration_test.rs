@@ -44,12 +44,16 @@ async fn main() -> Result<()> {
     // Create Ditto instance (using same pattern as main.rs)
     let ditto = Ditto::open_sync(config)?;
 
-    ditto
-        .auth()
-        .context("failed to get authenticator")?
-        .set_expiration_handler(TokenHandler {
-            token: token.clone(),
-        });
+    let auth = ditto.auth().context("failed to get authenticator")?;
+    auth.set_expiration_handler(TokenHandler {
+        token: token.clone(),
+    });
+    // Explicitly log in before starting sync so the first sync round has a
+    // valid JWT/X.509 cert. Without this we rely on the expiration handler
+    // firing during startup, which races with the initial sync attempt.
+    auth.login(token.as_str(), &identity::get_development_provider())
+        .context("failed to log in to Ditto Cloud")?;
+    println!("🔑 Authenticated with Ditto Cloud");
 
     let transport_websocket_url = websocket_url.clone();
     ditto.update_transport_config(|config| {
@@ -72,7 +76,7 @@ async fn main() -> Result<()> {
     // Wait for sync and check for the seeded task
     println!("🕐 Waiting for sync and checking for seeded task...");
     let mut attempts = 0;
-    let max_attempts = 15; // 15 seconds timeout
+    let max_attempts = 30; // 30 seconds timeout (matches cpp-tui)
     let mut found_task = false;
 
     while attempts < max_attempts && !found_task {
@@ -89,18 +93,34 @@ async fn main() -> Result<()> {
         }
 
         if attempts % 3 == 0 {
-            println!("   ... still syncing ({}/{})", attempts, max_attempts);
+            let count = todolist.tasks_rx.borrow().len();
+            println!(
+                "   ... still syncing ({}/{}), {} tasks visible locally",
+                attempts, max_attempts, count
+            );
         }
     }
 
     if !found_task {
+        let tasks = todolist.tasks_rx.borrow().clone();
         println!(
             "❌ Seeded task '{}' not found after {} seconds",
             task_to_find, max_attempts
         );
-        println!("📊 Found {} tasks total:", todolist.tasks_rx.borrow().len());
-        for task in todolist.tasks_rx.borrow().iter().take(5) {
-            println!("   - {}", task.title);
+        println!("📊 Found {} tasks total", tasks.len());
+        let rust_tui_tasks: Vec<&str> = tasks
+            .iter()
+            .filter(|t| t.title.contains("_rust-tui_"))
+            .map(|t| t.title.as_str())
+            .take(10)
+            .collect();
+        if rust_tui_tasks.is_empty() {
+            println!("   No rust-tui CI tasks visible locally");
+        } else {
+            println!("   First rust-tui CI tasks visible:");
+            for title in rust_tui_tasks {
+                println!("   - {}", title);
+            }
         }
         anyhow::bail!("Integration test failed - seeded task not found");
     }
