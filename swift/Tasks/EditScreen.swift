@@ -3,6 +3,7 @@ import DittoSwift
 import SwiftUI
 
 /// View model for EditScreen
+@MainActor
 class EditScreenViewModel: ObservableObject {
     @Published var taskTitleText: String
     @Published var isExistingTask: Bool = false

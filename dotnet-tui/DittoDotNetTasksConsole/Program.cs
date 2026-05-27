@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using DittoSDK;
+using DittoSDK.Logging;
 using Terminal.Gui;
 
 public static class Program

@@ -1,12 +1,11 @@
 import com.android.build.api.variant.BuildConfigField
 import java.io.FileInputStream
-import java.io.FileNotFoundException
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
 }
 
 fun loadEnvProperties(): Properties {
@@ -19,8 +18,7 @@ fun loadEnvProperties(): Properties {
         val requiredEnvVars = listOf(
             "DITTO_APP_ID",
             "DITTO_PLAYGROUND_TOKEN",
-            "DITTO_AUTH_URL",
-            "DITTO_WEBSOCKET_URL"
+            "DITTO_AUTH_URL"
         )
 
         for (envVar in requiredEnvVars) {
@@ -33,11 +31,14 @@ fun loadEnvProperties(): Properties {
 }
 
 // Define BuildConfig.DITTO_APP_ID, BuildConfig.DITTO_PLAYGROUND_TOKEN,
-// BuildConfig.DITTO_CUSTOM_AUTH_URL, BuildConfig.DITTO_WEBSOCKET_URL
-// based on values in the .env file
+// and BuildConfig.DITTO_AUTH_URL based on values in the .env file
 //
 // More information can be found here:
 // https://docs.ditto.live/sdk/latest/install-guides/java/android#integrating-and-initializing
+fun envValue(prop: Properties, key: String): String {
+    return prop[key]?.toString()?.trim('"') ?: ""
+}
+
 androidComponents {
     onVariants {
         val prop = loadEnvProperties()
@@ -45,7 +46,7 @@ androidComponents {
             "DITTO_APP_ID",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_APP_ID"]}\"",
+                "\"${envValue(prop, "DITTO_APP_ID")}\"",
                 "Ditto application ID"
             )
         )
@@ -53,7 +54,7 @@ androidComponents {
             "DITTO_PLAYGROUND_TOKEN",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_PLAYGROUND_TOKEN"]}\"",
+                "\"${envValue(prop, "DITTO_PLAYGROUND_TOKEN")}\"",
                 "Ditto online playground authentication token"
             )
         )
@@ -62,17 +63,8 @@ androidComponents {
             "DITTO_AUTH_URL",
             BuildConfigField(
                 "String",
-                "\"${prop["DITTO_AUTH_URL"]}\"",
+                "\"${envValue(prop, "DITTO_AUTH_URL")}\"",
                 "Ditto Auth URL"
-            )
-        )
-
-        it.buildConfigFields.put(
-            "DITTO_WEBSOCKET_URL",
-            BuildConfigField(
-                "String",
-                "\"${prop["DITTO_WEBSOCKET_URL"]}\"",
-                "Ditto Websocket URL"
             )
         )
     }
@@ -86,7 +78,7 @@ android {
     defaultConfig {
         applicationId = "com.example.dittotasks"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -109,12 +101,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         buildConfig = true
-        compose = true
     }
     // This ensures Ditto can produce meaningful stack traces
     packaging {
@@ -125,16 +113,16 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
+    }
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
     implementation(libs.ditto)
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
@@ -143,8 +131,4 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1")
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }
