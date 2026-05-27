@@ -60,6 +60,7 @@ class TasksViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
+    _repository.dispose();
     super.dispose();
   }
 }

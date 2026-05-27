@@ -2,13 +2,17 @@ import 'package:ditto_live/ditto_live.dart';
 import 'package:flutter_quickstart/data/services/ditto_service.dart';
 import 'package:flutter_quickstart/domain/models/task.dart';
 
-/// Single source of truth for [Task] data. Owns the [StoreObserver]+
-/// [SyncSubscription] pair for the canonical tasks query, transforms raw DQL
-/// results into [Task] domain models, and exposes parameterized CRUD methods
-/// so callers never build DQL strings.
+/// Single source of truth for [Task] data. Transforms raw DQL results into
+/// [Task] domain models and exposes parameterized CRUD methods so callers
+/// never build DQL strings.
 ///
-/// Construct this *before* calling [DittoService.startSync] so the subscription
-/// is included in the first sync round-trip with the cloud.
+/// Lifecycle:
+/// - The [SyncSubscription] is registered in the constructor. Construct this
+///   *before* calling [DittoService.startSync] so the subscription is included
+///   in the first sync round-trip with the cloud.
+/// - The [StoreObserver] is registered lazily on the first call to
+///   [watchTasks]. Observer registration timing does not affect sync; only
+///   the subscription does.
 class TasksRepository {
   TasksRepository(this._service)
       : _subscription = _service.ditto.sync.registerSubscription(_tasksQuery);
@@ -17,8 +21,8 @@ class TasksRepository {
       'SELECT * FROM tasks WHERE deleted = false ORDER BY title ASC';
 
   final DittoService _service;
-  // ignore: unused_field — held to keep the subscription alive for the
-  // lifetime of this repository.
+  // Held to keep the subscription alive for the lifetime of this repository
+  // and to cancel it cleanly in [dispose].
   final SyncSubscription _subscription;
   StoreObserver? _observer;
 
