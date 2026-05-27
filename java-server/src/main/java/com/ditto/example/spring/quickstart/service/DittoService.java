@@ -77,21 +77,6 @@ public class DittoService implements DisposableBean {
 
         this.ditto.setDeviceName("Java");
 
-        this.ditto.updateTransportConfig(config -> {
-            if (!isOffline) {
-                config.connect(connect -> {
-                    // Set the Ditto Websocket URL
-                    connect.websocketUrls().add(DittoSecretsConfiguration.DITTO_WEBSOCKET_URL);
-                });
-            }
-            config.peerToPeer(p2p -> {
-                p2p.bluetoothLe().isEnabled(true);
-                p2p.lan().isEnabled(true);
-            });
-
-            logger.info("Transport config: {}", config);
-        });
-
         presenceObserver = observePeersPresence();
 
         syncStateObserver = setupAndObserveSyncState();
