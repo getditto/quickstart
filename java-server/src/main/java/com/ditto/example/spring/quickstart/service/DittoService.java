@@ -16,7 +16,6 @@ import reactor.core.publisher.Sinks;
 
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 @Component
 public class DittoService implements DisposableBean {
@@ -104,7 +103,7 @@ public class DittoService implements DisposableBean {
 
     private DittoStoreObserver setupAndObserveSyncState() {
         try {
-            boolean hasNoSyncState = ditto.getStore().execute(
+            boolean hasNoSyncState = ditto.getStore().executeRaw(
                     "SELECT * FROM %s".formatted(DITTO_SYNC_STATE_COLLECTION)
             ).toCompletableFuture().join().getItems().isEmpty();
             if (hasNoSyncState) {
@@ -140,12 +139,12 @@ public class DittoService implements DisposableBean {
 
                         if (newSyncState) {
                             try {
-                                ditto.startSync();
+                                ditto.getSync().start();
                             } catch (DittoException e) {
                                 throw new RuntimeException(e);
                             }
                         } else {
-                            ditto.stopSync();
+                            ditto.getSync().stop();
                         }
 
                         mutableSyncStatePublisher.tryEmitNext(newSyncState);
@@ -156,17 +155,11 @@ public class DittoService implements DisposableBean {
     }
 
     private void setSyncStateIntoDittoStore(boolean newState) {
-        CompletionStage<DittoQueryResult> future = ditto.getStore().execute(
+        ditto.getStore().execute(
                 "UPDATE %s SET %s = :syncState".formatted(DITTO_SYNC_STATE_COLLECTION, DITTO_SYNC_STATE_ID),
                 DittoCborSerializable.buildDictionary()
                         .put("syncState", newState)
                         .build()
-        );
-
-        try {
-            future.toCompletableFuture().join().close();
-        } catch (DittoException e) {
-            throw new RuntimeException(e);
-        }
+        ).toCompletableFuture().join();
     }
 }

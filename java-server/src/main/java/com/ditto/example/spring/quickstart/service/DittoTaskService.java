@@ -45,7 +45,7 @@ public class DittoTaskService {
 
     public void toggleTaskDone(@Nonnull String taskId) {
         try {
-            DittoQueryResult tasks = dittoService.getDitto().getStore().execute(
+            DittoQueryResult tasks = dittoService.getDitto().getStore().executeRaw(
                     "SELECT * FROM %s WHERE _id = :taskId".formatted(TASKS_COLLECTION_NAME),
                     DittoCborSerializable.Dictionary.buildDictionary()
                             .put("taskId", taskId)
