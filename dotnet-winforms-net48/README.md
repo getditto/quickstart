@@ -8,13 +8,13 @@
 
 1. Install the .NET 4.8 SDK from <https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48>
 2. Create an application at <https://portal.ditto.live>. Make note of the app ID and online playground token
-3. Copy the `.env.sample` file at the top level of the quickstart repo to `.env` and add your app ID and online playground token, and place file in the same folder as the solution and csproj file.
+3. Copy `.env.sample` from the repo root into the `dotnet-winforms-net48/` folder, rename the copy to `.env`, and fill in your `DITTO_APP_ID`, `DITTO_PLAYGROUND_TOKEN`, and `DITTO_AUTH_URL` (from <https://portal.ditto.live>). The `.env` file must live next to `Taskapp.WinForms.Net48.csproj` — this app reads its config from the project folder, not the repo root. (`DITTO_WEBSOCKET_URL` is in the sample but unused by this app; leave it blank.)
 
 
 ## Documentation
 
 - [Ditto C# .NET SDK Install Guide](https://docs.ditto.live/install-guides/c-sharp)
-- [Ditto C# .NET SDK API Reference](https://software.ditto.live/dotnet/Ditto/4.14.4/api-reference/)
+- [Ditto C# .NET SDK API Reference](https://software.ditto.live/dotnet/Ditto/5.0.1/api-reference/)
 
 
 ## .NET Windows Forms Application 
