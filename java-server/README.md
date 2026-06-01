@@ -16,5 +16,5 @@ For more information, see - [Java Install Guide](https://docs.ditto.live/sdk/lat
 ## Additional Resources
 
 - [Java Roadmap and Support Policy](https://docs.ditto.live/sdk/latest/install-guides/java/roadmap)
-- [API Reference](https://software.ditto.live/java/ditto-java/4.11.0-preview.1/api-reference/)
+- [API Reference](https://software.ditto.live/java/ditto-java/5.0.0/api-reference/)
 

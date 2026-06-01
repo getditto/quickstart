@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DittoSDK;
+using DittoSDK.Store;
 
 namespace Taskapp.WinForms.Net48
 {

@@ -123,7 +123,7 @@ jobs:
 
       - name: Install BrowserStack Local binary
         run: |
-          curl -O "https://www.browserstack.com/browserstack-local/BrowserStackLocal-darwin-x64.zip"
+          curl -fL -O "https://www.browserstack.com/browserstack-local/BrowserStackLocal-darwin-x64.zip"
           unzip BrowserStackLocal-darwin-x64.zip
           chmod +x BrowserStackLocal
 
