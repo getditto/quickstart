@@ -7,13 +7,24 @@ This is a basic task application that demonstrates how to use Ditto's peer-to-pe
 ## Prerequisites
 
 - Dart SDK installed
-- Flutter SDK installed (tested on 3.24)
-- Java Virtual Machine (JVM) 11 installed 
+- Flutter SDK installed (tested on 3.29/3.32)
+- Java Virtual Machine (JVM) 11 or greater installed 
 - Git command line installed (Windows requirement)
 - XCode installed (for iOS development)
 - Android Studio installed (for managing the Android SDK)
 - Android SDK installed
 - IDE of choice (Android Studio, VS Code, etc)
+
+### Flutter Version Manager
+If you need to test on multiple versions of Flutter, it's recommended to use `fvm` (Flutter Version Manager).  You can find documentation [here](https://fvm.app/documentation/getting-started/overview).
+
+### MacOS Development
+This has been tested with XCode 26.2 on MacOS 26.6 with Flutter 3.29.3 && 3.32.8.
+
+### Windows Development
+To build the Windows version of this Flutter app requires Visual Studio 2022 specifically be
+installed and configured with C++ and CMake installed from the Visual Studio Installer. This has
+been tested with Flutter version 3.29.3 on Windows.
 
 ## Getting Started
 
@@ -78,7 +89,7 @@ Please choose one (or "q" to quit):
 > If you are going to use a physical iPhone, you will need to update the Team under Signing & Capabilities in XCode.  You can open the ios/Runner.xcodeproj file in XCode and then set your team from the Runner Target -> Signing & Capabilities tab.
 >
 
-- Ensure that cocoapods is up to date
+- Ensure that cocoapods is up to date (or you can use Homebrew with `brew install cocoapods`)
 
 ```bash
 gem install cocoapods

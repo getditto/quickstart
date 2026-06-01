@@ -52,7 +52,13 @@
   <string>Uses WiFi to connect and sync with nearby devices.</string>
   <key>NSBonjourServices</key>
   <array>
-  <string>_http-alt._tcp.</string>
+    <string>_http-alt._tcp.</string>
+  </array>
+  <!-- Required by the Ditto SDK for BLE sync to operate in the background -->
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>bluetooth-central</string>
+    <string>bluetooth-peripheral</string>
   </array>
 </dict>
 </plist>

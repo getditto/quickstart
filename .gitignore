@@ -34,3 +34,6 @@ packages/
 Pods/
 target/
 xcuserdata
+
+# FVM Version Cache
+.fvm/
