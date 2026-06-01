@@ -15,6 +15,25 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Ditto v5 requires minSdkVersion 24+ (ditto-internal-rustls:5.0.0).
+// Flutter plugins default their own androidTest minSdkVersion to 23, which
+// breaks the manifest merger. Bump every Android subproject (notably
+// :ditto_live) to match.
+subprojects {
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin('com.android.application') ||
+                project.plugins.hasPlugin('com.android.library')) {
+            project.android {
+                defaultConfig {
+                    if (minSdkVersion == null || minSdkVersion.apiLevel < 24) {
+                        minSdkVersion 24
+                    }
+                }
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
