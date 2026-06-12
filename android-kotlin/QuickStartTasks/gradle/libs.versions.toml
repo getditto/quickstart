@@ -15,7 +15,7 @@ appcompat = "1.7.1"
 datastorePreferences = "1.2.1"
 koin-bom = "4.2.1"
 coroutines-tests = "1.10.2"
-ditto = "5.0.0"
+ditto = "5.0.1"
 monitor = "1.8.0"
 json = "20240303"
 

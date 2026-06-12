@@ -2833,3 +2833,18 @@ dependencies = [
  "quote",
  "syn 2.0.111",
 ]
+
+[[patch.unused]]
+name = "tracing"
+version = "0.1.40"
+source = "git+https://github.com/getditto/tracing?branch=large-thread-count#9474165a817d5fb76d6369efcbd8f3248bc6c213"
+
+[[patch.unused]]
+name = "tracing-core"
+version = "0.1.32"
+source = "git+https://github.com/getditto/tracing?branch=large-thread-count#9474165a817d5fb76d6369efcbd8f3248bc6c213"
+
+[[patch.unused]]
+name = "tracing-subscriber"
+version = "0.3.18"
+source = "git+https://github.com/getditto/tracing?branch=large-thread-count#9474165a817d5fb76d6369efcbd8f3248bc6c213"

@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Modal, ModalProps, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Button,
+  Modal,
+  ModalProps,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 type EditTaskModalProps = {
-  task: { id: string, title: string } | null,
-  onSubmit: (taskId: string, newTitle: string) => void,
-  onClose?: () => void,
-}
+  task: { id: string; title: string } | null;
+  onSubmit: (taskId: string, newTitle: string) => void;
+  onClose?: () => void;
+};
 
 type Props = EditTaskModalProps & ModalProps;
 
-const EditTaskModal: React.FC<Props> = ({ task, onSubmit, onClose, ...props }) => {
+const EditTaskModal: React.FC<Props> = ({
+  task,
+  onSubmit,
+  onClose,
+  ...props
+}) => {
   const [input, setInput] = useState('');
 
   useEffect(() => {

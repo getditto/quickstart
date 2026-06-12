@@ -98,12 +98,13 @@ class _DqlBuilderState extends State<DqlBuilder> {
     if (stream == null) return placeholder;
 
     return StreamBuilder(
-        stream: stream,
-        builder: (context, snapshot) {
-          final response = snapshot.data;
-          if (response == null) return widget.loading ?? _defaultLoading;
-          return widget.builder(context, response);
-        });
+      stream: stream,
+      builder: (context, snapshot) {
+        final response = snapshot.data;
+        if (response == null) return widget.loading ?? _defaultLoading;
+        return widget.builder(context, response);
+      },
+    );
   }
 }
 

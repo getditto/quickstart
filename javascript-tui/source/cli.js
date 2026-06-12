@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 import React from 'react';
-import {render} from 'ink';
+import { render } from 'ink';
 import meow from 'meow';
 import App from './app.js';
 import dotenv from 'dotenv';
-import {Ditto, DittoConfig, Authenticator} from '@dittolive/ditto';
-import {temporaryDirectory} from 'tempy';
+import { Ditto, DittoConfig, Authenticator } from '@dittolive/ditto';
+import { temporaryDirectory } from 'tempy';
 
-dotenv.config({path: '../.env'});
+dotenv.config({ path: '../.env' });
 const cli = meow(
-	`
+  `
     Usage
       $ npm start -- 2>/dev/null
 
@@ -19,23 +19,23 @@ const cli = meow(
       --auth-url [env: DITTO_AUTH_URL] The auth URL
       --websocket-url [env: DITTO_WEBSOCKET_URL] The websocket URL
   `,
-	{
-		importMeta: import.meta,
-		flags: {
-			appId: {
-				type: 'string',
-			},
-			playgroundToken: {
-				type: 'string',
-			},
-			authURL: {
-				type: 'string',
-			},
-			websocketURL: {
-				type: 'string',
-			},
-		},
-	},
+  {
+    importMeta: import.meta,
+    flags: {
+      appId: {
+        type: 'string',
+      },
+      playgroundToken: {
+        type: 'string',
+      },
+      authURL: {
+        type: 'string',
+      },
+      websocketURL: {
+        type: 'string',
+      },
+    },
+  },
 );
 
 // We use a temporary directory to store Ditto's local database.  This
@@ -56,8 +56,8 @@ const websocketURL = cli.flags.websocketURL ?? process.env.DITTO_WEBSOCKET_URL;
 // Create a new Ditto instance with the DittoConfig
 // https://docs.ditto.live/sdk/latest/install-guides/nodejs#installing-the-demo-task-app
 const connectConfig = {
-	mode: 'server',
-	url: authURL,
+  mode: 'server',
+  url: authURL,
 };
 
 const config = new DittoConfig(appID, connectConfig, tempdir);
@@ -67,61 +67,61 @@ const ditto = await Ditto.open(config);
 // BLE and AWDL are disabled because they require macOS entitlements
 // that are only available to signed app bundles, not Node.js processes.
 // LAN (TCP + mDNS) provides P2P sync with peers on the local network.
-ditto.updateTransportConfig(config => {
-	config.peerToPeer.bluetoothLE.isEnabled = false;
-	config.peerToPeer.awdl.isEnabled = false;
-	config.peerToPeer.lan.isEnabled = true;
-	config.peerToPeer.lan.isMdnsEnabled = true;
-	config.peerToPeer.lan.isMulticastEnabled = true;
+ditto.updateTransportConfig((config) => {
+  config.peerToPeer.bluetoothLE.isEnabled = false;
+  config.peerToPeer.awdl.isEnabled = false;
+  config.peerToPeer.lan.isEnabled = true;
+  config.peerToPeer.lan.isMdnsEnabled = true;
+  config.peerToPeer.lan.isMulticastEnabled = true;
 });
 
 // Set up authentication for server mode
 if (connectConfig.mode === 'server') {
-	await ditto.auth.setExpirationHandler(
-		async (dittoInstance, timeUntilExpiration) => {
-			console.log(
-				'Authentication expiring soon, time until expiration:',
-				timeUntilExpiration,
-			);
+  await ditto.auth.setExpirationHandler(
+    async (dittoInstance, timeUntilExpiration) => {
+      console.log(
+        'Authentication expiring soon, time until expiration:',
+        timeUntilExpiration,
+      );
 
-			if (dittoInstance.auth.loginSupported) {
-				const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
-				const reLoginResult = await dittoInstance.auth.login(
-					token,
-					devProvider,
-				);
-				if (reLoginResult.error) {
-					console.error('Re-authentication failed:', reLoginResult.error);
-				} else {
-					console.log(
-						'Successfully re-authenticated with info:',
-						reLoginResult,
-					);
-				}
-			}
-		},
-	);
+      if (dittoInstance.auth.loginSupported) {
+        const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+        const reLoginResult = await dittoInstance.auth.login(
+          token,
+          devProvider,
+        );
+        if (reLoginResult.error) {
+          console.error('Re-authentication failed:', reLoginResult.error);
+        } else {
+          console.log(
+            'Successfully re-authenticated with info:',
+            reLoginResult,
+          );
+        }
+      }
+    },
+  );
 
-	if (ditto.auth.loginSupported) {
-		const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
-		const loginResult = await ditto.auth.login(token, devProvider);
-		if (loginResult.error) {
-			console.error('Login failed:', loginResult.error);
-		} else {
-			console.log('Successfully logged in with info:', loginResult);
-		}
-	}
+  if (ditto.auth.loginSupported) {
+    const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+    const loginResult = await ditto.auth.login(token, devProvider);
+    if (loginResult.error) {
+      console.error('Login failed:', loginResult.error);
+    } else {
+      console.log('Successfully logged in with info:', loginResult);
+    }
+  }
 }
 
 ditto.sync.start();
 
-process.on('uncaughtException', err => {
-	console.error('Uncaught Exception:', err);
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
 });
 
-process.on('unhandledRejection', reason => {
-	console.error('Unhandled Rejection:', reason);
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
 });
 
-const {waitUntilExit} = render(<App ditto={ditto} />);
+const { waitUntilExit } = render(<App ditto={ditto} />);
 await waitUntilExit();

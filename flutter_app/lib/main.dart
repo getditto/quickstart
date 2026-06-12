@@ -52,8 +52,10 @@ class _DittoExampleState extends State<DittoExample> {
   /// 7. Starts sync and updates the app state with the configured Ditto instance
   Future<void> _initDitto() async {
     // Skip permissions in test mode - they block integration tests
-    const isTestMode =
-        bool.fromEnvironment('INTEGRATION_TEST_MODE', defaultValue: false);
+    const isTestMode = bool.fromEnvironment(
+      'INTEGRATION_TEST_MODE',
+      defaultValue: false,
+    );
 
     // Only request permissions on mobile platforms (Android/iOS)
     // Desktop platforms (macOS, Windows, Linux) don't require these permissions
@@ -63,7 +65,7 @@ class _DittoExampleState extends State<DittoExample> {
         Permission.bluetoothConnect,
         Permission.bluetoothAdvertise,
         Permission.nearbyWifiDevices,
-        Permission.bluetoothScan
+        Permission.bluetoothScan,
       ].request();
     }
 
@@ -74,11 +76,15 @@ class _DittoExampleState extends State<DittoExample> {
 
     //new configuration -  https://docs.ditto.live/sdk/latest/ditto-config
     final config = DittoConfig(
-        databaseID: appID, connect: DittoConfigConnectServer(url: authUrl));
+      databaseID: appID,
+      connect: DittoConfigConnectServer(url: authUrl),
+    );
     final ditto = await Ditto.open(config);
     await ditto.auth.setExpirationHandler((ditto, timeUntilExpiration) async {
-      final authResult = await ditto.auth
-          .login(token: token, provider: Authenticator.developmentProvider);
+      final authResult = await ditto.auth.login(
+        token: token,
+        provider: Authenticator.developmentProvider,
+      );
       if (authResult.exception != null) {
         throw authResult.exception!;
       }
@@ -153,7 +159,7 @@ class _DittoExampleState extends State<DittoExample> {
             children: [
               const CircularProgressIndicator(),
               const Text("Ensure your AppID and Token are correct"),
-              _portalInfo
+              _portalInfo,
             ],
           ),
         ),
@@ -164,10 +170,8 @@ class _DittoExampleState extends State<DittoExample> {
         child: const Icon(Icons.add_task),
       );
 
-  Widget get _portalInfo => Column(children: [
-        Text("AppID: $appID"),
-        Text("Token: $token"),
-      ]);
+  Widget get _portalInfo =>
+      Column(children: [Text("AppID: $appID"), Text("Token: $token")]);
 
   Widget get _syncTile => SwitchListTile(
         title: const Text("Sync Active"),
@@ -189,9 +193,7 @@ class _DittoExampleState extends State<DittoExample> {
         query: "SELECT * FROM tasks WHERE deleted = false",
         builder: (context, result) {
           final tasks = result.items.map((r) => r.value).map(Task.fromJson);
-          return ListView(
-            children: tasks.map(_singleTask).toList(),
-          );
+          return ListView(children: tasks.map(_singleTask).toList());
         },
       );
 
@@ -206,9 +208,10 @@ class _DittoExampleState extends State<DittoExample> {
           );
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Deleted Task ${task.title}")),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(
+                SnackBar(content: Text("Deleted Task ${task.title}")));
           }
         },
         background: _dismissibleBackground(true),

@@ -1,24 +1,18 @@
-use anyhow::Context;
-use anyhow::Result;
-use crossterm::event::Event;
-use dittolive_ditto::Ditto;
-use dittolive_ditto::store::StoreObserver;
-use dittolive_ditto::sync::SyncSubscription;
-use ratatui::prelude::*;
-use ratatui::widgets::Block;
-use ratatui::widgets::BorderType;
-use ratatui::widgets::Clear;
-use ratatui::widgets::Padding;
-use ratatui::widgets::{Cell, Row, StatefulWidget, Table, TableState};
-use serde::Deserialize;
-use serde::Serialize;
 use std::sync::Arc;
+
+use anyhow::{Context, Result};
+use crossterm::event::Event;
+use dittolive_ditto::{store::StoreObserver, sync::SyncSubscription, Ditto};
+use ratatui::{
+    prelude::*,
+    widgets::{Block, BorderType, Cell, Clear, Padding, Row, StatefulWidget, Table, TableState},
+};
+use serde::{Deserialize, Serialize};
 use tokio::sync::watch;
 use uuid::Uuid;
 
-use crate::key;
-
 use super::EventResult;
+use crate::key;
 
 pub struct Todolist {
     /// Our handle to the Ditto peer, used to create observers and subscriptions

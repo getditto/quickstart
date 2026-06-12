@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Text,
   StyleSheet,
@@ -8,7 +8,7 @@ import {
   FlatList,
   Button,
 } from 'react-native';
-import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   Authenticator,
   Ditto,
@@ -17,11 +17,7 @@ import {
   StoreObserver,
   SyncSubscription,
 } from '@dittolive/ditto';
-import {
-  DITTO_APP_ID,
-  DITTO_PLAYGROUND_TOKEN,
-  DITTO_AUTH_URL,
-} from '@env';
+import { DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, DITTO_AUTH_URL } from '@env';
 
 import Fab from './components/Fab';
 import NewTaskModal from './components/NewTaskModal';
@@ -47,7 +43,7 @@ async function requestPermissions() {
 
   const granted = await PermissionsAndroid.requestMultiple(permissions);
   return Object.values(granted).every(
-    result => result === PermissionsAndroid.RESULTS.GRANTED,
+    (result) => result === PermissionsAndroid.RESULTS.GRANTED,
   );
 }
 
@@ -127,31 +123,49 @@ const App = () => {
         url: DITTO_AUTH_URL,
       };
 
-      const config = new DittoConfig(databaseId, connectConfig, 'custom-folder');
+      const config = new DittoConfig(
+        databaseId,
+        connectConfig,
+        'custom-folder',
+      );
 
       ditto.current = await Ditto.open(config);
 
       if (connectConfig.mode === 'server') {
-        await ditto.current.auth.setExpirationHandler(async (dittoInstance, timeUntilExpiration) => {
-          console.log('Authentication expiring soon, time until expiration:', timeUntilExpiration);
+        await ditto.current.auth.setExpirationHandler(
+          async (dittoInstance, timeUntilExpiration) => {
+            console.log(
+              'Authentication expiring soon, time until expiration:',
+              timeUntilExpiration,
+            );
 
-          if (dittoInstance.auth.loginSupported) {
-            const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
-            const reLoginResult = await dittoInstance.auth.login(playgroundToken, devProvider);
-            if (reLoginResult.error) {
-              console.error('Re-authentication failed:', reLoginResult.error);
-            } else {
-              console.log('Successfully re-authenticated with info:', reLoginResult);
+            if (dittoInstance.auth.loginSupported) {
+              const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
+              const reLoginResult = await dittoInstance.auth.login(
+                playgroundToken,
+                devProvider,
+              );
+              if (reLoginResult.error) {
+                console.error('Re-authentication failed:', reLoginResult.error);
+              } else {
+                console.log(
+                  'Successfully re-authenticated with info:',
+                  reLoginResult,
+                );
+              }
             }
-          }
-        });
+          },
+        );
 
         if (ditto.current.auth.loginSupported) {
           // Use the development provider constant from Ditto
           const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
           console.log('Using development provider:', devProvider);
 
-          const loginResult = await ditto.current.auth.login(playgroundToken, devProvider);
+          const loginResult = await ditto.current.auth.login(
+            playgroundToken,
+            devProvider,
+          );
           if (loginResult.error) {
             console.error('Login failed:', loginResult.error);
           } else {
@@ -162,18 +176,23 @@ const App = () => {
 
       ditto.current.sync.start();
 
-      taskSubscription.current = ditto.current.sync.registerSubscription('SELECT * FROM tasks');
+      taskSubscription.current = ditto.current.sync.registerSubscription(
+        'SELECT * FROM tasks',
+      );
 
-      taskObserver.current = ditto.current.store.registerObserver('SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC', response => {
-        const fetchedTasks: Task[] = response.items.map(doc => ({
-          id: doc.value._id,
-          title: doc.value.title as string,
-          done: doc.value.done,
-          deleted: doc.value.deleted,
-        }));
+      taskObserver.current = ditto.current.store.registerObserver(
+        'SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC',
+        (response) => {
+          const fetchedTasks: Task[] = response.items.map((doc) => ({
+            id: doc.value._id,
+            title: doc.value.title as string,
+            done: doc.value.done,
+            deleted: doc.value.deleted,
+          }));
 
-        setTasks(fetchedTasks);
-      });
+          setTasks(fetchedTasks);
+        },
+      );
     } catch (error) {
       console.error('Error syncing tasks:', error);
     }
@@ -191,10 +210,14 @@ const App = () => {
     })();
   }, []);
 
-  const renderItem = ({item}: {item: Task}) => (
+  const renderItem = ({ item }: { item: Task }) => (
     <View key={item.id} style={styles.taskContainer}>
       <TaskDone checked={item.done} onPress={() => toggleTask(item)} />
-      <Text style={styles.taskTitle} onLongPress={() => setEditingTask(item)} testID={item.title}>
+      <Text
+        style={styles.taskTitle}
+        onLongPress={() => setEditingTask(item)}
+        testID={item.title}
+      >
         {item.title}
       </Text>
       <View style={styles.taskButton}>
@@ -213,7 +236,8 @@ const App = () => {
         {!hasPermissions && (
           <View style={styles.permissionBanner}>
             <Text style={styles.permissionText}>
-              ⚠️ Limited functionality: Grant Bluetooth & WiFi permissions for peer-to-peer sync
+              ⚠️ Limited functionality: Grant Bluetooth & WiFi permissions for
+              peer-to-peer sync
             </Text>
           </View>
         )}
@@ -222,7 +246,7 @@ const App = () => {
         <Fab onPress={() => setModalVisible(true)} />
         <NewTaskModal
           visible={modalVisible}
-          onSubmit={task => {
+          onSubmit={(task) => {
             createTask(task);
             setModalVisible(false);
           }}
@@ -241,7 +265,7 @@ const App = () => {
           contentContainerStyle={styles.listContainer}
           data={tasks}
           renderItem={renderItem}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
         />
       </SafeAreaView>
     </SafeAreaProvider>

@@ -38,8 +38,13 @@
     <Reference Include="CBOR, Version=4.5.2.0, Culture=neutral, PublicKeyToken=9cd62db60ea5554c, processorArchitecture=MSIL">
       <HintPath>packages\PeterO.Cbor.4.5.2\lib\net40\CBOR.dll</HintPath>
     </Reference>
-    <Reference Include="Ditto, Version=5.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+    <!-- SpecificVersion=False: resolve by HintPath only, so the folder version
+         (NuGet 3-part) is the single source of truth and remains valid for
+         prerelease builds like 5.0.0-rc.1 (4-part fusion versions cannot
+         encode a prerelease suffix). -->
+    <Reference Include="Ditto">
       <HintPath>packages\Ditto.5.0.1\lib\netstandard2.0\Ditto.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="Ditto.Native.Linux, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Ditto.Native.Linux.5.0.1\lib\netstandard2.0\Ditto.Native.Linux.dll</HintPath>

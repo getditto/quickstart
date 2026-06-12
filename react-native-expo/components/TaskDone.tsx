@@ -3,9 +3,9 @@ import { StyleSheet } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
 
 type Props = {
-  checked: boolean,
-  onPress: () => void,
-}
+  checked: boolean;
+  onPress: () => void;
+};
 
 const TaskDone: React.FC<Props> = ({ checked, onPress }) => {
   return (

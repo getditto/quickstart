@@ -13,8 +13,9 @@ void main() {
       await dotenv.load(fileName: ".env");
     });
 
-    testWidgets('App loads and syncs with Ditto Cloud',
-        (WidgetTester tester) async {
+    testWidgets('App loads and syncs with Ditto Cloud', (
+      WidgetTester tester,
+    ) async {
       // Initialize app
       await app.main();
       // Allow up to 10 seconds for Ditto to initialise and the first sync
@@ -45,8 +46,10 @@ void main() {
       const testTitle = String.fromEnvironment('TASK_TO_FIND');
 
       if (testTitle.isEmpty) {
-        throw Exception('TASK_TO_FIND environment variable must be set. '
-            'Build with: --dart-define=TASK_TO_FIND=<task_title>');
+        throw Exception(
+          'TASK_TO_FIND environment variable must be set. '
+          'Build with: --dart-define=TASK_TO_FIND=<task_title>',
+        );
       }
 
       // Poll every 500 ms for up to 45 seconds to give the cloud sync
@@ -63,9 +66,12 @@ void main() {
         }
       }
 
-      expect(taskFound, isTrue,
-          reason:
-              'Should find test document with title: $testTitle synced from Ditto cloud within ${syncTimeout.inSeconds}s');
+      expect(
+        taskFound,
+        isTrue,
+        reason:
+            'Should find test document with title: $testTitle synced from Ditto cloud within ${syncTimeout.inSeconds}s',
+      );
     });
   });
 }

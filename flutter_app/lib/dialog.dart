@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'task.dart';
 
 Future<Task?> showAddTaskDialog(BuildContext context, [Task? task]) =>
-    showDialog<Task>(
-      context: context,
-      builder: (context) => _Dialog(task),
-    );
+    showDialog<Task>(context: context, builder: (context) => _Dialog(task));
 
 class _Dialog extends StatefulWidget {
   final Task? taskToEdit;
@@ -34,10 +31,7 @@ class _DialogState extends State<_Dialog> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
-          children: [
-            _textInput(_name, "Name"),
-            _doneSwitch,
-          ],
+          children: [_textInput(_name, "Name"), _doneSwitch],
         ),
         actions: [
           TextButton(
@@ -47,11 +41,7 @@ class _DialogState extends State<_Dialog> {
           ElevatedButton(
             child: Text(widget.taskToEdit == null ? "Add Task" : "Edit Task"),
             onPressed: () {
-              final task = Task(
-                title: _name.text,
-                done: _done,
-                deleted: false,
-              );
+              final task = Task(title: _name.text, done: _done, deleted: false);
               Navigator.of(context).pop(task);
             },
           ),
@@ -61,9 +51,7 @@ class _DialogState extends State<_Dialog> {
   Widget _textInput(TextEditingController controller, String label) => ListTile(
         title: TextField(
           controller: controller,
-          decoration: InputDecoration(
-            labelText: label,
-          ),
+          decoration: InputDecoration(labelText: label),
         ),
       );
 
