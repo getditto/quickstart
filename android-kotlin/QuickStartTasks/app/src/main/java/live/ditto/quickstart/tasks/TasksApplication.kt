@@ -2,24 +2,13 @@ package live.ditto.quickstart.tasks
 
 import android.app.Application
 import android.content.Context
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import live.ditto.Ditto
 import live.ditto.DittoIdentity
 import live.ditto.android.DefaultAndroidDittoDependencies
 import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
 
 class TasksApplication : Application() {
-
-    // Create a CoroutineScope
-    // Use SupervisorJob so if one coroutine launched in this scope fails, it doesn't cancel the scope
-    //
-    // https://developer.android.com/kotlin/coroutines/coroutines-adv
-    // Dispatchers.IO - This dispatcher is optimized to perform disk or network I/O outside of the main thread.
-    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
 
     companion object {
         private var instance: TasksApplication? = null
@@ -35,7 +24,7 @@ class TasksApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        ioScope.launch {
+        runBlocking {
             setupDitto()
         }
     }
