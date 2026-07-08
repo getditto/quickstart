@@ -1,0 +1,18 @@
+# Line-ending policy for the published Quickstart apps.
+#
+# The publish step (scripts/ci/quickstart/publish_quickstart.sh) exports this
+# subtree with `git archive HEAD:quickstart`, which resolves .gitattributes
+# relative to THIS directory. Without a .gitattributes here, the monorepo-root
+# .gitattributes EOL rules are not applied to the published output, so every
+# file is exported with LF -- dropping the CRLF that Windows batch files
+# require. These rules mirror the root policy so the published
+# getditto/quickstart repo (and this subtree) get deterministic,
+# convention-correct line endings.
+
+# Normalize all text to LF in the repository and on checkout/export
+# (matches the repo-root .editorconfig `end_of_line = lf`).
+* text=auto eol=lf
+
+# Windows batch/command scripts require CRLF for cmd.exe.
+*.bat text eol=crlf
+*.cmd text eol=crlf
