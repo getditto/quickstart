@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -137,14 +136,14 @@ class DittoTaskRepository(
     }
 
     private suspend fun registerObserver() {
-        val observer = dittoManager.registerObserver(QUERY_SELECT_TASKS)
+        val observer = dittoManager.registerObserver(QUERY_SELECT_TASKS) { result ->
+            result.items.map { item -> item.toTask() }
+        }
         scope.launch {
-            observer
-                .map { result -> result.items.map { item -> item.toTask() } }
-                .collect { tasks ->
-                    // Use database ordering (ORDER BY title ASC) - no client-side sorting needed
-                    tasksMutableStateFlow.value = tasks
-                }
+            observer.collect { tasks ->
+                // Use database ordering (ORDER BY title ASC) - no client-side sorting needed
+                tasksMutableStateFlow.value = tasks
+            }
         }
     }
 }

@@ -1,17 +1,23 @@
+use std::{env, sync::Arc, time::Duration};
+
 use anyhow::{Context, Result};
 use ditto_quickstart::tui::Todolist;
-use dittolive_ditto::prelude::*;
-use dittolive_ditto::{Ditto, fs::TempRoot};
-use std::time::Duration;
-use std::{env, sync::Arc};
+use dittolive_ditto::{fs::TempRoot, prelude::*, Ditto};
 use tokio::time::sleep;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("🦀 Starting Rust TUI Integration Test");
 
-    // Load environment variables
-    dotenvy::dotenv().ok();
+    // Load .env from the quickstart root (one directory above this crate);
+    // fall back to dotenvy's CWD-upward search if the file is absent.
+    let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let env_path = manifest_dir.join("../.env");
+    if env_path.exists() {
+        dotenvy::from_path(&env_path).ok();
+    } else {
+        dotenvy::dotenv().ok();
+    }
 
     let database_id = env::var("DITTO_APP_ID").context("DITTO_APP_ID not found")?;
 

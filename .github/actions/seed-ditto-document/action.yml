@@ -3,12 +3,16 @@ description: 'Creates a test document in Ditto Cloud with inverted timestamp for
 author: 'Ditto'
 
 inputs:
-  ditto-api-key:
-    description: 'Ditto API key for authentication'
+  ditto-app-id:
+    description: 'Ditto App ID'
+    required: true
+  ditto-playground-token:
+    description: 'Ditto Playground Token for authentication'
     required: true
   ditto-api-url:
-    description: 'Ditto API URL (e.g., cloud.ditto.live)'
-    required: true
+    description: 'Ditto Cloud URL Endpoint host (no scheme), e.g. <app-id>.cloud.ditto.live. Overrides the default {app-id}.cloud.ditto.live host when set.'
+    required: false
+    default: ''
   app-name:
     description: 'Name of the app/platform being tested (e.g., android-kotlin, swift, etc.)'
     required: true
@@ -31,6 +35,7 @@ runs:
       id: seed
       shell: bash
       run: |
+        set -euo pipefail
         # Generate inverted timestamp for top position in list
         TIMESTAMP=$(date +%s)
         INVERTED_TIMESTAMP=$((9999999999 - TIMESTAMP))
@@ -45,9 +50,11 @@ runs:
         echo "📝 Timestamp: ${TIMESTAMP} → Inverted: ${INVERTED_TIMESTAMP}"
 
         # Insert document using Ditto API v4
-        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+        DITTO_HOST="${{ inputs.ditto-api-url }}"
+        DITTO_HOST="${DITTO_HOST:-${{ inputs.ditto-app-id }}.cloud.ditto.live}"
+        RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST \
           -H 'Content-type: application/json' \
-          -H "Authorization: Bearer ${{ inputs.ditto-api-key }}" \
+          -H "Authorization: Bearer ${{ inputs.ditto-playground-token }}" \
           -d "{
             \"statement\": \"INSERT INTO tasks DOCUMENTS (:newTask) ON ID CONFLICT DO UPDATE\",
             \"args\": {
@@ -59,7 +66,7 @@ runs:
               }
             }
           }" \
-          "https://${{ inputs.ditto-api-url }}/api/v4/store/execute")
+          "https://${DITTO_HOST}/api/v4/store/execute")
 
         # Extract HTTP status code and response body (portable version)
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -68,9 +75,9 @@ runs:
         # Check if insertion was successful
         if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
           echo "✅ Successfully inserted test document"
-          echo "document_id=${DOC_ID}" >> $GITHUB_OUTPUT
-          echo "document_title=${DOC_TITLE}" >> $GITHUB_OUTPUT
-          echo "inverted_timestamp=${INVERTED_TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "document_id=${DOC_ID}" >> "$GITHUB_OUTPUT"
+          echo "document_title=${DOC_TITLE}" >> "$GITHUB_OUTPUT"
+          echo "inverted_timestamp=${INVERTED_TIMESTAMP}" >> "$GITHUB_OUTPUT"
         else
           echo "❌ Failed to insert document. HTTP Status: $HTTP_CODE"
           echo "Response: $BODY"

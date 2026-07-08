@@ -1,6 +1,6 @@
 appId: org.reactjs.native.example.DittoReactNativeSampleApp
 tags:
-  - "smoke"
+  - 'smoke'
 ---
 # Simple test: Launch app and verify specific task exists using testID
 # Usage: MAESTRO_DITTO_CLOUD_TASK_TITLE="Basic Test Task" maestro test 01-app-launch-and-seeded-tasks-ios.yaml
@@ -11,16 +11,16 @@ tags:
 # Handle location permission dialog if it appears
 - runFlow:
     when:
-      visible: "Allow"
+      visible: 'Allow'
     commands:
-      - tapOn: "Allow"
+      - tapOn: 'Allow'
 
 # Handle Bluetooth permission dialog if it appears
 - runFlow:
     when:
-      visible: "OK"
+      visible: 'OK'
     commands:
-      - tapOn: "OK"
+      - tapOn: 'OK'
 
 # Wait for app to load
 - waitForAnimationToEnd
@@ -28,7 +28,7 @@ tags:
 # Scroll until the task is visible using testID
 - scrollUntilVisible:
     element:
-      id: "${MAESTRO_DITTO_CLOUD_TASK_TITLE}"
+      id: '${MAESTRO_DITTO_CLOUD_TASK_TITLE}'
     direction: DOWN
     timeout: 30000
     speed: 40
@@ -36,4 +36,4 @@ tags:
 
 # Final assertion - task must be visible using id selector
 - assertVisible:
-    id: "${MAESTRO_DITTO_CLOUD_TASK_TITLE}"
+    id: '${MAESTRO_DITTO_CLOUD_TASK_TITLE}'

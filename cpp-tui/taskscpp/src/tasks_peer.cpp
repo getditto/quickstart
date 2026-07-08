@@ -44,25 +44,46 @@ static string to_json_string(const ditto::QueryResult &result) {
 }
 
 /// Initialize a Ditto instance.
-static shared_ptr<ditto::Ditto>
-init_ditto(string app_id, string online_playground_token, string websocket_url,
-           string auth_url, bool enable_cloud_sync, string persistence_dir) {
+static shared_ptr<ditto::Ditto> init_ditto(string app_id,
+                                           string online_playground_token,
+                                           string auth_url,
+                                           string persistence_dir) {
   try {
-    const auto identity = ditto::Identity::OnlinePlayground(
-        std::move(app_id), std::move(online_playground_token),
-        enable_cloud_sync, std::move(auth_url));
+    auto config = ditto::DittoConfig::default_config()
+                      .set_database_id(std::move(app_id))
+                      .set_persistence_directory(std::move(persistence_dir))
+                      .set_server_connect(std::move(auth_url));
 
-    auto ditto =
-        std::make_shared<ditto::Ditto>(identity, std::move(persistence_dir));
+    auto ditto = ditto::Ditto::open(std::move(config));
 
-    ditto->update_transport_config(
-        [websocket_url](ditto::TransportConfig &config) {
-          config.enable_all_peer_to_peer();
-          config.connect.websocket_urls.insert(websocket_url);
-        });
+    // Log in with the playground token using the built-in development
+    // authentication provider. The expiration handler re-authenticates
+    // automatically when the credential is about to expire.
+    const auto provider = ditto::Authenticator::get_development_provider();
+    if (auto auth = ditto->get_auth()) {
+      auth->set_expiration_handler(
+          [online_playground_token, provider](ditto::Ditto &d, uint32_t) {
+            if (auto a = d.get_auth()) {
+              a->login(online_playground_token, provider,
+                       [](std::unique_ptr<std::string>,
+                          std::unique_ptr<ditto::DittoError> err) {
+                         if (err) {
+                           log_error("Failed to re-authenticate: " +
+                                     string(err->what()));
+                         }
+                       });
+            }
+          });
 
-    // Required for compatibility with DQL.
-    ditto->disable_sync_with_v3();
+      auth->login(online_playground_token, provider,
+                  [](std::unique_ptr<std::string>,
+                     std::unique_ptr<ditto::DittoError> err) {
+                    if (err) {
+                      log_error("Failed to authenticate: " +
+                                string(err->what()));
+                    }
+                  });
+    }
 
     // Disable DQL strict mode
     // https://docs.ditto.live/dql/strict-mode
@@ -92,14 +113,11 @@ private:
   }
 
 public:
-  Impl(string app_id, string online_playground_token, string websocket_url,
-       string auth_url, bool enable_cloud_sync, string persistence_dir)
+  Impl(string app_id, string online_playground_token, string auth_url,
+       string persistence_dir)
       : mtx(new mutex()),
         ditto(init_ditto(std::move(app_id), std::move(online_playground_token),
-                         std::move(websocket_url), std::move(auth_url),
-                         enable_cloud_sync, // This is required to be set to
-                                            // false to use the correct URLs
-                         std::move(persistence_dir))) {}
+                         std::move(auth_url), std::move(persistence_dir))) {}
 
   ~Impl() noexcept {
     try {
@@ -116,7 +134,7 @@ public:
       return;
     }
 
-    ditto->start_sync();
+    ditto->get_sync().start();
     tasks_subscription =
         ditto->get_sync().register_subscription("SELECT * FROM tasks");
   }
@@ -128,10 +146,10 @@ public:
 
     tasks_subscription->cancel();
     tasks_subscription.reset();
-    ditto->stop_sync();
+    ditto->get_sync().stop();
   }
 
-  bool is_sync_active() const { return ditto->get_is_sync_active(); }
+  bool is_sync_active() const { return ditto->get_sync().is_active(); }
 
   string add_task(const string &title, bool done) {
     try {
@@ -324,8 +342,7 @@ public:
       std::function<void(const std::vector<Task> &)> callback) {
     try {
       const auto observer = ditto->get_store().register_observer(
-          select_tasks_query(),
-          [callback = std::move(callback)](const ditto::QueryResult &result) {
+          select_tasks_query(), [callback](const ditto::QueryResult &result) {
             const auto item_count = result.item_count();
             log_debug("Tasks collection updated; count=" +
                       to_string(item_count));
@@ -388,11 +405,9 @@ public:
 }; // class TasksPeer::Impl
 
 TasksPeer::TasksPeer(string app_id, string online_playground_token,
-                     string websocket_url, string auth_url,
-                     bool enable_cloud_sync, string persistence_dir)
+                     string auth_url, string persistence_dir)
     : impl(new Impl(std::move(app_id), std::move(online_playground_token),
-                    std::move(websocket_url), std::move(auth_url),
-                    enable_cloud_sync, std::move(persistence_dir))) {}
+                    std::move(auth_url), std::move(persistence_dir))) {}
 
 TasksPeer::~TasksPeer() noexcept {
   try {
@@ -449,7 +464,7 @@ string TasksPeer::execute_dql_query(const string &query) {
 }
 
 string TasksPeer::get_ditto_sdk_version() {
-  return ditto::Ditto::get_sdk_version();
+  return ditto::Ditto::get_version();
 }
 
 void TasksPeer::insert_initial_tasks() { impl->insert_initial_tasks(); }

@@ -4,12 +4,12 @@ import com.ditto.example.kotlin.quickstart.configuration.DittoSecretsConfigurati
 import com.ditto.kotlin.Ditto
 import com.ditto.kotlin.DittoAuthenticationProvider
 import com.ditto.kotlin.DittoConfig
+import com.ditto.kotlin.DittoException
 import com.ditto.kotlin.DittoLog
 import com.ditto.kotlin.DittoLogLevel
 import com.ditto.kotlin.DittoLogger
 import com.ditto.kotlin.DittoQueryResult
 import com.ditto.kotlin.DittoSyncSubscription
-import com.ditto.kotlin.error.DittoError
 import com.ditto.kotlin.serialization.DittoCborSerializable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +56,7 @@ class DittoManager(
                 createDitto(
                     config = config
                 ).apply {
-                    auth?.setExpirationHandler { ditto, _ ->
+                    auth?.expirationHandler = { ditto, _ ->
                         // Authenticate when a token is expiring
                         val clientInfo = ditto.auth?.login(
                             token = secrets.DITTO_PLAYGROUND_TOKEN,
@@ -87,7 +87,7 @@ class DittoManager(
 
     fun destroyDitto() {
         closeJob = scope.launch(Dispatchers.IO) {
-            getDitto()?.stopSync()
+            getDitto()?.sync?.stop()
             getDitto()?.close()
             ditto = null
         }
@@ -95,21 +95,21 @@ class DittoManager(
 
     suspend fun startSync() {
         val ditto = getDitto() ?: return
-        ditto.startSync()
+        ditto.sync.start()
     }
 
     suspend fun stopSync() {
-        getDitto()?.stopSync()
+        getDitto()?.sync?.stop()
     }
 
-    suspend fun isSyncing() = getDitto()?.isSyncActive == true
+    suspend fun isSyncing() = getDitto()?.sync?.isActive == true
 
     suspend fun executeDql(
         query: String,
         parameters: DittoCborSerializable.Dictionary = DittoCborSerializable.Dictionary()
     ): DittoQueryResult? = try {
-        getDitto()?.store?.execute(query, parameters)
-    } catch (e: DittoError) {
+        getDitto()?.store?.executeRaw(query, parameters)
+    } catch (e: DittoException) {
         DittoLog.e("ExecuteDqlUse", "Error executing DQL query: ${e.message}")
         null
     }
@@ -119,17 +119,19 @@ class DittoManager(
         arguments: DittoCborSerializable.Dictionary? = null
     ): DittoSyncSubscription? = try {
         getDitto()?.sync?.registerSubscription(query, arguments)
-    } catch (e: DittoError) {
+    } catch (e: DittoException) {
         DittoLog.e("RegisterSubscription", "Error registering subscription: ${e.message}")
         null
     }
 
-    suspend fun registerObserver(
+    suspend fun <T> registerObserver(
         query: String,
-        arguments: DittoCborSerializable.Dictionary? = null
-    ): Flow<DittoQueryResult> = requireNotNull(getDitto()).store.observe(
+        arguments: DittoCborSerializable.Dictionary? = null,
+        transform: suspend (DittoQueryResult) -> T
+    ): Flow<T> = requireNotNull(getDitto()).store.observe(
         query = query,
-        arguments = arguments
+        arguments = arguments,
+        transform = transform,
     )
 
     private suspend fun waitForWorkInProgress() {

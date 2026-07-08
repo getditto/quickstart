@@ -1,10 +1,9 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use ditto_quickstart::{Shutdown, term, tui::TuiTask};
-use dittolive_ditto::prelude::*;
-use dittolive_ditto::{Ditto, fs::TempRoot};
+use ditto_quickstart::{term, tui::TuiTask, Shutdown};
+use dittolive_ditto::{fs::TempRoot, prelude::*, Ditto};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
@@ -29,7 +28,8 @@ pub struct Cli {
     #[clap(long, env = "DITTO_CLIENT_NAME")]
     client_name: Option<String>,
 
-    /// Enable peer-to-peer transports (LAN, Bluetooth). Set to false to force all communication through Big Peer.
+    /// Enable peer-to-peer transports (LAN, Bluetooth). Set to false to force all communication
+    /// through Big Peer.
     #[clap(long, env = "DITTO_P2P_ENABLED", default_value = "true")]
     p2p_enabled: bool,
 
@@ -185,15 +185,22 @@ async fn try_init_ditto(
     Ok((ditto, temp_root))
 }
 
-/// Load .env file from git repo root rather than `rust/`
+/// Load .env file from the quickstart root (one directory above this crate).
+///
+/// Using `CARGO_MANIFEST_DIR` (the `rust-tui/` directory) and joining `../.env`
+/// resolves to `quickstart/.env` in both layouts:
+/// - monorepo:  `<repo>/quickstart/rust-tui/../.env` → `<repo>/quickstart/.env`
+/// - standalone clone: `<repo>/rust-tui/../.env` → `<repo>/.env`
+///
+/// If that file is absent, fall back to `dotenvy::dotenv()` so the app still
+/// works when credentials are already in the environment.
 fn try_init_dotenv() -> Result<()> {
-    let git_toplevel_output = std::process::Command::new("git")
-        .args(["rev-parse", "--show-toplevel"])
-        .output()
-        .context("failed to exec 'git rev-parse --show-toplevel'")?;
-    let path = String::from_utf8(git_toplevel_output.stdout)?;
-    let path = std::path::Path::new(path.trim());
-    let path = path.join(".env");
-    dotenvy::from_path(&path)?;
+    let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let env_path = manifest_dir.join("../.env");
+    if env_path.exists() {
+        dotenvy::from_path(&env_path)?;
+    } else {
+        dotenvy::dotenv().ok();
+    }
     Ok(())
 }

@@ -22,14 +22,17 @@ pub type Shutdown<T = Arc<anyhow::Error>> = async_shutdown::ShutdownManager<T>;
 /// use crossterm::event::{Event, KeyCode, KeyEvent};
 /// # fn example(event: Event) {
 /// match event {
-///     Event::Key(KeyEvent { code: KeyCode::Char(ch), .. }) => {
+///     Event::Key(KeyEvent {
+///         code: KeyCode::Char(ch),
+///         ..
+///     }) => {
 ///         //
 ///     }
 ///     key!(Char(ch)) => {
 ///         //
 ///     }
 ///     _ => {}
-/// }    
+/// }
 /// # }
 /// ```
 #[macro_export]

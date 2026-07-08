@@ -1,0 +1,11 @@
+# This file intentionally shadows the monorepo root clippy.toml.
+#
+# The `ditto-quickstart` crate is excluded from the monorepo Cargo workspace
+# (root Cargo.toml: exclude = [..., "quickstart"]). However, clippy walks up
+# the directory tree from CARGO_MANIFEST_DIR to find clippy.toml, so without
+# this file the monorepo's strict [[disallowed-methods]] policy (including
+# tokio::sync::watch::Receiver::borrow) would be applied to this sample app.
+#
+# A clippy.toml here is found first and replaces — not merges with — the root
+# config, giving the quickstart crate a clean, policy-free lint environment
+# appropriate for a standalone sample application.

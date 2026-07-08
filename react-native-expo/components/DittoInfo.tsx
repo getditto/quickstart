@@ -2,9 +2,9 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 type Props = {
-  appId: string,
-  token: string,
-}
+  appId: string;
+  token: string;
+};
 
 const DittoInfo: React.FC<Props> = ({ appId, token }) => {
   return (

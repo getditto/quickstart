@@ -1,5 +1,5 @@
 import React from 'react';
-import {useState} from 'react';
+import { useState } from 'react';
 import {
   Button,
   StyleSheet,
@@ -17,7 +17,7 @@ type NewTaskModalProps = {
 
 type Props = NewTaskModalProps;
 
-const NewTaskModal: React.FC<Props> = ({visible, onSubmit, onClose}) => {
+const NewTaskModal: React.FC<Props> = ({ visible, onSubmit, onClose }) => {
   const [input, setInput] = useState('');
 
   const submit = () => {

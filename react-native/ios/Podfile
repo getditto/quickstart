@@ -32,5 +32,20 @@ target 'DittoReactNativeSampleApp' do
       # :ccache_enabled => true
     )
 
+    # Workaround for fmt 11.x consteval incompatibility with Xcode 26.4+ clang.
+    # Compile the fmt pod as C++17 so __cpp_consteval is not defined, which
+    # forces fmt to skip the consteval FMT_STRING code path entirely and fall
+    # back to runtime format-string validation. Scoped to the fmt target only —
+    # RCT-Folly, React-Core, and the rest of RN keep their C++20 settings.
+    # See: https://github.com/fmtlib/fmt/issues/4740 and SDKS-3242.
+    # Remove when React Native upgrades to a build that bundles fmt >= 11.1.
+    installer.pods_project.targets.each do |target|
+      if target.name == 'fmt'
+        target.build_configurations.each do |cfg|
+          cfg.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+        end
+      end
+    end
+
   end
 end

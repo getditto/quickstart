@@ -73,10 +73,10 @@ Each task document has the following structure:
 
 ```json
 {
-	"_id": "unique-id",
-	"title": "Task description",
-	"done": false,
-	"deleted": false
+  "_id": "unique-id",
+  "title": "Task description",
+  "done": false,
+  "deleted": false
 }
 ```
 
