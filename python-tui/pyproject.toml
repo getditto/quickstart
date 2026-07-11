@@ -1,0 +1,20 @@
+[project]
+name = "ditto-quickstart-python-tui"
+version = "0.1.0"
+description = "Ditto Python SDK quickstart — a Tasks console app that syncs peer-to-peer."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "dittolive-ditto>=5.1.0.dev0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+ditto-tasks = "main:cli"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["main"]

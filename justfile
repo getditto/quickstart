@@ -33,3 +33,15 @@ tools: cmdline_tools
     @echo "Installing tools"
     {{cmdline_tools_dir}}/latest/bin/sdkmanager --install 'build-tools;35.0.0'
     {{cmdline_tools_dir}}/latest/bin/sdkmanager --install 'platforms;android-34'
+
+# Sets up a virtual environment and runs the Python TUI quickstart
+python-tui:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    cd python-tui
+    if [[ ! -d .venv ]]; then
+        python3 -m venv .venv
+    fi
+    .venv/bin/python -m pip install -e .
+    .venv/bin/python main.py
