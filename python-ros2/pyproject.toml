@@ -1,0 +1,24 @@
+[project]
+name = "ditto-quickstart-python-ros2"
+version = "0.1.0"
+description = "Ditto Python SDK quickstart — canonical ROS 2 examples bridged through Ditto."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "dittolive-ditto>=5.1.0.dev0",
+    "python-dotenv>=1.0.0",
+]
+
+# Real ROS 2 (`rclpy`, `std_msgs`, `geometry_msgs`) is provided by a ROS 2
+# installation, not pip. Without it, the demos fall back to the bundled rclpy
+# shim (or force it with --sim).
+
+[project.scripts]
+ditto-ros2 = "ditto_ros2.main:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["ditto_ros2"]

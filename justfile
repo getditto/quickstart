@@ -45,3 +45,16 @@ python-tui:
     fi
     .venv/bin/python -m pip install -e .
     .venv/bin/python main.py
+
+# Runs a Ditto <-> ROS 2 quickstart demo in simulation (no ROS 2 install needed).
+# demo = talker-listener | teleop | fleet | all
+python-ros2 demo="all":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    cd python-ros2
+    if [[ ! -d .venv ]]; then
+        python3 -m venv .venv
+    fi
+    .venv/bin/python -m pip install -e .
+    .venv/bin/ditto-ros2 {{demo}} --sim

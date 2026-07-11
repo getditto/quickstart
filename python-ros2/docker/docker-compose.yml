@@ -1,0 +1,15 @@
+# Run a demo against real ROS 2:
+#   DITTO_OFFLINE_TOKEN=<token> docker compose -f docker/docker-compose.yml up --build
+#
+# Override the demo with:  command: ["bash","-lc","source /opt/ros/humble/setup.bash && ditto-ros2 talker-listener"]
+services:
+  ditto-ros2:
+    build:
+      # Context is the quickstart dir (one level up) so the package + pyproject
+      # are copied into the image.
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      DITTO_OFFLINE_TOKEN: ${DITTO_OFFLINE_TOKEN:-}
+    # ROS 2 defaults to multicast DDS discovery; keep it self-contained.
+    network_mode: bridge

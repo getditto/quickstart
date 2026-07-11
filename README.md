@@ -46,6 +46,7 @@ build and run them.
 - [Javascript TUI](javascript-tui/README.md)
 - [Javascript Web](javascript-web/README.md)
 - [Python TUI](python-tui/README.md)
+- [Python ROS 2](python-ros2/README.md)
 - [React Native](react-native/README.md)
 - [React Native Expo](react-native-expo/README.md)
 - [Rust TUI](rust-tui/README.md)
