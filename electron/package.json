@@ -20,7 +20,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@dittolive/ditto": "5.0.0",
+    "@dittolive/ditto": "5.1.0-rc.1",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
