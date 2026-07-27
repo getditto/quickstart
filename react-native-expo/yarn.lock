@@ -8835,10 +8835,10 @@ write-file-atomic@^4.0.2:
     imurmurhash "^0.1.4"
     signal-exit "^3.0.7"
 
-ws@^6.2.3, ws@^7, ws@^7.5.10, ws@^7.5.11, ws@^8.11.0, ws@^8.12.1:
-  version "7.5.13"
-  resolved "https://registry.npmjs.org/ws/-/ws-7.5.13.tgz"
-  integrity sha512-rsKI6xDBFVf4r/x8XyChGK04QR/XHroxs/jUcoWvtEZM8TPU/X/uIY9B1CsSzYws9ZJb/6bbBu7dPhFW00CAoA==
+ws@^6.2.3, ws@^7, ws@^7.5.10, ws@^8.11.0, ws@^8.12.1, ws@^8.17.1:
+  version "8.21.1"
+  resolved "https://registry.npmjs.org/ws/-/ws-8.21.1.tgz"
+  integrity sha512-+0NTnW77fFN/DjQi6k/Sq/Yvk4Sgajw7urW8V+asjXnRgDs9gyGkdb7EzgfhA4goXsRIZKE28fzIXBHEzhuiWw==
 
 xcode@^3.0.1:
   version "3.0.1"
