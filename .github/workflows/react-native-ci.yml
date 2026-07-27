@@ -136,7 +136,7 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "16.4"
+          xcode-version: "26.3"
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
