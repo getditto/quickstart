@@ -17,9 +17,8 @@
 class TasksTui::Impl {
 private:
   TasksRepository &repository;
-  // Shared ownership of the manager (obtained from the repository, the single
-  // source of truth) so sync control never outlives or diverges from the
-  // manager the repository is using.
+  // Shared ownership of the manager (the same instance the repository holds)
+  // so sync control never outlives or diverges from the manager in use.
   std::shared_ptr<DittoManager> manager;
   std::vector<Task> tasks;
   ftxui::Component tasks_list;
@@ -243,8 +242,8 @@ private:
   }
 
 public:
-  Impl(TasksRepository &r)
-      : repository(r), manager(r.ditto_manager()),
+  Impl(TasksRepository &r, std::shared_ptr<DittoManager> ditto_manager)
+      : repository(r), manager(std::move(ditto_manager)),
         tasks_list(ftxui::Container::Vertical({})),
         screen(ftxui::ScreenInteractive::Fullscreen()) {}
 
@@ -266,8 +265,9 @@ public:
   }
 };
 
-TasksTui::TasksTui(TasksRepository &repository)
-    : impl(std::make_shared<Impl>(repository)) {}
+TasksTui::TasksTui(TasksRepository &repository,
+                   std::shared_ptr<DittoManager> manager)
+    : impl(std::make_shared<Impl>(repository, std::move(manager))) {}
 
 TasksTui::~TasksTui() {}
 

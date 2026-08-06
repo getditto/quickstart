@@ -205,7 +205,7 @@ int main(int argc, const char *argv[]) {
 
 #ifdef DITTO_QUICKSTART_TUI
       if (found_tui_command || !found_non_tui_command) {
-        TasksTui tui(repository);
+        TasksTui tui(repository, manager);
         tui.run();
       } else
 #endif

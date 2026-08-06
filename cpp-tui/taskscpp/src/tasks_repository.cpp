@@ -53,8 +53,6 @@ public:
         ditto->get_sync().register_subscription("SELECT * FROM tasks");
   }
 
-  shared_ptr<DittoManager> ditto_manager() const { return manager; }
-
   ~Impl() noexcept {
     try {
       if (tasks_subscription) {
@@ -219,10 +217,6 @@ public:
 
 TasksRepository::TasksRepository(shared_ptr<DittoManager> manager)
     : impl(make_shared<Impl>(std::move(manager))) {}
-
-shared_ptr<DittoManager> TasksRepository::ditto_manager() const {
-  return impl->ditto_manager();
-}
 
 TasksRepository::~TasksRepository() noexcept {
   try {

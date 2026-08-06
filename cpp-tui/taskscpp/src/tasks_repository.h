@@ -34,12 +34,6 @@ public:
   TasksRepository &operator=(const TasksRepository &) = delete;
   TasksRepository &operator=(TasksRepository &&) = delete;
 
-  /// The DittoManager backing this repository. This is the single source of
-  /// truth for which Ditto instance the app is using, so UI or other
-  /// components can control sync through it without being handed a separate
-  /// manager reference.
-  std::shared_ptr<DittoManager> ditto_manager() const;
-
   /// Create a new task and add it to the collection.
   ///
   /// @return the _id of the new task.
