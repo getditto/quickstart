@@ -32,6 +32,11 @@ static vector<Task> tasks_from(const ditto::QueryResult &result) {
 class TasksRepository::Impl {
 private:
   shared_ptr<mutex> mtx;
+  // Shared ownership of the manager keeps the Ditto instance alive for the
+  // repository's whole lifetime. `ditto` is cached from `manager->get_ditto()`;
+  // `manager` must be declared before `ditto` because `ditto` is initialized
+  // from it.
+  shared_ptr<DittoManager> manager;
   shared_ptr<ditto::Ditto> ditto;
   shared_ptr<ditto::SyncSubscription> tasks_subscription;
 
@@ -40,12 +45,15 @@ private:
   }
 
 public:
-  Impl(shared_ptr<ditto::Ditto> ditto_instance)
-      : mtx(new mutex()), ditto(std::move(ditto_instance)) {
+  Impl(shared_ptr<DittoManager> ditto_manager)
+      : mtx(make_shared<mutex>()), manager(std::move(ditto_manager)),
+        ditto(manager->get_ditto()) {
     // Register a subscription, which determines what data syncs to this peer.
     tasks_subscription =
         ditto->get_sync().register_subscription("SELECT * FROM tasks");
   }
+
+  shared_ptr<DittoManager> ditto_manager() const { return manager; }
 
   ~Impl() noexcept {
     try {
@@ -209,8 +217,12 @@ public:
 
 }; // class TasksRepository::Impl
 
-TasksRepository::TasksRepository(const DittoManager &manager)
-    : impl(new Impl(manager.get_ditto())) {}
+TasksRepository::TasksRepository(shared_ptr<DittoManager> manager)
+    : impl(make_shared<Impl>(std::move(manager))) {}
+
+shared_ptr<DittoManager> TasksRepository::ditto_manager() const {
+  return impl->ditto_manager();
+}
 
 TasksRepository::~TasksRepository() noexcept {
   try {

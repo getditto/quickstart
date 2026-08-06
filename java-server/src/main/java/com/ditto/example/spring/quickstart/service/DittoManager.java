@@ -31,8 +31,11 @@ public class DittoManager implements DisposableBean {
     @Nonnull
     private final DittoAsyncCancellable presenceObserver;
 
+    // Initialized to false and only flipped to true after sync().start() succeeds
+    // (see setSyncEnabled), so the streamed state reflects sync actually starting
+    // rather than a matching default — that keeps the startup regression test honest.
     @Nonnull
-    private final Sinks.Many<Boolean> mutableSyncStatePublisher = Sinks.many().replay().latestOrDefault(true);
+    private final Sinks.Many<Boolean> mutableSyncStatePublisher = Sinks.many().replay().latestOrDefault(false);
 
     // Whether Ditto sync is currently running. Starts enabled on init (see constructor);
     // changed via the REST start/stop endpoints.

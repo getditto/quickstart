@@ -193,16 +193,19 @@ int main(int argc, const char *argv[]) {
     // Set this true if we make modifications and need to allow post-sync time.
     bool need_post_sync = false;
 
-    // The manager and repository are destroyed at the end of this scope
+    // The manager and repository are destroyed at the end of this scope. The
+    // manager is held by shared_ptr so the repository (which shares ownership)
+    // can never outlive it.
     {
-      DittoManager manager(database_id, development_token, server_url,
-                           offline_license_token, persistence_dir);
+      auto manager = std::make_shared<DittoManager>(
+          database_id, development_token, server_url, offline_license_token,
+          persistence_dir);
       TasksRepository repository(manager);
-      manager.start_sync();
+      manager->start_sync();
 
 #ifdef DITTO_QUICKSTART_TUI
       if (found_tui_command || !found_non_tui_command) {
-        TasksTui tui(repository, manager);
+        TasksTui tui(repository);
         tui.run();
       } else
 #endif
@@ -424,7 +427,7 @@ int main(int argc, const char *argv[]) {
         tasks_observer.reset();
       } // !found_tui_command
 
-      manager.stop_sync();
+      manager->stop_sync();
     } // repository and manager destroyed
 
     if (!export_log_path.empty()) {

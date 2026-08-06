@@ -15,7 +15,6 @@ using std::cout;
 using std::endl;
 using std::exception;
 using std::string;
-using std::unique_ptr;
 using std::vector;
 using std::chrono::duration_cast;
 using std::chrono::high_resolution_clock;
@@ -43,11 +42,10 @@ int main() {
 
     // Initialize the Ditto manager and tasks repository, then start sync
     cout << "Initializing Ditto sync..." << endl;
-    auto manager = unique_ptr<DittoManager>(new DittoManager(
+    auto manager = std::make_shared<DittoManager>(
         DITTO_DATABASE_ID, DITTO_DEVELOPMENT_TOKEN, DITTO_SERVER_URL,
-        DITTO_OFFLINE_LICENSE_TOKEN, "/tmp/cpp_integration_test"));
-    auto repository =
-        unique_ptr<TasksRepository>(new TasksRepository(*manager));
+        DITTO_OFFLINE_LICENSE_TOKEN, "/tmp/cpp_integration_test");
+    TasksRepository repository(manager);
 
     manager->start_sync();
     cout << "Sync started, polling for document..." << endl;
@@ -66,7 +64,7 @@ int main() {
           duration_cast<seconds>(high_resolution_clock::now() - start_time)
               .count();
 
-      vector<Task> tasks = repository->get_tasks();
+      vector<Task> tasks = repository.get_tasks();
       cout << "Checking " << tasks.size() << " synced tasks at " << elapsed
            << "s..." << endl;
 

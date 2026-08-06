@@ -18,15 +18,27 @@ public:
   /// Construct a repository backed by the manager's Ditto instance. This
   /// registers the sync subscription so Ditto syncs matching documents from
   /// other devices.
-  TasksRepository(const DittoManager &manager);
+  ///
+  /// The repository shares ownership of the manager via `std::shared_ptr`, so
+  /// the manager cannot be destroyed while the repository is still using it.
+  explicit TasksRepository(std::shared_ptr<DittoManager> manager);
 
   virtual ~TasksRepository() noexcept;
 
-  TasksRepository(const TasksRepository &) = default;
-  TasksRepository(TasksRepository &&) = default;
+  // The repository holds shared state (the sync subscription and the shared
+  // Ditto instance), so it is non-copyable and non-movable. Share it by
+  // reference or via `std::shared_ptr` rather than copying.
+  TasksRepository(const TasksRepository &) = delete;
+  TasksRepository(TasksRepository &&) = delete;
 
   TasksRepository &operator=(const TasksRepository &) = delete;
   TasksRepository &operator=(TasksRepository &&) = delete;
+
+  /// The DittoManager backing this repository. This is the single source of
+  /// truth for which Ditto instance the app is using, so UI or other
+  /// components can control sync through it without being handed a separate
+  /// manager reference.
+  std::shared_ptr<DittoManager> ditto_manager() const;
 
   /// Create a new task and add it to the collection.
   ///

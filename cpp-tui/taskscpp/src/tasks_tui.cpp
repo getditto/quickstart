@@ -17,7 +17,10 @@
 class TasksTui::Impl {
 private:
   TasksRepository &repository;
-  DittoManager &manager;
+  // Shared ownership of the manager (obtained from the repository, the single
+  // source of truth) so sync control never outlives or diverges from the
+  // manager the repository is using.
+  std::shared_ptr<DittoManager> manager;
   std::vector<Task> tasks;
   ftxui::Component tasks_list;
   ftxui::ScreenInteractive screen;
@@ -91,10 +94,10 @@ private:
   // Toggle sync on/off
   void toggle_sync() {
     try {
-      if (manager.is_sync_active()) {
-        manager.stop_sync();
+      if (manager->is_sync_active()) {
+        manager->stop_sync();
       } else {
-        manager.start_sync();
+        manager->start_sync();
       }
     } catch (const std::exception &err) {
       log_error("Failed to toggle sync: " + std::string(err.what()));
@@ -114,7 +117,7 @@ private:
     auto top_bar = Renderer([this] {
       return vbox({
           hbox({text("Ditto Tasks") | bold | flex,
-                (manager.is_sync_active()
+                (manager->is_sync_active()
                      ? text("🟢 Sync Active") | color(Color::Green)
                      : text("🔴 Sync Inactive") | color(Color::Red)) |
                     bold,
@@ -240,8 +243,9 @@ private:
   }
 
 public:
-  Impl(TasksRepository &r, DittoManager &m)
-      : repository(r), manager(m), tasks_list(ftxui::Container::Vertical({})),
+  Impl(TasksRepository &r)
+      : repository(r), manager(r.ditto_manager()),
+        tasks_list(ftxui::Container::Vertical({})),
         screen(ftxui::ScreenInteractive::Fullscreen()) {}
 
   ~Impl() = default;
@@ -262,8 +266,8 @@ public:
   }
 };
 
-TasksTui::TasksTui(TasksRepository &repository, DittoManager &manager)
-    : impl(std::make_shared<Impl>(repository, manager)) {}
+TasksTui::TasksTui(TasksRepository &repository)
+    : impl(std::make_shared<Impl>(repository)) {}
 
 TasksTui::~TasksTui() {}
 

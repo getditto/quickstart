@@ -25,8 +25,11 @@ public:
 
   virtual ~DittoManager() noexcept;
 
-  DittoManager(const DittoManager &) = default;
-  DittoManager(DittoManager &&) = default;
+  // DittoManager owns the underlying Ditto instance and its sync lifecycle, so
+  // it is non-copyable and non-movable. Share it via `std::shared_ptr` when
+  // more than one component needs it (see TasksRepository).
+  DittoManager(const DittoManager &) = delete;
+  DittoManager(DittoManager &&) = delete;
 
   DittoManager &operator=(const DittoManager &) = delete;
   DittoManager &operator=(DittoManager &&) = delete;

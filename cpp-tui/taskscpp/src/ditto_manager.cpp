@@ -120,9 +120,10 @@ public:
 DittoManager::DittoManager(string database_id, string development_token,
                            string server_url, string offline_license_token,
                            string persistence_dir)
-    : impl(new Impl(std::move(database_id), std::move(development_token),
-                    std::move(server_url), std::move(offline_license_token),
-                    std::move(persistence_dir))) {}
+    : impl(std::make_shared<Impl>(
+          std::move(database_id), std::move(development_token),
+          std::move(server_url), std::move(offline_license_token),
+          std::move(persistence_dir))) {}
 
 DittoManager::~DittoManager() noexcept {
   try {

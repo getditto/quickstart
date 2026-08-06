@@ -70,7 +70,8 @@
     "@xmldom/xmldom": "0.8.13",
     "lodash": "4.18.1",
     "@tootallnate/once": "3.0.1",
-    "postcss": "8.5.14"
+    "postcss": "8.5.14",
+    "shell-quote": "1.8.4"
   },
   "overrides": {
     "tar": "7.5.11",
