@@ -45,6 +45,16 @@ val generateSecretProperties by tasks.registering {
             """.trimIndent())
         }
 
+        // Emit every field referenced by the app even when a local .env file
+        // predates the current sample. Runtime initialization reports missing
+        // credentials; source generation should still produce valid Java.
+        listOf(
+            "DITTO_DATABASE_ID",
+            "DITTO_DEVELOPMENT_TOKEN",
+            "DITTO_SERVER_URL",
+            "DITTO_OFFLINE_LICENSE_TOKEN",
+        ).forEach { properties.putIfAbsent(it, "") }
+
         val javaSource = """
             |package com.ditto.example.spring.quickstart.configuration;
             |

@@ -2,12 +2,12 @@ import DittoSwift
 import Foundation
 
 enum DittoManagerError: LocalizedError {
-    case invalidAuthURL(String)
+    case invalidServerURL(String)
 
     var errorDescription: String? {
         switch self {
-        case .invalidAuthURL(let value):
-            return "DITTO_AUTH_URL is missing or not a valid URL: \"\(value)\". Check your .env configuration."
+        case .invalidServerURL(let value):
+            return "DITTO_SERVER_URL is missing or not a valid URL: \"\(value)\". Check your .env configuration."
         }
     }
 }
@@ -28,20 +28,33 @@ class DittoManager: ObservableObject {
             DittoLogger.minimumLogLevel = .debug
         }
 
-        guard let authURL = URL(string: Env.DITTO_AUTH_URL) else {
-            throw DittoManagerError.invalidAuthURL(Env.DITTO_AUTH_URL)
-        }
+        let offlineLicenseToken = Env.DITTO_OFFLINE_LICENSE_TOKEN
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let isOffline = !offlineLicenseToken.isEmpty
 
         // https://docs.ditto.live/sdk/latest/ditto-config
-        let config = DittoConfig(
-            databaseID: Env.DITTO_APP_ID,
-            connect: .server(url: authURL))
+        let config: DittoConfig
+        if isOffline {
+            config = DittoConfig(
+                databaseID: Env.DITTO_DATABASE_ID,
+                connect: .smallPeersOnly(privateKey: nil))
+        } else {
+            guard let serverURL = URL(string: Env.DITTO_SERVER_URL) else {
+                throw DittoManagerError.invalidServerURL(Env.DITTO_SERVER_URL)
+            }
+            config = DittoConfig(
+                databaseID: Env.DITTO_DATABASE_ID,
+                connect: .server(url: serverURL))
+        }
 
         do {
             let dittoOpened = try await Ditto.open(config: config)
-            dittoOpened.auth?.expirationHandler = { ditto, secondsRemaining in
+            if isOffline {
+                try dittoOpened.setOfflineOnlyLicenseToken(offlineLicenseToken)
+            } else {
+                dittoOpened.auth?.expirationHandler = { ditto, secondsRemaining in
                 // Authenticate when token is expiring. This closure must not throw.
-                ditto.auth?.login(token: Env.DITTO_PLAYGROUND_TOKEN,
+                ditto.auth?.login(token: Env.DITTO_DEVELOPMENT_TOKEN,
                                   provider: .development) { clientInfo, error in
                     if let error = error {
                         // Cannot throw from here; log the error instead.
@@ -52,12 +65,49 @@ class DittoManager: ObservableObject {
                         )
                     }
                 }
+                }
             }
             self.ditto = dittoOpened
 
         } catch {
             self.ditto = nil
             throw error
+        }
+    }
+
+    /// Enables or disables sync, starting or stopping the sync engine to match
+    /// the requested state. Registering *what* syncs (the tasks subscription) is
+    /// owned by `TasksRepository`; this only toggles the replication engine.
+    func setSyncEnabled(_ newValue: Bool) throws {
+        if let ditto = self.ditto {
+            if !ditto.sync.isActive && newValue {
+                try startSync()
+            } else if ditto.sync.isActive && !newValue {
+                stopSync()
+            }
+        }
+    }
+
+    /// Starts the sync engine so this peer replicates with other peers and the
+    /// Ditto server. Subscriptions determine what data syncs; see `TasksRepository`.
+    func startSync() throws {
+        do {
+            if let ditto = self.ditto {
+                try ditto.sync.start()
+            }
+        } catch {
+            print(
+                "DittoManager.\(#function) - ERROR starting sync operations: \(error.localizedDescription)"
+            )
+            throw error
+        }
+    }
+
+    /// Stops the sync engine. Subscriptions stay registered, so toggling sync
+    /// back on resumes syncing the tasks collection.
+    func stopSync() {
+        if let ditto = self.ditto, ditto.sync.isActive {
+            ditto.sync.stop()
         }
     }
 }

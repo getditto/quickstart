@@ -5,7 +5,7 @@ This app is a TUI built using [Ink](https://github.com/vadimdemedes/ink) with Re
 ## Documentation
 
 - [Javascript Install Guide](https://docs.ditto.live/sdk/latest/install-guides/js)
-- [Javascript API Reference](https://software.ditto.live/js/Ditto/5.0.0/api-reference/)
+- [Javascript API Reference](https://docs.ditto.live/sdk/latest/api-reference/js)
 - [Javascript Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
 ## Prerequisites
@@ -16,17 +16,17 @@ This app is a TUI built using [Ink](https://github.com/vadimdemedes/ink) with Re
 ## Getting Started
 
 First, in the root of this repository, copy the `.env.sample` file to `.env`,
-then fill out the variables with your Ditto AppID, Auth URL, Playground Token,
-and Websocket URL. If you don't have those yet, visit https://portal.ditto.live
+then fill out the variables with your Ditto Database ID, Server URL, and
+Development Token. If you don't have those yet, visit https://portal.ditto.live
 
 ```bash
 cp .env.sample .env
 ```
 
 ```
-DITTO_APP_ID=""
-DITTO_PLAYGROUND_TOKEN=""
-DITTO_AUTH_URL=""
+DITTO_DATABASE_ID=""
+DITTO_DEVELOPMENT_TOKEN=""
+DITTO_SERVER_URL=""
 ```
 
 Next, install dependencies and run:
@@ -65,18 +65,18 @@ npm start 2>NUL
 
 ## Architecture
 
-This app uses the Ditto v5 SDK in **server mode** with the Online Playground
-identity (development only). It connects to the Ditto cloud via WebSocket and
-syncs a `tasks` collection.
+This app uses the Ditto v5 SDK in **server mode** with the Development
+identity (development only). It connects to the Ditto server and syncs a
+`tasks` collection.
 
 Each task document has the following structure:
 
 ```json
 {
-	"_id": "unique-id",
-	"title": "Task description",
-	"done": false,
-	"deleted": false
+  "_id": "unique-id",
+  "title": "Task description",
+  "done": false,
+  "deleted": false
 }
 ```
 
@@ -90,3 +90,11 @@ npm run dev      # Watch mode (rebuilds on file changes)
 npm run format   # Format code with Prettier
 npm test         # Run format check and integration tests
 ```
+
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

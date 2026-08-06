@@ -7,28 +7,24 @@ import com.ditto.kotlin.DittoConfig
 import com.ditto.kotlin.DittoLog
 import com.ditto.kotlin.DittoLogLevel
 import com.ditto.kotlin.DittoLogger
-import com.ditto.kotlin.DittoQueryResult
-import com.ditto.kotlin.DittoSyncSubscription
-import com.ditto.kotlin.error.DittoError
-import com.ditto.kotlin.serialization.DittoCborSerializable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 private const val TAG = "DittoManager"
 
 /**
- * Manages a Ditto instance.
+ * Manages the lifecycle and configuration of a Ditto instance: config, open, auth,
+ * transport, and starting/stopping sync. It vends a configured, running [Ditto]
+ * instance (via [getDitto]) for the tasks repository to use directly.
  *
- * In cases where a ViewModel needs to interact with this class, then create a UseCase for it.
- * Keeping this class inaccessible from the ViewModel, will prevent the abuse of ditto APIs like:
- * "ditto.sync", "ditto.transport", "ditto.store", etc
- *
- * Because ditto also has a "database" component, it is fine to expose this class to a Repository.
+ * This class deliberately does NOT wrap Ditto's APIs (store/sync/etc.). The
+ * repository calls the real Ditto API — e.g. `dittoManager.getDitto()?.store?.execute(...)`
+ * — so the quickstart shows how to use Ditto directly rather than modeling an
+ * abstraction layer over it.
  */
 class DittoManager(
     val secrets: DittoSecretsConfiguration,
@@ -45,29 +41,32 @@ class DittoManager(
         createJob = scope.launch(Dispatchers.Default) {
             ditto = try {
                 DittoLogger.minimumLogLevel = DittoLogLevel.Info
+                val offlineLicenseToken = secrets.DITTO_OFFLINE_LICENSE_TOKEN.trim()
+                val isOffline = offlineLicenseToken.isNotEmpty()
 
                 val config = DittoConfig(
-                    databaseId = secrets.DITTO_APP_ID,
-                    connect = DittoConfig.Connect.Server(
-                        url = secrets.DITTO_AUTH_URL,
-                    ),
+                    databaseId = secrets.DITTO_DATABASE_ID,
+                    connect = if (isOffline) {
+                        DittoConfig.Connect.SmallPeersOnly(privateKey = null)
+                    } else {
+                        DittoConfig.Connect.Server(url = secrets.DITTO_SERVER_URL)
+                    },
                 )
 
                 createDitto(
                     config = config
                 ).apply {
-                    auth?.setExpirationHandler { ditto, _ ->
-                        // Authenticate when a token is expiring
-                        val clientInfo = ditto.auth?.login(
-                            token = secrets.DITTO_PLAYGROUND_TOKEN,
-                            provider = DittoAuthenticationProvider.development(),
-                        )
-                        DittoLog.d(TAG, "Auth response: $clientInfo")
-                    }
-                    updateTransportConfig { config ->
-                        config.peerToPeer.lan.enabled = true
-                        config.peerToPeer.bluetoothLe.enabled = true
-                        config.peerToPeer.wifiAware.enabled = true
+                    if (isOffline) {
+                        setOfflineOnlyLicenseToken(offlineLicenseToken)
+                    } else {
+                        auth?.expirationHandler = { ditto, _ ->
+                            // Authenticate when a token is expiring
+                            val clientInfo = ditto.auth?.login(
+                                token = secrets.DITTO_DEVELOPMENT_TOKEN,
+                                provider = DittoAuthenticationProvider.development(),
+                            )
+                            DittoLog.d(TAG, "Auth response: $clientInfo")
+                        }
                     }
                 }
             } catch (e: Throwable) {
@@ -87,7 +86,7 @@ class DittoManager(
 
     fun destroyDitto() {
         closeJob = scope.launch(Dispatchers.IO) {
-            getDitto()?.stopSync()
+            getDitto()?.sync?.stop()
             getDitto()?.close()
             ditto = null
         }
@@ -95,42 +94,14 @@ class DittoManager(
 
     suspend fun startSync() {
         val ditto = getDitto() ?: return
-        ditto.startSync()
+        ditto.sync.start()
     }
 
     suspend fun stopSync() {
-        getDitto()?.stopSync()
+        getDitto()?.sync?.stop()
     }
 
-    suspend fun isSyncing() = getDitto()?.isSyncActive == true
-
-    suspend fun executeDql(
-        query: String,
-        parameters: DittoCborSerializable.Dictionary = DittoCborSerializable.Dictionary()
-    ): DittoQueryResult? = try {
-        getDitto()?.store?.execute(query, parameters)
-    } catch (e: DittoError) {
-        DittoLog.e("ExecuteDqlUse", "Error executing DQL query: ${e.message}")
-        null
-    }
-
-    suspend fun registerSubscription(
-        query: String,
-        arguments: DittoCborSerializable.Dictionary? = null
-    ): DittoSyncSubscription? = try {
-        getDitto()?.sync?.registerSubscription(query, arguments)
-    } catch (e: DittoError) {
-        DittoLog.e("RegisterSubscription", "Error registering subscription: ${e.message}")
-        null
-    }
-
-    suspend fun registerObserver(
-        query: String,
-        arguments: DittoCborSerializable.Dictionary? = null
-    ): Flow<DittoQueryResult> = requireNotNull(getDitto()).store.observe(
-        query = query,
-        arguments = arguments
-    )
+    suspend fun isSyncing() = getDitto()?.sync?.isActive == true
 
     private suspend fun waitForWorkInProgress() {
         createJob?.join()

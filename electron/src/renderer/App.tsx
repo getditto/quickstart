@@ -6,7 +6,7 @@ import type { Task } from '../types';
 
 const App = () => {
   const [error, setError] = useState<Error | null>(null);
-  const [appId, setAppId] = useState<string>('');
+  const [databaseId, setDatabaseId] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [syncActive, setSyncActive] = useState<boolean>(true);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
@@ -20,7 +20,7 @@ const App = () => {
       try {
         const info = await window.ditto.getInfo();
         if (!isMounted) return;
-        setAppId(info.appId);
+        setDatabaseId(info.databaseId);
         setToken(info.token);
         // Subscribe before fetching initial state so updates that arrive
         // during the round-trip aren't missed.
@@ -53,7 +53,7 @@ const App = () => {
     });
   }, []);
 
-  // https://docs.ditto.com/sdk/latest/crud/create
+  // https://docs.ditto.live/sdk/latest/crud/create
   const createTask = useCallback(async (title: string) => {
     try {
       await window.ditto.createTask(title);
@@ -62,7 +62,7 @@ const App = () => {
     }
   }, []);
 
-  // https://docs.ditto.com/sdk/latest/crud/update
+  // https://docs.ditto.live/sdk/latest/crud/update
   const editTask = useCallback(async (id: string, title: string) => {
     try {
       await window.ditto.editTask(id, title);
@@ -79,7 +79,7 @@ const App = () => {
     }
   }, []);
 
-  // https://docs.ditto.com/sdk/latest/crud/delete#soft-delete-pattern
+  // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
   const deleteTask = useCallback(async (task: Task) => {
     try {
       await window.ditto.deleteTask(task._id);
@@ -93,7 +93,7 @@ const App = () => {
       <div className="h-full w-full flex flex-col container mx-auto items-center">
         {error && <ErrorMessage error={error} />}
         <DittoInfo
-          appId={appId}
+          databaseId={databaseId}
           token={token}
           syncEnabled={syncActive}
           onToggleSync={toggleSync}

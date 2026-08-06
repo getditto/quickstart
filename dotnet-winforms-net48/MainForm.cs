@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DittoSDK.Store;
 
 namespace Taskapp.WinForms.Net48
 {
     public partial class MainForm : Form
     {
         private bool _isUpdatingListView = false;
+        private DittoStoreObserver _tasksObserver;
 
         public MainForm()
         {
@@ -23,13 +25,13 @@ namespace Taskapp.WinForms.Net48
                 null, tasksListView, new object[] { true });
 
             // Register observer to watch for task changes
-            TasksPeerService.Instance.ObserveTasksCollection(OnTasksChanged);
+            _tasksObserver = AppServices.Instance.TasksRepository.ObserveTasksCollection(OnTasksChanged);
 
             // Update status
             UpdateSyncStatus();
         }
 
-        private async Task OnTasksChanged(IList<ToDoTask> tasks)
+        private async Task OnTasksChanged(IList<TaskModel> tasks)
         {
             // Invoke on UI thread
             if (InvokeRequired)
@@ -44,7 +46,7 @@ namespace Taskapp.WinForms.Net48
             await Task.CompletedTask;
         }
 
-        private void UpdateTasksList(IList<ToDoTask> tasks)
+        private void UpdateTasksList(IList<TaskModel> tasks)
         {
             _isUpdatingListView = true;
             tasksListView.BeginUpdate();
@@ -122,7 +124,7 @@ namespace Taskapp.WinForms.Net48
 
             try
             {
-                await TasksPeerService.Instance.AddTaskAsync(title);
+                await AppServices.Instance.TasksRepository.AddTask(title);
                 newTaskTextBox.Clear();
                 UpdateStatus("Task added successfully");
             }
@@ -152,7 +154,7 @@ namespace Taskapp.WinForms.Net48
 
             try
             {
-                await TasksPeerService.Instance.UpdateTaskTitleAsync(taskId, newTitle);
+                await AppServices.Instance.TasksRepository.UpdateTaskTitle(taskId, newTitle);
                 UpdateStatus("Task updated successfully");
             }
             catch (Exception ex)
@@ -184,7 +186,7 @@ namespace Taskapp.WinForms.Net48
             {
                 try
                 {
-                    await TasksPeerService.Instance.DeleteTaskAsync(taskId);
+                    await AppServices.Instance.TasksRepository.DeleteTask(taskId);
                     UpdateStatus("Task deleted successfully");
                 }
                 catch (Exception ex)
@@ -206,7 +208,7 @@ namespace Taskapp.WinForms.Net48
 
             try
             {
-                await TasksPeerService.Instance.UpdateTaskDoneAsync(taskId, newCheckedState);
+                await AppServices.Instance.TasksRepository.UpdateTaskDone(taskId, newCheckedState);
             }
             catch (Exception ex)
             {
@@ -235,7 +237,7 @@ namespace Taskapp.WinForms.Net48
 
         private void UpdateSyncStatus()
         {
-            if (TasksPeerService.Instance.IsSyncActive)
+            if (AppServices.Instance.DittoManager.IsSyncActive)
             {
                 statusLabel.Text = "Status: Syncing";
             }
@@ -247,7 +249,12 @@ namespace Taskapp.WinForms.Net48
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // Cleanup handled in Program.cs
+            // Stop observing; the Ditto instance itself is disposed in Program.cs
+            if (_tasksObserver != null)
+            {
+                _tasksObserver.Cancel();
+                _tasksObserver = null;
+            }
         }
     }
 }

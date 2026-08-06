@@ -13,7 +13,7 @@ After you have completed the [common prerequisites] you will need the following:
 ## Documentation
 
 - [Install Guide](https://docs.ditto.live/sdk/latest/install-guides/java/android)
-- [API Reference](https://software.ditto.live/android/Ditto/5.0.0/api-reference/)
+- [API Reference](https://docs.ditto.live/sdk/latest/api-reference/kotlin)
 - [SDK Release Notes](https://docs.ditto.live/sdk/latest/release-notes/java)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -23,8 +23,8 @@ After you have completed the [common prerequisites] you will need the following:
 Assuming you have Android Studio and other prerequisites installed, you can
 build and run the app by following these steps:
 
-1. Create an application at <https://portal.ditto.live/>.  Make note of the database ID (used to be called app ID) and online playground token.
-2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your Database ID (used to be called AppId), Online Playground Token, and Auth URL.
+1. Create an application at <https://portal.ditto.live/>.  Make note of the database ID and development token.
+2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your Database ID, Development Token, and Server URL.
 3. Launch Android Studio and open the `quickstart/android-java` directory.
 4. In Android Studio, select a connected Android device, or create and launch an Android emulator and select it as the destination, then choose the **Run > Run 'app'** menu item.
 
@@ -32,13 +32,22 @@ The app will build and run on the selected device or emulator.  You can add, edi
 
 If you run the app on additional devices or emulators, the data will be synced between them.
 
+To run without a Ditto server, set `DITTO_DATABASE_ID` and
+`DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env`. When the offline token is
+non-empty, the development token and server URL are not used.
+
 Compatible with Android Automotive OS (AAOS)
 
 ## A Guided Tour of the Android App Source Code
 
 The Android app is a simple to-do list app that demonstrates how to use the Ditto Android SDK to sync data with other devices.  It is implemented using Java and Android Views using an Activity and a programmatically implemented RecyclerView.
 
-The Ditto v5 SDK ships as a Kotlin module (`com.ditto:ditto-kotlin-android`) and exposes some APIs as `suspend` functions. To keep the application code idiomatic Java, this project uses a small Kotlin bridge file, `DittoHelper.kt`, that wraps the suspending APIs with `runBlocking` and exposes `@JvmStatic` entry points. All application logic — `MainActivity`, `Task`, and `TaskAdapter` — remains in Java.
+The Ditto integration is split into two classes by concern:
+
+- `DittoManager.kt` — Ditto instance management: configuration, identity/auth, and starting/stopping sync. It holds and exposes the `ditto` instance and knows nothing about tasks.
+- `TasksRepository.kt` — the tasks data concern: it registers the sync subscription and the store observer, streams the visible task list to the UI, and performs CRUD by calling the real Ditto API directly through `dittoManager.ditto`.
+
+The Ditto v5 SDK ships as a Kotlin module (`com.ditto:ditto-kotlin-android`) and exposes some APIs (such as `store.execute`) as `suspend` functions. Because Java cannot call `suspend` functions directly, `DittoManager` and `TasksRepository` are written in Kotlin, which lets them invoke the real Ditto API directly (bridging the suspending calls with `runBlocking`) instead of introducing a wrapper layer over the SDK. The remaining application logic — `MainActivity`, `Task`, and `TaskAdapter` — is in Java.
 
 It is assumed that the reader is familiar with Android development and with Java/Activity/RecyclerView, but needs some guidance on how to use Ditto.  The following is a summary of the key parts of integration with Ditto.
 
@@ -50,12 +59,3 @@ to download the Ditto SDK from Maven Central and add it to the project:
 ```kotlin
     implementation(libs.ditto)
 ```
-
-This line in `gradle/libs.versions.toml` specifies which version of the Ditto
-SDK to use:
-
-```kotlin
-ditto = "5.0.0"
-```
-
-To use a newer version of the SDK, change the version number on this line.

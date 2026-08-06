@@ -8,6 +8,7 @@
 #  awk -f scripts/generate_env.awk ../../.env > src/env.h
 
 BEGIN {
+  has_offline_license_token = 0
   print "#ifndef DITTO_QUICKSTART_ENV_H"
   print "#define DITTO_QUICKSTART_ENV_H"
   print ""
@@ -42,6 +43,9 @@ BEGIN {
         # Verify that the key looks valid (starts with a capital letter or underscore,
         # followed by letters, digits, or underscores).
         if (key ~ /^[A-Z_][A-Z0-9_]*$/) {
+            if (key == "DITTO_OFFLINE_LICENSE_TOKEN") {
+                has_offline_license_token = 1
+            }
             # If the value does not start and end with double quotes, add them.
             if (substr(value, 1, 1) != "\"" || substr(value, length(value), 1) != "\"") {
                 value = "\"" value "\""
@@ -52,6 +56,9 @@ BEGIN {
 }
 
 END {
+    if (!has_offline_license_token) {
+        print "#define DITTO_OFFLINE_LICENSE_TOKEN \"\""
+    }
     print ""
     print "#endif // DITTO_QUICKSTART_ENV_H"
 }

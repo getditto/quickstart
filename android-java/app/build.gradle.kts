@@ -15,23 +15,34 @@ fun loadEnvProperties(): Properties {
     if (envFile.exists()) {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
-        val requiredEnvVars = listOf(
-            "DITTO_APP_ID",
-            "DITTO_PLAYGROUND_TOKEN",
-            "DITTO_AUTH_URL"
+        val knownEnvVars = listOf(
+            "DITTO_DATABASE_ID",
+            "DITTO_DEVELOPMENT_TOKEN",
+            "DITTO_SERVER_URL",
+            "DITTO_OFFLINE_LICENSE_TOKEN"
         )
-
-        for (envVar in requiredEnvVars) {
-            val value = System.getenv(envVar)
-                ?: throw RuntimeException("Required environment variable $envVar not found")
-            properties[envVar] = value
+        for (envVar in knownEnvVars) {
+            System.getenv(envVar)?.let { properties[envVar] = it }
+        }
+        if ((properties["DITTO_DATABASE_ID"] as String?).isNullOrBlank()) {
+            throw RuntimeException("Required environment variable DITTO_DATABASE_ID not found")
+        }
+        if ((properties["DITTO_OFFLINE_LICENSE_TOKEN"] as String? ?: "").trim().isEmpty()) {
+            for (envVar in listOf("DITTO_DEVELOPMENT_TOKEN", "DITTO_SERVER_URL")) {
+                if ((properties[envVar] as String?).isNullOrBlank()) {
+                    throw RuntimeException(
+                        "Required environment variable $envVar not found " +
+                            "(set DITTO_OFFLINE_LICENSE_TOKEN to use offline mode instead)"
+                    )
+                }
+            }
         }
     }
     return properties
 }
 
-// Define BuildConfig.DITTO_APP_ID, BuildConfig.DITTO_PLAYGROUND_TOKEN,
-// and BuildConfig.DITTO_AUTH_URL based on values in the .env file
+// Define BuildConfig.DITTO_DATABASE_ID, BuildConfig.DITTO_DEVELOPMENT_TOKEN,
+// and BuildConfig.DITTO_SERVER_URL based on values in the .env file
 //
 // More information can be found here:
 // https://docs.ditto.live/sdk/latest/install-guides/java/android#integrating-and-initializing
@@ -43,28 +54,36 @@ androidComponents {
     onVariants {
         val prop = loadEnvProperties()
         it.buildConfigFields.put(
-            "DITTO_APP_ID",
+            "DITTO_DATABASE_ID",
             BuildConfigField(
                 "String",
-                "\"${envValue(prop, "DITTO_APP_ID")}\"",
-                "Ditto application ID"
+                "\"${envValue(prop, "DITTO_DATABASE_ID")}\"",
+                "Ditto database ID"
             )
         )
         it.buildConfigFields.put(
-            "DITTO_PLAYGROUND_TOKEN",
+            "DITTO_DEVELOPMENT_TOKEN",
             BuildConfigField(
                 "String",
-                "\"${envValue(prop, "DITTO_PLAYGROUND_TOKEN")}\"",
-                "Ditto online playground authentication token"
+                "\"${envValue(prop, "DITTO_DEVELOPMENT_TOKEN")}\"",
+                "Ditto development authentication token"
             )
         )
 
         it.buildConfigFields.put(
-            "DITTO_AUTH_URL",
+            "DITTO_SERVER_URL",
             BuildConfigField(
                 "String",
-                "\"${envValue(prop, "DITTO_AUTH_URL")}\"",
-                "Ditto Auth URL"
+                "\"${envValue(prop, "DITTO_SERVER_URL")}\"",
+                "Ditto Server URL"
+            )
+        )
+        it.buildConfigFields.put(
+            "DITTO_OFFLINE_LICENSE_TOKEN",
+            BuildConfigField(
+                "String",
+                "\"${envValue(prop, "DITTO_OFFLINE_LICENSE_TOKEN")}\"",
+                "Optional offline-only license token"
             )
         )
     }

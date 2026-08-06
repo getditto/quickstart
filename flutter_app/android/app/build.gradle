@@ -38,7 +38,9 @@ android {
         applicationId "com.example.flutter_quickstart"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion 26
+        // Ditto Flutter SDK supports Android 7+ (API 24).
+        // https://docs.ditto.live/sdk/latest/compatibility/flutter
+        minSdkVersion 24
         targetSdkVersion flutter.targetSdkVersion
         versionCode localProperties.getProperty('flutter.versionCode')?.toInteger() ?: 1
         versionName localProperties.getProperty('flutter.versionName') ?: "1.0.0"

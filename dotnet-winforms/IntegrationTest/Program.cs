@@ -48,24 +48,26 @@ class Program
             }
 
             // Get required environment variables
-            if (!envVars.TryGetValue("DITTO_APP_ID", out var appId) || string.IsNullOrEmpty(appId))
+            if (!envVars.TryGetValue("DITTO_DATABASE_ID", out var databaseId) || string.IsNullOrEmpty(databaseId))
             {
-                Console.WriteLine("❌ Missing DITTO_APP_ID in .env file");
+                Console.WriteLine("❌ Missing DITTO_DATABASE_ID in .env file");
                 return 1;
             }
-            if (!envVars.TryGetValue("DITTO_PLAYGROUND_TOKEN", out var playgroundToken) || string.IsNullOrEmpty(playgroundToken))
+            if (!envVars.TryGetValue("DITTO_DEVELOPMENT_TOKEN", out var developmentToken) || string.IsNullOrEmpty(developmentToken))
             {
-                Console.WriteLine("❌ Missing DITTO_PLAYGROUND_TOKEN in .env file");
+                Console.WriteLine("❌ Missing DITTO_DEVELOPMENT_TOKEN in .env file");
                 return 1;
             }
 
-            var authUrl = envVars.GetValueOrDefault("DITTO_AUTH_URL", "https://auth.cloud.ditto.live");
-            var websocketUrl = envVars.GetValueOrDefault("DITTO_WEBSOCKET_URL", "wss://cloud.ditto.live");
+            var serverUrl = envVars.GetValueOrDefault("DITTO_SERVER_URL", "https://auth.cloud.ditto.live");
+            var offlineLicenseToken = envVars.GetValueOrDefault("DITTO_OFFLINE_LICENSE_TOKEN", "");
 
-            Console.WriteLine($"📡 Connecting to Ditto (App ID: {appId})");
+            Console.WriteLine($"📡 Connecting to Ditto (Database ID: {databaseId})");
 
-            // Initialize TasksPeer and start sync
-            var tasksPeer = await TasksPeer.Create(appId, playgroundToken, authUrl, websocketUrl);
+            // Initialize Ditto and start sync
+            var dittoManager = await DittoManager.Create(
+                databaseId, developmentToken, serverUrl, offlineLicenseToken);
+            var tasksRepository = new TasksRepository(dittoManager);
 
             Console.WriteLine("✅ Ditto initialized and sync started");
             Console.WriteLine("⏳ Waiting for document to sync...");
@@ -74,7 +76,7 @@ class Program
             var maxWaitTime = TimeSpan.FromSeconds(30);
             var startTime = DateTime.Now;
             var found = false;
-            var foundTask = null as ToDoTask;
+            var foundTask = null as TaskModel;
             var taskCount = 0;
             var lastCheckTime = DateTime.Now;
 
@@ -83,7 +85,7 @@ class Program
             var cts = new CancellationTokenSource(maxWaitTime);
 
             // Register observer to watch for changes
-            var observer = tasksPeer.ObserveTasksCollection((tasks) => Task.Run(() =>
+            var observer = tasksRepository.ObserveTasksCollection((tasks) => Task.Run(() =>
             {
                 taskCount = tasks.Count;
                 var elapsed = (int)(DateTime.Now - startTime).TotalSeconds;
@@ -123,7 +125,7 @@ class Program
 
             // Cleanup
             // Note: DittoStoreObserver doesn't have a Stop/Dispose method
-            tasksPeer.Dispose();
+            dittoManager.Dispose();
 
             if (!found)
             {

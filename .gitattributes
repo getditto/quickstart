@@ -1,0 +1,17 @@
+# Line-ending policy for the published Quickstart apps.
+#
+# The publish process exports this subtree with `git archive`, which resolves
+# .gitattributes relative to THIS directory. Without a .gitattributes here, the
+# parent EOL rules are not applied to the exported output, so every file is
+# exported with LF -- dropping the CRLF that Windows batch files require. These
+# rules force LF everywhere (a blanket `eol=lf`) plus an explicit `*.cmd` rule,
+# so the published apps (and this subtree) get deterministic, convention-correct
+# line endings.
+
+# Normalize all text to LF in the repository and on checkout/export
+# (matches the repo-root .editorconfig `end_of_line = lf`).
+* text=auto eol=lf
+
+# Windows batch/command scripts require CRLF for cmd.exe.
+*.bat text eol=crlf
+*.cmd text eol=crlf

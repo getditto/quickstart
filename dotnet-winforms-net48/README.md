@@ -7,16 +7,23 @@
 - Does not support ARM64 (however, it can run on Windows on ARM using x64 emulation if supported by the OS/hardware). ARM64 is not officially supported by Ditto for use with the .NET 4.8 framework.  
 
 1. Install the .NET 4.8 SDK from <https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48>
-2. Create an application at <https://portal.ditto.live>. Make note of the app ID and online playground token
-3. Copy `.env.sample` from the repo root into the `dotnet-winforms-net48/` folder, rename the copy to `.env`, and fill in your `DITTO_APP_ID`, `DITTO_PLAYGROUND_TOKEN`, and `DITTO_AUTH_URL` (from <https://portal.ditto.live>). The `.env` file must live next to `Taskapp.WinForms.Net48.csproj` — this app reads its config from the project folder, not the repo root. (`DITTO_WEBSOCKET_URL` is in the sample but unused by this app; leave it blank.)
+2. Create an application at <https://portal.ditto.live>. Make note of the Database ID and development token
+3. Copy `.env.sample` from the repo root into the `dotnet-winforms-net48/` folder, rename the copy to `.env`, and fill in your `DITTO_DATABASE_ID`, `DITTO_DEVELOPMENT_TOKEN`, and `DITTO_SERVER_URL` (from <https://portal.ditto.live>). The `.env` file must live next to `Taskapp.WinForms.Net48.csproj` — this app reads its config from the project folder, not the repo root.
 
 
 ## Documentation
 
 - [Ditto C# .NET SDK Install Guide](https://docs.ditto.live/install-guides/c-sharp)
-- [Ditto C# .NET SDK API Reference](https://software.ditto.live/dotnet/Ditto/5.0.1/api-reference/)
+- [Ditto C# .NET SDK API Reference](https://docs.ditto.live/sdk/latest/api-reference/c-sharp)
 
 
 ## .NET Windows Forms Application 
 
 This is a Windows Form Application is targeting .NET 4.8.  It will NOT run on MacOS or Linux and will not run on modern .NET.  To run the app, open the `dotnet-winforms-net48` folder in Visual Studio for Windows and select the solution file in it (`Taskapp.WinForms.Net48.sln`). 
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in `dotnet-winforms-net48/.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

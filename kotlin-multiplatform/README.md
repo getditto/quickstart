@@ -1,24 +1,131 @@
 # Ditto Kotlin Multiplatform Quickstart App 🚀
 
+This quickstart implements the same Tasks application for Android, iOS, and
+Compose Desktop using shared Kotlin and Compose Multiplatform code.
+
 ## Prerequisites
 
-For more information, see - [Kotlin Multiplatform Install Guide](https://docs.ditto.live/sdk/latest/install-guides/kotlin/multiplatform)
+- A Ditto application created in the [Ditto Portal](https://portal.ditto.live/)
+- JDK 17
+- The tools required by the platform you want to run:
+  - Android Studio and the Android SDK for Android
+  - Xcode on macOS for iOS
+  - A supported desktop host: macOS Apple Silicon, Windows x64, or Linux
 
-## Getting Started
+The Android SDK is not required when building only the desktop or iOS target.
 
-1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
-2. Copy the `.env.template` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
-3. Synchronize your project with the Gradle file by clicking Build > Sync Project with Gradle Files.
-4. Running app in the desired platform:
-   1. Android:
-      On Android Studio, run the `composeApp` application
-   2. Compose Desktop
-      Execute `./gradlew :composeApp:run`
-   3. iOS
-      Execute `open iosApp/iosApp.xcodeproj` or open `iosApp/iosApp.xcodeproj` in Xcode
-      Run the application in Xcode
+## Configure Ditto
 
-## Additional Resources
+The app reads its Ditto configuration from `quickstart/.env`, the parent
+directory of this project. From `quickstart/kotlin-multiplatform`, create it
+from the tracked sample:
 
-- [Kotlin Multiplatform Roadmap and Support Policy](https://docs.ditto.live/sdk/latest/install-guides/kotlin/multiplatform-roadmap)
-- [API Reference](https://software.ditto.live/java/ditto-java/5.0.0-preview.3/api-reference/)
+macOS or Linux:
+
+```shell
+cp ../.env.sample ../.env
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item ..\.env.sample ..\.env
+```
+
+Set all three values using the credentials and server URL from the Ditto
+Portal:
+
+```dotenv
+DITTO_DATABASE_ID="your-database-id"
+DITTO_DEVELOPMENT_TOKEN="your-development-token"
+DITTO_SERVER_URL="https://your-server-url"
+```
+
+To run without a Ditto server, set `DITTO_DATABASE_ID` and
+`DITTO_OFFLINE_LICENSE_TOKEN`. When the offline token is non-empty, the
+development token and server URL are not used.
+
+The `.env` file is ignored by Git. These values are compiled into generated
+quickstart source code, so do not commit the file or use a development token in
+a production application.
+
+## Build configuration
+
+This standalone quickstart supports one optional Gradle project property:
+
+| Property | Default | Effect |
+| --- | --- | --- |
+| `ditto.skipAndroidBuilds` | `false` | When `true`, does not apply the Android plugin or configure Android targets, source sets, tests, and dependencies. Use it for desktop or iOS builds on a machine without an Android SDK. |
+
+Pass Gradle project properties with `-P`. Do not use
+`ditto.skipAndroidBuilds=true` when building or running Android.
+
+## Run the app
+
+Run Gradle commands from `quickstart/kotlin-multiplatform`.
+
+### Compose Desktop
+
+The desktop build does not need an Android SDK when the Android target is
+disabled.
+
+macOS or Linux:
+
+```shell
+./gradlew -Pditto.skipAndroidBuilds=true :composeApp:run
+```
+
+Windows PowerShell:
+
+```powershell
+.\gradlew.bat "-Pditto.skipAndroidBuilds=true" :composeApp:run
+```
+
+The checked-in `composeApp [desktop]` IDE run configuration already supplies
+this property.
+
+To create an installable package for the current desktop operating system,
+replace `:composeApp:run` with
+`:composeApp:packageDistributionForCurrentOS`.
+
+### Android
+
+Open this directory in Android Studio, select the `composeApp` run
+configuration, and run it on a device or emulator. To build from the command
+line:
+
+```shell
+./gradlew :composeApp:assembleDebug
+```
+
+On Windows, use `.\gradlew.bat` in place of `./gradlew`.
+
+### iOS
+
+Open the Xcode project and run the `iosApp` scheme:
+
+```shell
+open iosApp/iosApp.xcodeproj
+```
+
+The Xcode build phase disables the Android target, so an Android SDK is not
+required. To build the simulator framework directly with Gradle:
+
+```shell
+./gradlew -Pditto.skipAndroidBuilds=true :composeApp:linkDebugFrameworkIosSimulatorArm64
+```
+
+## Troubleshooting
+
+- If a desktop build asks for an Android SDK, make sure
+  `-Pditto.skipAndroidBuilds=true` is present.
+- If `generateSecretProperties` reports that `.env` is missing, confirm the
+  file is at `quickstart/.env`, not inside `kotlin-multiplatform`.
+- Rerun the Gradle task after changing `.env` so the generated configuration is
+  refreshed.
+
+## Additional resources
+
+- [Kotlin install guide](https://docs.ditto.live/sdk/latest/install-guides/kotlin)
+- [Kotlin compatibility](https://docs.ditto.live/sdk/latest/compatibility/kotlin)
+- [Kotlin release notes](https://docs.ditto.live/sdk/latest/release-notes/kotlin)

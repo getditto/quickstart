@@ -16,7 +16,8 @@
 
 class TasksTui::Impl {
 private:
-  TasksPeer &peer;
+  TasksRepository &repository;
+  DittoManager &manager;
   std::vector<Task> tasks;
   ftxui::Component tasks_list;
   ftxui::ScreenInteractive screen;
@@ -64,16 +65,16 @@ private:
 
     ftxui::Component active_checkbox;
     for (auto &task : tasks) {
-      auto checkbox =
-          ftxui::Checkbox(task.title, &task.done,
-                          ftxui::CheckboxOption{.on_change = [this, &task] {
-                            try {
-                              peer.mark_task_complete(task._id, task.done);
-                            } catch (const std::exception &err) {
-                              log_error("Failed to mark task complete: " +
-                                        std::string(err.what()));
-                            }
-                          }});
+      auto checkbox = ftxui::Checkbox(
+          task.title, &task.done,
+          ftxui::CheckboxOption{.on_change = [this, &task] {
+            try {
+              repository.mark_task_complete(task._id, task.done);
+            } catch (const std::exception &err) {
+              log_error("Failed to mark task complete: " +
+                        std::string(err.what()));
+            }
+          }});
       tasks_list->Add(checkbox);
       if (task._id == active_task_id()) {
         active_checkbox = checkbox;
@@ -90,10 +91,10 @@ private:
   // Toggle sync on/off
   void toggle_sync() {
     try {
-      if (peer.is_sync_active()) {
-        peer.stop_sync();
+      if (manager.is_sync_active()) {
+        manager.stop_sync();
       } else {
-        peer.start_sync();
+        manager.start_sync();
       }
     } catch (const std::exception &err) {
       log_error("Failed to toggle sync: " + std::string(err.what()));
@@ -113,13 +114,13 @@ private:
     auto top_bar = Renderer([this] {
       return vbox({
           hbox({text("Ditto Tasks") | bold | flex,
-                (peer.is_sync_active()
+                (manager.is_sync_active()
                      ? text("🟢 Sync Active") | color(Color::Green)
                      : text("🔴 Sync Inactive") | color(Color::Red)) |
                     bold,
                 text(" (s: toggle sync)")}),
-          text("App ID: " DITTO_APP_ID) | center,
-          text("Playground Token: " DITTO_PLAYGROUND_TOKEN) | center,
+          text("Database ID: " DITTO_DATABASE_ID) | center,
+          text("Development Token: " DITTO_DEVELOPMENT_TOKEN) | center,
       });
     });
     auto bottom_bar = Renderer([this] {
@@ -170,7 +171,7 @@ private:
           auto task_id = active_task_id();
           if (!task_id.empty()) {
             try {
-              peer.delete_task(task_id);
+              repository.delete_task(task_id);
             } catch (const std::exception &err) {
               log_error("Failed to delete task: " + std::string(err.what()));
             }
@@ -202,7 +203,7 @@ private:
             show_modal = false;
             mode = Mode::Normal;
             try {
-              peer.add_task(modal_text, false);
+              repository.add_task(modal_text, false);
             } catch (const std::exception &err) {
               log_error("Failed to add task: " + std::string(err.what()));
             }
@@ -221,7 +222,7 @@ private:
             show_modal = false;
             mode = Mode::Normal;
             try {
-              peer.update_task_title(modal_task_id, modal_text);
+              repository.update_task_title(modal_task_id, modal_text);
             } catch (const std::exception &err) {
               log_error("Failed to update task title: " +
                         std::string(err.what()));
@@ -239,8 +240,8 @@ private:
   }
 
 public:
-  Impl(TasksPeer &p)
-      : peer(p), tasks_list(ftxui::Container::Vertical({})),
+  Impl(TasksRepository &r, DittoManager &m)
+      : repository(r), manager(m), tasks_list(ftxui::Container::Vertical({})),
         screen(ftxui::ScreenInteractive::Fullscreen()) {}
 
   ~Impl() = default;
@@ -251,7 +252,7 @@ public:
       std::freopen("/dev/null", "w", stderr);
     }
 
-    auto observer = peer.register_tasks_observer(
+    auto observer = repository.register_tasks_observer(
         [this](const std::vector<Task> &new_tasks) {
           screen.Post(
               [this, new_tasks] { update_tasks_list(std::move(new_tasks)); });
@@ -261,7 +262,8 @@ public:
   }
 };
 
-TasksTui::TasksTui(TasksPeer &peer) : impl(std::make_shared<Impl>(peer)) {}
+TasksTui::TasksTui(TasksRepository &repository, DittoManager &manager)
+    : impl(std::make_shared<Impl>(repository, manager)) {}
 
 TasksTui::~TasksTui() {}
 

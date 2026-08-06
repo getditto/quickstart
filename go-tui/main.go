@@ -12,16 +12,8 @@ import (
 	"github.com/getditto/ditto-go-sdk/v5/ditto"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
-
-type Task struct {
-	ID      string `json:"_id"`
-	Title   string `json:"title"`
-	Done    bool   `json:"done"`
-	Deleted bool   `json:"deleted"`
-}
 
 type InputMode int
 
@@ -32,12 +24,10 @@ const (
 )
 
 type App struct {
-	ditto        *ditto.Ditto
-	observer     *ditto.StoreObserver
-	subscription *ditto.SyncSubscription
+	repo *TasksRepository
 
 	tasks       []Task
-	tasksChan   chan []Task
+	tasksChan   <-chan []Task
 	selectedIdx int
 
 	inputMode   InputMode
@@ -83,57 +73,25 @@ func main() {
 	}
 
 	// Get config from environment
-	appID := os.Getenv("DITTO_APP_ID")
-	token := os.Getenv("DITTO_PLAYGROUND_TOKEN")
-	authURL := os.Getenv("DITTO_AUTH_URL")
+	databaseId := os.Getenv("DITTO_DATABASE_ID")
+	token := os.Getenv("DITTO_DEVELOPMENT_TOKEN")
+	serverURL := os.Getenv("DITTO_SERVER_URL")
+	offlineLicenseToken := strings.TrimSpace(os.Getenv("DITTO_OFFLINE_LICENSE_TOKEN"))
 
-	if appID == "" || token == "" || authURL == "" {
-		log.Fatal("Missing required environment variables. Please set DITTO_APP_ID, DITTO_PLAYGROUND_TOKEN, and DITTO_AUTH_URL")
+	if databaseId == "" {
+		log.Fatal("Missing required environment variable DITTO_DATABASE_ID")
+	}
+	if offlineLicenseToken == "" && (token == "" || serverURL == "") {
+		log.Fatal("Missing required environment variables. Set DITTO_DEVELOPMENT_TOKEN and DITTO_SERVER_URL, or set DITTO_OFFLINE_LICENSE_TOKEN for offline mode")
 	}
 
-	// Create temp directory for persistence
-	tempDir, err := os.MkdirTemp("", "ditto-quickstart-*")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Initialize Ditto with Server connection API
-	config := ditto.DefaultDittoConfig().
-		WithDatabaseID(appID).
-		WithPersistenceDirectory(tempDir).
-		WithConnect(&ditto.DittoConfigConnectServer{URL: authURL})
-
-	d, err := ditto.Open(config)
+	// Open and start the Ditto instance. The manager owns everything about
+	// configuring and running Ditto; it knows nothing about tasks.
+	manager, err := NewDittoManager(databaseId, token, serverURL, offlineLicenseToken)
 	if err != nil {
 		log.Fatal("Failed to open Ditto:", err)
 	}
-	defer d.Close()
-
-	// Set up authentication handler for development mode
-	if auth := d.Auth(); auth != nil {
-		auth.SetExpirationHandler(
-			func(d *ditto.Ditto, timeUntilExpiration time.Duration) {
-				log.Printf("Expiration handler called with time until expiration: %v", timeUntilExpiration)
-
-				// For development mode, login with the playground token
-				provider := ditto.DevelopmentAuthenticationProvider()
-				clientInfoJSON, err := d.Auth().Login(token, provider)
-				if err != nil {
-					log.Printf("Failed to login: %v", err)
-				} else {
-					log.Printf("Login successful")
-					if clientInfoJSON != "" {
-						log.Printf("Client info: %s", clientInfoJSON)
-					}
-				}
-			})
-	}
-
-	// Start sync (authentication handler will be called automatically if needed)
-	if err := d.Sync().Start(); err != nil {
-		log.Fatal("Failed to start sync:", err)
-	}
+	defer manager.Close()
 
 	// Initialize termui
 	if err := ui.Init(); err != nil {
@@ -141,48 +99,37 @@ func main() {
 	}
 	defer ui.Close()
 
-	// Create app
-	app := NewApp(d)
+	// The repository owns everything specific to the tasks data: the sync
+	// subscription, the store observer, and task CRUD.
+	repo := NewTasksRepository(manager)
 
-	// Create subscription for syncing
-	subscription, err := d.Sync().RegisterSubscription("SELECT * FROM tasks")
-	if err != nil {
+	// Create app
+	app := NewApp(repo)
+
+	// Subscribe so Ditto syncs the tasks collection from other peers
+	if err := repo.RegisterSubscription(); err != nil {
 		log.Fatal("Failed to register subscription:", err)
 	}
-	defer subscription.Cancel()
-	app.subscription = subscription
 
-	// Create observer for local changes
-	observer, err := d.Store().RegisterObserver(
-		"SELECT * FROM tasks WHERE deleted = false ORDER BY _id",
-		nil,
-		func(result *ditto.QueryResult) {
-			defer result.Close()
-
-			tasks := parseTasks(result)
-			select {
-			case app.tasksChan <- tasks:
-			case <-app.ctx.Done():
-			}
-		})
+	// Observe local changes and feed the task list into the app
+	tasksChan, err := repo.ObserveTasks(app.ctx)
 	if err != nil {
 		log.Fatal("Failed to register observer:", err)
 	}
-	defer observer.Cancel()
-	app.observer = observer
+	defer repo.Close()
+	app.tasksChan = tasksChan
 
 	// Run the app
 	app.Run()
 }
 
-func NewApp(d *ditto.Ditto) *App {
+func NewApp(repo *TasksRepository) *App {
 	ctx, cancel := context.WithCancel(context.Background())
 	app := &App{
-		ditto:       d,
+		repo:        repo,
 		tasks:       []Task{},
 		selectedIdx: 0,
 		inputMode:   NormalMode,
-		tasksChan:   make(chan []Task, 1), // Buffer size 1 - latest update wins
 		ctx:         ctx,
 		cancel:      cancel,
 	}
@@ -427,64 +374,27 @@ func (a *App) updateTable() {
 }
 
 func (a *App) createTask(title string) {
-	task := map[string]interface{}{
-		"_id":     uuid.New().String(),
-		"title":   title,
-		"done":    false,
-		"deleted": false,
-	}
-
-	result, err := a.ditto.Store().Execute(
-		"INSERT INTO tasks VALUES (:task)",
-		ditto.QueryArguments{"task": task},
-	)
-	if err != nil {
+	if err := a.repo.CreateTask(title); err != nil {
 		a.setError(err.Error())
-		return
 	}
-	defer result.Close()
 }
 
 func (a *App) updateTask(id, title string) {
-	result, err := a.ditto.Store().Execute(
-		"UPDATE tasks SET title = :title WHERE _id = :id",
-		ditto.QueryArguments{
-			"title": title,
-			"id":    id,
-		},
-	)
-	if err != nil {
+	if err := a.repo.UpdateTask(id, title); err != nil {
 		a.setError(err.Error())
-		return
 	}
-	defer result.Close()
 }
 
 func (a *App) toggleTask(id string, done bool) {
-	result, err := a.ditto.Store().Execute(
-		"UPDATE tasks SET done = :done WHERE _id = :id",
-		ditto.QueryArguments{
-			"done": done,
-			"id":   id,
-		},
-	)
-	if err != nil {
+	if err := a.repo.ToggleTask(id, done); err != nil {
 		a.setError(err.Error())
-		return
 	}
-	defer result.Close()
 }
 
 func (a *App) deleteTask(id string) {
-	result, err := a.ditto.Store().Execute(
-		"UPDATE tasks SET deleted = true WHERE _id = :id",
-		ditto.QueryArguments{"id": id},
-	)
-	if err != nil {
+	if err := a.repo.DeleteTask(id); err != nil {
 		a.setError(err.Error())
-		return
 	}
-	defer result.Close()
 }
 
 // Set the UI error message. May be called by any goroutine.
@@ -507,22 +417,6 @@ func loadEnv() error {
 		dir = parent
 	}
 	return fmt.Errorf(".env file not found")
-}
-
-func parseTasks(result *ditto.QueryResult) []Task {
-	if result == nil {
-		return []Task{}
-	}
-
-	tasks := make([]Task, 0, result.ItemCount())
-	for _, queryItem := range result.Items() {
-		var task Task
-		if err := queryItem.UnmarshalTo(&task); err != nil {
-			panic(err)
-		}
-		tasks = append(tasks, task)
-	}
-	return tasks
 }
 
 // getSelectedTask returns the currently selected task and whether the selection is valid

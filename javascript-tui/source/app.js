@@ -1,331 +1,277 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {Text, Spacer, Box, useInput} from 'ink';
+import React, { useEffect, useRef, useState } from 'react';
+import { Text, Spacer, Box, useInput } from 'ink';
+import { TasksRepository } from './tasks-repository.js';
 
 const enterAltScreenCommand = '\x1b[?1049h';
 const leaveAltScreenCommand = '\x1b[?1049l';
 
-export default function App({ditto}) {
-	return (
-		<FullScreen>
-			<HelpPanel>
-				<TodoApp ditto={ditto} />
-			</HelpPanel>
-		</FullScreen>
-	);
+export default function App({ ditto, dittoManager }) {
+  return (
+    <FullScreen>
+      <HelpPanel>
+        <TodoApp ditto={ditto} dittoManager={dittoManager} />
+      </HelpPanel>
+    </FullScreen>
+  );
 }
 
 // Helper component to make TUI fullscreen and wrap with a border
-const FullScreen = props => {
-	const [size, setSize] = useState({
-		columns: process.stdout.columns,
-		rows: process.stdout.rows,
-	});
+const FullScreen = (props) => {
+  const [size, setSize] = useState({
+    columns: process.stdout.columns,
+    rows: process.stdout.rows,
+  });
 
-	useEffect(() => {
-		function onResize() {
-			setSize({
-				columns: process.stdout.columns,
-				rows: process.stdout.rows - 1,
-			});
-		}
+  useEffect(() => {
+    function onResize() {
+      setSize({
+        columns: process.stdout.columns,
+        rows: process.stdout.rows - 1,
+      });
+    }
 
-		process.stdout.on('resize', onResize);
-		process.stdout.write(enterAltScreenCommand);
-		return () => {
-			process.stdout.off('resize', onResize);
-			process.stdout.write(leaveAltScreenCommand);
-		};
-	}, []);
+    process.stdout.on('resize', onResize);
+    process.stdout.write(enterAltScreenCommand);
+    return () => {
+      process.stdout.off('resize', onResize);
+      process.stdout.write(leaveAltScreenCommand);
+    };
+  }, []);
 
-	return (
-		<Box
-			flexDirection="column"
-			width={size.columns}
-			height={size.rows}
-			borderStyle="round"
-		>
-			{props.children}
-		</Box>
-	);
+  return (
+    <Box
+      flexDirection="column"
+      width={size.columns}
+      height={size.rows}
+      borderStyle="round"
+    >
+      {props.children}
+    </Box>
+  );
 };
 
-const HelpPanel = props => {
-	const [showHelp, setShowHelp] = useState(true);
+const HelpPanel = (props) => {
+  const [showHelp, setShowHelp] = useState(true);
 
-	useInput((input, _key) => {
-		if (input === '?') {
-			setShowHelp(!showHelp);
-		}
-	});
+  useInput((input, _key) => {
+    if (input === '?') {
+      setShowHelp(!showHelp);
+    }
+  });
 
-	if (showHelp) {
-		return (
-			<>
-				<Box flexDirection="row" height="100%">
-					{props.children}
-					<Spacer />
-					<Box
-						flexDirection="column"
-						borderStyle="round"
-						height="100%"
-						width="50%"
-					>
-						<Text>? - toggle help</Text>
-						<Text>↑/k - scroll up</Text>
-						<Text>↓/j - scroll down</Text>
-						<Text>c - create task</Text>
-						<Text>d - delete task</Text>
-						<Text>e - edit task</Text>
-						<Text>s - toggle sync</Text>
-						<Text>q - quit</Text>
-						<Text>Enter - toggle done</Text>
-					</Box>
-				</Box>
-			</>
-		);
-	}
+  if (showHelp) {
+    return (
+      <>
+        <Box flexDirection="row" height="100%">
+          {props.children}
+          <Spacer />
+          <Box
+            flexDirection="column"
+            borderStyle="round"
+            height="100%"
+            width="50%"
+          >
+            <Text>? - toggle help</Text>
+            <Text>↑/k - scroll up</Text>
+            <Text>↓/j - scroll down</Text>
+            <Text>c - create task</Text>
+            <Text>d - delete task</Text>
+            <Text>e - edit task</Text>
+            <Text>s - toggle sync</Text>
+            <Text>q - quit</Text>
+            <Text>Enter - toggle done</Text>
+          </Box>
+        </Box>
+      </>
+    );
+  }
 
-	return <>{props.children}</>;
+  return <>{props.children}</>;
 };
 
 const LIST_MODE = 'list';
 const CREATE_MODE = 'create';
 const EDIT_MODE = 'edit';
 
-const TodoApp = ({ditto}) => {
-	const [tasks, setTasks] = useState([]);
-	const [mode, setMode] = useState(LIST_MODE);
-	const [selected, setSelected] = useState(0);
-	const [syncEnabled, setSyncEnabled] = useState(true);
+const TodoApp = ({ ditto, dittoManager }) => {
+  const [tasks, setTasks] = useState([]);
+  const [mode, setMode] = useState(LIST_MODE);
+  const [selected, setSelected] = useState(0);
+  const [syncEnabled, setSyncEnabled] = useState(true);
 
-	// Hold onto the subscription and observer refs for cleanup
-	const subscriptionRef = useRef(null);
-	const observerRef = useRef(null);
+  // Hold onto the tasks repository so the input handlers can drive CRUD.
+  const repositoryRef = useRef(null);
 
-	useEffect(() => {
-		return () => {
-			const subscription = subscriptionRef.current;
-			const observer = observerRef.current;
+  useInput((input, key) => {
+    if (mode === LIST_MODE) {
+      if (input === 'c') {
+        setMode(CREATE_MODE);
+        return;
+      }
+      if (input === 'e') {
+        setMode(EDIT_MODE);
+        return;
+      }
+      if (input === 's') {
+        if (syncEnabled) {
+          dittoManager.stopSync();
+          setSyncEnabled(false);
+        } else {
+          dittoManager.startSync();
+          setSyncEnabled(true);
+        }
+      }
+    }
 
-			void subscription;
-			void observer;
-		};
-	}, []);
+    if (key.escape) {
+      setMode(LIST_MODE);
+      return;
+    }
+  });
 
-	useInput((input, key) => {
-		if (mode === LIST_MODE) {
-			if (input === 'c') {
-				setMode(CREATE_MODE);
-				return;
-			}
-			if (input === 'e') {
-				setMode(EDIT_MODE);
-				return;
-			}
-			if (input === 's') {
-				if (syncEnabled) {
-					ditto.sync.stop();
-					setSyncEnabled(false);
-				} else {
-					ditto.sync.start();
-					setSyncEnabled(true);
-				}
-			}
-		}
+  useEffect(() => {
+    // The repository registers the tasks subscription + observer and streams
+    // the observed task list back into local state.
+    const repository = new TasksRepository(ditto, setTasks);
+    repository.start();
+    repositoryRef.current = repository;
 
-		if (key.escape) {
-			setMode(LIST_MODE);
-			return;
-		}
-	});
+    // Cleanup on unmount: cancel subscription and observer
+    return () => {
+      repository.dispose();
+      repositoryRef.current = null;
+    };
+  }, [ditto]);
 
-	useEffect(() => {
-		// Register a subscription, which determines what data syncs to this peer
-		// https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-		const subscription = ditto.sync.registerSubscription('SELECT * FROM tasks');
-		subscriptionRef.current = subscription;
+  const Prompt = React.memo(({ edit }) => {
+    const newTask = !edit;
+    const initialText = newTask ? '' : edit.title;
+    const [text, setText] = useState(initialText);
 
-		// Register observer, which runs against the local database on this peer
-		// https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-		const observer = ditto.store.registerObserver(
-			'SELECT * FROM tasks WHERE NOT deleted ORDER BY title ASC',
-			result => {
-				const tasks = result.items.map(item => item.value);
-				setTasks(tasks);
-			},
-		);
-		observerRef.current = observer;
+    useInput((input, key) => {
+      if (key.backspace || key.delete) {
+        // Chop off last char and set
+        setText(text.slice(0, -1));
+        return;
+      }
 
-		// Cleanup on unmount: cancel subscription and observer
-		return () => {
-			subscription.cancel();
-			observer.cancel();
-		};
-	}, [ditto]);
+      if (key.return) {
+        if (newTask) {
+          (async () => {
+            await repositoryRef.current.createTask(text);
+          })();
+        } else {
+          (async () => {
+            await repositoryRef.current.editTask(edit._id, text);
+          })();
+        }
 
-	const Prompt = React.memo(({edit}) => {
-		const newTask = !edit;
-		const initialText = newTask ? '' : edit.title;
-		const [text, setText] = useState(initialText);
+        // On submission:
+        setText(''); // Reset input field
+        setMode(LIST_MODE); // Set app back to "list" mode
+        return;
+      }
 
-		useInput((input, key) => {
-			if (key.backspace || key.delete) {
-				// Chop off last char and set
-				setText(text.slice(0, -1));
-				return;
-			}
+      const newContent = text + input;
+      setText(newContent);
+    });
 
-			if (key.return) {
-				if (newTask) {
-					(async () => {
-						await createTask(ditto, text);
-					})();
-				} else {
-					(async () => {
-						await updateTask(ditto, edit._id, text);
-					})();
-				}
+    return <Text>Title: {text}</Text>;
+  });
 
-				// On submission:
-				setText(''); // Reset input field
-				setMode(LIST_MODE); // Set app back to "list" mode
-				return;
-			}
+  const List = React.memo(({ tasks }) => {
+    useInput((input, key) => {
+      // Scroll up
+      if (input === 'k' || key.upArrow) {
+        if (selected > 0) {
+          setSelected(selected - 1);
+        }
+        return;
+      }
 
-			const newContent = text + input;
-			setText(newContent);
-		});
+      // Scroll down
+      if (input === 'j' || key.downArrow) {
+        if (selected < tasks.length - 1) {
+          setSelected(selected + 1);
+        }
+        return;
+      }
 
-		return <Text>Title: {text}</Text>;
-	});
+      // Delete
+      if (input === 'd') {
+        if (tasks.length > 0) {
+          (async () => {
+            await repositoryRef.current.deleteTask(tasks[selected]);
+          })();
+        }
+      }
 
-	const List = React.memo(({tasks}) => {
-		useInput((input, key) => {
-			// Scroll up
-			if (input === 'k' || key.upArrow) {
-				if (selected > 0) {
-					setSelected(selected - 1);
-				}
-				return;
-			}
+      // Quit
+      if (input === 'q') {
+        process.stdout.write('\x1B[?25h'); // Make cursor visible
+        process.exit(0);
+      }
 
-			// Scroll down
-			if (input === 'j' || key.downArrow) {
-				if (selected < tasks.length - 1) {
-					setSelected(selected + 1);
-				}
-				return;
-			}
+      if (key.return) {
+        (async () => {
+          await repositoryRef.current.toggleTask(tasks[selected]);
+        })();
+      }
+    });
 
-			// Delete
-			if (input === 'd') {
-				if (tasks.length > 0) {
-					(async () => {
-						await deleteTask(ditto, tasks[selected]);
-					})();
-				}
-			}
+    return (
+      <Box flexDirection="column">
+        {tasks.map((task, i) => {
+          const done = task.done ? ' 🟢 ' : ' ⚪️ ';
+          const highlight = selected === i ? 'blue' : '';
+          const cursor = selected === i ? '❯ ' : '  ';
+          return (
+            <Box key={task._id || i} flexDirection="row">
+              <Text color={highlight}>
+                <Text>{done} </Text>
+                <Text>
+                  {cursor}
+                  {task.title}
+                </Text>
+              </Text>
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  });
 
-			// Quit
-			if (input === 'q') {
-				process.stdout.write('\x1B[?25h'); // Make cursor visible
-				process.exit(0);
-			}
+  const syncStatus = syncEnabled ? '🟢 Sync Active' : '🔴 Sync Inactive';
+  const syncText = <Text>{syncStatus}</Text>;
 
-			if (key.return) {
-				(async () => {
-					await toggleDone(ditto, tasks[selected]);
-				})();
-			}
-		});
+  if (mode === LIST_MODE) {
+    return (
+      <Box flexDirection="column">
+        {syncText}
+        <Text> Done Title</Text>
+        <List tasks={tasks} />
+      </Box>
+    );
+  }
 
-		return (
-			<Box flexDirection="column">
-				{tasks.map((task, i) => {
-					const done = task.done ? ' 🟢 ' : ' ⚪️ ';
-					const highlight = selected === i ? 'blue' : '';
-					const cursor = selected === i ? '❯ ' : '  ';
-					return (
-						<Box key={task._id || i} flexDirection="row">
-							<Text color={highlight}>
-								<Text>{done} </Text>
-								<Text>
-									{cursor}
-									{task.title}
-								</Text>
-							</Text>
-						</Box>
-					);
-				})}
-			</Box>
-		);
-	});
+  if (mode === CREATE_MODE) {
+    return (
+      <Box flexDirection="column">
+        {syncText}
+        <Text> Create new Task</Text>
+        <Prompt />
+      </Box>
+    );
+  }
 
-	const syncStatus = syncEnabled ? '🟢 Sync Active' : '🔴 Sync Inactive';
-	const syncText = <Text>{syncStatus}</Text>;
-
-	if (mode === LIST_MODE) {
-		return (
-			<Box flexDirection="column">
-				{syncText}
-				<Text> Done Title</Text>
-				<List tasks={tasks} />
-			</Box>
-		);
-	}
-
-	if (mode === CREATE_MODE) {
-		return (
-			<Box flexDirection="column">
-				{syncText}
-				<Text> Create new Task</Text>
-				<Prompt />
-			</Box>
-		);
-	}
-
-	if (mode === EDIT_MODE) {
-		const selectedTask = tasks[selected];
-		return (
-			<Box flexDirection="column">
-				{syncText}
-				<Text> Edit Task</Text>
-				<Prompt edit={selectedTask} />
-			</Box>
-		);
-	}
-};
-
-// https://docs.ditto.live/sdk/latest/crud/update
-const toggleDone = async (ditto, task) => {
-	await ditto.store.execute('UPDATE tasks SET done=:done WHERE _id=:id', {
-		id: task._id,
-		done: !task.done,
-	});
-};
-
-// https://docs.ditto.live/sdk/latest/crud/create
-const createTask = async (ditto, title) => {
-	await ditto.store.execute('INSERT INTO tasks DOCUMENTS (:task)', {
-		task: {
-			title,
-			done: false,
-			deleted: false,
-		},
-	});
-};
-
-// https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
-const deleteTask = async (ditto, task) => {
-	await ditto.store.execute('UPDATE tasks SET deleted=true WHERE _id=:id', {
-		id: task._id,
-	});
-};
-
-// https://docs.ditto.live/sdk/latest/crud/update
-const updateTask = async (ditto, id, title) => {
-	await ditto.store.execute('UPDATE tasks SET title=:title WHERE _id=:id', {
-		id,
-		title,
-	});
+  if (mode === EDIT_MODE) {
+    const selectedTask = tasks[selected];
+    return (
+      <Box flexDirection="column">
+        {syncText}
+        <Text> Edit Task</Text>
+        <Prompt edit={selectedTask} />
+      </Box>
+    );
+  }
 };

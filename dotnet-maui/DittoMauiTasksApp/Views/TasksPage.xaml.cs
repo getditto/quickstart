@@ -14,7 +14,7 @@ public partial class TasksPage : ContentPage
     // Event handler invoked when a checkbox on the page is checked or unchecked.
     private void OnCheckBoxCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
-        if (sender is CheckBox checkBox && checkBox.BindingContext is DittoTask task)
+        if (sender is CheckBox checkBox && checkBox.BindingContext is TaskModel task)
         {
             if (!checkBox.IsVisible || !checkBox.IsEnabled)
             {

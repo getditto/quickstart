@@ -13,19 +13,21 @@ namespace DittoTasksApp
         static async Task Main()
         {
             var env = LoadEnvVariables();
-            var appId = env["DITTO_APP_ID"];
-            var playgroundToken = env["DITTO_PLAYGROUND_TOKEN"];
-            var websocketUrl = env["DITTO_WEBSOCKET_URL"];
-            var authUrl = env["DITTO_AUTH_URL"];
+            var databaseId = env["DITTO_DATABASE_ID"];
+            var developmentToken = env.GetValueOrDefault("DITTO_DEVELOPMENT_TOKEN", "");
+            var serverUrl = env.GetValueOrDefault("DITTO_SERVER_URL", "");
+            var offlineLicenseToken = env.GetValueOrDefault("DITTO_OFFLINE_LICENSE_TOKEN", "");
 
-            using var peer = await TasksPeer.Create(appId, playgroundToken, authUrl, websocketUrl);
+            using var dittoManager = await DittoManager.Create(
+                databaseId, developmentToken, serverUrl, offlineLicenseToken);
+            var tasksRepository = new TasksRepository(dittoManager);
 
             // Disable Ditto's standard-error logging
             DittoLogger.IsEnabled = true;
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
-            Application.Run(new MainForm(peer));
+            Application.Run(new MainForm(dittoManager, tasksRepository));
         }
 
         /// <summary>

@@ -36,7 +36,7 @@ echo "================================="
 g++ -std=c++17 \
     -I./src -I./sdk -I./third_party/cxxopts/include \
     tests/integration_test.cpp \
-    src/task.cpp src/tasks_peer.cpp src/tasks_log.cpp \
+    src/task.cpp src/ditto_manager.cpp src/tasks_repository.cpp src/tasks_log.cpp \
     -L./sdk -lditto \
     -o build/tests/integration_test \
     -pthread

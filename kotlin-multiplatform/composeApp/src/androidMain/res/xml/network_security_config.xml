@@ -10,7 +10,7 @@
         </trust-anchors>
     </base-config>
     
-    <!-- Specific configuration for BrowserStack and Ditto Cloud domains -->
+    <!-- Specific configuration for BrowserStack and Ditto server domains -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">browserstack.com</domain>
         <domain includeSubdomains="true">percy.io</domain>

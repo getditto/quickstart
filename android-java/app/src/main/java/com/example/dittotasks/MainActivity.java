@@ -18,30 +18,24 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.ditto.kotlin.Ditto;
-import com.ditto.kotlin.DittoStoreObserver;
-import com.ditto.kotlin.DittoSyncSubscription;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class MainActivity extends ComponentActivity {
     private TaskAdapter taskAdapter;
     private SwitchCompat syncSwitch;
 
-    Ditto ditto;
-    DittoSyncSubscription taskSubscription;
-    DittoStoreObserver taskObserver;
+    DittoManager dittoManager;
+    TasksRepository tasksRepository;
 
-    private final String dittoAppId = BuildConfig.DITTO_APP_ID;
-    private final String dittoPlaygroundToken = BuildConfig.DITTO_PLAYGROUND_TOKEN;
-    private final String dittoAuthUrl = BuildConfig.DITTO_AUTH_URL;
+    private final String dittoDatabaseId = BuildConfig.DITTO_DATABASE_ID;
+    private final String dittoDevelopmentToken = BuildConfig.DITTO_DEVELOPMENT_TOKEN;
+    private final String dittoServerUrl = BuildConfig.DITTO_SERVER_URL;
+    private final String dittoOfflineLicenseToken = BuildConfig.DITTO_OFFLINE_LICENSE_TOKEN;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -57,15 +51,15 @@ public class MainActivity extends ComponentActivity {
 
         // Populate connection info (only in debug builds)
         if(BuildConfig.DEBUG) {
-            TextView appId = findViewById(R.id.ditto_app_id);
-            appId.setText(String.format("App ID: %s", dittoAppId));
+            TextView databaseId = findViewById(R.id.ditto_app_id);
+            databaseId.setText(String.format("Database ID: %s", dittoDatabaseId));
 
-            TextView playgroundToken = findViewById(R.id.ditto_playground_token);
-            playgroundToken.setText(String.format("Playground Token: %s", dittoPlaygroundToken));
+            TextView developmentToken = findViewById(R.id.ditto_development_token);
+            developmentToken.setText(String.format("Development Token: %s", dittoDevelopmentToken));
         } else {
             // Hide credential views in production
             findViewById(R.id.ditto_app_id).setVisibility(View.GONE);
-            findViewById(R.id.ditto_playground_token).setVisibility(View.GONE);
+            findViewById(R.id.ditto_development_token).setVisibility(View.GONE);
         }
 
         // Initialize "add task" fab
@@ -98,9 +92,9 @@ public class MainActivity extends ComponentActivity {
     void initDitto() {
         Log.d("DittoInit", "=== Starting Ditto initialization ===");
 
-        Log.d("DittoInit", "DITTO_APP_ID: " + dittoAppId);
-        Log.d("DittoInit", "DITTO_PLAYGROUND_TOKEN: " + (dittoPlaygroundToken != null ? "Present" : "NULL"));
-        Log.d("DittoInit", "DITTO_AUTH_URL: " + dittoAuthUrl);
+        Log.d("DittoInit", "DITTO_DATABASE_ID: " + dittoDatabaseId);
+        Log.d("DittoInit", "DITTO_DEVELOPMENT_TOKEN: " + (dittoDevelopmentToken != null ? "Present" : "NULL"));
+        Log.d("DittoInit", "DITTO_SERVER_URL: " + dittoServerUrl);
 
         // Skip permission requests during testing to avoid permission dialogs
         if (!isInstrumentationTest()) {
@@ -112,40 +106,31 @@ public class MainActivity extends ComponentActivity {
 
         Log.d("DittoInit", "Starting Ditto SDK initialization...");
         try {
-            // Create Ditto with server connection
-            // https://docs.ditto.live/sdk/latest/install-guides/java#integrating-and-initializing
+            // Create + configure the Ditto instance (identity/auth, sync lifecycle).
             Log.d("DittoInit", "Creating Ditto instance...");
-            ditto = DittoHelper.createDitto(dittoAppId, dittoAuthUrl);
+            dittoManager = new DittoManager(
+                    dittoDatabaseId,
+                    dittoServerUrl,
+                    dittoDevelopmentToken,
+                    dittoOfflineLicenseToken
+            );
             Log.d("DittoInit", "Ditto instance created successfully");
 
-            // Set up authentication handler (must be set before sync.start())
-            Log.d("DittoInit", "Setting up authentication...");
-            DittoHelper.setupAuth(ditto, dittoPlaygroundToken);
-            Log.d("DittoInit", "Authentication configured");
-
-            // register subscription
-            // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-            Log.d("DittoInit", "Registering subscription...");
-            taskSubscription = DittoHelper.registerSubscription(ditto, "SELECT * FROM tasks");
-            Log.d("DittoInit", "Subscription registered");
-
-            // register observer for live query
-            // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-            Log.d("DittoInit", "Registering observer...");
-            taskObserver = DittoHelper.registerObserver(ditto,
-                    "SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC",
-                    result -> {
-                        Log.d("DittoInit", "Observer callback triggered with " + result.getItems().size() + " items");
-                        var tasks = result.getItems().stream().map(Task::fromQueryItem).collect(Collectors.toCollection(ArrayList::new));
-                        runOnUiThread(() -> {
-                            Log.d("DittoInit", "Updating UI with " + tasks.size() + " tasks");
-                            taskAdapter.setTasks(new ArrayList<>(tasks));
-                        });
-                    });
-            Log.d("DittoInit", "Observer registered");
+            // Set up the tasks concern: subscription + observer + CRUD. Register the
+            // subscription, then start observing — the observer streams the visible
+            // task list back to the UI.
+            Log.d("DittoInit", "Setting up tasks repository...");
+            tasksRepository = new TasksRepository(dittoManager);
+            tasksRepository.registerSubscription();
+            tasksRepository.observeTasks(tasks ->
+                    runOnUiThread(() -> {
+                        Log.d("DittoInit", "Updating UI with " + tasks.size() + " tasks");
+                        taskAdapter.setTasks(new ArrayList<>(tasks));
+                    }));
+            Log.d("DittoInit", "Tasks repository ready");
 
             Log.d("DittoInit", "Starting Ditto sync...");
-            DittoHelper.startSync(ditto);
+            dittoManager.startSync();
             Log.d("DittoInit", "=== Ditto initialization completed successfully ===");
         } catch (Exception e) {
             Log.e("DittoInit", "Error during Ditto initialization: " + e.getMessage(), e);
@@ -193,88 +178,43 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void createTask(String title) {
-        if (ditto == null) {
+        if (tasksRepository == null) {
             Log.i("MainActivity", "Ditto disabled - create task ignored: " + title);
             return;
         }
-
-        HashMap<String, Object> task = new HashMap<>();
-        task.put("title", title);
-        task.put("done", false);
-        task.put("deleted", false);
-
-        Map<String, Object> args = Collections.singletonMap("task", task);
-
-        try {
-            // Add tasks into the ditto collection using DQL INSERT statement
-            // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
-            DittoHelper.execute(ditto, "INSERT INTO tasks DOCUMENTS (:task)", args);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        tasksRepository.createTask(title);
     }
 
     private void editTaskTitle(Task task, String newTitle) {
-        if (ditto == null) {
+        if (tasksRepository == null) {
             Log.i("MainActivity", "Ditto disabled - edit task ignored: " + task.getTitle());
             return;
         }
-
-        Map<String, Object> args = new HashMap<>();
-        args.put("id", task.getId());
-        args.put("title", newTitle);
-
-        try {
-            // Update tasks into the ditto collection using DQL UPDATE statement
-            // https://docs.ditto.live/sdk/latest/crud/update#updating
-            DittoHelper.execute(ditto, "UPDATE tasks SET title=:title WHERE _id=:id", args);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        tasksRepository.editTaskTitle(task, newTitle);
     }
 
     private void toggleTask(Task task) {
-        if (ditto == null) {
+        if (tasksRepository == null) {
             Log.i("MainActivity", "Ditto disabled - toggle task ignored: " + task.getTitle());
             return;
         }
-
-        Map<String, Object> args = new HashMap<>();
-        args.put("id", task.getId());
-        args.put("done", !task.isDone());
-
-        try {
-            // Update tasks into the ditto collection using DQL UPDATE statement
-            // https://docs.ditto.live/sdk/latest/crud/update#updating
-            DittoHelper.execute(ditto, "UPDATE tasks SET done=:done WHERE _id=:id", args);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        tasksRepository.toggleTask(task);
     }
 
     private void deleteTask(Task task) {
-        if (ditto == null) {
+        if (tasksRepository == null) {
             Log.i("MainActivity", "Ditto disabled - delete task ignored: " + task.getTitle());
             return;
         }
-
-        Map<String, Object> args = Collections.singletonMap("id", task.getId());
-
-        try {
-            // UPDATE DQL Statement using Soft-Delete pattern
-            // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
-            DittoHelper.execute(ditto, "UPDATE tasks SET deleted=true WHERE _id=:id", args);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        tasksRepository.deleteTask(task);
     }
 
     private void toggleSync() {
-        if (ditto == null) {
+        if (dittoManager == null) {
             return;
         }
 
-        boolean isSyncActive = DittoHelper.isSyncActive(ditto);
+        boolean isSyncActive = dittoManager.isSyncActive();
         var nextColor = isSyncActive ? null : ColorStateList.valueOf(0xFFBB86FC);
         var nextText = isSyncActive ? "Sync Inactive" : "Sync Active";
 
@@ -282,9 +222,9 @@ public class MainActivity extends ComponentActivity {
         // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
         try {
             if (isSyncActive) {
-                DittoHelper.stopSync(ditto);
+                dittoManager.stopSync();
             } else {
-                DittoHelper.startSync(ditto);
+                dittoManager.startSync();
             }
             syncSwitch.setChecked(!isSyncActive);
             syncSwitch.setTrackTintList(nextColor);

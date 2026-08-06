@@ -7,14 +7,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import live.ditto.quickstart.tasks.DittoHandler
-import live.ditto.quickstart.tasks.DittoHandler.Companion.ditto
-import live.ditto.quickstart.tasks.data.Task
+import live.ditto.quickstart.tasks.DittoManager
+import live.ditto.quickstart.tasks.data.TasksRepository
 
 class EditScreenViewModel : ViewModel() {
 
     init {
-        check(DittoHandler.isInitialized) {
+        check(DittoManager.isInitialized) {
             "Ditto must be initialized before ViewModels are created"
         }
     }
@@ -48,14 +47,7 @@ class EditScreenViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val task = ditto.store.execute(
-                    "SELECT * FROM tasks WHERE _id = :_id AND NOT deleted",
-                    mapOf("_id" to taskId)
-                ) { result ->
-                    result.items.firstOrNull()?.let { Task.fromJson(it.jsonString()) }
-                }
-
-                task?.let {
+                TasksRepository.getTask(taskId)?.let {
                     _id = it._id
                     _title.value = it.title
                     _done.value = it.done
@@ -71,39 +63,11 @@ class EditScreenViewModel : ViewModel() {
             try {
                 val titleValue = _title.value
                 val doneValue = _done.value
-                if (_id == null) {
-                    // Add tasks into the ditto collection using DQL INSERT statement
-                    // https://docs.ditto.live/sdk/latest/crud/write#inserting-documents
-                    ditto.store.execute(
-                        "INSERT INTO tasks DOCUMENTS (:doc)",
-                        mapOf(
-                            "doc" to mapOf(
-                                "title" to titleValue,
-                                "done" to doneValue,
-                                "deleted" to false
-                            )
-                        )
-                    )
+                val id = _id
+                if (id == null) {
+                    TasksRepository.insertTask(titleValue, doneValue)
                 } else {
-                    // Update tasks in the ditto collection using DQL UPDATE statement
-                    // https://docs.ditto.live/sdk/latest/crud/update#updating
-                    _id?.let { id ->
-                        ditto.store.execute(
-                            """
-                            UPDATE tasks
-                            SET
-                              title = :title,
-                              done = :done
-                            WHERE _id = :id
-                            AND NOT deleted
-                            """,
-                            mapOf(
-                                "title" to titleValue,
-                                "done" to doneValue,
-                                "id" to id
-                            )
-                        )
-                    }
+                    TasksRepository.updateTask(id, titleValue, doneValue)
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "Unable to save task", e)
@@ -112,16 +76,9 @@ class EditScreenViewModel : ViewModel() {
     }
 
     fun delete() {
-        // UPDATE DQL Statement using Soft-Delete pattern
-        // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
         viewModelScope.launch {
             try {
-                _id?.let { id ->
-                    ditto.store.execute(
-                        "UPDATE tasks SET deleted = true WHERE _id = :id",
-                        mapOf("id" to id)
-                    )
-                }
+                _id?.let { id -> TasksRepository.delete(id) }
             } catch (e: Throwable) {
                 Log.e(TAG, "Unable to set deleted=true", e)
             }

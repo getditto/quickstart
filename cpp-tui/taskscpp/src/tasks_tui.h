@@ -3,14 +3,15 @@
 
 #ifdef DITTO_QUICKSTART_TUI
 
-#include "tasks_peer.h"
+#include "ditto_manager.h"
+#include "tasks_repository.h"
 
 #include <memory>
 
 /// Text-based interactive user interface for the Tasks application.
 class TasksTui {
 public:
-  TasksTui(TasksPeer &peer);
+  TasksTui(TasksRepository &repository, DittoManager &manager);
 
   ~TasksTui();
 

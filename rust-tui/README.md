@@ -4,9 +4,9 @@ This directory contains Ditto's quickstart app for the Rust SDK.  This app is a 
 
 ## Getting Started
 
-To get started, you'll first need to create an app in the [Ditto Portal](https://portal.ditto.live). You'll need to find your Database ID (used to be called AppId) and Online Playground Token, and Auth URL in order to use this quickstart.
+To get started, you'll first need to create an app in the [Ditto Portal](https://portal.ditto.live). You'll need to find your Database ID and Development Token, and Server URL in order to use this quickstart.
 
-From the repo root, copy the `.env.sample` file to `.env`, and fill in the fields with your DatabaseID, Online Playground Token, and Auth URL:
+From the repo root, copy the `.env.sample` file to `.env`, and fill in the fields with your DatabaseID, Development Token, and Server URL:
 
 ```
 cp .sample.env .env
@@ -18,10 +18,10 @@ The `.env` file should look like this (with your fields filled in):
 #!/usr/bin/env bash
 
 # Copy this file from ".env.sample" to ".env", then fill in these values
-# A Ditto DatabaseID (used to be called AppID), Online Playground Token, and Auth URL can be obtained from https://portal.ditto.live
-export DITTO_APP_ID=""
-export DITTO_PLAYGROUND_TOKEN=""
-export DITTO_AUTH_URL = "";
+# A Ditto DatabaseID, Development Token, and Server URL can be obtained from https://portal.ditto.live
+export DITTO_DATABASE_ID=""
+export DITTO_DEVELOPMENT_TOKEN=""
+export DITTO_SERVER_URL = "";
 ```
 
 Next, run the quickstart app with the following command:
@@ -34,3 +34,11 @@ cargo run 2>/dev/null
 > that would interfere with the TUI application. Without it, the screen will
 > quickly become garbled.
 
+
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

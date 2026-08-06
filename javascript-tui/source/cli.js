@@ -1,41 +1,41 @@
 #!/usr/bin/env node
 import React from 'react';
-import {render} from 'ink';
+import { render } from 'ink';
 import meow from 'meow';
 import App from './app.js';
 import dotenv from 'dotenv';
-import {Ditto, DittoConfig, Authenticator} from '@dittolive/ditto';
-import {temporaryDirectory} from 'tempy';
+import { temporaryDirectory } from 'tempy';
+import { DittoManager } from './ditto-manager.js';
 
-dotenv.config({path: '../.env'});
+dotenv.config({ path: '../.env' });
 const cli = meow(
-	`
+  `
     Usage
       $ npm start -- 2>/dev/null
 
     Options
-      --app-id [env: DITTO_APP_ID] Your Ditto AppID
-      --playground-token [env: DITTO_PLAYGROUND_TOKEN] An OnlinePlayground token
-      --auth-url [env: DITTO_AUTH_URL] The auth URL
-      --websocket-url [env: DITTO_WEBSOCKET_URL] The websocket URL
+      --database-id [env: DITTO_DATABASE_ID] Your Ditto Database ID
+      --development-token [env: DITTO_DEVELOPMENT_TOKEN] A Development token
+      --server-url [env: DITTO_SERVER_URL] The server URL
+      --offline-license-token [env: DITTO_OFFLINE_LICENSE_TOKEN] An offline-only license token
   `,
-	{
-		importMeta: import.meta,
-		flags: {
-			appId: {
-				type: 'string',
-			},
-			playgroundToken: {
-				type: 'string',
-			},
-			authURL: {
-				type: 'string',
-			},
-			websocketURL: {
-				type: 'string',
-			},
-		},
-	},
+  {
+    importMeta: import.meta,
+    flags: {
+      databaseId: {
+        type: 'string',
+      },
+      developmentToken: {
+        type: 'string',
+      },
+      serverURL: {
+        type: 'string',
+      },
+      offlineLicenseToken: {
+        type: 'string',
+      },
+    },
+  },
 );
 
 // We use a temporary directory to store Ditto's local database.  This
@@ -47,81 +47,37 @@ const cli = meow(
 // instance has its own persistence directory.
 const tempdir = temporaryDirectory();
 
-// Grab appID and token from CLI or .env in that order
-const appID = cli.flags.appId ?? process.env.DITTO_APP_ID;
-const token = cli.flags.playgroundToken ?? process.env.DITTO_PLAYGROUND_TOKEN;
-const authURL = cli.flags.authURL ?? process.env.DITTO_AUTH_URL;
-const websocketURL = cli.flags.websocketURL ?? process.env.DITTO_WEBSOCKET_URL;
+// Grab database ID and token from CLI or .env in that order
+const databaseId = cli.flags.databaseId ?? process.env.DITTO_DATABASE_ID;
+const token = cli.flags.developmentToken ?? process.env.DITTO_DEVELOPMENT_TOKEN;
+const serverURL = cli.flags.serverURL ?? process.env.DITTO_SERVER_URL;
+const offlineLicenseToken = (
+  cli.flags.offlineLicenseToken ??
+  process.env.DITTO_OFFLINE_LICENSE_TOKEN ??
+  ''
+).trim();
 
-// Create a new Ditto instance with the DittoConfig
+// Open a configured, already-running Ditto instance via the DittoManager,
+// which owns instance/identity/transport/sync setup.
 // https://docs.ditto.live/sdk/latest/install-guides/nodejs#installing-the-demo-task-app
-const connectConfig = {
-	mode: 'server',
-	url: authURL,
-};
+const dittoManager = new DittoManager({
+  databaseId,
+  token,
+  serverURL,
+  offlineLicenseToken,
+  persistenceDirectory: tempdir,
+});
+const ditto = await dittoManager.open();
 
-const config = new DittoConfig(appID, connectConfig, tempdir);
-const ditto = await Ditto.open(config);
-
-// Initialize transport config — enable LAN P2P and WebSocket.
-// BLE and AWDL are disabled because they require macOS entitlements
-// that are only available to signed app bundles, not Node.js processes.
-// LAN (TCP + mDNS) provides P2P sync with peers on the local network.
-ditto.updateTransportConfig(config => {
-	config.peerToPeer.bluetoothLE.isEnabled = false;
-	config.peerToPeer.awdl.isEnabled = false;
-	config.peerToPeer.lan.isEnabled = true;
-	config.peerToPeer.lan.isMdnsEnabled = true;
-	config.peerToPeer.lan.isMulticastEnabled = true;
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
 });
 
-// Set up authentication for server mode
-if (connectConfig.mode === 'server') {
-	await ditto.auth.setExpirationHandler(
-		async (dittoInstance, timeUntilExpiration) => {
-			console.log(
-				'Authentication expiring soon, time until expiration:',
-				timeUntilExpiration,
-			);
-
-			if (dittoInstance.auth.loginSupported) {
-				const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
-				const reLoginResult = await dittoInstance.auth.login(
-					token,
-					devProvider,
-				);
-				if (reLoginResult.error) {
-					console.error('Re-authentication failed:', reLoginResult.error);
-				} else {
-					console.log(
-						'Successfully re-authenticated with info:',
-						reLoginResult,
-					);
-				}
-			}
-		},
-	);
-
-	if (ditto.auth.loginSupported) {
-		const devProvider = Authenticator.DEVELOPMENT_PROVIDER;
-		const loginResult = await ditto.auth.login(token, devProvider);
-		if (loginResult.error) {
-			console.error('Login failed:', loginResult.error);
-		} else {
-			console.log('Successfully logged in with info:', loginResult);
-		}
-	}
-}
-
-ditto.sync.start();
-
-process.on('uncaughtException', err => {
-	console.error('Uncaught Exception:', err);
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
 });
 
-process.on('unhandledRejection', reason => {
-	console.error('Unhandled Rejection:', reason);
-});
-
-const {waitUntilExit} = render(<App ditto={ditto} />);
+const { waitUntilExit } = render(
+  <App ditto={ditto} dittoManager={dittoManager} />,
+);
 await waitUntilExit();

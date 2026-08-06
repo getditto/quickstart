@@ -7,16 +7,16 @@ jest.mock('@dittolive/ditto', () => ({
       auth: {
         loginSupported: true,
         setExpirationHandler: jest.fn().mockResolvedValue(undefined),
-        login: jest.fn().mockResolvedValue({clientInfo: null, error: null}),
+        login: jest.fn().mockResolvedValue({ clientInfo: null, error: null }),
       },
       sync: {
         start: jest.fn(),
         stop: jest.fn(),
-        registerSubscription: jest.fn().mockReturnValue({cancel: jest.fn()}),
+        registerSubscription: jest.fn().mockReturnValue({ cancel: jest.fn() }),
       },
       store: {
-        execute: jest.fn().mockResolvedValue({items: []}),
-        registerObserver: jest.fn().mockReturnValue({cancel: jest.fn()}),
+        execute: jest.fn().mockResolvedValue({ items: [] }),
+        registerObserver: jest.fn().mockReturnValue({ cancel: jest.fn() }),
       },
       close: jest.fn().mockResolvedValue(undefined),
     }),
@@ -31,10 +31,10 @@ jest.mock('@dittolive/ditto', () => ({
 jest.mock('react-native-safe-area-context', () => {
   const React = require('react');
   return {
-    SafeAreaProvider: ({children}) =>
+    SafeAreaProvider: ({ children }) =>
       React.createElement(React.Fragment, null, children),
-    SafeAreaView: ({children}) =>
+    SafeAreaView: ({ children }) =>
       React.createElement(React.Fragment, null, children),
-    useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0}),
+    useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
   };
 });

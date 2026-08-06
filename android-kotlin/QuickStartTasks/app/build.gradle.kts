@@ -12,20 +12,32 @@ plugins {
 fun loadEnvProperties(): Properties {
     val properties = Properties()
     val envFile = rootProject.file("../../.env")
-    
+
     if (envFile.exists()) {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
-        val requiredEnvVars = listOf(
-            "DITTO_APP_ID",
-            "DITTO_PLAYGROUND_TOKEN",
-            "DITTO_AUTH_URL"
+        val knownEnvVars = listOf(
+            "DITTO_DATABASE_ID",
+            "DITTO_DEVELOPMENT_TOKEN",
+            "DITTO_SERVER_URL",
+            "DITTO_OFFLINE_LICENSE_TOKEN"
         )
-        
-        for (envVar in requiredEnvVars) {
-            val value = System.getenv(envVar) 
-                ?: throw RuntimeException("Required environment variable $envVar not found")
-            properties[envVar] = value
+
+        for (envVar in knownEnvVars) {
+            System.getenv(envVar)?.let { properties[envVar] = it }
+        }
+        if ((properties["DITTO_DATABASE_ID"] as String?).isNullOrBlank()) {
+            throw RuntimeException("Required environment variable DITTO_DATABASE_ID not found")
+        }
+        if ((properties["DITTO_OFFLINE_LICENSE_TOKEN"] as String? ?: "").trim().isEmpty()) {
+            for (envVar in listOf("DITTO_DEVELOPMENT_TOKEN", "DITTO_SERVER_URL")) {
+                if ((properties[envVar] as String?).isNullOrBlank()) {
+                    throw RuntimeException(
+                        "Required environment variable $envVar not found " +
+                            "(set DITTO_OFFLINE_LICENSE_TOKEN to use offline mode instead)"
+                    )
+                }
+            }
         }
     }
     return properties
@@ -35,12 +47,13 @@ androidComponents {
     onVariants {
         val prop = loadEnvProperties()
         val buildConfigFields = mapOf(
-            "DITTO_APP_ID" to "Ditto application ID",
-            "DITTO_PLAYGROUND_TOKEN" to "Ditto playground token",
-            "DITTO_AUTH_URL" to "Ditto authentication URL",
+            "DITTO_DATABASE_ID" to "Ditto database ID",
+            "DITTO_DEVELOPMENT_TOKEN" to "Ditto development token",
+            "DITTO_SERVER_URL" to "Ditto server URL",
+            "DITTO_OFFLINE_LICENSE_TOKEN" to "Optional offline-only license token",
             "TEST_DOCUMENT_TITLE" to "Test document title for BrowserStack verification"
         )
-        
+
         buildConfigFields.forEach { (key, description) ->
             val rawValue = prop[key]?.toString()?.trim('"') ?: ""
             it.buildConfigFields.put(
@@ -155,4 +168,3 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
-

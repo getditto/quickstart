@@ -1,8 +1,9 @@
 #include "env.h"
 
+#include "ditto_manager.h"
 #include "task.h"
 #include "tasks_log.h"
-#include "tasks_peer.h"
+#include "tasks_repository.h"
 
 #ifdef DITTO_QUICKSTART_TUI
 #include "tasks_tui.h"
@@ -77,11 +78,7 @@ int main(int argc, const char *argv[]) {
       ("d,delete", "Delete a task",
         cxxopts::value<vector<string>>(), "TASK_ID")
       ("l,list", "List tasks")
-      ("list-all", "List all tasks, including those marked deleted")
-      ("m,monitor", "Monitor tasks for changes")
-      ("cleanup", "Evict all deleted tasks from local store")
-      ("query", "Run a DQL query using the peer's Ditto instance",
-        cxxopts::value<vector<string>>(), "STRING");
+      ("m,monitor", "Monitor tasks for changes");
 
     options.add_options("Sync")
       ("pre", "Number of seconds to synchronize before the operation",
@@ -90,15 +87,14 @@ int main(int argc, const char *argv[]) {
         cxxopts::value<unsigned>()->default_value("5"), "N")
       ("p,persistence-directory", "Persistence directory",
         cxxopts::value<string>(), "PATH")
-      ("app-id", "Ditto App ID",
-        cxxopts::value<string>(), "APP_ID")
-      ("online-playground-token", "Ditto Online Playground token",
+      ("database-id", "Ditto Database ID",
+        cxxopts::value<string>(), "DATABASE_ID")
+      ("development-token", "Ditto Development token",
         cxxopts::value<string>(), "TOKEN")
-      ("websocket-url", "Ditto WebSocket URL",
-        cxxopts::value<string>(), "WEBSOCKET_URL")
-      ("auth-url", "Ditto Auth URL",
-        cxxopts::value<string>(), "AUTH_URL")
-      ("enable-cloud-sync", "Enable cloud synchronization");
+      ("server-url", "Ditto Server URL",
+        cxxopts::value<string>(), "SERVER_URL")
+      ("offline-license-token", "Optional Ditto offline-only license token",
+        cxxopts::value<string>(), "TOKEN");
 
     options.add_options("Logging")
       ("q,quiet", "Disable non-logging output")
@@ -107,8 +103,6 @@ int main(int argc, const char *argv[]) {
       ("info", "Info-level logging")
       ("debug", "Debug-level logging")
       ("v,verbose","Trace-level logging")
-      ("log","Log file output path",
-        cxxopts::value<string>(), "PATH")
       ("export", "Export-log file path",
         cxxopts::value<string>(), "PATH")
       ("ditto-sdk-version", "Print the Ditto SDK version");
@@ -117,10 +111,9 @@ int main(int argc, const char *argv[]) {
     const auto opt_parse = options.parse(argc, argv);
 
     // If no other commands are specified, then "tui" is the default behavior.
-    const vector<string> commands{"add",      "complete", "incomplete",
-                                  "title",    "delete",   "list",
-                                  "list-all", "monitor",  "cleanup",
-                                  "query",    "toggle",   "ditto-sdk-version"};
+    const vector<string> commands{"add",     "complete", "incomplete",
+                                  "title",   "delete",   "list",
+                                  "monitor", "toggle",   "ditto-sdk-version"};
     bool found_non_tui_command = false;
     for (const auto &command : commands) {
       if (opt_parse.count(command) > 0) {
@@ -145,7 +138,7 @@ int main(int argc, const char *argv[]) {
 #endif
 
     if (opt_parse.count("ditto-sdk-version") > 0) {
-      cout << "Ditto SDK version: " << TasksPeer::get_ditto_sdk_version()
+      cout << "Ditto SDK version: " << DittoManager::get_ditto_sdk_version()
            << endl;
       exit(EXIT_SUCCESS);
     }
@@ -169,10 +162,6 @@ int main(int argc, const char *argv[]) {
     }
     set_minimum_log_level(log_level);
 
-    if (opt_parse.count("log") > 0) {
-      set_log_file(opt_parse["log"].as<string>());
-    }
-
     if (opt_parse.count("export") > 0) {
       export_log_path = opt_parse["export"].as<string>();
     }
@@ -184,47 +173,46 @@ int main(int argc, const char *argv[]) {
         opt_parse.count("persistence-directory") > 0
             ? opt_parse["persistence-directory"].as<string>()
             : "";
-    const auto app_id = opt_parse.count("app-id") > 0
-                            ? opt_parse["app-id"].as<string>()
-                            : DITTO_APP_ID;
-    const auto online_playground_token =
-        opt_parse.count("online-playground-token") > 0
-            ? opt_parse["online-playground-token"].as<string>()
-            : DITTO_PLAYGROUND_TOKEN;
-    const auto websocket_url = opt_parse.count("websocket-url") > 0
-                                   ? opt_parse["websocket-url"].as<string>()
-                                   : DITTO_WEBSOCKET_URL;
-    const auto auth_url = opt_parse.count("auth-url") > 0
-                              ? opt_parse["auth-url"].as<string>()
-                              : DITTO_AUTH_URL;
-
-    const auto enable_cloud_sync = opt_parse.count("enable-cloud-sync") > 0;
+    const auto database_id = opt_parse.count("database-id") > 0
+                                 ? opt_parse["database-id"].as<string>()
+                                 : DITTO_DATABASE_ID;
+    const auto development_token =
+        opt_parse.count("development-token") > 0
+            ? opt_parse["development-token"].as<string>()
+            : DITTO_DEVELOPMENT_TOKEN;
+    const auto server_url = opt_parse.count("server-url") > 0
+                                ? opt_parse["server-url"].as<string>()
+                                : DITTO_SERVER_URL;
+    const auto offline_license_token =
+        opt_parse.count("offline-license-token") > 0
+            ? opt_parse["offline-license-token"].as<string>()
+            : DITTO_OFFLINE_LICENSE_TOKEN;
 
     const auto quiet = opt_parse["quiet"].as<bool>();
 
     // Set this true if we make modifications and need to allow post-sync time.
     bool need_post_sync = false;
 
-    // The peer is destroyed at the end of this scope
+    // The manager and repository are destroyed at the end of this scope
     {
-      TasksPeer peer(app_id, online_playground_token, websocket_url, auth_url,
-                     enable_cloud_sync, persistence_dir);
-      peer.insert_initial_tasks();
-      peer.start_sync();
+      DittoManager manager(database_id, development_token, server_url,
+                           offline_license_token, persistence_dir);
+      TasksRepository repository(manager);
+      manager.start_sync();
 
 #ifdef DITTO_QUICKSTART_TUI
       if (found_tui_command || !found_non_tui_command) {
-        TasksTui tui(peer);
+        TasksTui tui(repository, manager);
         tui.run();
       } else
 #endif
       {
-        // A thread must hold mtx while using peer or writing output.
+        // A thread must hold mtx while using the repository or writing output.
         mutex mtx;
 
         shared_ptr<ditto::StoreObserver> tasks_observer;
         if (opt_parse.count("monitor") > 0) {
-          tasks_observer = peer.register_tasks_observer(
+          tasks_observer = repository.register_tasks_observer(
               [quiet, &mtx](const vector<Task> &tasks) {
                 if (!quiet && !tasks.empty()) {
                   lock_guard<mutex> lock(mtx);
@@ -255,7 +243,7 @@ int main(int argc, const char *argv[]) {
               }
 
               lock_guard<mutex> lock(mtx);
-              const auto task_id = peer.add_task(title, false);
+              const auto task_id = repository.add_task(title, false);
 
               if (!quiet) {
                 cout << "Added task: " << task_id << ": " << title << endl;
@@ -274,8 +262,9 @@ int main(int argc, const char *argv[]) {
               validate_task_substring(task_id_substring);
 
               lock_guard<mutex> lock(mtx);
-              const auto task = peer.find_matching_task(task_id_substring);
-              peer.mark_task_complete(task._id, true);
+              const auto task =
+                  repository.find_matching_task(task_id_substring);
+              repository.mark_task_complete(task._id, true);
 
               if (!quiet) {
                 cout << "Marked task complete: " << task._id << endl;
@@ -295,8 +284,9 @@ int main(int argc, const char *argv[]) {
               validate_task_substring(task_id_substring);
 
               lock_guard<mutex> lock(mtx);
-              const auto task = peer.find_matching_task(task_id_substring);
-              peer.mark_task_complete(task._id, false);
+              const auto task =
+                  repository.find_matching_task(task_id_substring);
+              repository.mark_task_complete(task._id, false);
 
               if (!quiet) {
                 cout << "Marked task incomplete: " << task._id << endl;
@@ -316,8 +306,9 @@ int main(int argc, const char *argv[]) {
               validate_task_substring(task_id_substring);
 
               lock_guard<mutex> lock(mtx);
-              const auto task = peer.find_matching_task(task_id_substring);
-              peer.mark_task_complete(task._id, !task.done);
+              const auto task =
+                  repository.find_matching_task(task_id_substring);
+              repository.mark_task_complete(task._id, !task.done);
 
               if (!quiet) {
                 cout << "Toggled task completion: " << task._id << endl;
@@ -349,8 +340,9 @@ int main(int argc, const char *argv[]) {
               }
 
               lock_guard<mutex> lock(mtx);
-              const auto task = peer.find_matching_task(task_id_substring);
-              peer.update_task_title(task._id, title);
+              const auto task =
+                  repository.find_matching_task(task_id_substring);
+              repository.update_task_title(task._id, title);
 
               if (!quiet) {
                 cout << "Changed title of " << task._id << " to '" << title
@@ -370,8 +362,9 @@ int main(int argc, const char *argv[]) {
               validate_task_substring(task_id_substring);
 
               lock_guard<mutex> lock(mtx);
-              const auto task = peer.find_matching_task(task_id_substring);
-              peer.delete_task(task._id);
+              const auto task =
+                  repository.find_matching_task(task_id_substring);
+              repository.delete_task(task._id);
 
               if (!quiet) {
                 cout << "Deleted task: " << task._id << endl;
@@ -383,38 +376,9 @@ int main(int argc, const char *argv[]) {
           }
         }
 
-        if (opt_parse.count("cleanup") > 0) {
-          need_post_sync = true;
-          try {
-            lock_guard<mutex> lock(mtx);
-            peer.evict_deleted_tasks();
-            if (!quiet) {
-              cout << "Evicted all deleted tasks" << endl;
-            }
-          } catch (const exception &err) {
-            cerr << "error: cleanup: " << err.what() << endl;
-          }
-        }
-
-        if (opt_parse.count("query") > 0) {
-          need_post_sync = true;
-          for (const auto &query : opt_parse["query"].as<vector<string>>()) {
-            try {
-              lock_guard<mutex> lock(mtx);
-              const auto result = peer.execute_dql_query(query);
-              if (!quiet) {
-                cout << "[" << query << "] result: \n" << result << endl;
-              }
-            } catch (const exception &err) {
-              cerr << "error: query [" << query << "]: " << err.what() << endl;
-            }
-          }
-        }
-
-        auto include_deleted_tasks = opt_parse.count("list-all") > 0;
-        if (opt_parse.count("list") > 0 || opt_parse.count("list-all") > 0) {
+        if (opt_parse.count("list") > 0) {
           lock_guard<mutex> lock(mtx);
-          auto tasks = peer.get_tasks(include_deleted_tasks);
+          auto tasks = repository.get_tasks();
           if (tasks.empty()) {
             if (!quiet) {
               cout << "No tasks found" << endl;
@@ -460,8 +424,8 @@ int main(int argc, const char *argv[]) {
         tasks_observer.reset();
       } // !found_tui_command
 
-      peer.stop_sync();
-    } // peer destroyed
+      manager.stop_sync();
+    } // repository and manager destroyed
 
     if (!export_log_path.empty()) {
       export_log(export_log_path);

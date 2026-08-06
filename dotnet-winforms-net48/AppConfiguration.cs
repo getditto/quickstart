@@ -9,9 +9,10 @@ namespace Taskapp.WinForms.Net48
     /// </summary>
     public static class AppConfiguration
     {
-        public static string AppId { get; private set; }
-        public static string PlaygroundToken { get; private set; }
-        public static string AuthUrl { get; private set; }
+        public static string DatabaseId { get; private set; }
+        public static string DevelopmentToken { get; private set; }
+        public static string ServerUrl { get; private set; }
+        public static string OfflineLicenseToken { get; private set; }
 
         /// <summary>
         /// Loads configuration from .env file in the application directory
@@ -42,26 +43,31 @@ namespace Taskapp.WinForms.Net48
 
                     switch (key)
                     {
-                        case "DITTO_APP_ID":
-                            AppId = value;
+                        case "DITTO_DATABASE_ID":
+                            DatabaseId = value;
                             break;
-                        case "DITTO_PLAYGROUND_TOKEN":
-                            PlaygroundToken = value;
+                        case "DITTO_DEVELOPMENT_TOKEN":
+                            DevelopmentToken = value;
                             break;
-                        case "DITTO_AUTH_URL":
-                            AuthUrl = value;
+                        case "DITTO_SERVER_URL":
+                            ServerUrl = value;
+                            break;
+                        case "DITTO_OFFLINE_LICENSE_TOKEN":
+                            OfflineLicenseToken = value;
                             break;
                     }
                 }
             }
 
             // Validate required fields
-            if (string.IsNullOrWhiteSpace(AppId))
-                throw new InvalidOperationException("DITTO_APP_ID is required in .env file");
-            if (string.IsNullOrWhiteSpace(PlaygroundToken))
-                throw new InvalidOperationException("DITTO_PLAYGROUND_TOKEN is required in .env file");
-            if (string.IsNullOrWhiteSpace(AuthUrl))
-                throw new InvalidOperationException("DITTO_AUTH_URL is required in .env file");
+            if (string.IsNullOrWhiteSpace(DatabaseId))
+                throw new InvalidOperationException("DITTO_DATABASE_ID is required in .env file");
+            if (!string.IsNullOrWhiteSpace(OfflineLicenseToken))
+                return;
+            if (string.IsNullOrWhiteSpace(DevelopmentToken))
+                throw new InvalidOperationException("DITTO_DEVELOPMENT_TOKEN is required in .env file");
+            if (string.IsNullOrWhiteSpace(ServerUrl))
+                throw new InvalidOperationException("DITTO_SERVER_URL is required in .env file");
         }
     }
 }

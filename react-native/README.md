@@ -5,18 +5,18 @@
 
 # Ditto Task Sync App
 
-A sample React Native application that lets you create tasks and sync them with the Ditto Cloud via OnlinePlayground authentication. This example is built according to the [official Ditto installation guide for React Native](https://docs.ditto.live/install-guides/react-native).
+A sample React Native application that lets you create tasks and sync them with the Ditto server via Development authentication. This example is built according to the [official Ditto installation guide for React Native](https://docs.ditto.live/install-guides/react-native).
 
 ## Documentation
 
 - [React Native Install Guide](https://docs.ditto.live/sdk/latest/install-guides/react-native)
-- [Javascript/React Native API Reference](https://software.ditto.live/js/Ditto/4.12.0/api-reference/)
+- [Javascript/React Native API Reference](https://docs.ditto.live/sdk/latest/api-reference/js)
 - [Javascript/React Native Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
 ## Prerequisites
 
 - **Ditto Portal Account**: Ensure you have a Ditto account. Sign up [here](https://portal.ditto.live/signup).
-- **App Credentials**: After registration, create an application within the Ditto Portal to obtain your `AppID`, `Online Playground Token`, and `Auth URL`. Visit the [Ditto Portal](https://portal.ditto.live/) to manage your applications.
+- **App Credentials**: After registration, create an application within the Ditto Portal to obtain your `Database ID`, `Development Token`, and `Server URL`. Visit the [Ditto Portal](https://portal.ditto.live/) to manage your applications.
 
 ### Build Tool Requirements
 
@@ -101,3 +101,11 @@ Should you encounter any issues, please refer to the [Ditto documentation](https
 ### Contact
 
 For support or queries, reach out to us via [support@ditto.com](mailto:support@ditto.com).
+
+## Offline-only mode (optional)
+
+Set `DITTO_OFFLINE_LICENSE_TOKEN` in the repo-root `.env` to run this
+app in offline-only mode (peer-to-peer only, no cloud sync). When the
+token is non-empty, the playground/auth/websocket vars are not used.
+Request a token from <support@ditto.com>. See the top-level
+[README](../README.md#offline-only-mode-optional) for full details.

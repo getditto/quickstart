@@ -1,26 +1,5 @@
+# CODEOWNERS for the public getditto/quickstart mirror.
 #
-# .github/CODEOWNERS
-# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
-#
-
-# Global default owners
+# This repository is a read-only mirror published by Ditto's SDK release
+# process. The SDK engineers team owns the entire published mirror.
 * @getditto/sdk-engineers
-
-# SDK-specific owners
-/android-java/           @phatblat @busec0
-/android-kotlin/         @phatblat @busec0
-/cpp-tui/                @kristopherjohnson
-/dotnet-maui/            @busec0 @kristopherjohnson
-/dotnet-tui/             @busec0 @kristopherjohnson
-/dotnet-winforms/        @busec0 @kristopherjohnson
-/flutter_app/            @alycda
-/go-tui/                 @kristopherjohnson @dsharp-pivotal
-/java-spring/            @phatblat @busec0
-/java-server/            @phatblat @busec0
-/javascript-tui/         @nickrobinson
-/javascript-web/         @nickrobinson
-/kotlin-multiplatform/   @phatblat @busec0
-/react-native/           @kristopherjohnson
-/react-native-expo/      @kristopherjohnson
-/rust-tui/               @kristopherjohnson
-/swift/                  @SausCode @busec0
