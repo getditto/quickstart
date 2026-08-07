@@ -1,4 +1,4 @@
-use std::{env, time::Duration};
+use std::{env, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use ditto_quickstart::{ditto_manager::DittoManager, tasks_repository::TasksRepository};
@@ -33,8 +33,13 @@ async fn main() -> Result<()> {
 
     // Configure the Ditto instance (same pattern as main.rs) with all
     // peer-to-peer transports enabled.
-    let manager =
-        DittoManager::try_new(database_id, token.clone(), server_url, String::new(), true)?;
+    let manager = Arc::new(DittoManager::try_new(
+        database_id,
+        token.clone(),
+        server_url,
+        String::new(),
+        true,
+    )?);
 
     // Explicitly log in before starting sync so the first sync round has a
     // valid JWT/X.509 cert. Without this we rely on the expiration handler
@@ -51,7 +56,7 @@ async fn main() -> Result<()> {
     println!("✅ Created Ditto instance and started sync");
 
     // Create the tasks repository (registers the subscription + observer)
-    let repository = TasksRepository::try_new(manager.ditto())?;
+    let repository = TasksRepository::try_new(Arc::clone(&manager))?;
     println!("📝 App loaded - Created tasks repository");
 
     // Wait for sync and check for the seeded task

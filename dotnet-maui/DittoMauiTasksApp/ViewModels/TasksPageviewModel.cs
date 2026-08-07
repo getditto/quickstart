@@ -10,13 +10,18 @@ using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp.ViewModels
 {
-    public partial class TasksPageviewModel : ObservableObject
+    public partial class TasksPageviewModel : ObservableObject, IDisposable
     {
         private readonly DittoManager dittoManager;
         private readonly TasksRepository tasksRepository;
         private readonly IPopupService popupService;
         private readonly ILogger<TasksPageviewModel> logger;
         private DittoStoreObserver tasksObserver;
+        // Registration runs on the permissions-task continuation (thread-pool thread)
+        // while Dispose() runs on the UI thread (page Unloaded), so the disposed flag and
+        // the observer handoff are guarded by this lock to make the check-and-store atomic.
+        private readonly object observerGate = new();
+        private bool disposed;
 
         public string DatabaseIdText { get; }
         public string TokenText { get; }
@@ -171,7 +176,7 @@ namespace DittoMauiTasksApp.ViewModels
         {
             // Register observer, which runs against the local database on this peer
             // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-            tasksObserver = tasksRepository.ObserveTasksCollection(newTasks =>
+            var observer = tasksRepository.ObserveTasksCollection(newTasks =>
             {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
@@ -194,6 +199,42 @@ namespace DittoMauiTasksApp.ViewModels
 
                 return Task.CompletedTask;
             });
+
+            // Hand the observer off (or, if Dispose() already ran, cancel the just-created
+            // one so it isn't leaked) atomically with respect to Dispose().
+            lock (observerGate)
+            {
+                if (!disposed)
+                {
+                    tasksObserver = observer;
+                    return;
+                }
+            }
+
+            observer.Cancel();
+            observer.Dispose();
+        }
+
+        public void Dispose()
+        {
+            DittoStoreObserver observer;
+            lock (observerGate)
+            {
+                if (disposed)
+                {
+                    return;
+                }
+                disposed = true;
+                observer = tasksObserver;
+                tasksObserver = null;
+            }
+
+            // Cancel and dispose the store observer so its Ditto callback is not leaked when
+            // this view model goes away. The sync subscription is owned by the singleton
+            // TasksRepository (registered in MauiProgram), not this view model, so it is
+            // intentionally left alone here.
+            observer?.Cancel();
+            observer?.Dispose();
         }
 
         private void UpdateTasks(IList<TaskModel> newTasks)

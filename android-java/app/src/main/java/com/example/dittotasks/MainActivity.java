@@ -18,6 +18,7 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.ditto.kotlin.DittoStoreObserver;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -29,25 +30,23 @@ public class MainActivity extends ComponentActivity {
     private TaskAdapter taskAdapter;
     private SwitchCompat syncSwitch;
 
-    DittoManager dittoManager;
-    TasksRepository tasksRepository;
+    // The store observer is scoped to this screen: registered in onCreate, closed in
+    // onDestroy. The Ditto instance and the sync subscription are app-scoped singletons
+    // (see DittoManager / TasksRepository) and are not owned here.
+    private DittoStoreObserver tasksObserver;
 
     private final String dittoDatabaseId = BuildConfig.DITTO_DATABASE_ID;
     private final String dittoDevelopmentToken = BuildConfig.DITTO_DEVELOPMENT_TOKEN;
-    private final String dittoServerUrl = BuildConfig.DITTO_SERVER_URL;
-    private final String dittoOfflineLicenseToken = BuildConfig.DITTO_OFFLINE_LICENSE_TOKEN;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
+
         // Keep screen on during testing to prevent NoActivityResumedException
         if(BuildConfig.DEBUG && isInstrumentationTest()){
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
-        
-        initDitto();
 
         // Populate connection info (only in debug builds)
         if(BuildConfig.DEBUG) {
@@ -66,76 +65,55 @@ public class MainActivity extends ComponentActivity {
         FloatingActionButton addButton = findViewById(R.id.add_button);
         addButton.setOnClickListener(v -> showAddTaskModal());
 
-        // Initialize sync switch
+        // Initialize sync switch from the real, app-scoped sync state (which survives
+        // rotation). Set it before attaching the listener so this doesn't fire toggleSync().
         syncSwitch = findViewById(R.id.sync_switch);
-        syncSwitch.setChecked(true);
-        syncSwitch.setOnCheckedChangeListener(((buttonView, isChecked) -> {
-            toggleSync();
-        }));
+        boolean syncActive = DittoManager.isSyncActive();
+        syncSwitch.setChecked(syncActive);
+        syncSwitch.setText(syncActive ? "Sync Active" : "Sync Inactive");
+        syncSwitch.setTrackTintList(syncActive ? ColorStateList.valueOf(0xFFBB86FC) : null);
+        syncSwitch.setOnCheckedChangeListener(((buttonView, isChecked) -> toggleSync()));
 
         // Initialize task list
         RecyclerView taskList = findViewById(R.id.task_list);
         taskList.setLayoutManager(new LinearLayoutManager(this));
         taskAdapter = new TaskAdapter();
         taskList.setAdapter(taskAdapter);
-        taskAdapter.setOnTaskToggleListener((task, isChecked) -> {
-            toggleTask(task);
-        });
+        taskAdapter.setOnTaskToggleListener((task, isChecked) -> toggleTask(task));
         taskAdapter.setOnTaskDeleteListener(this::deleteTask);
         taskAdapter.setOnTaskLongPressListener(this::showEditTaskModal);
-        
-        // Initialize empty list - Ditto observer will populate it
+
+        // Initialize empty list - the Ditto observer will populate it
         taskAdapter.setTasks(Collections.emptyList());
+
+        // Wire up the tasks concern for this screen (subscription + observer).
+        setUpTasks();
     }
 
-
-    void initDitto() {
-        Log.d("DittoInit", "=== Starting Ditto initialization ===");
-
-        Log.d("DittoInit", "DITTO_DATABASE_ID: " + dittoDatabaseId);
-        Log.d("DittoInit", "DITTO_DEVELOPMENT_TOKEN: " + (dittoDevelopmentToken != null ? "Present" : "NULL"));
-        Log.d("DittoInit", "DITTO_SERVER_URL: " + dittoServerUrl);
-
+    // Ditto itself is created and started once by TasksApplication; here we just wire up
+    // the tasks concern for this screen: register the app-wide subscription (idempotent)
+    // and start a store observer scoped to this Activity (closed in onDestroy).
+    void setUpTasks() {
         // Skip permission requests during testing to avoid permission dialogs
         if (!isInstrumentationTest()) {
-            Log.d("DittoInit", "Requesting permissions...");
             requestPermissions();
-        } else {
-            Log.d("DittoInit", "Skipping permissions during instrumentation test");
         }
 
-        Log.d("DittoInit", "Starting Ditto SDK initialization...");
-        try {
-            // Create + configure the Ditto instance (identity/auth, sync lifecycle).
-            Log.d("DittoInit", "Creating Ditto instance...");
-            dittoManager = new DittoManager(
-                    dittoDatabaseId,
-                    dittoServerUrl,
-                    dittoDevelopmentToken,
-                    dittoOfflineLicenseToken
-            );
-            Log.d("DittoInit", "Ditto instance created successfully");
+        TasksRepository.registerSubscription();
+        tasksObserver = TasksRepository.observeTasks(tasks ->
+                runOnUiThread(() -> taskAdapter.setTasks(new ArrayList<>(tasks))));
+    }
 
-            // Set up the tasks concern: subscription + observer + CRUD. Register the
-            // subscription, then start observing — the observer streams the visible
-            // task list back to the UI.
-            Log.d("DittoInit", "Setting up tasks repository...");
-            tasksRepository = new TasksRepository(dittoManager);
-            tasksRepository.registerSubscription();
-            tasksRepository.observeTasks(tasks ->
-                    runOnUiThread(() -> {
-                        Log.d("DittoInit", "Updating UI with " + tasks.size() + " tasks");
-                        taskAdapter.setTasks(new ArrayList<>(tasks));
-                    }));
-            Log.d("DittoInit", "Tasks repository ready");
-
-            Log.d("DittoInit", "Starting Ditto sync...");
-            dittoManager.startSync();
-            Log.d("DittoInit", "=== Ditto initialization completed successfully ===");
-        } catch (Exception e) {
-            Log.e("DittoInit", "Error during Ditto initialization: " + e.getMessage(), e);
-            e.printStackTrace();
+    @Override
+    protected void onDestroy() {
+        // The store observer is tied to this screen's lifecycle — close it so it doesn't
+        // leak across Activity recreation (e.g. rotation). The Ditto instance and the sync
+        // subscription are app-scoped singletons and intentionally live on.
+        if (tasksObserver != null) {
+            tasksObserver.close();
+            tasksObserver = null;
         }
+        super.onDestroy();
     }
 
     // Check if running under instrumentation (testing)
@@ -178,43 +156,23 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void createTask(String title) {
-        if (tasksRepository == null) {
-            Log.i("MainActivity", "Ditto disabled - create task ignored: " + title);
-            return;
-        }
-        tasksRepository.createTask(title);
+        TasksRepository.createTask(title);
     }
 
     private void editTaskTitle(Task task, String newTitle) {
-        if (tasksRepository == null) {
-            Log.i("MainActivity", "Ditto disabled - edit task ignored: " + task.getTitle());
-            return;
-        }
-        tasksRepository.editTaskTitle(task, newTitle);
+        TasksRepository.editTaskTitle(task, newTitle);
     }
 
     private void toggleTask(Task task) {
-        if (tasksRepository == null) {
-            Log.i("MainActivity", "Ditto disabled - toggle task ignored: " + task.getTitle());
-            return;
-        }
-        tasksRepository.toggleTask(task);
+        TasksRepository.toggleTask(task);
     }
 
     private void deleteTask(Task task) {
-        if (tasksRepository == null) {
-            Log.i("MainActivity", "Ditto disabled - delete task ignored: " + task.getTitle());
-            return;
-        }
-        tasksRepository.deleteTask(task);
+        TasksRepository.deleteTask(task);
     }
 
     private void toggleSync() {
-        if (dittoManager == null) {
-            return;
-        }
-
-        boolean isSyncActive = dittoManager.isSyncActive();
+        boolean isSyncActive = DittoManager.isSyncActive();
         var nextColor = isSyncActive ? null : ColorStateList.valueOf(0xFFBB86FC);
         var nextText = isSyncActive ? "Sync Inactive" : "Sync Active";
 
@@ -222,15 +180,15 @@ public class MainActivity extends ComponentActivity {
         // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
         try {
             if (isSyncActive) {
-                dittoManager.stopSync();
+                DittoManager.stopSync();
             } else {
-                dittoManager.startSync();
+                DittoManager.startSync();
             }
             syncSwitch.setChecked(!isSyncActive);
             syncSwitch.setTrackTintList(nextColor);
             syncSwitch.setText(nextText);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("MainActivity", "Failed to toggle sync", e);
         }
     }
 

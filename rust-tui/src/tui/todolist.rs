@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Context, Result};
 use crossterm::event::Event;
 use ratatui::{
@@ -10,14 +12,12 @@ use crate::{ditto_manager::DittoManager, key, tasks_repository::TasksRepository}
 
 pub struct Todolist {
     /// Owns the tasks data and CRUD against Ditto.
-    ///
-    /// Declared before `manager` so that, on drop, its `Arc<Ditto>` (and the
-    /// observer/subscription) are released before the manager drops the last
-    /// `Arc<Ditto>` and deletes the persistence directory.
     repository: TasksRepository,
 
-    /// Owns and configures the Ditto instance and controls sync.
-    manager: DittoManager,
+    /// Shared owner of the Ditto manager, used here to control sync. Held via
+    /// `Arc` so the manager (and its persistence directory) stays alive as long
+    /// as any holder — the repository shares the same `Arc`.
+    manager: Arc<DittoManager>,
 
     /// Optional client name for display purposes
     pub client_name: Option<String>,
@@ -38,8 +38,8 @@ pub enum TodoMode {
 }
 
 impl Todolist {
-    pub fn new(manager: DittoManager, client_name: Option<String>) -> Result<Self> {
-        let repository = TasksRepository::try_new(manager.ditto())?;
+    pub fn new(manager: Arc<DittoManager>, client_name: Option<String>) -> Result<Self> {
+        let repository = TasksRepository::try_new(Arc::clone(&manager))?;
 
         Ok(Self {
             repository,

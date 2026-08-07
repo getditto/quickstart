@@ -1,4 +1,4 @@
-use std::{io::Stdout, ops::ControlFlow, time::Duration};
+use std::{io::Stdout, ops::ControlFlow, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result, anyhow};
 use crossterm::event::{Event, EventStream};
@@ -27,7 +27,7 @@ impl TuiTask {
     pub fn try_spawn(
         shutdown: Shutdown,
         terminal: Terminal<CrosstermBackend<Stdout>>,
-        manager: DittoManager,
+        manager: Arc<DittoManager>,
         client_name: Option<String>,
     ) -> Result<TuiTask> {
         let todolist_state = Todolist::new(manager, client_name)?;

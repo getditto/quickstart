@@ -1,4 +1,4 @@
-use std::{path::PathBuf, time::Duration};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
@@ -60,14 +60,15 @@ async fn main() -> Result<()> {
     let (terminal, _cleanup) = term::init_crossterm()?;
 
     // Initialize and launch app. `DittoManager` owns the Ditto instance and its
-    // persistence directory; we start sync here, before spawning the TUI.
-    let manager = DittoManager::try_new(
+    // persistence directory; we share it via `Arc` so both the repository and
+    // the TUI can hold it. We start sync here, before spawning the TUI.
+    let manager = Arc::new(DittoManager::try_new(
         cli.database_id,
         cli.token,
         cli.server_url,
         cli.offline_license_token,
         cli.p2p_enabled,
-    )?;
+    )?);
     manager.start_sync()?;
     let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, manager, cli.client_name)
         .context("failed to start tui task")?;

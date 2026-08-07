@@ -8,6 +8,8 @@ using Terminal.Gui;
 using Terminal.Gui.Graphs;
 using NStack;
 
+using DittoSDK.Store;
+
 /// <summary>
 /// A Terminal.Gui window that displays a list of tasks and allows the user to interact with them.
 /// </summary>
@@ -146,6 +148,13 @@ public class TasksWindow : Window
     private readonly TasksRepository _tasksRepository;
     private readonly TasksListDataSource _dataSource;
 
+    /// <summary>
+    /// The tasks store observer. Held so it can be cancelled and disposed when
+    /// the window is disposed; otherwise it (and its Ditto callback) would leak
+    /// for the lifetime of the process.
+    /// </summary>
+    private DittoStoreObserver _tasksObserver;
+
     public TasksWindow(DittoManager dittoManager, TasksRepository tasksRepository) : base($"Ditto Tasks")
     {
         _dittoManager = dittoManager;
@@ -258,7 +267,7 @@ public class TasksWindow : Window
 
         Add(tasksListView);
 
-        tasksRepository.ObserveTasksCollection(async (tasks) =>
+        _tasksObserver = tasksRepository.ObserveTasksCollection(async (tasks) =>
         {
             await Task.Run(() =>
             {
@@ -285,6 +294,21 @@ public class TasksWindow : Window
             X = Pos.Center(),
             Y = Pos.Bottom(this) - 3,
         });
+    }
+
+    /// <summary>
+    /// Cancel and dispose the tasks observer when the window is disposed so its
+    /// Ditto callback is not leaked.
+    /// </summary>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _tasksObserver?.Cancel();
+            _tasksObserver?.Dispose();
+            _tasksObserver = null;
+        }
+        base.Dispose(disposing);
     }
 
     private string SyncStatusLabelText()

@@ -42,12 +42,14 @@ Compatible with Android Automotive OS (AAOS)
 
 The Android app is a simple to-do list app that demonstrates how to use the Ditto Android SDK to sync data with other devices.  It is implemented using Java and Android Views using an Activity and a programmatically implemented RecyclerView.
 
-The Ditto integration is split into two classes by concern:
+The Ditto integration is split by concern, following the natural lifecycle of each piece:
 
-- `DittoManager.kt` — Ditto instance management: configuration, identity/auth, and starting/stopping sync. It holds and exposes the `ditto` instance and knows nothing about tasks.
-- `TasksRepository.kt` — the tasks data concern: it registers the sync subscription and the store observer, streams the visible task list to the UI, and performs CRUD by calling the real Ditto API directly through `dittoManager.ditto`.
+- `DittoManager.kt` — Ditto instance management: configuration, identity/auth, and starting/stopping sync. The `ditto` instance is a **process-global singleton** — created exactly once at app startup and never tied to an Activity, so a configuration change like rotation recreates the Activity without recreating Ditto (two instances on the same persistence directory would contend on its lock). It knows nothing about tasks.
+- `TasksApplication.java` — the `Application` subclass that creates the Ditto singleton once at process start (via `DittoManager.initialize`) and starts sync. Registered as the app's `android:name` in the manifest.
+- `TasksRepository.kt` — the tasks data concern: it registers the **app-lifetime sync subscription** (once), performs CRUD by calling the real Ditto API directly through `DittoManager.ditto`, and exposes `observeTasks(...)`, which creates a store observer and returns its handle to the caller.
+- `MainActivity.java` — the UI. It **owns the store observer for the screen**: it starts observing in `onCreate` and closes the observer in `onDestroy`, so the observer is scoped to the view while the Ditto instance and the subscription live for the whole app.
 
-The Ditto v5 SDK ships as a Kotlin module (`com.ditto:ditto-kotlin-android`) and exposes some APIs (such as `store.execute`) as `suspend` functions. Because Java cannot call `suspend` functions directly, `DittoManager` and `TasksRepository` are written in Kotlin, which lets them invoke the real Ditto API directly (bridging the suspending calls with `runBlocking`) instead of introducing a wrapper layer over the SDK. The remaining application logic — `MainActivity`, `Task`, and `TaskAdapter` — is in Java.
+The Ditto v5 SDK ships as a Kotlin module (`com.ditto:ditto-kotlin-android`) and exposes some APIs (such as `store.execute`) as `suspend` functions. Because Java cannot call `suspend` functions directly, `DittoManager` and `TasksRepository` are written in Kotlin, which lets them invoke the real Ditto API directly (bridging the suspending calls with `runBlocking`) instead of introducing a wrapper layer over the SDK. The remaining application logic — `TasksApplication`, `MainActivity`, `Task`, and `TaskAdapter` — is in Java.
 
 It is assumed that the reader is familiar with Android development and with Java/Activity/RecyclerView, but needs some guidance on how to use Ditto.  The following is a summary of the key parts of integration with Ditto.
 
