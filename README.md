@@ -19,8 +19,6 @@ The Ditto SDK requires you to provide an identity for your application, which ma
 generated using the [Ditto Portal](https://portal.ditto.live/). For the purposes of these
 quickstart applications, we'll be using the "Development" identity type.
 
-![Ditto Portal](assets/ditto-portal.png)
-
 > [!IMPORTANT]
 > The Development identity type is _not_ suitable for production use. It is intended
 > only for development and testing purposes.
@@ -34,7 +32,9 @@ To obtain your Ditto identity and configure the quickstart apps with it, follow 
    - in a macOS Finder window, press `⇧⌘.` (SHIFT+CMD+period) to show hidden files.
    - Flutter uses `flutter_app/.env`, and the .NET Framework 4.8 app uses
      `dotnet-winforms-net48/.env`; see their app-specific READMEs.
-1. Save your Database ID, Development Token, and Server URL in the `.env` file.
+1. In the Ditto Portal, open your database's **Connect** tab — it lists your
+   **Database ID**, **Development Token**, and **Server URL**. Save these values in
+   the `.env` file.
 
 ## Offline-only mode (optional)
 
