@@ -43,11 +43,17 @@ with each other over Bluetooth/LAN/etc. and do not connect to Ditto's cloud.
 This requires an offline-only license token, which you can request by contacting
 <support@ditto.com>.
 
-To run in offline mode, set `DITTO_OFFLINE_LICENSE_TOKEN` in your `.env` file.
-When this variable is non-empty, the app initializes in offline-only mode and
-does not use `DITTO_DEVELOPMENT_TOKEN` or `DITTO_SERVER_URL`. When it is empty
-or unset, the app connects to the configured server using development
-authentication.
+To run in offline mode, set both `DITTO_DATABASE_ID` and
+`DITTO_OFFLINE_LICENSE_TOKEN` in your `.env` file.
+
+`DITTO_DATABASE_ID` is required in **both** modes. It is the identifier peers use
+to recognize each other, so every peer must use the same value. For offline-only
+mode it can be any valid UUID — it does not have to come from the Ditto Portal.
+
+When `DITTO_OFFLINE_LICENSE_TOKEN` is non-empty, the app initializes in
+offline-only mode and does not use `DITTO_DEVELOPMENT_TOKEN` or
+`DITTO_SERVER_URL`. When it is empty or unset, the app connects to the configured
+server using development authentication.
 
 Please see the app-specific README files for details on the tools necessary to
 build and run them.
