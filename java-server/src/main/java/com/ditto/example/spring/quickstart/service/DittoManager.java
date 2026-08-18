@@ -38,8 +38,9 @@ public class DittoManager implements DisposableBean {
     private final Sinks.Many<Boolean> mutableSyncStatePublisher = Sinks.many().replay().latestOrDefault(false);
 
     // Whether Ditto sync is currently running. Starts enabled on init (see constructor);
-    // changed via the REST start/stop endpoints.
-    private volatile boolean syncEnabled = false;
+    // changed via the REST start/stop endpoints. Guarded by setSyncEnabled being
+    // synchronized (the only reader/writer), so it does not need to be volatile.
+    private boolean syncEnabled = false;
 
     private final Logger logger = LoggerFactory.getLogger(DittoManager.class);
 
@@ -109,8 +110,10 @@ public class DittoManager implements DisposableBean {
     // Set the desired sync state. Idempotent: calling it with the already-active
     // state is a no-op, so a repeated request / retry / stale double-click cannot
     // flip the transport lifecycle. There is deliberately no blind "toggle".
+    // synchronized so the check-then-act (read syncEnabled, start/stop, write) is
+    // atomic across the concurrent REST start/stop endpoints.
     // https://docs.ditto.live/sdk/latest/sync/start-and-stop-sync
-    public void setSyncEnabled(boolean enabled) {
+    public synchronized void setSyncEnabled(boolean enabled) {
         if (enabled == syncEnabled) {
             return;
         }

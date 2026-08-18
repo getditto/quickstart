@@ -1,6 +1,10 @@
 package com.ditto.example.spring.quickstart.service;
 
-import com.ditto.java.*;
+import com.ditto.java.Ditto;
+import com.ditto.java.DittoException;
+import com.ditto.java.DittoQueryResultItem;
+import com.ditto.java.DittoStoreObserver;
+import com.ditto.java.DittoSyncSubscription;
 import com.ditto.java.serialization.DittoCborSerializable;
 
 import jakarta.annotation.Nonnull;

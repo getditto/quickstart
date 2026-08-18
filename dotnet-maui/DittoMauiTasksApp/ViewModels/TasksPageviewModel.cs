@@ -18,8 +18,8 @@ namespace DittoMauiTasksApp.ViewModels
         private readonly ILogger<TasksPageviewModel> logger;
         private DittoStoreObserver tasksObserver;
         // Registration runs on the permissions-task continuation (thread-pool thread)
-        // while Dispose() runs on the UI thread (page Unloaded), so the disposed flag and
-        // the observer handoff are guarded by this lock to make the check-and-store atomic.
+        // while Dispose() runs on MAUI's page teardown, so the disposed flag and the
+        // observer handoff are guarded by this lock to make the check-and-store atomic.
         private readonly object observerGate = new();
         private bool disposed;
 

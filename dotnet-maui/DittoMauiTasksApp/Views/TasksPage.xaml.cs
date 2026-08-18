@@ -9,12 +9,6 @@ public partial class TasksPage : ContentPage
         InitializeComponent();
 
         BindingContext = viewModel;
-
-        // Dispose the view model (which cancels its Ditto store observer) when
-        // the page is removed from the visual tree. Note: MAUI may raise
-        // Unloaded/Loaded in cycles; in this single-page app the page is not
-        // expected to reload, so disposing here does not strand a live page.
-        Unloaded += (_, _) => (BindingContext as IDisposable)?.Dispose();
     }
 
     // Event handler invoked when a checkbox on the page is checked or unchecked.
