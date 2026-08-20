@@ -6,7 +6,7 @@ export type Task = {
 };
 
 export type DittoIdentity = {
-  appId: string;
+  databaseId: string;
   token: string;
 };
 

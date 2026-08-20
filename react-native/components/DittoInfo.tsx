@@ -1,12 +1,12 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 type Props = {
   databaseId: string;
   token: string;
 };
 
-const DittoInfo: React.FC<Props> = ({databaseId, token}) => {
+const DittoInfo: React.FC<Props> = ({ databaseId, token }) => {
   return (
     <View style={styles.view}>
       <Text style={styles.title}>Ditto Tasks</Text>

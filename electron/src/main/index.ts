@@ -2,22 +2,21 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertEnv } from './env';
-import {
-  createTask,
-  deleteTask,
-  editTask,
-  getInfo,
-  getTasks,
-  initDitto,
-  shutdown,
-  startSync,
-  stopSync,
-  toggleTask,
-} from './ditto';
+import { DittoManager } from './ditto-manager';
+import { TasksRepository } from './tasks-repository';
 import { IPC } from '../types';
 import type { Task } from '../types';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const manager = new DittoManager();
+let repository: TasksRepository | null = null;
+
+async function shutdown(): Promise<void> {
+  repository?.dispose();
+  repository = null;
+  manager.close();
+}
 
 function broadcastTasks(tasks: Task[]): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -47,23 +46,29 @@ function createWindow(): BrowserWindow {
   return win;
 }
 
-ipcMain.handle(IPC.TASKS_GET_INFO, () => getInfo());
-ipcMain.handle(IPC.TASKS_GET, () => getTasks());
-ipcMain.handle(IPC.TASKS_CREATE, (_event, title: string) => createTask(title));
+ipcMain.handle(IPC.TASKS_GET_INFO, () => manager.getInfo());
+ipcMain.handle(IPC.TASKS_GET, () => repository?.getTasks() ?? []);
+ipcMain.handle(IPC.TASKS_CREATE, (_event, title: string) =>
+  repository?.createTask(title),
+);
 ipcMain.handle(IPC.TASKS_EDIT, (_event, id: string, title: string) =>
-  editTask(id, title),
+  repository?.editTask(id, title),
 );
 ipcMain.handle(IPC.TASKS_TOGGLE, (_event, id: string, done: boolean) =>
-  toggleTask(id, done),
+  repository?.toggleTask(id, done),
 );
-ipcMain.handle(IPC.TASKS_DELETE, (_event, id: string) => deleteTask(id));
-ipcMain.handle(IPC.TASKS_START_SYNC, () => startSync());
-ipcMain.handle(IPC.TASKS_STOP_SYNC, () => stopSync());
+ipcMain.handle(IPC.TASKS_DELETE, (_event, id: string) =>
+  repository?.deleteTask(id),
+);
+ipcMain.handle(IPC.TASKS_START_SYNC, () => manager.startSync());
+ipcMain.handle(IPC.TASKS_STOP_SYNC, () => manager.stopSync());
 
 app.whenReady().then(async () => {
   try {
     assertEnv();
-    await initDitto(broadcastTasks);
+    const ditto = await manager.open();
+    repository = new TasksRepository(ditto, broadcastTasks);
+    repository.start();
   } catch (e) {
     console.error('Startup failed:', e);
     app.quit();

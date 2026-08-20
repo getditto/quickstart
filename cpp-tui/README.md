@@ -21,7 +21,7 @@ The build system will automatically download the Ditto C++ SDK when you run `mak
 ## Documentation
 
 - [C++ Install Guide](https://docs.ditto.live/install-guides/cpp)
-- [C++ API Reference](https://software.ditto.live/cpp/Ditto/4.11.0/api-reference/)
+- [C++ API Reference](https://docs.ditto.live/sdk/latest/api-reference/cpp)
 - [C++ Release Notes](https://docs.ditto.live/release-notes/cpp)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -30,8 +30,8 @@ The build system will automatically download the Ditto C++ SDK when you run `mak
 
 Assuming you have the prerequisites installed, you can build and run the app by following these steps:
 
-1. Create an application at <https://portal.ditto.live/>.  Make note of the app ID and online playground token.
-2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your app ID and online playground token.
+1. Create an application at <https://portal.ditto.live/>.  Make note of the Database ID and development token.
+2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your Database ID and development token.
 3. In a shell, navigate to the `quickstart/cpp-tui/taskscpp` directory and run the command `make build` to automatically download the Ditto SDK and build the C++ application.
 
 The build system will detect your Linux architecture (x86_64/arm64) and download the appropriate Ditto C++ SDK version automatically.

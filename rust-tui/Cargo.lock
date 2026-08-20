@@ -185,9 +185,9 @@ dependencies = [
 
 [[package]]
 name = "bytes"
-version = "1.11.1"
+version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
+checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "cassowary"
@@ -486,9 +486,9 @@ dependencies = [
 
 [[package]]
 name = "dittolive-ditto"
-version = "5.0.0"
+version = "5.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86c407c932ac3deb87af8ae89e94889c826f6409991240ab35faa70bbe0387e6"
+checksum = "ecbcc8cdcb02d62bf58b2a12b55dc7acf7791be289f22e40cc26bb20ea54cc8e"
 dependencies = [
  "async-trait",
  "async_fn_traits",
@@ -523,9 +523,9 @@ dependencies = [
 
 [[package]]
 name = "dittolive-ditto-sys"
-version = "5.0.0"
+version = "5.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c2cf2189908366ec4910132b3ba379b08a3f08938aa918919430fa72e8567a3"
+checksum = "7b7ef782c5ea5ca971428153ad64856815aafc738c00bfb31e9d849ee781dee3"
 dependencies = [
  "macro_rules_attribute",
  "object",
@@ -2833,3 +2833,18 @@ dependencies = [
  "quote",
  "syn 2.0.111",
 ]
+
+[[patch.unused]]
+name = "tracing"
+version = "0.1.40"
+source = "git+https://github.com/getditto/tracing?tag=ditto-2026-04-17#3e14ed057e381867d2a96edba54711cef553d6c9"
+
+[[patch.unused]]
+name = "tracing-core"
+version = "0.1.32"
+source = "git+https://github.com/getditto/tracing?tag=ditto-2026-04-17#3e14ed057e381867d2a96edba54711cef553d6c9"
+
+[[patch.unused]]
+name = "tracing-subscriber"
+version = "0.3.18"
+source = "git+https://github.com/getditto/tracing?tag=ditto-2026-04-17#3e14ed057e381867d2a96edba54711cef553d6c9"

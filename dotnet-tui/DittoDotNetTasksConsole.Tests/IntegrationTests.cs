@@ -11,21 +11,21 @@ namespace DittoDotNetTasksConsole.Tests;
 public class IntegrationTests
 {
     [Fact]
-    public async Task TasksPeer_CanSyncAndRetrieveTasks()
+    public async Task TasksRepository_CanSyncAndRetrieveTasks()
     {
         var env = LoadEnvVariables();
         var taskToFind = Environment.GetEnvironmentVariable("DITTO_CLOUD_TASK_TITLE")
             ?? throw new InvalidOperationException("DITTO_CLOUD_TASK_TITLE environment variable is required");
 
-        using var peer = await TasksPeer.Create(
-            env["DITTO_APP_ID"],
-            env["DITTO_PLAYGROUND_TOKEN"],
-            env["DITTO_AUTH_URL"],
-            env["DITTO_WEBSOCKET_URL"]);
+        using var dittoManager = await DittoManager.Create(
+            env["DITTO_DATABASE_ID"],
+            env["DITTO_DEVELOPMENT_TOKEN"],
+            env["DITTO_SERVER_URL"]);
+        var tasksRepository = new TasksRepository(dittoManager);
 
         // Verify connection
-        Assert.NotNull(peer);
-        Assert.Equal(env["DITTO_APP_ID"], peer.AppId);
+        Assert.NotNull(dittoManager);
+        Assert.Equal(env["DITTO_DATABASE_ID"], dittoManager.DatabaseId);
 
         var foundTask = false;
         var attempts = 0;
@@ -36,8 +36,8 @@ public class IntegrationTests
             await Task.Delay(1000);
             attempts++;
 
-            var tasksList = new List<ToDoTask>();
-            var observer = peer.ObserveTasksCollection(tasks =>
+            var tasksList = new List<TaskModel>();
+            var observer = tasksRepository.ObserveTasksCollection(tasks =>
             {
                 tasksList.AddRange(tasks);
                 return Task.CompletedTask;

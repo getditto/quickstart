@@ -20,6 +20,12 @@ subprojects {
 // breaks the manifest merger. Bump every Android subproject (notably
 // :ditto_live) to match.
 subprojects {
+    // :app sets its own minSdkVersion and is already evaluated (forced by
+    // evaluationDependsOn above); registering afterEvaluate on an already-
+    // evaluated project throws in Gradle 8.10. Skip it here — only plugin
+    // library subprojects (e.g. :ditto_live) need the bump.
+    if (project.name == 'app') return
+
     afterEvaluate { project ->
         if (project.plugins.hasPlugin('com.android.application') ||
                 project.plugins.hasPlugin('com.android.library')) {

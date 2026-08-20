@@ -7,8 +7,8 @@ a todo list that syncs between multiple peers.
 ## Getting Started
 
 To get started, you'll first need to create an app in the [Ditto Portal][0]
-with the "Online Playground" authentication type. You'll need to find your
-AppID and Online Playground Token, Auth URL, and Websocket URL in order to use this quickstart.
+with the "Development" authentication type. You'll need to find your
+Database ID, Development Token, and Server URL in order to use this quickstart.
 
 [0]: https://portal.ditto.live
 
@@ -17,18 +17,18 @@ Create a `.env` file in this directory with your Ditto credentials:
 ```bash
 # Create .env file
 cat > .env << 'EOF'
-DITTO_APP_ID=your-app-id
-DITTO_PLAYGROUND_TOKEN=your-playground-token
-DITTO_AUTH_URL=https://your-app-id.cloud.ditto.live
+DITTO_DATABASE_ID=your-database-id
+DITTO_DEVELOPMENT_TOKEN=your-development-token
+DITTO_SERVER_URL=https://your-server-url
 EOF
 ```
 
 Alternatively, you can set these as environment variables:
 
 ```bash
-export DITTO_APP_ID="your-app-id"
-export DITTO_PLAYGROUND_TOKEN="your-playground-token"
-export DITTO_AUTH_URL="https://your-app-id.cloud.ditto.live"
+export DITTO_DATABASE_ID="your-database-id"
+export DITTO_DEVELOPMENT_TOKEN="your-development-token"
+export DITTO_SERVER_URL="https://your-server-url"
 ```
 
 ## Building

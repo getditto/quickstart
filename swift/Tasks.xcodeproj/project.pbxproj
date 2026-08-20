@@ -425,7 +425,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = live.ditto.quickstart.Tasks;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -461,7 +461,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = live.ditto.quickstart.Tasks;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -478,7 +478,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = live.ditto.quickstart.TasksUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = Tasks;
 			};
@@ -496,7 +496,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = live.ditto.quickstart.TasksUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = Tasks;
 			};
@@ -540,7 +540,7 @@
 			repositoryURL = "https://github.com/getditto/DittoSwiftPackage";
 			requirement = {
 				kind = upToNextMinorVersion;
-				minimumVersion = 5.0.0;
+				minimumVersion = 5.0.3;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

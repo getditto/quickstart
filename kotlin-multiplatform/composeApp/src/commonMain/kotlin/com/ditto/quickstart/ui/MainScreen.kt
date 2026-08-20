@@ -50,7 +50,7 @@ fun MainScreen(
             topBar = {
                 TopBar(
                     isLoading = mainScreenState.isLoading,
-                    appId = mainScreenState.appId,
+                    databaseId = mainScreenState.databaseId,
                     appToken = mainScreenState.appToken,
                     isSyncEnabled = mainScreenState.isSyncEnabled,
                     onSyncChange = mainScreenViewModel::onSyncChange

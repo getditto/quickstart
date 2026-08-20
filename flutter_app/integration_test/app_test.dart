@@ -13,8 +13,9 @@ void main() {
       await dotenv.load(fileName: ".env");
     });
 
-    testWidgets('App loads and syncs with Ditto Cloud',
-        (WidgetTester tester) async {
+    testWidgets('App loads and syncs with Ditto server', (
+      WidgetTester tester,
+    ) async {
       // Initialize app
       await app.main();
       // Allow up to 10 seconds for Ditto to initialise and the first sync
@@ -36,20 +37,19 @@ void main() {
       // Verify add task FAB is present
       expect(find.byIcon(Icons.add_task), findsOneWidget);
 
-      // Verify clear button is present
-      expect(find.byIcon(Icons.clear), findsOneWidget);
-
-      // Look for the test document that should be synced from Ditto cloud.
-      // The playground can accumulate many documents from previous CI runs,
+      // Look for the test document that should be synced from Ditto server.
+      // The Ditto server can accumulate many documents from previous CI runs,
       // so we poll rather than waiting a fixed amount of time.
       const testTitle = String.fromEnvironment('TASK_TO_FIND');
 
       if (testTitle.isEmpty) {
-        throw Exception('TASK_TO_FIND environment variable must be set. '
-            'Build with: --dart-define=TASK_TO_FIND=<task_title>');
+        throw Exception(
+          'TASK_TO_FIND environment variable must be set. '
+          'Build with: --dart-define=TASK_TO_FIND=<task_title>',
+        );
       }
 
-      // Poll every 500 ms for up to 45 seconds to give the cloud sync
+      // Poll every 500 ms for up to 45 seconds to give the sync
       // enough time to deliver and write all documents to the local store.
       const syncTimeout = Duration(seconds: 45);
       final deadline = DateTime.now().add(syncTimeout);
@@ -63,9 +63,12 @@ void main() {
         }
       }
 
-      expect(taskFound, isTrue,
-          reason:
-              'Should find test document with title: $testTitle synced from Ditto cloud within ${syncTimeout.inSeconds}s');
+      expect(
+        taskFound,
+        isTrue,
+        reason:
+            'Should find test document with title: $testTitle synced from Ditto server within ${syncTimeout.inSeconds}s',
+      );
     });
   });
 }

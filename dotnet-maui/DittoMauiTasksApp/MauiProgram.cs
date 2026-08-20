@@ -4,16 +4,11 @@ using Microsoft.Extensions.Logging;
 
 using DittoMauiTasksApp.Utils;
 using DittoMauiTasksApp.ViewModels;
-using DittoSDK;
-using DittoSDK.Auth;
 
 namespace DittoMauiTasksApp;
 
 public static class MauiProgram
 {
-    public static string AppId { get; private set; } = "";
-    public static string PlaygroundToken { get; private set; } = "";
-
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
@@ -29,53 +24,28 @@ public static class MauiProgram
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
         builder.Logging.AddDebug();
 #endif
-        builder.Services.AddSingleton(SetupDitto());
+
+        var envVars = LoadEnvVariables();
+        var databaseId = envVars["DITTO_DATABASE_ID"];
+        var developmentToken = envVars["DITTO_DEVELOPMENT_TOKEN"];
+        var serverUrl = envVars["DITTO_SERVER_URL"];
+
+        // Create the Ditto instance and the tasks repository up front, then
+        // register them as singletons. Create() is synchronous under the hood,
+        // so resolving the Task here does not block.
+        var dittoManager = DittoManager
+            .Create(databaseId, developmentToken, serverUrl)
+            .GetAwaiter()
+            .GetResult();
+        var tasksRepository = new TasksRepository(dittoManager);
+
+        builder.Services.AddSingleton(dittoManager);
+        builder.Services.AddSingleton(tasksRepository);
         builder.Services.AddSingleton<IPopupService, PopupService>();
         builder.Services.AddTransient<TasksPageviewModel>();
         builder.Services.AddTransient<TasksPage>();
 
         return builder.Build();
-    }
-
-    private static Ditto SetupDitto()
-    {
-        var envVars = LoadEnvVariables();
-        AppId = envVars["DITTO_APP_ID"];
-        PlaygroundToken = envVars["DITTO_PLAYGROUND_TOKEN"];
-        var authUrl = envVars["DITTO_AUTH_URL"];
-
-        // New Initialization code - https://docs.ditto.live/sdk/latest/ditto-config
-        var dittoConfig = new DittoConfig(
-            AppId,
-            new DittoConfigConnect.Server(
-                new Uri(authUrl)
-                ),
-            Path.Combine(FileSystem.Current.AppDataDirectory, "ditto")
-            );
-
-        var ditto = Ditto.Open(dittoConfig);
-
-        // Set up authentication expiration handler (required for server connections)
-        ditto.Auth.ExpirationHandler = async (dittoAuth, secondsRemaining) =>
-        {
-            // Authenticate when token is expiring
-            try
-            {
-                await dittoAuth.Auth.LoginAsync(
-                    // Your development token, replace with your actual token
-                    PlaygroundToken,
-                    // Use DittoAuthenticationProvider.Development for playground, or your actual provider
-                    DittoAuthenticationProvider.Development
-                );
-                Console.WriteLine("Authentication successful");
-            }
-            catch (Exception error)
-            {
-                Console.WriteLine($"Authentication failed: {error}");
-            }
-        };
-
-        return ditto;
     }
 
     /// <summary>

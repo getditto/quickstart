@@ -17,9 +17,9 @@ fun loadEnvProperties(): Properties {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
         val requiredEnvVars = listOf(
-            "DITTO_APP_ID",
-            "DITTO_PLAYGROUND_TOKEN",
-            "DITTO_AUTH_URL"
+            "DITTO_DATABASE_ID",
+            "DITTO_DEVELOPMENT_TOKEN",
+            "DITTO_SERVER_URL"
         )
         
         for (envVar in requiredEnvVars) {
@@ -35,9 +35,9 @@ androidComponents {
     onVariants {
         val prop = loadEnvProperties()
         val buildConfigFields = mapOf(
-            "DITTO_APP_ID" to "Ditto application ID",
-            "DITTO_PLAYGROUND_TOKEN" to "Ditto playground token",
-            "DITTO_AUTH_URL" to "Ditto authentication URL",
+            "DITTO_DATABASE_ID" to "Ditto database ID",
+            "DITTO_DEVELOPMENT_TOKEN" to "Ditto development token",
+            "DITTO_SERVER_URL" to "Ditto server URL",
             "TEST_DOCUMENT_TITLE" to "Test document title for BrowserStack verification"
         )
         

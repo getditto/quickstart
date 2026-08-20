@@ -1,6 +1,6 @@
 package com.ditto.quickstart.data
 
 data class DittoCredentials(
-    val appId: String,
+    val databaseId: String,
     val appToken: String
 )

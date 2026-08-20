@@ -33,7 +33,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             statusStrip1 = new StatusStrip();
-            tsslAppId = new ToolStripStatusLabel();
+            tsslDatabaseId = new ToolStripStatusLabel();
             tsslAuthToken = new ToolStripStatusLabel();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
@@ -68,19 +68,19 @@
             // 
             // statusStrip1
             // 
-            statusStrip1.Items.AddRange(new ToolStripItem[] { tsslAppId, tsslAuthToken });
+            statusStrip1.Items.AddRange(new ToolStripItem[] { tsslDatabaseId, tsslAuthToken });
             statusStrip1.Location = new Point(0, 707);
             statusStrip1.Name = "statusStrip1";
             statusStrip1.Size = new Size(1008, 22);
             statusStrip1.TabIndex = 0;
             statusStrip1.Text = "statusStrip1";
             // 
-            // tsslAppId
+            // tsslDatabaseId
             // 
-            tsslAppId.Name = "tsslAppId";
-            tsslAppId.Padding = new Padding(0, 0, 40, 0);
-            tsslAppId.Size = new Size(82, 17);
-            tsslAppId.Text = "AppId:";
+            tsslDatabaseId.Name = "tsslDatabaseId";
+            tsslDatabaseId.Padding = new Padding(0, 0, 40, 0);
+            tsslDatabaseId.Size = new Size(82, 17);
+            tsslDatabaseId.Text = "Database ID:";
             // 
             // tsslAuthToken
             // 
@@ -334,7 +334,7 @@
         #endregion
 
         private StatusStrip statusStrip1;
-        private ToolStripStatusLabel tsslAppId;
+        private ToolStripStatusLabel tsslDatabaseId;
         private ToolStripStatusLabel tsslAuthToken;
         private MenuStrip menuStrip1;
         private ToolStripMenuItem fileToolStripMenuItem;

@@ -1,6 +1,6 @@
 package com.ditto.example.spring.quickstart.controller;
 
-import com.ditto.example.spring.quickstart.service.DittoTaskService;
+import com.ditto.example.spring.quickstart.service.TasksRepository;
 import com.ditto.example.spring.quickstart.service.Task;
 import jakarta.annotation.Nonnull;
 import org.jetbrains.annotations.NotNull;
@@ -16,15 +16,15 @@ import java.util.Map;
 @Controller
 public class TaskContentController {
     @Nonnull
-    private final DittoTaskService taskService;
+    private final TasksRepository tasksRepository;
 
-    public TaskContentController(@NotNull final DittoTaskService taskService) {
-        this.taskService = taskService;
+    public TaskContentController(@NotNull final TasksRepository tasksRepository) {
+        this.tasksRepository = tasksRepository;
     }
 
     @GetMapping("/")
     public String index(Map<String, Object> model) {
-        List<Task> tasks = taskService.observeAll().blockFirst();
+        List<Task> tasks = tasksRepository.observeAll().blockFirst();
         model.put("tasks",  tasks != null ? tasks : Collections.emptyList());
         return "index";
     }

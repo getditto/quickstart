@@ -19,11 +19,11 @@ namespace Taskapp.WinForms.Net48
                 // Load configuration from .env file
                 AppConfiguration.Load();
 
-                // Initialize TasksPeerService asynchronously
-                var initTask = TasksPeerService.Instance.InitializeAsync(
-                    AppConfiguration.AppId,
-                    AppConfiguration.PlaygroundToken,
-                    AppConfiguration.AuthUrl
+                // Initialize AppServices asynchronously
+                var initTask = AppServices.Instance.InitializeAsync(
+                    AppConfiguration.DatabaseId,
+                    AppConfiguration.DevelopmentToken,
+                    AppConfiguration.ServerUrl
                 );
 
                 // Show loading form while initializing
@@ -58,9 +58,9 @@ namespace Taskapp.WinForms.Net48
             finally
             {
                 // Cleanup on exit
-                if (TasksPeerService.Instance.IsInitialized)
+                if (AppServices.Instance.IsInitialized)
                 {
-                    TasksPeerService.Instance.Dispose();
+                    AppServices.Instance.Dispose();
                 }
             }
         }

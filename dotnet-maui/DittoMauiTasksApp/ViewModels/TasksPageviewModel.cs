@@ -1,45 +1,56 @@
-﻿
+
 using System.Collections.ObjectModel;
-using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DittoMauiTasksApp.Utils;
 using DittoSDK;
+using DittoSDK.Store;
 using DittoSDK.Sync;
 using Microsoft.Extensions.Logging;
 
 namespace DittoMauiTasksApp.ViewModels
 {
-    public partial class TasksPageviewModel : ObservableObject
+    public partial class TasksPageviewModel : ObservableObject, IDisposable
     {
-        private const string SelectQuery = "SELECT * FROM tasks WHERE NOT deleted";
-
-        private readonly Ditto ditto;
+        private readonly DittoManager dittoManager;
+        private readonly TasksRepository tasksRepository;
         private readonly IPopupService popupService;
         private readonly ILogger<TasksPageviewModel> logger;
-        private DittoSyncSubscription syncSubscription;
+        private DittoStoreObserver tasksObserver;
+        // Registration runs on the permissions-task continuation (thread-pool thread)
+        // while Dispose() runs on MAUI's page teardown, so the disposed flag and the
+        // observer handoff are guarded by this lock to make the check-and-store atomic.
+        private readonly object observerGate = new();
+        private bool disposed;
 
-        public string AppIdText { get; } = $"App ID: {MauiProgram.AppId}";
-        public string TokenText { get; } = $"Token: {MauiProgram.PlaygroundToken}";
+        public string DatabaseIdText { get; }
+        public string TokenText { get; }
 
         [ObservableProperty]
-        ObservableCollection<DittoTask> tasks;
+        ObservableCollection<TaskModel> tasks;
 
         [ObservableProperty]
         private bool isSyncEnabled = true;
 
         public TasksPageviewModel(
-            Ditto ditto, IPopupService popupService, ILogger<TasksPageviewModel> logger)
+            DittoManager dittoManager,
+            TasksRepository tasksRepository,
+            IPopupService popupService,
+            ILogger<TasksPageviewModel> logger)
         {
-            this.ditto = ditto;
+            this.dittoManager = dittoManager;
+            this.tasksRepository = tasksRepository;
             this.popupService = popupService;
             this.logger = logger;
+
+            DatabaseIdText = $"Database ID: {dittoManager.DatabaseId}";
+            TokenText = $"Token: {dittoManager.DevelopmentToken}";
+
 #if WINDOWS
                 try
                 {
-                    Task.Run(async () =>
+                    Task.Run(() =>
                     {
-                        await InsertInitialTasks();
                         ObserveDittoTasksCollection();
                         StartSync();
 
@@ -51,11 +62,10 @@ namespace DittoMauiTasksApp.ViewModels
                 }
 #else
 
-            DittoSyncPermissions.RequestPermissionsAsync().ContinueWith(async t =>
+            DittoSyncPermissions.RequestPermissionsAsync().ContinueWith(t =>
             {
                 try
                 {
-                    await InsertInitialTasks();
                     ObserveDittoTasksCollection();
                     StartSync();
                 }
@@ -65,56 +75,6 @@ namespace DittoMauiTasksApp.ViewModels
                 }
             });
 #endif
-        }
-        private async Task InsertInitialTasks()
-        {
-            try
-            {
-                var initialTasks = new List<Dictionary<string, object>>
-                {
-                    new Dictionary<string, object>
-                    {
-                        {"_id", "50191411-4C46-4940-8B72-5F8017A04FA7"},
-                        {"title", "Buy groceries"},
-                        {"done", false},
-                        {"deleted", false}
-                    },
-                    new Dictionary<string, object>
-                    {
-                        {"_id", "6DA283DA-8CFE-4526-A6FA-D385089364E5"},
-                        {"title", "Clean the kitchen"},
-                        {"done", false},
-                        {"deleted", false}
-                    },
-                    new Dictionary<string, object>
-                    {
-                        {"_id", "5303DDF8-0E72-4FEB-9E82-4B007E5797F0"},
-                        {"title", "Schedule dentist appointment"},
-                        {"done", false},
-                        {"deleted", false}
-                    },
-                    new Dictionary<string, object>
-                    {
-                        {"_id", "38411F1B-6B49-4346-90C3-0B16CE97E174"},
-                        {"title", "Pay bills"},
-                        {"done", false},
-                        {"deleted", false}
-                    }
-                };
-
-                var insertCommand = "INSERT INTO tasks INITIAL DOCUMENTS (:task)";
-                foreach (var task in initialTasks)
-                {
-                    await ditto.Store.ExecuteAsync(insertCommand, new Dictionary<string, object>()
-                    {
-                        { "task", task }
-                    });
-                }
-            }
-            catch (Exception e)
-            {
-                logger.LogError($"TasksPageviewModel: Error adding initial tasks: {e.Message}");
-            }
         }
 
         [RelayCommand]
@@ -132,17 +92,7 @@ namespace DittoMauiTasksApp.ViewModels
                 }
                 title.Trim();
 
-                var doc = new Dictionary<string, object>
-                {
-                    {"title", title},
-                    {"done", false},
-                    {"deleted", false }
-                };
-                var insertCommand = "INSERT INTO tasks DOCUMENTS (:doc)";
-                await ditto.Store.ExecuteAsync(insertCommand, new Dictionary<string, object>()
-                {
-                    { "doc", doc }
-                });
+                await tasksRepository.AddTask(title);
             }
             catch (Exception e)
             {
@@ -151,7 +101,7 @@ namespace DittoMauiTasksApp.ViewModels
         }
 
         [RelayCommand]
-        private async Task EditTaskAsync(DittoTask task)
+        private async Task EditTaskAsync(TaskModel task)
         {
             try
             {
@@ -166,14 +116,7 @@ namespace DittoMauiTasksApp.ViewModels
                 }
                 newTitle.Trim();
 
-                var updateQuery = "UPDATE tasks " +
-                    "SET title = :title " +
-                    "WHERE _id = :id";
-                await ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>()
-                {
-                    {"title", newTitle},
-                    {"id", task.Id}
-                });
+                await tasksRepository.UpdateTaskTitle(task.Id, newTitle);
             }
             catch (Exception e)
             {
@@ -182,17 +125,11 @@ namespace DittoMauiTasksApp.ViewModels
         }
 
         [RelayCommand]
-        private void DeleteTask(DittoTask task)
+        private void DeleteTask(TaskModel task)
         {
             try
             {
-                var updateQuery = "UPDATE tasks " +
-                    "SET deleted = true " +
-                    "WHERE _id = :id";
-                ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>()
-                {
-                    { "id", task.Id }
-                });
+                _ = tasksRepository.DeleteTask(task.Id);
             }
             catch (Exception e)
             {
@@ -201,7 +138,7 @@ namespace DittoMauiTasksApp.ViewModels
         }
 
         [RelayCommand]
-        private Task UpdateTaskDoneAsync(DittoTask task)
+        private Task UpdateTaskDoneAsync(TaskModel task)
         {
             try
             {
@@ -220,16 +157,7 @@ namespace DittoMauiTasksApp.ViewModels
                 {
                     try
                     {
-                        // Update the task done state only if it has changed, to
-                        // avoid unnecessary calls to the store observer callback.
-                        var updateQuery = "UPDATE tasks " +
-                            "SET done = :newDoneState " +
-                            "WHERE _id = :id AND done != :newDoneState";
-                        var result = await ditto.Store.ExecuteAsync(updateQuery, new Dictionary<string, object>
-                        {
-                            { "newDoneState", newDoneState },
-                            { "id", taskId }
-                        });
+                        await tasksRepository.UpdateTaskDone(taskId, newDoneState);
                     }
                     catch (Exception e)
                     {
@@ -248,41 +176,68 @@ namespace DittoMauiTasksApp.ViewModels
         {
             // Register observer, which runs against the local database on this peer
             // https://docs.ditto.live/sdk/latest/crud/observing-data-changes#setting-up-store-observers
-            ditto.Store.RegisterObserver(SelectQuery, async (queryResult) =>
+            var observer = tasksRepository.ObserveTasksCollection(newTasks =>
             {
-                try
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    var newTasks = queryResult.Items.Select(d =>
-                        JsonSerializer.Deserialize<DittoTask>(d.JsonString())
-                    ).ToList();
-
-                    MainThread.BeginInvokeOnMainThread(() =>
+                    try
                     {
-                        try
+                        if (Tasks == null)
                         {
-                            if (Tasks == null)
-                            {
-                                Tasks = new ObservableCollection<DittoTask>(newTasks);
-                            }
-                            else
-                            {
-                                UpdateTasks(newTasks);
-                            }
+                            Tasks = new ObservableCollection<TaskModel>(newTasks);
                         }
-                        catch (Exception e)
+                        else
                         {
-                            logger.LogError($"TasksPageviewModel: Error: Unable to update list view model: {e.Message}");
+                            UpdateTasks(newTasks);
                         }
-                    });
-                }
-                catch (Exception e)
-                {
-                    logger.LogError($"TasksPageviewModel: Error: Unable to process tasks collection change: {e.Message}");
-                }
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogError($"TasksPageviewModel: Error: Unable to update list view model: {e.Message}");
+                    }
+                });
+
+                return Task.CompletedTask;
             });
+
+            // Hand the observer off (or, if Dispose() already ran, cancel the just-created
+            // one so it isn't leaked) atomically with respect to Dispose().
+            lock (observerGate)
+            {
+                if (!disposed)
+                {
+                    tasksObserver = observer;
+                    return;
+                }
+            }
+
+            observer.Cancel();
+            observer.Dispose();
         }
 
-        private void UpdateTasks(List<DittoTask> newTasks)
+        public void Dispose()
+        {
+            DittoStoreObserver observer;
+            lock (observerGate)
+            {
+                if (disposed)
+                {
+                    return;
+                }
+                disposed = true;
+                observer = tasksObserver;
+                tasksObserver = null;
+            }
+
+            // Cancel and dispose the store observer so its Ditto callback is not leaked when
+            // this view model goes away. The sync subscription is owned by the singleton
+            // TasksRepository (registered in MauiProgram), not this view model, so it is
+            // intentionally left alone here.
+            observer?.Cancel();
+            observer?.Dispose();
+        }
+
+        private void UpdateTasks(IList<TaskModel> newTasks)
         {
             var oldCount = Tasks.Count;
             var newCount = newTasks.Count;
@@ -330,11 +285,7 @@ namespace DittoMauiTasksApp.ViewModels
         {
             try
             {
-                ditto.Sync.Start();
-
-                // Register a subscription, which determines what data syncs to this peer
-                // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-                syncSubscription = ditto.Sync.RegisterSubscription(SelectQuery);
+                dittoManager.StartSync();
             }
             catch (Exception e)
             {
@@ -344,22 +295,9 @@ namespace DittoMauiTasksApp.ViewModels
 
         private void StopSync()
         {
-            if (syncSubscription != null)
-            {
-                try
-                {
-                    syncSubscription.Cancel();
-                }
-                catch (Exception e)
-                {
-                    logger.LogError($"TasksPageviewModel: Error cancelling sync subscription: {e.Message}");
-                }
-                syncSubscription = null;
-            }
-
             try
             {
-                ditto.Sync.Stop();
+                dittoManager.StopSync();
             }
             catch (Exception e)
             {

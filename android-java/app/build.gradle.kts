@@ -16,9 +16,9 @@ fun loadEnvProperties(): Properties {
         FileInputStream(envFile).use { properties.load(it) }
     } else {
         val requiredEnvVars = listOf(
-            "DITTO_APP_ID",
-            "DITTO_PLAYGROUND_TOKEN",
-            "DITTO_AUTH_URL"
+            "DITTO_DATABASE_ID",
+            "DITTO_DEVELOPMENT_TOKEN",
+            "DITTO_SERVER_URL"
         )
 
         for (envVar in requiredEnvVars) {
@@ -30,8 +30,8 @@ fun loadEnvProperties(): Properties {
     return properties
 }
 
-// Define BuildConfig.DITTO_APP_ID, BuildConfig.DITTO_PLAYGROUND_TOKEN,
-// and BuildConfig.DITTO_AUTH_URL based on values in the .env file
+// Define BuildConfig.DITTO_DATABASE_ID, BuildConfig.DITTO_DEVELOPMENT_TOKEN,
+// and BuildConfig.DITTO_SERVER_URL based on values in the .env file
 //
 // More information can be found here:
 // https://docs.ditto.live/sdk/latest/install-guides/java/android#integrating-and-initializing
@@ -43,28 +43,28 @@ androidComponents {
     onVariants {
         val prop = loadEnvProperties()
         it.buildConfigFields.put(
-            "DITTO_APP_ID",
+            "DITTO_DATABASE_ID",
             BuildConfigField(
                 "String",
-                "\"${envValue(prop, "DITTO_APP_ID")}\"",
-                "Ditto application ID"
+                "\"${envValue(prop, "DITTO_DATABASE_ID")}\"",
+                "Ditto database ID"
             )
         )
         it.buildConfigFields.put(
-            "DITTO_PLAYGROUND_TOKEN",
+            "DITTO_DEVELOPMENT_TOKEN",
             BuildConfigField(
                 "String",
-                "\"${envValue(prop, "DITTO_PLAYGROUND_TOKEN")}\"",
-                "Ditto online playground authentication token"
+                "\"${envValue(prop, "DITTO_DEVELOPMENT_TOKEN")}\"",
+                "Ditto development authentication token"
             )
         )
 
         it.buildConfigFields.put(
-            "DITTO_AUTH_URL",
+            "DITTO_SERVER_URL",
             BuildConfigField(
                 "String",
-                "\"${envValue(prop, "DITTO_AUTH_URL")}\"",
-                "Ditto Auth URL"
+                "\"${envValue(prop, "DITTO_SERVER_URL")}\"",
+                "Ditto Server URL"
             )
         )
     }

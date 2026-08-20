@@ -1,13 +1,15 @@
 package com.ditto.quickstart.data.repository
 
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import com.ditto.quickstart.data.Task
 import com.ditto.quickstart.data.dto.AddTaskDto
 import com.ditto.quickstart.data.dto.UpdateTaskDoneDto
 import com.ditto.quickstart.data.dto.UpdateTaskTitleDto
 
 interface TaskRepository {
-    val tasksStateFlow: StateFlow<List<Task>>
+    // Emits the visible task list (soft-deleted tasks excluded) and re-emits whenever
+    // the local store changes.
+    fun observeTasks(): Flow<List<Task>>
 
     suspend fun getTask(taskId: String): Task?
     suspend fun addTask(addTaskDto: AddTaskDto)

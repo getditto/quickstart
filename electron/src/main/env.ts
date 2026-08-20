@@ -4,21 +4,20 @@ import { resolve } from 'node:path';
 dotenv.config({ path: resolve(process.cwd(), '..', '.env') });
 
 export const env = {
-  appId: process.env.DITTO_APP_ID ?? '',
-  token: process.env.DITTO_PLAYGROUND_TOKEN ?? '',
-  authUrl: process.env.DITTO_AUTH_URL ?? '',
-  websocketUrl: process.env.DITTO_WEBSOCKET_URL ?? '',
+  databaseId: process.env.DITTO_DATABASE_ID ?? '',
+  token: process.env.DITTO_DEVELOPMENT_TOKEN ?? '',
+  serverUrl: process.env.DITTO_SERVER_URL ?? '',
 };
 
 export function assertEnv(): void {
-  const missing = (
-    ['appId', 'token', 'authUrl', 'websocketUrl'] as const
-  ).filter((k) => !env[k]);
+  const missing = (['databaseId', 'token', 'serverUrl'] as const).filter(
+    (k) => !env[k],
+  );
   if (missing.length > 0) {
     throw new Error(
       `Missing required env vars: ${missing.join(', ')}. ` +
-        `Copy .env.sample to .env at the repo root and fill in DITTO_APP_ID, ` +
-        `DITTO_PLAYGROUND_TOKEN, DITTO_AUTH_URL, DITTO_WEBSOCKET_URL.`,
+        `Copy .env.sample to .env at the repo root and fill in DITTO_DATABASE_ID, ` +
+        `DITTO_DEVELOPMENT_TOKEN, DITTO_SERVER_URL.`,
     );
   }
 }

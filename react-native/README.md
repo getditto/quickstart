@@ -5,18 +5,18 @@
 
 # Ditto Task Sync App
 
-A sample React Native application that lets you create tasks and sync them with the Ditto Cloud via OnlinePlayground authentication. This example is built according to the [official Ditto installation guide for React Native](https://docs.ditto.live/install-guides/react-native).
+A sample React Native application that lets you create tasks and sync them with the Ditto server via Development authentication. This example is built according to the [official Ditto installation guide for React Native](https://docs.ditto.live/install-guides/react-native).
 
 ## Documentation
 
 - [React Native Install Guide](https://docs.ditto.live/sdk/latest/install-guides/react-native)
-- [Javascript/React Native API Reference](https://software.ditto.live/js/Ditto/4.12.0/api-reference/)
+- [Javascript/React Native API Reference](https://docs.ditto.live/sdk/latest/api-reference/js)
 - [Javascript/React Native Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
 ## Prerequisites
 
 - **Ditto Portal Account**: Ensure you have a Ditto account. Sign up [here](https://portal.ditto.live/signup).
-- **App Credentials**: After registration, create an application within the Ditto Portal to obtain your `AppID`, `Online Playground Token`, and `Auth URL`. Visit the [Ditto Portal](https://portal.ditto.live/) to manage your applications.
+- **App Credentials**: After registration, create an application within the Ditto Portal to obtain your `Database ID`, `Development Token`, and `Server URL`. Visit the [Ditto Portal](https://portal.ditto.live/) to manage your applications.
 
 ### Build Tool Requirements
 

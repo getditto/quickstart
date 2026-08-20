@@ -38,7 +38,7 @@ class TaskListScreenViewModel(
         )
 
     private fun observerTasksChanges() {
-        taskRepository.tasksStateFlow
+        taskRepository.observeTasks()
             .onEach { _state.value = _state.value.copy(tasks = it) }
             .launchIn(viewModelScope)
     }

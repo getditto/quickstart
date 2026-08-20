@@ -7,23 +7,25 @@ namespace DittoTasksApp
     public partial class MainForm : Form
     {
 
-        private readonly TasksPeer _tasksPeer;
+        private readonly DittoManager _dittoManager;
+        private readonly TasksRepository _tasksRepository;
         private DittoStoreObserver _tasksObserver;
 
         private bool _isSyncEnabled = true;
         private readonly string _imageSyncOn = "assets/sync-on.bmp";
         private readonly string _imageSyncOff = "assets/sync-off.bmp";
 
-        public MainForm(TasksPeer tasksPeer)
+        public MainForm(DittoManager dittoManager, TasksRepository tasksRepository)
         {
-            _tasksPeer = tasksPeer;
-            _tasksPeer.StartSync();
+            _dittoManager = dittoManager;
+            _tasksRepository = tasksRepository;
+            _dittoManager.StartSync();
 
             InitializeComponent();
             SetFormValues();
 
             // Observe the tasks collection
-            _tasksObserver = _tasksPeer.ObserveTasksCollection(async (tasks) =>
+            _tasksObserver = _tasksRepository.ObserveTasksCollection(async (tasks) =>
             {
                 // Update the ListView on the UI thread
                 Invoke(() => UpdateTaskListView(tasks));
@@ -32,8 +34,8 @@ namespace DittoTasksApp
 
         private void SetFormValues()
         {
-            tsslAppId.Text = $"AppId: {_tasksPeer.AppId}";
-            tsslAuthToken.Text = $"Online Playground Token: {_tasksPeer.PlaygroundToken}";
+            tsslDatabaseId.Text = $"Database ID: {_dittoManager.DatabaseId}";
+            tsslAuthToken.Text = $"Development Token: {_dittoManager.DevelopmentToken}";
 
             tsbSyncStatus.Image = Image.FromFile(_imageSyncOn);
 
@@ -41,13 +43,13 @@ namespace DittoTasksApp
 
         private void LoadAddForm()
         {
-            var editorForm = new ToDoTaskEditorForm(_tasksPeer, null);
+            var editorForm = new TaskEditorForm(_tasksRepository, null);
             editorForm.Owner = this;
             editorForm.ShowDialog();
 
         }
 
-        private void UpdateTaskListView(IList<ToDoTask?> tasks)
+        private void UpdateTaskListView(IList<TaskModel?> tasks)
         {
             lvTasks.BeginUpdate();
             lvTasks.Items.Clear();
@@ -74,8 +76,8 @@ namespace DittoTasksApp
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _tasksObserver.Cancel();
-            _tasksPeer.StopSync();
-            _tasksPeer.Dispose();
+            _dittoManager.StopSync();
+            _dittoManager.Dispose();
 
             Application.Exit();
         }
@@ -83,7 +85,7 @@ namespace DittoTasksApp
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var aboutForm = new AboutForm(_tasksPeer);
+            var aboutForm = new AboutForm(_dittoManager);
             aboutForm.Owner = this;
             aboutForm.ShowDialog();
         }
@@ -100,10 +102,10 @@ namespace DittoTasksApp
 
         private void tsbEdit_Click(object sender, EventArgs e)
         {
-            var todoItem = (ToDoTask?)lvTasks.CheckedItems[0].Tag;
+            var todoItem = (TaskModel?)lvTasks.CheckedItems[0].Tag;
             if (todoItem != null)
             {
-                var editForm = new ToDoTaskEditorForm(_tasksPeer, todoItem);
+                var editForm = new TaskEditorForm(_tasksRepository, todoItem);
                 editForm.Owner = this;
                 editForm.ShowDialog();
             }
@@ -113,10 +115,10 @@ namespace DittoTasksApp
         {
             foreach (ListViewItem item in lvTasks.CheckedItems)
             {
-                var task = (ToDoTask?)item.Tag;
+                var task = (TaskModel?)item.Tag;
                 if (task != null)
                 {
-                    await _tasksPeer.UpdateTaskDone(task.Id, !task.Done);
+                    await _tasksRepository.UpdateTaskDone(task.Id, !task.Done);
                 }
             }
         }
@@ -125,10 +127,10 @@ namespace DittoTasksApp
         {
             foreach (ListViewItem item in lvTasks.CheckedItems)
             {
-                var task = (ToDoTask?)item.Tag;
+                var task = (TaskModel?)item.Tag;
                 if (task != null)
                 {
-                    await _tasksPeer.DeleteTask(task.Id);
+                    await _tasksRepository.DeleteTask(task.Id);
                 }
             }
 
@@ -140,12 +142,12 @@ namespace DittoTasksApp
             if (_isSyncEnabled)
             {
                 tsbSyncStatus.Image = Image.FromFile(_imageSyncOn);
-                _tasksPeer.StartSync();
+                _dittoManager.StartSync();
             }
             else
             {
                 tsbSyncStatus.Image = Image.FromFile(_imageSyncOff);
-                _tasksPeer.StopSync();
+                _dittoManager.StopSync();
             }
 
         }

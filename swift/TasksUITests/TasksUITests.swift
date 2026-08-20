@@ -99,13 +99,13 @@ final class TasksUITests: XCTestCase {
         let finalElapsed = Date().timeIntervalSince(start)
         if found {
             print("🎉 SUCCESS: Found exact GitHub-seeded document '\(expectedTitle)' after \(String(format: "%.1f", finalElapsed))s")
-            print("✅ This proves GitHub Actions → Ditto Cloud → BrowserStack sync is working!")
+            print("✅ This proves GitHub Actions → Ditto server → BrowserStack sync is working!")
             print("🏆 Inverted timestamp ensured document appeared at top of list!")
         } else {
             print("❌ FAILURE: Exact document '\(expectedTitle)' not found after \(String(format: "%.1f", finalElapsed))s")
             print("💡 This means either:")
             print("   1. GitHub Actions didn't seed the document")
-            print("   2. Ditto Cloud sync is not working")
+            print("   2. Ditto server sync is not working")
             print("   3. Environment variable DITTO_CLOUD_TASK_TITLE is incorrect")
         }
 

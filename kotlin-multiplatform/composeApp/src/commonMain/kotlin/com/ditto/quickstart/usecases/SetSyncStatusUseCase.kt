@@ -1,7 +1,7 @@
 package com.ditto.quickstart.usecases
 
+import com.ditto.kotlin.DittoException
 import com.ditto.kotlin.DittoLog
-import com.ditto.kotlin.error.DittoError
 import com.ditto.quickstart.data.repository.PreferenceRepository
 import com.ditto.quickstart.ditto.DittoManager
 
@@ -25,7 +25,7 @@ class SetSyncStatusUseCase(
     private suspend fun enableSync(): Boolean {
         try {
             dittoManager.startSync()
-        } catch (e: DittoError) {
+        } catch (e: DittoException) {
             DittoLog.e(TAG, "Failed to start sync: $e")
             return false
         }
@@ -43,7 +43,7 @@ class SetSyncStatusUseCase(
     private suspend fun disableSync(): Boolean {
         try {
             dittoManager.stopSync()
-        } catch (e: DittoError) {
+        } catch (e: DittoException) {
             DittoLog.e(TAG, "Failed to stop sync: $e")
             return false
         }

@@ -88,7 +88,8 @@ if(BUILD_TESTS)
   add_executable(integration_test
     tests/integration_test.cpp
     src/task.cpp
-    src/tasks_peer.cpp
+    src/ditto_manager.cpp
+    src/tasks_repository.cpp
     src/tasks_log.cpp
   )
   target_include_directories(integration_test PRIVATE src sdk third_party/cxxopts/include)

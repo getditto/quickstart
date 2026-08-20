@@ -1,17 +1,19 @@
-use anyhow::{Context, Result, anyhow};
+use std::{io::Stdout, ops::ControlFlow, sync::Arc, time::Duration};
+
+use anyhow::{anyhow, Context, Result};
 use crossterm::event::{Event, EventStream};
-use dittolive_ditto::prelude::*;
 use futures::{FutureExt, Stream, StreamExt};
 use ratatui::prelude::*;
-use std::{io::Stdout, ops::ControlFlow, time::Duration};
 use tokio::task::JoinHandle;
 
-use crate::{Shutdown, should_quit};
+use crate::{ditto_manager::DittoManager, should_quit, Shutdown};
 
 pub mod todolist;
 
 // Re-export for integration tests
-pub use todolist::{TodoItem, Todolist};
+pub use todolist::Todolist;
+
+pub use crate::tasks_repository::Task;
 
 /// External handle for callers to interact with the tui task
 pub struct TuiTask {
@@ -25,11 +27,10 @@ impl TuiTask {
     pub fn try_spawn(
         shutdown: Shutdown,
         terminal: Terminal<CrosstermBackend<Stdout>>,
-        ditto: Ditto,
-        websocket_url: String,
+        manager: Arc<DittoManager>,
         client_name: Option<String>,
     ) -> Result<TuiTask> {
-        let todolist_state = Todolist::new(ditto, websocket_url, client_name)?;
+        let todolist_state = Todolist::new(manager, client_name)?;
         let task_context = TuiContext {
             terminal,
             shutdown,

@@ -3,8 +3,17 @@ package com.ditto.example.spring.quickstart;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.junit.jupiter.api.*;
-import org.openqa.selenium.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.Timeout;
+import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -143,8 +152,8 @@ class TaskVisibilityIntegrationTest {
         wait.until(ExpectedConditions.titleContains("Ditto"));
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("input[placeholder*='Task']")));
 
-        // Enable sync if disabled
-        enableSyncIfDisabled();
+        // Sync must be enabled out of the box — assert it rather than repairing the state.
+        assertSyncEnabledOnLoad();
 
         // Wait for tasks to load
         try {
@@ -178,28 +187,17 @@ class TaskVisibilityIntegrationTest {
         }
     }
 
-    private void enableSyncIfDisabled() {
+    private void assertSyncEnabledOnLoad() {
+        // The app must sync out of the box: once the real state is streamed in, the
+        // control reports "Sync State: Enabled" without any interaction. This also
+        // proves the rendered control reflects the actual state (the initial HTML is
+        // a neutral placeholder, not a hard-coded state). Do NOT repair the state
+        // here — if sync starts disabled this must fail.
         try {
-            // Use CSS selector for more reliable element location
-            List<WebElement> allElements = driver.findElements(By.cssSelector("*"));
-
-            for (WebElement element : allElements) {
-                String text = element.getText();
-                if (text.contains("Sync State: false")) {
-                    // Find toggle button using CSS selector instead of XPath
-                    List<WebElement> buttons = driver.findElements(By.cssSelector("button"));
-                    for (WebElement button : buttons) {
-                        if ("Toggle".equals(button.getText().trim())) {
-                            button.click();
-                            Thread.sleep(2000);
-                            return;
-                        }
-                    }
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Warning: Could not enable sync: " + e.getMessage());
+            wait.until(d -> d.getPageSource().contains("Sync State: Enabled"));
+        } catch (TimeoutException e) {
+            Assertions.fail("Sync should be enabled on initial load (\"Sync State: Enabled\"), "
+                    + "but it was not. The quickstart must sync out of the box.");
         }
     }
 
