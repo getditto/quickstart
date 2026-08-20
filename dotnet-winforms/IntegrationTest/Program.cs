@@ -59,8 +59,19 @@ class Program
                 return 1;
             }
 
-            var serverUrl = envVars.GetValueOrDefault("DITTO_SERVER_URL", "https://auth.cloud.ditto.live");
-            var offlineLicenseToken = envVars.GetValueOrDefault("DITTO_OFFLINE_LICENSE_TOKEN", "");
+            var offlineLicenseToken = envVars.GetValueOrDefault("DITTO_OFFLINE_LICENSE_TOKEN", "").Trim();
+
+            // A server URL is required, except in offline-only mode: there the license
+            // token replaces server auth and the URL is never read.
+            if (!envVars.TryGetValue("DITTO_SERVER_URL", out var serverUrl) || string.IsNullOrEmpty(serverUrl))
+            {
+                if (string.IsNullOrEmpty(offlineLicenseToken))
+                {
+                    Console.WriteLine("❌ Missing DITTO_SERVER_URL in .env file");
+                    return 1;
+                }
+                serverUrl = "";
+            }
 
             Console.WriteLine($"📡 Connecting to Ditto (Database ID: {databaseId})");
 

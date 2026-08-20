@@ -28,7 +28,7 @@ From the repo root, copy the `.env.sample` file to `.env`, and fill in the
 fields with your Database ID and Development Token:
 
 ```
-cp .sample.env .env
+cp .env.sample .env
 ```
 
 The `.env` file should look like this (with your fields filled in):
