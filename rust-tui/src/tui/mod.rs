@@ -1,12 +1,12 @@
 use std::{io::Stdout, ops::ControlFlow, sync::Arc, time::Duration};
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use crossterm::event::{Event, EventStream};
 use futures::{FutureExt, Stream, StreamExt};
 use ratatui::prelude::*;
 use tokio::task::JoinHandle;
 
-use crate::{Shutdown, ditto_manager::DittoManager, should_quit};
+use crate::{ditto_manager::DittoManager, should_quit, Shutdown};
 
 pub mod todolist;
 

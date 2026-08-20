@@ -49,9 +49,9 @@ namespace DittoTasksApp
             btnClose = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
-            //
+            // 
             // pictureBox1
-            //
+            // 
             pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
             pictureBox1.Location = new Point(12, 12);
@@ -60,9 +60,9 @@ namespace DittoTasksApp
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.TabIndex = 0;
             pictureBox1.TabStop = false;
-            //
+            // 
             // llDittoDocs
-            //
+            // 
             llDittoDocs.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             llDittoDocs.AutoSize = true;
             llDittoDocs.Location = new Point(12, 132);
@@ -72,9 +72,9 @@ namespace DittoTasksApp
             llDittoDocs.TabStop = true;
             llDittoDocs.Text = "Ditto Quickstart - Tasks App";
             llDittoDocs.LinkClicked += llDittoDocs_LinkClicked;
-            //
+            // 
             // lblSDKVersionText
-            //
+            // 
             lblSDKVersionText.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblSDKVersionText.AutoSize = true;
             lblSDKVersionText.Location = new Point(12, 158);
@@ -82,18 +82,18 @@ namespace DittoTasksApp
             lblSDKVersionText.Size = new Size(101, 15);
             lblSDKVersionText.TabIndex = 2;
             lblSDKVersionText.Text = "Ditto SDK Version:";
-            //
+            // 
             // lblSDKVersion
-            //
+            // 
             lblSDKVersion.AutoSize = true;
             lblSDKVersion.Location = new Point(126, 158);
             lblSDKVersion.Name = "lblSDKVersion";
             lblSDKVersion.Size = new Size(40, 15);
             lblSDKVersion.TabIndex = 3;
             lblSDKVersion.Text = "0.0.0.0";
-            //
+            // 
             // lblDatabaseIdText
-            //
+            // 
             lblDatabaseIdText.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblDatabaseIdText.AutoSize = true;
             lblDatabaseIdText.Location = new Point(12, 196);
@@ -101,9 +101,9 @@ namespace DittoTasksApp
             lblDatabaseIdText.Size = new Size(42, 15);
             lblDatabaseIdText.TabIndex = 4;
             lblDatabaseIdText.Text = "Database ID:";
-            //
+            // 
             // lblDatabaseIdValue
-            //
+            // 
             lblDatabaseIdValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblDatabaseIdValue.AutoSize = true;
             lblDatabaseIdValue.Location = new Point(189, 196);
@@ -111,9 +111,9 @@ namespace DittoTasksApp
             lblDatabaseIdValue.Size = new Size(46, 15);
             lblDatabaseIdValue.TabIndex = 5;
             lblDatabaseIdValue.Text = "Not Set";
-            //
+            // 
             // lblDevelopmentTokenTxt
-            //
+            // 
             lblDevelopmentTokenTxt.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblDevelopmentTokenTxt.AutoSize = true;
             lblDevelopmentTokenTxt.Location = new Point(12, 225);
@@ -121,9 +121,9 @@ namespace DittoTasksApp
             lblDevelopmentTokenTxt.Size = new Size(144, 15);
             lblDevelopmentTokenTxt.TabIndex = 6;
             lblDevelopmentTokenTxt.Text = "Development Token:";
-            //
+            // 
             // lblDevelopmentTokenValue
-            //
+            // 
             lblDevelopmentTokenValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblDevelopmentTokenValue.AutoSize = true;
             lblDevelopmentTokenValue.Location = new Point(189, 225);
@@ -131,9 +131,9 @@ namespace DittoTasksApp
             lblDevelopmentTokenValue.Size = new Size(46, 15);
             lblDevelopmentTokenValue.TabIndex = 7;
             lblDevelopmentTokenValue.Text = "Not Set";
-            //
+            // 
             // lblServerUrlTxt
-            //
+            // 
             lblServerUrlTxt.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblServerUrlTxt.AutoSize = true;
             lblServerUrlTxt.Location = new Point(12, 254);
@@ -141,9 +141,9 @@ namespace DittoTasksApp
             lblServerUrlTxt.Size = new Size(60, 15);
             lblServerUrlTxt.TabIndex = 8;
             lblServerUrlTxt.Text = "Server URL:";
-            //
+            // 
             // lblServerURLValue
-            //
+            // 
             lblServerURLValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblServerURLValue.AutoSize = true;
             lblServerURLValue.Location = new Point(189, 254);
@@ -153,7 +153,7 @@ namespace DittoTasksApp
             lblServerURLValue.Text = "Not Set";
             //
             // btnClose
-            //
+            // 
             btnClose.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             btnClose.Location = new Point(249, 326);
             btnClose.Name = "btnClose";
@@ -162,9 +162,9 @@ namespace DittoTasksApp
             btnClose.Text = "Close";
             btnClose.UseVisualStyleBackColor = true;
             btnClose.Click += btnClose_Click;
-            //
+            // 
             // AboutForm
-            //
+            // 
             AcceptButton = btnClose;
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;

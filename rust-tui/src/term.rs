@@ -7,7 +7,7 @@
 use std::io;
 
 use anyhow::{Context, Result};
-pub use ratatui::{Terminal, backend::CrosstermBackend};
+pub use ratatui::{backend::CrosstermBackend, Terminal};
 
 pub fn init_crossterm() -> Result<(Terminal<CrosstermBackend<io::Stdout>>, OnShutdown)> {
     use crossterm::terminal::{self, EnterAlternateScreen};

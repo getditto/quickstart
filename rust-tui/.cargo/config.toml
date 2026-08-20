@@ -1,0 +1,10 @@
+# rust-tui is a consumer of the published `dittolive-ditto` crate, so its build
+# must DOWNLOAD the prebuilt libdittoffi for that version. The monorepo root
+# .cargo/config.toml sets `DITTO_LOCAL_BUILD = "1"` (it builds libdittoffi from
+# source), and cargo merges config hierarchically regardless of workspace
+# membership — so without this override, `cargo build` here would inherit "1"
+# and fail looking for a locally-built lib. A deeper config wins, so reset it to
+# "0" (download). This is also the default for a standalone clone of the public
+# quickstart repo, so it is a no-op there.
+[env]
+DITTO_LOCAL_BUILD = "0"

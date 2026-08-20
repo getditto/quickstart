@@ -1,4 +1,5 @@
 {
+  "//": "The quickstart .NET apps target net10.0; this shadows the monorepo root global.json (which pins the 8.x SDK the core repo builds with) so `dotnet` resolves a .NET 10 SDK for everything under quickstart/.",
   "sdk": {
     "version": "10.0.100",
     "rollForward": "latestFeature"
