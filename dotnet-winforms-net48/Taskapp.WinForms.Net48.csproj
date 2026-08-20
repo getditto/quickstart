@@ -43,17 +43,17 @@
          prerelease builds like 5.0.0-rc.1 (4-part fusion versions cannot
          encode a prerelease suffix). -->
     <Reference Include="Ditto">
-      <HintPath>packages\Ditto.5.0.3\lib\netstandard2.0\Ditto.dll</HintPath>
+      <HintPath>packages\Ditto.5.1.0\lib\netstandard2.0\Ditto.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="Ditto.Native.Linux, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Ditto.Native.Linux.5.0.3\lib\netstandard2.0\Ditto.Native.Linux.dll</HintPath>
+      <HintPath>packages\Ditto.Native.Linux.5.1.0\lib\netstandard2.0\Ditto.Native.Linux.dll</HintPath>
     </Reference>
     <Reference Include="Ditto.Native.MacOS, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Ditto.Native.MacOS.5.0.3\lib\netstandard2.0\Ditto.Native.MacOS.dll</HintPath>
+      <HintPath>packages\Ditto.Native.MacOS.5.1.0\lib\netstandard2.0\Ditto.Native.MacOS.dll</HintPath>
     </Reference>
     <Reference Include="Ditto.Native.Win, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Ditto.Native.Win.5.0.3\lib\netstandard2.0\Ditto.Native.Win.dll</HintPath>
+      <HintPath>packages\Ditto.Native.Win.5.1.0\lib\netstandard2.0\Ditto.Native.Win.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.8.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>

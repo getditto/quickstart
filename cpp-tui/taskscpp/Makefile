@@ -2,7 +2,7 @@
 BUILD_TYPE ?= Debug
 
 # Ditto SDK version and platform detection
-DITTO_SDK_VERSION ?= 5.0.3
+DITTO_SDK_VERSION ?= 5.1.0
 PLATFORM := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m)
 

@@ -34,14 +34,14 @@
         <dependency>
             <groupId>com.ditto</groupId>
             <artifactId>ditto-java</artifactId>
-            <version>5.0.3</version>
+            <version>5.1.0</version>
         </dependency>
 
 <!--    This will include binaries for all the supported platforms and architectures-->
         <dependency>
             <groupId>com.ditto</groupId>
             <artifactId>ditto-binaries</artifactId>
-            <version>5.0.3</version>
+            <version>5.1.0</version>
         </dependency>
 
 <!--    To reduce your module artifact's size, consider including just the necessary platforms and architectures-->
