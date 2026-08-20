@@ -1,7 +1,7 @@
 package com.ditto.quickstart.data.screenstate
 
 data class MainScreenState(
-    val appId: String,
+    val databaseId: String,
     val appToken: String,
     val isLoading: Boolean,
     val isSyncEnabled: Boolean,
@@ -9,7 +9,7 @@ data class MainScreenState(
 ) {
     companion object {
         fun initial(): MainScreenState = MainScreenState(
-            appId = "",
+            databaseId = "",
             appToken = "",
             isLoading = true,
             isSyncEnabled = true,

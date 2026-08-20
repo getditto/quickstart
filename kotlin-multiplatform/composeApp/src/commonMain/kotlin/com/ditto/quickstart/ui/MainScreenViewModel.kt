@@ -77,8 +77,8 @@ class MainScreenViewModel(
         _state.value = _state.value.copy(
             isLoading = false,
             isSyncEnabled = isSyncEnabled.await(),
-            appId = DittoSecretsConfiguration.DITTO_APP_ID,
-            appToken = DittoSecretsConfiguration.DITTO_PLAYGROUND_TOKEN,
+            databaseId = DittoSecretsConfiguration.DITTO_DATABASE_ID,
+            appToken = DittoSecretsConfiguration.DITTO_DEVELOPMENT_TOKEN,
             errorMessage = errorMessage.await(),
         )
     }

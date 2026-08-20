@@ -22,7 +22,7 @@
                         Margin="{OnPlatform iOS='10,0,0,0', Default='0'}"/>
             </HorizontalStackLayout>
             <Label
-                Text="{Binding AppIdText}"
+                Text="{Binding DatabaseIdText}"
                 HorizontalOptions="Center"
                 FontSize="Micro"/>
             <Label

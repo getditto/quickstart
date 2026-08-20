@@ -3,6 +3,6 @@
     <string name="add_a_new_todo">Add a new todo</string>
     <string name="add_todo">Add Todo</string>
     <string name="ditto_tasks">Ditto Tasks</string>
-    <string name="app_id">App ID</string>
-    <string name="playground_token">Playground Token</string>
+    <string name="app_id">Database ID</string>
+    <string name="development_token">Development Token</string>
 </resources>

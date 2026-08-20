@@ -71,14 +71,14 @@ fun TasksListScreen(navController: NavController) {
                                 Text(
                                     text = stringResource(
                                         id = R.string.tasks_app_id,
-                                        BuildConfig.DITTO_APP_ID
+                                        BuildConfig.DITTO_DATABASE_ID
                                     ),
                                     style = MaterialTheme.typography.labelSmall
                                 )
                                 Text(
                                     text = stringResource(
                                         id = R.string.tasks_token,
-                                        BuildConfig.DITTO_PLAYGROUND_TOKEN
+                                        BuildConfig.DITTO_DEVELOPMENT_TOKEN
                                     ),
                                     style = MaterialTheme.typography.labelSmall
                                 )
@@ -192,7 +192,7 @@ fun TasksListScreen(navController: NavController) {
 @Composable
 fun TasksList(
     tasks: List<Task>,
-    onToggle: ((taskId: String) -> Unit)? = null,
+    onToggle: ((task: Task) -> Unit)? = null,
     onClickEdit: ((taskId: String) -> Unit)? = null,
     onClickDelete: ((taskId: String) -> Unit)? = null,
 ) {
@@ -200,7 +200,7 @@ fun TasksList(
         items(tasks, key = { it._id }) { task ->
             TaskRow(
                 task = task,
-                onToggle = { onToggle?.invoke(it._id) },
+                onToggle = { onToggle?.invoke(it) },
                 onClickEdit = { onClickEdit?.invoke(it._id) },
                 onClickDelete = { onClickDelete?.invoke(it._id) }
             )

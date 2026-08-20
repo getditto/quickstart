@@ -13,24 +13,23 @@ namespace DittoTasksApp
     public partial class AboutForm : Form
     {
 
-        private readonly TasksPeer _tasksPeer;
+        private readonly DittoManager _dittoManager;
 
-        public AboutForm(TasksPeer tasksPeer)
+        public AboutForm(DittoManager dittoManager)
         {
-            _tasksPeer = tasksPeer;
+            _dittoManager = dittoManager;
             InitializeComponent();
             SetFormValues();
         }
 
         /// <summary>
-        /// Sets the values of the form labels based on the TasksPeer instance. 
+        /// Sets the values of the form labels based on the DittoManager instance.
         /// </summary>
         private void SetFormValues()
         {
-            lblAppIdValue.Text = _tasksPeer.AppId;
-            lblAuthURLValue.Text = _tasksPeer.AuthUrl;
-            lblOnlinePlaygroundTokenValue.Text = _tasksPeer.PlaygroundToken;
-            lblWebsocketURLValue.Text = _tasksPeer.WebsocketUrl;
+            lblDatabaseIdValue.Text = _dittoManager.DatabaseId;
+            lblServerURLValue.Text = _dittoManager.ServerUrl;
+            lblDevelopmentTokenValue.Text = _dittoManager.DevelopmentToken;
 
             // Get the version of the DittoSDK assembly
             var dittoAssembly = typeof(DittoSDK.Ditto).Assembly;

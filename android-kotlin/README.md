@@ -13,7 +13,7 @@ After you have completed the [common prerequisites] you will need the following:
 ## Documentation
 
 - [Kotlin Install Guide](https://docs.ditto.live/install-guides/kotlin)
-- [Kotlin API Reference](https://software.ditto.live/android/Ditto/5.0.0/api-reference/)
+- [Kotlin API Reference](https://docs.ditto.live/sdk/latest/api-reference/kotlin)
 - [Kotlin SDK Release Notes](https://docs.ditto.live/release-notes/kotlin)
 
 [common prerequisites]: https://github.com/getditto/quickstart#common-prerequisites
@@ -23,8 +23,8 @@ After you have completed the [common prerequisites] you will need the following:
 Assuming you have Android Studio and other prerequisites installed, you can
 build and run the app by following these steps:
 
-1. Create an application at <https://portal.ditto.live/>.  Make note of the database ID (used to be called app ID) and online playground token.
-2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your Database ID (used to be called App ID), Online Playground Token,  and Auth URL.
+1. Create an application at <https://portal.ditto.live/>.  Make note of the database ID and development token.
+2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your Database ID, Development Token,  and Server URL.
 3. Launch Android Studio and open the `quickstart/android-kotlin` directory.
 4. In Android Studio, select a connected Android device, or create and launch an Android emulator and select it as the destination, then choose the **Run > Run 'app'** menu item.
 
@@ -55,21 +55,19 @@ Android Studio to automatically download the Ditto SDK from Maven Central and
 add it to the project:
 
 ```kotlin
-    implementation("live.ditto:ditto:4.11.1")
+    implementation(libs.com.ditto)
 ```
-
-To use a newer version of the SDK, change the version number in this line.
 
 ### Initializing Ditto
 
 In `app/src/main/java/live/ditto/quickstart/tasks/TasksApplication.kt`, you will
 see the `TasksApplication` class.  This class is a subclass of `Application`.
 Its `onCreate()` method, which is called by the system when the app is launched,
-calls `setupDitto()`, which gets application ID and online playground token from
+calls `setupDitto()`, which gets Database ID and development token from
 the build configuration and uses it to create an instance of the `Ditto` class
-which is stored in a singleton object of the `DittoHandler` class.
+which is stored in a singleton object of the `DittoManager` class.
 
-Other classes import `live.ditto.quickstart.tasks.DittoHandler.Companion.ditto`
+Other classes import `live.ditto.quickstart.tasks.DittoManager.Companion.ditto`
 to access the singleton `Ditto` instance.
 
 ### The Task Data Model

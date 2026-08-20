@@ -1,0 +1,28 @@
+name: Public mirror source
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+# This workflow only reads pull request metadata from the protected base branch.
+# It must never check out or execute pull request content.
+permissions: {}
+
+jobs:
+  publisher-authorization:
+    name: Publisher authorization
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Ditto SDK release account
+        shell: bash
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          if [[ "${PR_AUTHOR}" != "ditto-sdk-releases" ]]; then
+            echo "::error::This repository is a read-only mirror. Only pull requests opened by Ditto's SDK release process are accepted."
+            exit 1
+          fi

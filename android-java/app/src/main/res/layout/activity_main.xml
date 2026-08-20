@@ -30,8 +30,8 @@
             android:textColor="#757575" />
 
         <TextView
-            android:id="@+id/ditto_playground_token"
-            android:text="@string/playground_token"
+            android:id="@+id/ditto_development_token"
+            android:text="@string/development_token"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"

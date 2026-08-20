@@ -69,10 +69,10 @@ packages:
     dependency: "direct main"
     description:
       name: ditto_live
-      sha256: "51853b26df7b1de8495bb3bf6a674b1b15b3c60603e80397e0cdb9a66e44457e"
+      sha256: b8b7bc4b0c4fb211c750bf77bb877b16b31b5c82806f538dac88f2e36b8727c8
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.0"
+    version: "5.0.3"
   equatable:
     dependency: "direct main"
     description:
@@ -469,5 +469,5 @@ packages:
     source: hosted
     version: "1.1.0"
 sdks:
-  dart: ">=3.8.0 <4.0.0"
+  dart: ">=3.9.0-0 <4.0.0"
   flutter: ">=3.29.0"

@@ -1,6 +1,6 @@
 appId: com.anonymous.reactnativeexpo
 tags:
-  - "smoke"
+  - 'smoke'
 ---
 # Simple test: Launch app and verify specific task exists using testID
 # Usage: MAESTRO_DITTO_CLOUD_TASK_TITLE="Basic Test Task" maestro test 01-app-launch-and-seeded-tasks-android.yaml
@@ -11,9 +11,9 @@ tags:
 # Handle permission dialog if it appears
 - runFlow:
     when:
-      visible: "Allow"
+      visible: 'Allow'
     commands:
-      - tapOn: "Allow"
+      - tapOn: 'Allow'
 
 # Wait for app to load
 - waitForAnimationToEnd
@@ -21,7 +21,7 @@ tags:
 # Debug: Try text selector first to see if task exists
 - scrollUntilVisible:
     element:
-      text: "${MAESTRO_DITTO_CLOUD_TASK_TITLE}"
+      text: '${MAESTRO_DITTO_CLOUD_TASK_TITLE}'
     direction: DOWN
     timeout: 30000
     speed: 40
@@ -29,8 +29,8 @@ tags:
 
 # Debug: Assert with text selector
 - assertVisible:
-    text: "${MAESTRO_DITTO_CLOUD_TASK_TITLE}"
+    text: '${MAESTRO_DITTO_CLOUD_TASK_TITLE}'
 
 # Debug: Also try testID selector
 - assertVisible:
-    id: "${MAESTRO_DITTO_CLOUD_TASK_TITLE}"
+    id: '${MAESTRO_DITTO_CLOUD_TASK_TITLE}'

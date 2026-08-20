@@ -1,12 +1,9 @@
-import 'dart:io' show Platform;
-
 import 'package:ditto_live/ditto_live.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_quickstart/dialog.dart';
-import 'package:flutter_quickstart/dql_builder.dart';
+import 'package:flutter_quickstart/ditto_manager.dart';
+import 'package:flutter_quickstart/tasks_repository.dart';
 import 'package:flutter_quickstart/task.dart';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
@@ -24,112 +21,49 @@ class DittoExample extends StatefulWidget {
 }
 
 class _DittoExampleState extends State<DittoExample> {
-  Ditto? _ditto;
-  final appID =
-      dotenv.env['DITTO_APP_ID'] ?? (throw Exception("env not found"));
-  final token = dotenv.env['DITTO_PLAYGROUND_TOKEN'] ??
-      (throw Exception("env not found"));
-  final authUrl =
-      dotenv.env['DITTO_AUTH_URL'] ?? (throw Exception("env not found"));
+  final DittoManager _manager = DittoManager();
+  TasksRepository? _repository;
 
   @override
   void initState() {
     super.initState();
 
-    _initDitto();
+    _init();
   }
 
-  /// Initializes the Ditto instance with necessary permissions and configuration.
-  /// https://docs.ditto.live/sdk/latest/install-guides/flutter#step-3-import-and-initialize-the-ditto-sdk
-  ///
-  /// This function:
-  /// 1. Requests required Bluetooth and WiFi permissions on mobile platforms (Android/iOS)
-  /// 2. Initializes the Ditto SDK
-  /// 3. Sets up online playground identity with the provided app ID and token
-  /// 4. Enables peer-to-peer communication on non-web platforms
-  /// 5. Configures WebSocket connection to Ditto cloud
-  /// 6. Disables DQL strict mode
-  /// 7. Starts sync and updates the app state with the configured Ditto instance
-  Future<void> _initDitto() async {
-    // Skip permissions in test mode - they block integration tests
-    const isTestMode =
-        bool.fromEnvironment('INTEGRATION_TEST_MODE', defaultValue: false);
+  Future<void> _init() async {
+    // The manager vends a configured, already-running Ditto instance; the
+    // repository then registers the tasks subscription and observer against it.
+    await _manager.open();
 
-    // Only request permissions on mobile platforms (Android/iOS)
-    // Desktop platforms (macOS, Windows, Linux) don't require these permissions
-    final isMobilePlatform = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
-    if (isMobilePlatform && !isTestMode) {
-      await [
-        Permission.bluetoothConnect,
-        Permission.bluetoothAdvertise,
-        Permission.nearbyWifiDevices,
-        Permission.bluetoothScan
-      ].request();
-    }
-
-    await Ditto.init();
-
-    DittoLogger.isEnabled = true;
-    DittoLogger.minimumLogLevel = LogLevel.debug;
-
-    //new configuration -  https://docs.ditto.live/sdk/latest/ditto-config
-    final config = DittoConfig(
-        databaseID: appID, connect: DittoConfigConnectServer(url: authUrl));
-    final ditto = await Ditto.open(config);
-    await ditto.auth.setExpirationHandler((ditto, timeUntilExpiration) async {
-      final authResult = await ditto.auth
-          .login(token: token, provider: Authenticator.developmentProvider);
-      if (authResult.exception != null) {
-        throw authResult.exception!;
-      }
-    });
-
-    // Register the tasks subscription before starting sync so it is
-    // included in the very first sync exchange with the cloud.
-    // Without this, the subscription is registered later when the
-    // DqlBuilder widget builds, causing a 5–10 second delay on the
-    // first sync cycle.
-    ditto.sync.registerSubscription(
-      "SELECT * FROM tasks WHERE deleted = false",
-    );
-
-    ditto.sync.start();
+    final repository = TasksRepository(_manager.ditto);
+    repository.start();
 
     if (mounted) {
-      setState(() => _ditto = ditto);
+      setState(() => _repository = repository);
     }
+  }
+
+  @override
+  void dispose() {
+    _repository?.dispose();
+    super.dispose();
   }
 
   Future<void> _addTask() async {
     final task = await showAddTaskDialog(context);
     if (task == null) return;
 
-    // https://docs.ditto.live/sdk/latest/crud/create
-    await _ditto!.store.execute(
-      "INSERT INTO tasks DOCUMENTS (:task)",
-      arguments: {"task": task.toJson()},
-    );
-  }
-
-  Future<void> _clearTasks() async {
-    // https://docs.ditto.live/sdk/latest/crud/delete#evicting-data
-    await _ditto!.store.execute("EVICT FROM tasks WHERE true");
+    await _repository!.addTask(task.toJson());
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_ditto == null) return _loading;
+    if (_repository == null) return _loading;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Ditto Tasks"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.clear),
-            tooltip: "Clear",
-            onPressed: _clearTasks,
-          ),
-        ],
       ),
       floatingActionButton: _fab,
       body: Column(
@@ -152,8 +86,8 @@ class _DittoExampleState extends State<DittoExample> {
                 CrossAxisAlignment.center, // Center horizontally
             children: [
               const CircularProgressIndicator(),
-              const Text("Ensure your AppID and Token are correct"),
-              _portalInfo
+              const Text("Ensure your Database ID and Token are correct"),
+              _portalInfo,
             ],
           ),
         ),
@@ -164,51 +98,47 @@ class _DittoExampleState extends State<DittoExample> {
         child: const Icon(Icons.add_task),
       );
 
-  Widget get _portalInfo => Column(children: [
-        Text("AppID: $appID"),
-        Text("Token: $token"),
-      ]);
+  Widget get _portalInfo => Column(
+        children: [
+          Text("Database ID: ${_manager.databaseId}"),
+          Text("Token: ${_manager.token}"),
+        ],
+      );
 
   Widget get _syncTile => SwitchListTile(
         title: const Text("Sync Active"),
-        value: _ditto!.sync.isActive,
+        value: _manager.isSyncActive,
         onChanged: (value) {
           if (value) {
-            setState(() => _ditto!.sync.start());
+            setState(() => _manager.startSync());
           } else {
-            setState(() => _ditto!.sync.stop());
+            setState(() => _manager.stopSync());
           }
         },
       );
 
-  // Ordering is intentionally omitted here because this screen currently uses
-  // a single DqlBuilder query, and reintroducing title-based ordering would
-  // require a different query approach.
-  Widget get _tasksList => DqlBuilder(
-        ditto: _ditto!,
-        query: "SELECT * FROM tasks WHERE deleted = false",
-        builder: (context, result) {
+  Widget get _tasksList => StreamBuilder<QueryResult>(
+        stream: _repository!.changes,
+        builder: (context, snapshot) {
+          final result = snapshot.data;
+          if (result == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
           final tasks = result.items.map((r) => r.value).map(Task.fromJson);
-          return ListView(
-            children: tasks.map(_singleTask).toList(),
-          );
+          return ListView(children: tasks.map(_singleTask).toList());
         },
       );
 
   Widget _singleTask(Task task) => Dismissible(
         key: Key("${task.id}-${task.title}"),
         onDismissed: (direction) async {
-          // Use the Soft-Delete pattern
-          // https://docs.ditto.live/sdk/latest/crud/delete#soft-delete-pattern
-          await _ditto!.store.execute(
-            "UPDATE tasks SET deleted = true WHERE _id = :id",
-            arguments: {"id": task.id},
-          );
+          await _repository!.deleteTask(task.id!);
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Deleted Task ${task.title}")),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(
+                SnackBar(content: Text("Deleted Task ${task.title}")));
           }
         },
         background: _dismissibleBackground(true),
@@ -216,10 +146,7 @@ class _DittoExampleState extends State<DittoExample> {
         child: CheckboxListTile(
           title: Text(task.title),
           value: task.done,
-          onChanged: (value) => _ditto!.store.execute(
-            "UPDATE tasks SET done = :done WHERE _id = :id",
-            arguments: {"done": value, "id": task.id},
-          ),
+          onChanged: (value) => _repository!.setDone(task.id!, value ?? false),
           secondary: IconButton(
             icon: const Icon(Icons.edit),
             tooltip: "Edit Task",
@@ -227,11 +154,7 @@ class _DittoExampleState extends State<DittoExample> {
               final newTask = await showAddTaskDialog(context, task);
               if (newTask == null) return;
 
-              // https://docs.ditto.live/sdk/latest/crud/update
-              _ditto!.store.execute(
-                "UPDATE tasks SET title = :title WHERE _id = :id",
-                arguments: {"title": newTask.title, "id": task.id},
-              );
+              await _repository!.updateTitle(task.id!, newTask.title);
             },
           ),
         ),

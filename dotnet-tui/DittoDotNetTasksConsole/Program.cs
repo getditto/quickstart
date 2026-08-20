@@ -16,17 +16,17 @@ public static class Program
         try
         {
             var env = LoadEnvVariables();
-            var appId = env["DITTO_APP_ID"];
-            var playgroundToken = env["DITTO_PLAYGROUND_TOKEN"];
-            var websocketUrl = env["DITTO_WEBSOCKET_URL"];
-            var authUrl = env["DITTO_AUTH_URL"];
+            var databaseId = env["DITTO_DATABASE_ID"];
+            var developmentToken = env["DITTO_DEVELOPMENT_TOKEN"];
+            var serverUrl = env["DITTO_SERVER_URL"];
 
-            using var peer = await TasksPeer.Create(appId, playgroundToken, authUrl, websocketUrl);
+            using var dittoManager = await DittoManager.Create(databaseId, developmentToken, serverUrl);
+            var tasksRepository = new TasksRepository(dittoManager);
 
             // Disable Ditto's standard-error logging, which would interfere
             // with the the Terminal.Gui UI.
             DittoLogger.IsEnabled = false;
-            RunTerminalGui(peer);
+            RunTerminalGui(dittoManager, tasksRepository);
         }
         catch (Exception ex)
         {
@@ -34,12 +34,12 @@ public static class Program
         }
     }
 
-    private static void RunTerminalGui(TasksPeer peer)
+    private static void RunTerminalGui(DittoManager dittoManager, TasksRepository tasksRepository)
     {
         try
         {
             Application.Init();
-            Application.Top.Add(new TasksWindow(peer));
+            Application.Top.Add(new TasksWindow(dittoManager, tasksRepository));
 
             // Sleep when idle, reducing CPU usage.
             Application.MainLoop.AddIdle(() =>

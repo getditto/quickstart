@@ -1,45 +1,23 @@
-use anyhow::Context;
-use anyhow::Result;
-use crossterm::event::Event;
-use dittolive_ditto::Ditto;
-use dittolive_ditto::store::StoreObserver;
-use dittolive_ditto::sync::SyncSubscription;
-use ratatui::prelude::*;
-use ratatui::widgets::Block;
-use ratatui::widgets::BorderType;
-use ratatui::widgets::Clear;
-use ratatui::widgets::Padding;
-use ratatui::widgets::{Cell, Row, StatefulWidget, Table, TableState};
-use serde::Deserialize;
-use serde::Serialize;
 use std::sync::Arc;
-use tokio::sync::watch;
-use uuid::Uuid;
 
-use crate::key;
+use anyhow::{Context, Result};
+use crossterm::event::Event;
+use ratatui::{
+    prelude::*,
+    widgets::{Block, BorderType, Cell, Clear, Padding, Row, StatefulWidget, Table, TableState},
+};
 
 use super::EventResult;
+use crate::{ditto_manager::DittoManager, key, tasks_repository::TasksRepository};
 
 pub struct Todolist {
-    /// Our handle to the Ditto peer, used to create observers and subscriptions
-    pub ditto: Ditto,
+    /// Owns the tasks data and CRUD against Ditto.
+    repository: TasksRepository,
 
-    /// Ditto observer handles must be held (not dropped) to keep them alive
-    ///
-    /// Observers provide the actual callback triggers to allow handling events
-    pub tasks_observer: Arc<StoreObserver>,
-
-    /// Our observer sends any document updates into this watch channel
-    pub tasks_rx: watch::Receiver<Vec<TodoItem>>,
-
-    /// Ditto subscriptions must also be held to keep them alive
-    ///
-    /// Subscriptions cause Ditto to sync selected data from other peers
-    pub tasks_subscription: Arc<SyncSubscription>,
-
-    // Connection info for display
-    /// The WebSocket URL this client is connected to
-    pub websocket_url: String,
+    /// Shared owner of the Ditto manager, used here to control sync. Held via
+    /// `Arc` so the manager (and its persistence directory) stays alive as long
+    /// as any holder — the repository shares the same `Arc`.
+    manager: Arc<DittoManager>,
 
     /// Optional client name for display purposes
     pub client_name: Option<String>,
@@ -59,53 +37,14 @@ pub enum TodoMode {
     EditTask { id: String, buffer: String },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TodoItem {
-    #[serde(rename = "_id")]
-    pub id: String,
-    pub title: String,
-    pub done: bool,
-    pub deleted: bool,
-}
-
-impl TodoItem {
-    pub fn new(title: String) -> Self {
-        Self {
-            id: Uuid::new_v4().to_string(),
-            title,
-            done: false,
-            deleted: false,
-        }
-    }
-}
-
 impl Todolist {
-    pub fn new(ditto: Ditto, websocket_url: String, client_name: Option<String>) -> Result<Self> {
-        let (tasks_tx, tasks_rx) = watch::channel(Vec::new());
-
-        // Register a subscription, which determines what data syncs to this peer
-        // https://docs.ditto.live/sdk/latest/sync/syncing-data#creating-subscriptions
-        let tasks_subscription = ditto.sync().register_subscription("SELECT * FROM tasks")?;
-
-        // Register observer, which runs against the local database on this peer
-        let tasks_observer = ditto.store().register_observer(
-            "SELECT * FROM tasks WHERE deleted=false ORDER BY title ASC",
-            move |query_result| {
-                let docs = query_result
-                    .into_iter()
-                    .flat_map(|it| it.deserialize_value::<TodoItem>().ok())
-                    .collect::<Vec<_>>();
-                tasks_tx.send_replace(docs);
-            },
-        )?;
+    pub fn new(manager: Arc<DittoManager>, client_name: Option<String>) -> Result<Self> {
+        let repository = TasksRepository::try_new(Arc::clone(&manager))?;
 
         Ok(Self {
-            ditto,
+            repository,
+            manager,
             table_state: Default::default(),
-            tasks_rx,
-            tasks_observer,
-            tasks_subscription,
-            websocket_url,
             client_name,
             mode: TodoMode::Normal,
         })
@@ -119,7 +58,7 @@ impl Todolist {
 
     /// Render a table displaying each todo and its current status
     fn render_todo_table(&mut self, area: Rect, buf: &mut Buffer) {
-        let tasks = self.tasks_rx.borrow().clone();
+        let tasks = self.repository.tasks();
 
         let header = ["Done".bold(), "Title".bold()]
             .into_iter()
@@ -141,7 +80,7 @@ impl Todolist {
             })
             .collect::<Vec<_>>();
 
-        let sync_state = if self.ditto.sync().is_active() {
+        let sync_state = if self.manager.is_sync_active() {
             " 🟢 Sync Active ".green()
         } else {
             " 🔴 Sync Inactive ".red()
@@ -150,11 +89,10 @@ impl Todolist {
             .into_iter()
             .collect::<Line>();
 
-        // Format connection info: "client_name@websocket_url" or just "websocket_url"
-        let connection_info = if let Some(ref client_name) = self.client_name {
-            format!(" {}@{} ", client_name, self.websocket_url)
-        } else {
-            format!(" {} ", self.websocket_url)
+        // Show the client name (if set) in the footer.
+        let connection_info = match &self.client_name {
+            Some(client_name) => format!(" {} ", client_name),
+            None => String::new(),
         };
         let connection_line = Line::raw(connection_info).cyan();
 
@@ -217,8 +155,8 @@ impl Todolist {
                     .selected()
                     .context("failed to get selected index")?;
                 let item = self
-                    .tasks_rx
-                    .borrow()
+                    .repository
+                    .tasks()
                     .get(selected)
                     .cloned()
                     .context("failed to get todo from list")?;
@@ -291,17 +229,17 @@ impl Todolist {
     }
 
     fn toggle_sync(&mut self) -> Result<()> {
-        if self.ditto.sync().is_active() {
-            self.ditto.sync().stop();
+        if self.manager.is_sync_active() {
+            self.manager.stop_sync();
         } else {
-            self.ditto.sync().start()?;
+            self.manager.start_sync()?;
         }
         Ok(())
     }
 
     /// Toggle "done" for the currently selected item in the list
     async fn try_toggle_done(&self) -> Result<()> {
-        let tasks = self.tasks_rx.borrow().clone();
+        let tasks = self.repository.tasks();
         let task_index = self
             .table_state
             .selected()
@@ -311,25 +249,14 @@ impl Todolist {
             .cloned()
             .context("failed to find selected task")?;
 
-        let id = selected_task.id.to_string();
-        let done = selected_task.done;
-        self.ditto
-            .store()
-            .execute((
-                "UPDATE tasks SET done=:done WHERE _id=:id",
-                serde_json::json!({
-                    "id": id,
-                    "done": !done,
-                }),
-            ))
-            .await?;
-
-        Ok(())
+        self.repository
+            .toggle_done(&selected_task.id, !selected_task.done)
+            .await
     }
 
     /// Delete the task item currently selected in the list
     pub async fn try_delete_task(&mut self) -> Result<()> {
-        let tasks = self.tasks_rx.borrow().clone();
+        let tasks = self.repository.tasks();
         let task_index = self
             .table_state
             .selected()
@@ -339,48 +266,16 @@ impl Todolist {
             .cloned()
             .context("failed to find selected task")?;
 
-        let id = selected_task.id;
-        self.ditto
-            .store()
-            .execute((
-                "UPDATE tasks SET deleted=true WHERE _id=:id",
-                serde_json::json!({
-                    "id": id
-                }),
-            ))
-            .await?;
-
-        Ok(())
+        self.repository.delete_task(&selected_task.id).await
     }
 
     /// Create a new task todo with the given title
     pub async fn try_create_new_todo(&mut self, title: String) -> Result<()> {
-        let task = TodoItem::new(title);
-        self.ditto
-            .store()
-            .execute((
-                "INSERT INTO tasks DOCUMENTS (:task)",
-                serde_json::json!({
-                    "task": task
-                }),
-            ))
-            .await?;
-        Ok(())
+        self.repository.create_task(title).await
     }
 
     /// Set the title of the task with the given ID
     pub async fn try_edit_todo(&mut self, id: &str, title: &str) -> Result<()> {
-        self.ditto
-            .store()
-            .execute((
-                "UPDATE tasks SET title=:title WHERE _id=:id",
-                serde_json::json!({
-                    "title": title,
-                    "id": id
-                }),
-            ))
-            .await?;
-
-        Ok(())
+        self.repository.edit_task(id, title).await
     }
 }

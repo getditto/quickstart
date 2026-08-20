@@ -55,13 +55,13 @@ flutter pub get
 >If you haven't created a Ditto Portal account, you can sign up at [Ditto Portal](https://portal.ditto.live) or checkout [this video](https://www.youtube.com/watch?v=1aLiDkgl0Dc) on how to setup a Ditto Portal account.
 >
 
-#### Obtain App ID and Playground Token
+#### Obtain Database ID and Development Token
 
 - Log in to your Ditto Portal account
-- Navigate to your application and obtain the App ID and Playground Token (see [Sync Credentials](https://docs.ditto.live/cloud/portal/getting-sdk-connection-details)
+- Navigate to your application and obtain the Database ID and Development Token (see [Sync Credentials](https://docs.ditto.live/cloud/portal/getting-sdk-connection-details)
  for more details)
 
-Copy the `.env.sample` file at the top level of the quickstart repo to `.env` and put it into the flutter_app directory (same directory as pubspec.yaml) and add your app ID, online playground token, authUrl and websocket URL.  The app will crash if you don't provide an .env file.
+Copy the `.env.sample` file at the top level of the quickstart repo to `.env` and put it into the flutter_app directory (same directory as pubspec.yaml) and add your Database ID, development token, and serverUrl.  The app will crash if you don't provide an .env file.
 
 ### 4. Run the Application
 

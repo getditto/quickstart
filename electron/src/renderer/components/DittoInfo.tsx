@@ -1,7 +1,7 @@
 import React from 'react';
 
 type Props = {
-  appId: string;
+  databaseId: string;
   token: string;
   syncEnabled: boolean;
   onToggleSync: () => void;
@@ -9,7 +9,7 @@ type Props = {
 };
 
 const DittoInfo: React.FC<Props> = ({
-  appId,
+  databaseId,
   token,
   syncEnabled,
   onToggleSync,
@@ -21,7 +21,7 @@ const DittoInfo: React.FC<Props> = ({
         Ditto Tasks
       </h1>
       <div className="text-center text-sm text-gray-500">
-        <p>App ID: {appId}</p>
+        <p>Database ID: {databaseId}</p>
         <p>Token: {token}</p>
         <div className="flex items-center justify-center gap-2 mt-4">
           <span

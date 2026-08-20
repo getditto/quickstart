@@ -53,6 +53,14 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 
+# permission_handler_windows (0.2.1, latest) requests C++20 but forces the
+# legacy coroutine path via `/await`, which pulls in <experimental/coroutine>.
+# The MSVC 14.51 (VS2026) STL turns that into hard error STL1011. Define the
+# silence macro for the targets below (including the plugins added next) until
+# the plugin migrates to the C++20 <coroutine> header. See SDKS-3997 and
+# upstream Baseflow/flutter-permission-handler#1534.
+add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)

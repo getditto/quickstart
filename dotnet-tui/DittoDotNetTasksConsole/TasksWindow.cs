@@ -8,6 +8,8 @@ using Terminal.Gui;
 using Terminal.Gui.Graphs;
 using NStack;
 
+using DittoSDK.Store;
+
 /// <summary>
 /// A Terminal.Gui window that displays a list of tasks and allows the user to interact with them.
 /// </summary>
@@ -18,12 +20,12 @@ public class TasksWindow : Window
     /// </summary>
     class TasksListDataSource : IListDataSource
     {
-        private readonly List<ToDoTask> _tasks = new();
-        private readonly TasksPeer _peer;
+        private readonly List<TaskModel> _tasks = new();
+        private readonly TasksRepository _tasksRepository;
 
-        public TasksListDataSource(TasksPeer peer)
+        public TasksListDataSource(TasksRepository tasksRepository)
         {
-            _peer = peer;
+            _tasksRepository = tasksRepository;
         }
 
         public int Count => _tasks.Count;
@@ -56,7 +58,7 @@ public class TasksWindow : Window
             {
                 try
                 {
-                    await _peer.UpdateTaskDone(id, value);
+                    await _tasksRepository.UpdateTaskDone(id, value);
                 }
                 catch (Exception ex)
                 {
@@ -98,7 +100,7 @@ public class TasksWindow : Window
         /// <summary>
         /// Get the task at the specified index, or <c>null</c> if the index is out of range.
         /// </summary>
-        public ToDoTask TaskAtIndex(int index)
+        public TaskModel TaskAtIndex(int index)
         {
             try
             {
@@ -110,7 +112,7 @@ public class TasksWindow : Window
             }
         }
 
-        public void UpdateTasks(IList<ToDoTask> newTasks)
+        public void UpdateTasks(IList<TaskModel> newTasks)
         {
             // Note: Simply replacing the collection with a new one will cause
             // the ListView to lose its selection state.  So we update the
@@ -142,13 +144,22 @@ public class TasksWindow : Window
         }
     }
 
-    private readonly TasksPeer _peer;
+    private readonly DittoManager _dittoManager;
+    private readonly TasksRepository _tasksRepository;
     private readonly TasksListDataSource _dataSource;
 
-    public TasksWindow(TasksPeer peer) : base($"Ditto Tasks")
+    /// <summary>
+    /// The tasks store observer. Held so it can be cancelled and disposed when
+    /// the window is disposed; otherwise it (and its Ditto callback) would leak
+    /// for the lifetime of the process.
+    /// </summary>
+    private DittoStoreObserver _tasksObserver;
+
+    public TasksWindow(DittoManager dittoManager, TasksRepository tasksRepository) : base($"Ditto Tasks")
     {
-        _peer = peer;
-        _dataSource = new(peer);
+        _dittoManager = dittoManager;
+        _tasksRepository = tasksRepository;
+        _dataSource = new(tasksRepository);
 
         X = 0;
         Y = 0;
@@ -165,13 +176,13 @@ public class TasksWindow : Window
         };
         Add(syncStatusLabel);
 
-        Add(new Label("App ID: " + _peer.AppId)
+        Add(new Label("Database ID: " + _dittoManager.DatabaseId)
         {
             X = Pos.Center(),
             Y = 1,
         });
 
-        Add(new Label("Playground Token: " + _peer.PlaygroundToken)
+        Add(new Label("Development Token: " + _dittoManager.DevelopmentToken)
         {
             X = Pos.Center(),
             Y = 2,
@@ -256,7 +267,7 @@ public class TasksWindow : Window
 
         Add(tasksListView);
 
-        peer.ObserveTasksCollection(async (tasks) =>
+        _tasksObserver = tasksRepository.ObserveTasksCollection(async (tasks) =>
         {
             await Task.Run(() =>
             {
@@ -285,9 +296,24 @@ public class TasksWindow : Window
         });
     }
 
+    /// <summary>
+    /// Cancel and dispose the tasks observer when the window is disposed so its
+    /// Ditto callback is not leaked.
+    /// </summary>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _tasksObserver?.Cancel();
+            _tasksObserver?.Dispose();
+            _tasksObserver = null;
+        }
+        base.Dispose(disposing);
+    }
+
     private string SyncStatusLabelText()
     {
-        return "Sync: " + (_peer.IsSyncActive ? "Active" : "Inactive")
+        return "Sync: " + (_dittoManager.IsSyncActive ? "Active" : "Inactive")
             + " (s: toggle)";
     }
 
@@ -303,7 +329,7 @@ public class TasksWindow : Window
             {
                 try
                 {
-                    await _peer.AddTask(title);
+                    await _tasksRepository.AddTask(title);
                 }
                 catch (Exception ex)
                 {
@@ -313,7 +339,7 @@ public class TasksWindow : Window
         }
     }
 
-    private void HandleDeleteCommand(ToDoTask task)
+    private void HandleDeleteCommand(TaskModel task)
     {
         var response = MessageBox.Query(
             "Delete Task",
@@ -326,7 +352,7 @@ public class TasksWindow : Window
             {
                 try
                 {
-                    await _peer.DeleteTask(id);
+                    await _tasksRepository.DeleteTask(id);
                 }
                 catch (Exception ex)
                 {
@@ -336,7 +362,7 @@ public class TasksWindow : Window
         }
     }
 
-    private void HandleEditCommand(ToDoTask task)
+    private void HandleEditCommand(TaskModel task)
     {
         var originalTitle = task.Title;
         var newTitle = ShowTextInputDialog(
@@ -351,7 +377,7 @@ public class TasksWindow : Window
             {
                 try
                 {
-                    await _peer.UpdateTaskTitle(id, newTitle);
+                    await _tasksRepository.UpdateTaskTitle(id, newTitle);
                 }
                 catch (Exception ex)
                 {
@@ -372,13 +398,13 @@ public class TasksWindow : Window
 
     private void HandleToggleSyncCommand()
     {
-        if (_peer.IsSyncActive)
+        if (_dittoManager.IsSyncActive)
         {
-            _peer.StopSync();
+            _dittoManager.StopSync();
         }
         else
         {
-            _peer.StartSync();
+            _dittoManager.StartSync();
         }
     }
 

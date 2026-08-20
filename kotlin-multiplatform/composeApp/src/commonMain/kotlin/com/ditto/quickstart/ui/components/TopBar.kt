@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun TopBar(
     isLoading: Boolean,
-    appId: String,
+    databaseId: String,
     appToken: String,
     isSyncEnabled: Boolean,
     onSyncChange: (Boolean) -> Unit,
@@ -55,12 +55,12 @@ internal fun TopBar(
             TopBarAnimatedVisibility(visible = !isLoading) {
                 Row {
                     Text(
-                        text = "App Id:",
+                        text = "Database ID:",
                         style = MaterialTheme.typography.caption.copy(fontWeight = FontWeight.Bold),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = appId,
+                        text = databaseId,
                         style = MaterialTheme.typography.caption,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis

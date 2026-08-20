@@ -39,11 +39,7 @@ void main() {
     });
 
     test('toJson omits null id', () {
-      const task = Task(
-        title: 'New task',
-        done: false,
-        deleted: false,
-      );
+      const task = Task(title: 'New task', done: false, deleted: false);
 
       final json = task.toJson();
 
@@ -69,8 +65,9 @@ void main() {
   });
 
   group('Add task dialog', () {
-    testWidgets('shows Add Task title for new task',
-        (WidgetTester tester) async {
+    testWidgets('shows Add Task title for new task', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Builder(
@@ -91,8 +88,9 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
     });
 
-    testWidgets('shows Edit Task title when editing existing task',
-        (WidgetTester tester) async {
+    testWidgets('shows Edit Task title when editing existing task', (
+      WidgetTester tester,
+    ) async {
       const existing = Task(
         id: '1',
         title: 'Existing task',

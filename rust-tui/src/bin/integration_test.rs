@@ -1,26 +1,29 @@
+use std::{env, sync::Arc, time::Duration};
+
 use anyhow::{Context, Result};
-use ditto_quickstart::tui::Todolist;
+use ditto_quickstart::{ditto_manager::DittoManager, tasks_repository::TasksRepository};
 use dittolive_ditto::prelude::*;
-use dittolive_ditto::{Ditto, fs::TempRoot};
-use std::time::Duration;
-use std::{env, sync::Arc};
 use tokio::time::sleep;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("🦀 Starting Rust TUI Integration Test");
 
-    // Load environment variables
-    dotenvy::dotenv().ok();
+    // Load .env from the quickstart root (one directory above this crate);
+    // fall back to dotenvy's CWD-upward search if the file is absent.
+    let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let env_path = manifest_dir.join("../.env");
+    if env_path.exists() {
+        dotenvy::from_path(&env_path).ok();
+    } else {
+        dotenvy::dotenv().ok();
+    }
 
-    let database_id = env::var("DITTO_APP_ID").context("DITTO_APP_ID not found")?;
+    let database_id = env::var("DITTO_DATABASE_ID").context("DITTO_DATABASE_ID not found")?;
 
-    let token = env::var("DITTO_PLAYGROUND_TOKEN").context("DITTO_PLAYGROUND_TOKEN not found")?;
-    let custom_auth_url =
-        env::var("DITTO_AUTH_URL").unwrap_or_else(|_| "https://auth.cloud.ditto.live".to_string());
-
-    let websocket_url =
-        env::var("DITTO_WEBSOCKET_URL").unwrap_or_else(|_| "wss://cloud.ditto.live".to_string());
+    let token = env::var("DITTO_DEVELOPMENT_TOKEN").context("DITTO_DEVELOPMENT_TOKEN not found")?;
+    let server_url = env::var("DITTO_SERVER_URL")
+        .unwrap_or_else(|_| "https://auth.cloud.ditto.live".to_string());
 
     // Get task to find from environment
     let task_to_find =
@@ -28,50 +31,32 @@ async fn main() -> Result<()> {
 
     println!("🔍 Looking for task: {}", task_to_find);
 
-    let connect_config = DittoConfigConnect::Server {
-        url: custom_auth_url
-            .parse()
-            .context("failed to parse custom auth URL")?,
-    };
+    // Configure the Ditto instance (same pattern as main.rs) with all
+    // peer-to-peer transports enabled.
+    let manager = Arc::new(DittoManager::try_new(
+        database_id,
+        token.clone(),
+        server_url,
+        true,
+    )?);
 
-    // `TempRoot` deletes its directory when the last `Arc` is dropped, so we
-    // bind it to a local that lives until the end of `main` to keep the
-    // persistence directory alive for the duration of the test.
-    let _temp_root = Arc::new(TempRoot::new());
-    let config = DittoConfig::new(database_id, connect_config)
-        .with_persistence_directory(_temp_root.root_path());
-
-    // Create Ditto instance (using same pattern as main.rs)
-    let ditto = Ditto::open_sync(config)?;
-
-    let auth = ditto.auth().context("failed to get authenticator")?;
-    auth.set_expiration_handler(TokenHandler {
-        token: token.clone(),
-    });
     // Explicitly log in before starting sync so the first sync round has a
     // valid JWT/X.509 cert. Without this we rely on the expiration handler
     // firing during startup, which races with the initial sync attempt.
-    auth.login(token.as_str(), &identity::get_development_provider())
-        .context("failed to log in to Ditto Cloud")?;
-    println!("🔑 Authenticated with Ditto Cloud");
+    manager
+        .ditto()
+        .auth()
+        .context("failed to get authenticator")?
+        .login(token.as_str(), &identity::get_development_provider())
+        .context("failed to log in to Ditto server")?;
+    println!("🔑 Authenticated with Ditto server");
 
-    let transport_websocket_url = websocket_url.clone();
-    ditto.update_transport_config(|config| {
-        config.enable_all_peer_to_peer();
-        config
-            .connect
-            .websocket_urls
-            .insert(transport_websocket_url.clone());
-    });
-
-    // Start sync
-    ditto.sync().start()?;
+    manager.start_sync()?;
     println!("✅ Created Ditto instance and started sync");
 
-    // Create todolist instance (loads the app)
-    let client_name = env::var("DITTO_CLIENT_NAME").ok();
-    let todolist = Todolist::new(ditto, websocket_url, client_name)?;
-    println!("📝 App loaded - Created todolist instance");
+    // Create the tasks repository (registers the subscription + observer)
+    let repository = TasksRepository::try_new(Arc::clone(&manager))?;
+    println!("📝 App loaded - Created tasks repository");
 
     // Wait for sync and check for the seeded task
     println!("🕐 Waiting for sync and checking for seeded task...");
@@ -83,7 +68,7 @@ async fn main() -> Result<()> {
         sleep(Duration::from_secs(1)).await;
         attempts += 1;
 
-        let tasks = todolist.tasks_rx.borrow().clone();
+        let tasks = repository.tasks();
         for task in &tasks {
             if task.title == task_to_find {
                 found_task = true;
@@ -93,7 +78,7 @@ async fn main() -> Result<()> {
         }
 
         if attempts % 3 == 0 {
-            let count = todolist.tasks_rx.borrow().len();
+            let count = repository.tasks().len();
             println!(
                 "   ... still syncing ({}/{}), {} tasks visible locally",
                 attempts, max_attempts, count
@@ -102,7 +87,7 @@ async fn main() -> Result<()> {
     }
 
     if !found_task {
-        let tasks = todolist.tasks_rx.borrow().clone();
+        let tasks = repository.tasks();
         println!(
             "❌ Seeded task '{}' not found after {} seconds",
             task_to_find, max_attempts
@@ -125,26 +110,9 @@ async fn main() -> Result<()> {
         anyhow::bail!("Integration test failed - seeded task not found");
     }
 
-    todolist.ditto.sync().stop();
+    manager.stop_sync();
     println!("🛑 Stopped sync");
 
-    println!("🎉 Integration test passed! App loads and syncs with Ditto Cloud successfully.");
+    println!("🎉 Integration test passed! App loads and syncs with Ditto server successfully.");
     Ok(())
-}
-
-struct TokenHandler {
-    token: String,
-}
-
-impl DittoAuthExpirationHandler for TokenHandler {
-    async fn on_expiration(&self, ditto: &Ditto, _duration_remaining: Duration) {
-        let Some(auth) = ditto.auth() else {
-            eprintln!("Failed to get authenticator during token refresh");
-            return;
-        };
-        match auth.login(self.token.as_str(), &identity::get_development_provider()) {
-            Ok(_) => println!("Authentication successful"),
-            Err(e) => eprintln!("Authentication failed: {e}"),
-        }
-    }
 }

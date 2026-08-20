@@ -20,9 +20,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": [
-    "src/renderer/**/*",
-    "src/preload/api.d.ts",
-    "src/types.ts"
-  ]
+  "include": ["src/renderer/**/*", "src/preload/api.d.ts", "src/types.ts"]
 }

@@ -1,35 +1,30 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use ditto_quickstart::{Shutdown, term, tui::TuiTask};
-use dittolive_ditto::prelude::*;
-use dittolive_ditto::{Ditto, fs::TempRoot};
+use ditto_quickstart::{ditto_manager::DittoManager, term, tui::TuiTask, Shutdown};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Parser)]
 pub struct Cli {
-    /// The Ditto App ID this app will use to initialize Ditto
-    #[clap(long, env = "DITTO_APP_ID")]
+    /// The Ditto database ID this app will use to initialize Ditto
+    #[clap(long, env = "DITTO_DATABASE_ID")]
     database_id: String,
 
-    /// The Online Playground token this app should use for authentication
-    #[clap(long, env = "DITTO_PLAYGROUND_TOKEN")]
+    /// The Development token this app should use for authentication
+    #[clap(long, env = "DITTO_DEVELOPMENT_TOKEN")]
     token: String,
 
-    /// The custom auth URL this app should use for authentication
-    #[clap(long, env = "DITTO_AUTH_URL")]
-    custom_auth_url: String,
-
-    /// The websocket URL this app should use for authentication
-    #[clap(long, env = "DITTO_WEBSOCKET_URL")]
-    websocket_url: String,
+    /// The Ditto server URL this app connects to
+    #[clap(long, env = "DITTO_SERVER_URL")]
+    server_url: String,
 
     /// Optional client name to display in the TUI
     #[clap(long, env = "DITTO_CLIENT_NAME")]
     client_name: Option<String>,
 
-    /// Enable peer-to-peer transports (LAN, Bluetooth). Set to false to force all communication through Big Peer.
+    /// Enable peer-to-peer transports (LAN, Bluetooth). Set to false to force all communication
+    /// through Big Peer.
     #[clap(long, env = "DITTO_P2P_ENABLED", default_value = "true")]
     p2p_enabled: bool,
 
@@ -60,27 +55,18 @@ async fn main() -> Result<()> {
     let shutdown = <Shutdown>::new();
     let (terminal, _cleanup) = term::init_crossterm()?;
 
-    // Initialize and launch app
-    //
-    // `_temp_root` must outlive `ditto` — `TempRoot` deletes its directory on
-    // drop, so binding it here keeps the persistence directory alive for the
-    // process lifetime.
-    let (ditto, _temp_root) = try_init_ditto(
+    // Initialize and launch app. `DittoManager` owns the Ditto instance and its
+    // persistence directory; we share it via `Arc` so both the repository and
+    // the TUI can hold it. We start sync here, before spawning the TUI.
+    let manager = Arc::new(DittoManager::try_new(
         cli.database_id,
         cli.token,
-        cli.custom_auth_url,
-        cli.websocket_url.clone(),
+        cli.server_url,
         cli.p2p_enabled,
-    )
-    .await?;
-    let _tui_task = TuiTask::try_spawn(
-        shutdown.clone(),
-        terminal,
-        ditto,
-        cli.websocket_url,
-        cli.client_name,
-    )
-    .context("failed to start tui task")?;
+    )?);
+    manager.start_sync()?;
+    let _tui_task = TuiTask::try_spawn(shutdown.clone(), terminal, manager, cli.client_name)
+        .context("failed to start tui task")?;
     tracing::info!(success = true, "Initialized!");
 
     // Wait for shutdown trigger
@@ -110,90 +96,21 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-struct TokenHandler {
-    token: String,
-}
-
-impl DittoAuthExpirationHandler for TokenHandler {
-    async fn on_expiration(&self, ditto: &Ditto, _duration_remaining: Duration) {
-        let Some(auth) = ditto.auth() else {
-            tracing::error!("Failed to get authenticator during token refresh");
-            return;
-        };
-        match auth.login(self.token.as_str(), &identity::get_development_provider()) {
-            Ok(_) => tracing::info!("Authentication successful"),
-            Err(e) => tracing::error!(%e, "Authentication failed"),
-        }
-    }
-}
-
-async fn try_init_ditto(
-    database_id: String,
-    token: String,
-    custom_auth_url: String,
-    websocket_url: String,
-    p2p_enabled: bool,
-) -> Result<(Ditto, Arc<TempRoot>)> {
-    let connect_config = DittoConfigConnect::Server {
-        url: custom_auth_url
-            .parse()
-            .context("failed to parse custom auth URL")?,
-    };
-
-    // We use a temporary directory to store Ditto's local database.
-    // This means that data will not be persistent between runs of the
-    // application, but it allows us to run multiple instances of the
-    // application concurrently on the same machine.  For a production
-    // application, we would want to store the database in a more permanent
-    // location, and if multiple instances are needed, ensure that each
-    // instance has its own persistence directory.
-    //
-    // `TempRoot` deletes its directory when the last `Arc` is dropped, so we
-    // must keep the `Arc<TempRoot>` alive for at least the lifetime of the
-    // `Ditto` instance — we return it to the caller for that purpose.
-    let temp_root = Arc::new(TempRoot::new());
-    let config = DittoConfig::new(database_id.clone(), connect_config)
-        .with_persistence_directory(temp_root.root_path());
-
-    let ditto = Ditto::open_sync(config)?;
-
-    ditto
-        .auth()
-        .context("failed to get authenticator")?
-        .set_expiration_handler(TokenHandler {
-            token: token.clone(),
-        });
-
-    ditto.update_transport_config(|config| {
-        if p2p_enabled {
-            // Enable all peer-to-peer transports (original behavior)
-            config.enable_all_peer_to_peer();
-        } else {
-            // Explicitly disable all peer-to-peer transports - only use Big Peer
-            config.peer_to_peer.bluetooth_le.enabled = false;
-            config.peer_to_peer.lan.enabled = false;
-        }
-
-        // Set WebSocket URL for Big Peer connection
-        config.connect.websocket_urls.insert(websocket_url);
-    });
-
-    // Start sync
-    ditto.sync().start()?;
-
-    tracing::info!(database_id = %database_id, "Started Ditto!");
-    Ok((ditto, temp_root))
-}
-
-/// Load .env file from git repo root rather than `rust/`
+/// Load the shared quickstart `.env` file (one directory above this crate).
+///
+/// `CARGO_MANIFEST_DIR` is the `rust-tui/` crate directory; joining `../.env`
+/// resolves to the quickstart configuration file shared by all the sample
+/// apps, so every app reads the same credentials from a single `.env`.
+///
+/// If that file is absent, fall back to `dotenvy::dotenv()` so the app still
+/// works when credentials are already in the environment.
 fn try_init_dotenv() -> Result<()> {
-    let git_toplevel_output = std::process::Command::new("git")
-        .args(["rev-parse", "--show-toplevel"])
-        .output()
-        .context("failed to exec 'git rev-parse --show-toplevel'")?;
-    let path = String::from_utf8(git_toplevel_output.stdout)?;
-    let path = std::path::Path::new(path.trim());
-    let path = path.join(".env");
-    dotenvy::from_path(&path)?;
+    let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let env_path = manifest_dir.join("../.env");
+    if env_path.exists() {
+        dotenvy::from_path(&env_path)?;
+    } else {
+        dotenvy::dotenv().ok();
+    }
     Ok(())
 }

@@ -4,9 +4,9 @@ This directory contains Ditto's quickstart app for [Electron](https://www.electr
 
 ## Documentation
 
-- [Javascript Install Guide](https://docs.ditto.com/sdk/latest/install-guides/js)
-- [Javascript API Reference](https://software.ditto.live/js/Ditto/5.0.0/api-reference/)
-- [Javascript Release Notes](https://docs.ditto.com/sdk/latest/release-notes/js)
+- [Javascript Install Guide](https://docs.ditto.live/sdk/latest/install-guides/js)
+- [Javascript API Reference](https://docs.ditto.live/sdk/latest/api-reference/js)
+- [Javascript Release Notes](https://docs.ditto.live/sdk/latest/release-notes/js)
 
 ## Prerequisites
 
@@ -36,7 +36,7 @@ The renderer never imports `@dittolive/ditto`; it only calls `window.ditto.*` me
 
 ### Peer-to-peer transports
 
-This quickstart enables LAN sync (TCP + mDNS + multicast) and disables Bluetooth LE and AWDL. BLE and AWDL on macOS require entitlements that only signed app bundles get; a plain `npm run dev` Electron process can't use them. LAN P2P provides peer-to-peer sync between devices on the same network, and the `DITTO_WEBSOCKET_URL` provides cloud sync to Ditto's Big Peer.
+This quickstart enables LAN sync (TCP + mDNS + multicast) and disables Bluetooth LE and AWDL. BLE and AWDL on macOS require entitlements that only signed app bundles get; a plain `npm run dev` Electron process can't use them. LAN P2P provides peer-to-peer sync between devices on the same network, and the `DITTO_SERVER_URL` provides sync to Ditto's Big Peer.
 
 ### Local storage
 
@@ -50,7 +50,7 @@ Tasks survive restarts because of this. To reset, quit the app and delete that d
 
 ## Getting Started
 
-To get started, you'll first need to create an app in the [Ditto Portal][0] with the "Online Playground" authentication type. You'll need your AppID, Playground Token, Auth URL, and WebSocket URL.
+To get started, you'll first need to create an app in the [Ditto Portal][0] with the "Development" authentication type. You'll need your Database ID, Development Token, and Server URL.
 
 [0]: https://portal.ditto.live
 
@@ -63,10 +63,9 @@ cp .env.sample .env
 The `.env` file should look like this (with your fields filled in):
 
 ```bash
-DITTO_APP_ID=""
-DITTO_PLAYGROUND_TOKEN=""
-DITTO_AUTH_URL=""
-DITTO_WEBSOCKET_URL=""
+DITTO_DATABASE_ID=""
+DITTO_DEVELOPMENT_TOKEN=""
+DITTO_SERVER_URL=""
 ```
 
 Then run the app:

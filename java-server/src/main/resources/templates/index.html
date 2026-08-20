@@ -6,16 +6,17 @@
     <script src="https://unpkg.com/htmx-ext-sse@2.2.2"></script>
 </head>
 <body>
-    <div id="sync-header" style="margin-bottom: 1rem;">
-        <span id="sync_state"
-              hx-ext="sse"
-              sse-connect="/ditto/sync/state"
-              sse-swap="sync_state">
-                  Sync State: True
-        </span>
-        <button type="button" hx-post="/ditto/sync/toggle" hx-swap="none">
-            Toggle
-        </button>
+    <!-- The server streams the real control (current state label + a Start/Stop
+         action button) over SSE. Until the actual state is known, the control is
+         withheld: a neutral placeholder with a disabled button, never a hard-coded
+         state. The first "sync_state" event replaces this with the live control. -->
+    <div id="sync-header"
+         hx-ext="sse"
+         sse-connect="/ditto/sync/state"
+         sse-swap="sync_state"
+         style="margin-bottom: 1rem;">
+        <span>Sync State: &hellip;</span>
+        <button type="button" disabled>&hellip;</button>
     </div>
 
     <div style="display: flex; gap: 2rem;">

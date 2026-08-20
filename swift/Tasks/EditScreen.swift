@@ -16,21 +16,21 @@ class EditScreenViewModel: ObservableObject {
         isExistingTask = task != nil
     }
 
-    func save(listVM: TasksListScreenViewModel) {
+    func save(repository: TasksRepository) {
         if isExistingTask {
             task.title = taskTitleText
             task.deleted = deleteRequested
-            listVM.saveEditedTask(task)
+            repository.saveEditedTask(task)
         } else {
             task.title = taskTitleText
-            listVM.saveNewTask(task)
+            repository.saveNewTask(task)
         }
     }
 }
 
 /// View for creating or editing a task
 struct EditScreen: View {
-    @EnvironmentObject var listVM: TasksListScreenViewModel
+    @EnvironmentObject var tasksRepository: TasksRepository
     @Environment(\.dismiss) private var dismiss
     @StateObject var viewModel: EditScreenViewModel
     @FocusState var titleHasFocus: Bool
@@ -100,7 +100,7 @@ struct EditScreen: View {
     }
 
     func onSubmit() {
-        viewModel.save(listVM: listVM)
+        viewModel.save(repository: tasksRepository)
         dismiss()
     }
 }

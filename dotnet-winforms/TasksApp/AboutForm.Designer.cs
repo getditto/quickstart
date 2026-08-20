@@ -40,14 +40,12 @@ namespace DittoTasksApp
             llDittoDocs = new LinkLabel();
             lblSDKVersionText = new Label();
             lblSDKVersion = new Label();
-            lblAppIDText = new Label();
-            lblAppIdValue = new Label();
-            lblOnlinePlaygroundTokenTxt = new Label();
-            lblOnlinePlaygroundTokenValue = new Label();
-            lblAuthUrlTxt = new Label();
-            lblAuthURLValue = new Label();
-            lblWebsocketUrlTxt = new Label();
-            lblWebsocketURLValue = new Label();
+            lblDatabaseIdText = new Label();
+            lblDatabaseIdValue = new Label();
+            lblDevelopmentTokenTxt = new Label();
+            lblDevelopmentTokenValue = new Label();
+            lblServerUrlTxt = new Label();
+            lblServerURLValue = new Label();
             btnClose = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
@@ -94,86 +92,66 @@ namespace DittoTasksApp
             lblSDKVersion.TabIndex = 3;
             lblSDKVersion.Text = "0.0.0.0";
             // 
-            // lblAppIDText
+            // lblDatabaseIdText
             // 
-            lblAppIDText.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblAppIDText.AutoSize = true;
-            lblAppIDText.Location = new Point(12, 196);
-            lblAppIDText.Name = "lblAppIDText";
-            lblAppIDText.Size = new Size(42, 15);
-            lblAppIDText.TabIndex = 4;
-            lblAppIDText.Text = "AppId:";
+            lblDatabaseIdText.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lblDatabaseIdText.AutoSize = true;
+            lblDatabaseIdText.Location = new Point(12, 196);
+            lblDatabaseIdText.Name = "lblDatabaseIdText";
+            lblDatabaseIdText.Size = new Size(42, 15);
+            lblDatabaseIdText.TabIndex = 4;
+            lblDatabaseIdText.Text = "Database ID:";
             // 
-            // lblAppIdValue
+            // lblDatabaseIdValue
             // 
-            lblAppIdValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblAppIdValue.AutoSize = true;
-            lblAppIdValue.Location = new Point(189, 196);
-            lblAppIdValue.Name = "lblAppIdValue";
-            lblAppIdValue.Size = new Size(46, 15);
-            lblAppIdValue.TabIndex = 5;
-            lblAppIdValue.Text = "Not Set";
+            lblDatabaseIdValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lblDatabaseIdValue.AutoSize = true;
+            lblDatabaseIdValue.Location = new Point(189, 196);
+            lblDatabaseIdValue.Name = "lblDatabaseIdValue";
+            lblDatabaseIdValue.Size = new Size(46, 15);
+            lblDatabaseIdValue.TabIndex = 5;
+            lblDatabaseIdValue.Text = "Not Set";
             // 
-            // lblOnlinePlaygroundTokenTxt
+            // lblDevelopmentTokenTxt
             // 
-            lblOnlinePlaygroundTokenTxt.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblOnlinePlaygroundTokenTxt.AutoSize = true;
-            lblOnlinePlaygroundTokenTxt.Location = new Point(12, 225);
-            lblOnlinePlaygroundTokenTxt.Name = "lblOnlinePlaygroundTokenTxt";
-            lblOnlinePlaygroundTokenTxt.Size = new Size(144, 15);
-            lblOnlinePlaygroundTokenTxt.TabIndex = 6;
-            lblOnlinePlaygroundTokenTxt.Text = "Online Playground Token:";
+            lblDevelopmentTokenTxt.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lblDevelopmentTokenTxt.AutoSize = true;
+            lblDevelopmentTokenTxt.Location = new Point(12, 225);
+            lblDevelopmentTokenTxt.Name = "lblDevelopmentTokenTxt";
+            lblDevelopmentTokenTxt.Size = new Size(144, 15);
+            lblDevelopmentTokenTxt.TabIndex = 6;
+            lblDevelopmentTokenTxt.Text = "Development Token:";
             // 
-            // lblOnlinePlaygroundTokenValue
+            // lblDevelopmentTokenValue
             // 
-            lblOnlinePlaygroundTokenValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblOnlinePlaygroundTokenValue.AutoSize = true;
-            lblOnlinePlaygroundTokenValue.Location = new Point(189, 225);
-            lblOnlinePlaygroundTokenValue.Name = "lblOnlinePlaygroundTokenValue";
-            lblOnlinePlaygroundTokenValue.Size = new Size(46, 15);
-            lblOnlinePlaygroundTokenValue.TabIndex = 7;
-            lblOnlinePlaygroundTokenValue.Text = "Not Set";
+            lblDevelopmentTokenValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lblDevelopmentTokenValue.AutoSize = true;
+            lblDevelopmentTokenValue.Location = new Point(189, 225);
+            lblDevelopmentTokenValue.Name = "lblDevelopmentTokenValue";
+            lblDevelopmentTokenValue.Size = new Size(46, 15);
+            lblDevelopmentTokenValue.TabIndex = 7;
+            lblDevelopmentTokenValue.Text = "Not Set";
             // 
-            // lblAuthUrlTxt
+            // lblServerUrlTxt
             // 
-            lblAuthUrlTxt.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblAuthUrlTxt.AutoSize = true;
-            lblAuthUrlTxt.Location = new Point(12, 254);
-            lblAuthUrlTxt.Name = "lblAuthUrlTxt";
-            lblAuthUrlTxt.Size = new Size(60, 15);
-            lblAuthUrlTxt.TabIndex = 8;
-            lblAuthUrlTxt.Text = "Auth URL:";
+            lblServerUrlTxt.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lblServerUrlTxt.AutoSize = true;
+            lblServerUrlTxt.Location = new Point(12, 254);
+            lblServerUrlTxt.Name = "lblServerUrlTxt";
+            lblServerUrlTxt.Size = new Size(60, 15);
+            lblServerUrlTxt.TabIndex = 8;
+            lblServerUrlTxt.Text = "Server URL:";
             // 
-            // lblAuthURLValue
+            // lblServerURLValue
             // 
-            lblAuthURLValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblAuthURLValue.AutoSize = true;
-            lblAuthURLValue.Location = new Point(189, 254);
-            lblAuthURLValue.Name = "lblAuthURLValue";
-            lblAuthURLValue.Size = new Size(46, 15);
-            lblAuthURLValue.TabIndex = 9;
-            lblAuthURLValue.Text = "Not Set";
-            // 
-            // lblWebsocketUrlTxt
-            // 
-            lblWebsocketUrlTxt.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblWebsocketUrlTxt.AutoSize = true;
-            lblWebsocketUrlTxt.Location = new Point(12, 283);
-            lblWebsocketUrlTxt.Name = "lblWebsocketUrlTxt";
-            lblWebsocketUrlTxt.Size = new Size(92, 15);
-            lblWebsocketUrlTxt.TabIndex = 10;
-            lblWebsocketUrlTxt.Text = "Websocket URL:";
-            // 
-            // lblWebsocketURLValue
-            // 
-            lblWebsocketURLValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblWebsocketURLValue.AutoSize = true;
-            lblWebsocketURLValue.Location = new Point(189, 283);
-            lblWebsocketURLValue.Name = "lblWebsocketURLValue";
-            lblWebsocketURLValue.Size = new Size(46, 15);
-            lblWebsocketURLValue.TabIndex = 11;
-            lblWebsocketURLValue.Text = "Not Set";
-            // 
+            lblServerURLValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lblServerURLValue.AutoSize = true;
+            lblServerURLValue.Location = new Point(189, 254);
+            lblServerURLValue.Name = "lblServerURLValue";
+            lblServerURLValue.Size = new Size(46, 15);
+            lblServerURLValue.TabIndex = 9;
+            lblServerURLValue.Text = "Not Set";
+            //
             // btnClose
             // 
             btnClose.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -192,14 +170,12 @@ namespace DittoTasksApp
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(584, 361);
             Controls.Add(btnClose);
-            Controls.Add(lblWebsocketURLValue);
-            Controls.Add(lblWebsocketUrlTxt);
-            Controls.Add(lblAuthURLValue);
-            Controls.Add(lblAuthUrlTxt);
-            Controls.Add(lblOnlinePlaygroundTokenValue);
-            Controls.Add(lblOnlinePlaygroundTokenTxt);
-            Controls.Add(lblAppIdValue);
-            Controls.Add(lblAppIDText);
+            Controls.Add(lblServerURLValue);
+            Controls.Add(lblServerUrlTxt);
+            Controls.Add(lblDevelopmentTokenValue);
+            Controls.Add(lblDevelopmentTokenTxt);
+            Controls.Add(lblDatabaseIdValue);
+            Controls.Add(lblDatabaseIdText);
             Controls.Add(lblSDKVersion);
             Controls.Add(lblSDKVersionText);
             Controls.Add(llDittoDocs);
@@ -223,14 +199,12 @@ namespace DittoTasksApp
         private LinkLabel llDittoDocs;
         private Label lblSDKVersionText;
         private Label lblSDKVersion;
-        private Label lblAppIDText;
-        private Label lblAppIdValue;
-        private Label lblOnlinePlaygroundTokenTxt;
-        private Label lblOnlinePlaygroundTokenValue;
-        private Label lblAuthUrlTxt;
-        private Label lblAuthURLValue;
-        private Label lblWebsocketUrlTxt;
-        private Label lblWebsocketURLValue;
+        private Label lblDatabaseIdText;
+        private Label lblDatabaseIdValue;
+        private Label lblDevelopmentTokenTxt;
+        private Label lblDevelopmentTokenValue;
+        private Label lblServerUrlTxt;
+        private Label lblServerURLValue;
         private Button btnClose;
     }
 }

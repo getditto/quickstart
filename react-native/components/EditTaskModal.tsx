@@ -1,5 +1,5 @@
 import React from 'react';
-import {useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
 
 type EditTaskModalProps = {
   visible: boolean;
-  task: {id: string; title: string} | null;
+  task: { _id: string; title: string } | null;
   onSubmit: (taskId: string, newTitle: string) => void;
   onClose?: () => void;
 };
@@ -34,7 +34,7 @@ const EditTaskModal: React.FC<Props> = ({
 
   const submit = () => {
     if (input !== '' && task) {
-      onSubmit(task.id, input);
+      onSubmit(task._id, input);
       setInput('');
     }
   };
