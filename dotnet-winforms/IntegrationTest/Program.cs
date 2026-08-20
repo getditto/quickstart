@@ -59,7 +59,11 @@ class Program
                 return 1;
             }
 
-            var serverUrl = envVars.GetValueOrDefault("DITTO_SERVER_URL", "https://auth.cloud.ditto.live");
+            if (!envVars.TryGetValue("DITTO_SERVER_URL", out var serverUrl) || string.IsNullOrEmpty(serverUrl))
+            {
+                Console.WriteLine("❌ Missing DITTO_SERVER_URL in .env file");
+                return 1;
+            }
 
             Console.WriteLine($"📡 Connecting to Ditto (Database ID: {databaseId})");
 
