@@ -5,7 +5,7 @@ This mirrors the other quickstart apps (go-tui, rust-tui, javascript-tui): it
 manages a shared "tasks" collection using the canonical cross-SDK schema, so it
 interoperates with every other quickstart app.
 
-    { "_id": str, "title": str, "done": bool, "deleted": bool }
+    { "_id": str, "title": str, "created_at": int, "done": bool, "deleted": bool }
 
 Configuration comes from the environment (or a .env file in this directory):
 
@@ -21,13 +21,15 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from contextlib import contextmanager
 import os
 import sys
 import tempfile
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
+from time import time_ns
 from typing import Any
 
 from ditto import (
@@ -42,14 +44,18 @@ from ditto import (
 
 # The observer view hides soft-deleted tasks; the subscription syncs everything
 # so that tombstones propagate to other peers.
-TASKS_QUERY = "SELECT * FROM tasks WHERE deleted = false ORDER BY title"
+TASKS_QUERY = "SELECT * FROM tasks WHERE deleted = false ORDER BY created_at"
 SUBSCRIPTION_QUERY = "SELECT * FROM tasks"
+TASK_COLUMN_WIDTH = 50
+CREATED_AT_COLUMN_WIDTH = 19
+TABLE_WIDTH = TASK_COLUMN_WIDTH + CREATED_AT_COLUMN_WIDTH + 3
 
 
 @dataclass
 class Task:
     id: str
     title: str
+    created_at: int | None
     done: bool
 
     @classmethod
@@ -57,6 +63,11 @@ class Task:
         return cls(
             id=str(value["_id"]),
             title=str(value.get("title", "")),
+            created_at=(
+                int(value["created_at"])
+                if value.get("created_at") is not None
+                else None
+            ),
             done=bool(value.get("done", False)),
         )
 
@@ -163,6 +174,24 @@ def build_config(settings: Settings) -> DittoConfig:
     )
 
 
+@contextmanager
+def suppress_native_logger_startup() -> Any:
+    """Silence preview-runtime logs emitted before DittoLogger is configured.
+
+    Stderr is restored as soon as configuration finishes.
+    """
+
+    stderr_fd = sys.stderr.fileno()
+    saved_stderr_fd = os.dup(stderr_fd)
+    try:
+        with open(os.devnull, "w", encoding="utf-8") as null:
+            os.dup2(null.fileno(), stderr_fd)
+            yield
+    finally:
+        os.dup2(saved_stderr_fd, stderr_fd)
+        os.close(saved_stderr_fd)
+
+
 async def authenticate(peer: Ditto, settings: Settings) -> None:
     """Log in and keep the session refreshed.
 
@@ -204,14 +233,17 @@ class TasksApp:
         # changes in the local store.
         self._subscription = self.peer.sync.register_subscription(SUBSCRIPTION_QUERY)
         self._observer = self.peer.store.register_observer(TASKS_QUERY, self._on_change)
+        # The observer first reports the local store, which may be empty.
+        await self._wait_for_update(timeout=10.0)
         if not self.settings.offline:
             # sync.start() requires an activated instance: without a license
             # token the SDK raises DittoError <activation>. The local store,
             # subscriptions, and observers all work regardless — only
             # replication with other peers needs activation.
+            self._updated.clear()
             self.peer.sync.start()
-        # The observer fires once immediately with the current results.
-        await self._wait_for_update(timeout=10.0)
+            # Wait for the first synced change before rendering the task list.
+            await self._wait_for_update(timeout=10.0)
 
     def _on_change(self, result: QueryResult) -> None:
         # The QueryResult owns native resources; close it when done.
@@ -239,6 +271,7 @@ class TasksApp:
         task = {
             "_id": str(uuid.uuid4()),
             "title": title,
+            "created_at": time_ns(),
             "done": False,
             "deleted": False,
         }
@@ -278,25 +311,44 @@ class TasksApp:
 
     # --- Console UI -------------------------------------------------------
 
-    def render(self) -> None:
+    @staticmethod
+    def _format_created_at(task: Task) -> str:
+        if task.created_at is None:
+            return "—"
+        return datetime.fromtimestamp(task.created_at / 1_000_000_000).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+    def render(self, show_help: bool = False) -> None:
         mode = "offline" if self.settings.offline else "syncing"
-        print("\n" + "=" * 52)
+        print("\n" + "=" * TABLE_WIDTH)
         print(f"  Ditto Tasks  ({mode})")
-        print("=" * 52)
+        print("=" * TABLE_WIDTH)
         if not self.tasks:
             print("  (no tasks yet — try 'add Buy milk')")
         else:
+            print(f"  {'Task':<{TASK_COLUMN_WIDTH}} {'Created At':<{CREATED_AT_COLUMN_WIDTH}}")
+            print(f"  {'-' * TASK_COLUMN_WIDTH} {'-' * CREATED_AT_COLUMN_WIDTH}")
             for index, task in enumerate(self.tasks, start=1):
                 box = "[x]" if task.done else "[ ]"
-                print(f"  {index:>2}. {box} {task.title}")
-        print("-" * 52)
-        print("  add <title>   done <n>   edit <n> <title>   del <n>")
+                label = f"{index}. {box} {task.title}"
+                if len(label) > TASK_COLUMN_WIDTH:
+                    label = f"{label[:TASK_COLUMN_WIDTH - 3]}..."
+                created_at = self._format_created_at(task)
+                print(
+                    f"  {label:<{TASK_COLUMN_WIDTH}} "
+                    f"{created_at:<{CREATED_AT_COLUMN_WIDTH}}"
+                )
+        print("-" * TABLE_WIDTH)
+        print("  add <title>   toggle <n>   edit <n> <title>   del <n>")
         print("  list          help       quit")
+        if show_help:
+            self._print_help()
 
     def _print_help(self) -> None:
         print(
             "\n  add <title>        Create a task\n"
-            "  done <n>           Toggle a task's completed state\n"
+            "  toggle <n>         Toggle a task's completed state\n"
             "  edit <n> <title>   Rename a task\n"
             "  del <n>            Delete a task\n"
             "  list               Refresh the list\n"
@@ -322,11 +374,14 @@ class TasksApp:
 
     async def repl(self) -> None:
         print(
-            "\nReady. Changes from other peers appear when you refresh "
+            "\n" + "=" * TABLE_WIDTH + "\n\n"
+            "Ready. Changes from other peers appear when you refresh "
             "(press Enter or type 'list')."
         )
+        show_help = False
         while True:
-            self.render()
+            self.render(show_help=show_help)
+            show_help = False
             try:
                 line = (await self._read("\n> ")).strip()
             except (EOFError, KeyboardInterrupt):
@@ -345,13 +400,13 @@ class TasksApp:
             if command in ("list", "l"):
                 continue
             if command in ("help", "h", "?"):
-                self._print_help()
+                show_help = True
             elif command in ("add", "a"):
                 if rest:
                     await self._mutate(self.add(rest))
                 else:
                     print("  Usage: add <title>")
-            elif command in ("done", "toggle", "t"):
+            elif command in ("toggle", "t"):
                 task = self._resolve(rest)
                 if task is not None:
                     await self._mutate(self.toggle(task))
@@ -386,7 +441,7 @@ async def smoke(app: TasksApp) -> None:
 
     await app._mutate(app.add("Walk the dog"))
     assert titles() == ["Buy milk", "Walk the dog"], titles()
-    print("  ✓ second insert, ORDER BY applied:", titles())
+    print("  ✓ second insert, creation order applied:", titles())
 
     task = app.tasks[0]
     await app._mutate(app.toggle(task))
@@ -436,8 +491,13 @@ def cli() -> None:
     )
     args = parser.parse_args()
 
-    # Ditto logs at INFO by default, which would scribble over the console UI.
-    DittoLogger.minimum_log_level = LogLevel.INFO if args.verbose else LogLevel.ERROR
+    if args.verbose:
+        # Keep startup diagnostics visible while troubleshooting.
+        DittoLogger.minimum_log_level = LogLevel.INFO
+    else:
+        # The preview runtime logs before this public setting takes effect.
+        with suppress_native_logger_startup():
+            DittoLogger.minimum_log_level = LogLevel.ERROR
 
     settings = load_settings(offline=args.smoke)
     try:

@@ -6,7 +6,8 @@ between multiple peers.
 
 It shares the `tasks` collection schema with every other quickstart app in
 this repository, so it syncs with the Swift, Kotlin, Go, Rust, and JavaScript
-quickstarts.
+quickstarts. Python-created tasks include a `created_at` timestamp so this TUI
+displays them in creation order.
 
 ## Requirements
 
@@ -22,7 +23,7 @@ there is no separate shared-library download step.
 
 ## Getting Started
 
-Find your Database ID, Development Token, and Server URL in the
+Find your Database ID, Development Token, and URL in the
 [Ditto Portal][0], then create a `.env` file in this directory:
 
 ```bash
@@ -36,8 +37,8 @@ DITTO_SERVER_URL="your-server-url"
 ```
 
 Alternatively, set them as environment variables, or use the shared `.env` at
-the root of this repository — the app checks this directory first, then the
-repo root.
+the root of this repository. The app checks this directory first, then the
+repository root.
 
 ## Running
 
@@ -65,7 +66,7 @@ Once running, the app accepts these commands:
 | Command | Description |
 | --- | --- |
 | `add <title>` | Create a task |
-| `done <n>` | Toggle a task's completed state |
+| `toggle <n>` | Toggle a task's completed state |
 | `edit <n> <title>` | Rename a task |
 | `del <n>` | Delete a task |
 | `list` | Refresh the list |
@@ -98,6 +99,6 @@ This opens a temporary local peer and runs the full insert / update / rename /
 delete path, asserting that the store observer reports each change.
 
 Note that `--smoke` does **not** start sync. Starting sync requires an
-activated instance — without a license token the SDK raises
+activated instance. If there is no license token, the SDK will raise
 `DittoError <activation>`. The local store, subscriptions, and observers all
 work regardless; only replication with other peers needs activation.
