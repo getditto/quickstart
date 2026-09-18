@@ -47,7 +47,7 @@ Using [uv][1] (recommended — it installs Python and dependencies for you):
 
 ```bash
 cd quickstart/python-tui
-uv run --with dittolive-ditto main.py
+uv run main.py
 ```
 
 [1]: https://docs.astral.sh/uv/
@@ -96,7 +96,7 @@ To verify your installation without any credentials or network access:
 
 ```bash
 cd quickstart/python-tui
-uv run --with dittolive-ditto main.py --smoke
+uv run main.py --smoke
 ```
 
 This opens a temporary local peer and runs the full insert / update / rename /
