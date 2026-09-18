@@ -41,7 +41,7 @@ python-tui:
 
     cd python-tui
     if command -v uv >/dev/null 2>&1; then
-        uv run --with dittolive-ditto main.py
+        uv run main.py
     else
         [[ -d .venv ]] || python3 -m venv .venv
         .venv/bin/python -m pip install --quiet -e .
@@ -55,7 +55,7 @@ python-tui-smoke:
 
     cd python-tui
     if command -v uv >/dev/null 2>&1; then
-        uv run --with dittolive-ditto main.py --smoke
+        uv run main.py --smoke
     else
         [[ -d .venv ]] || python3 -m venv .venv
         .venv/bin/python -m pip install --quiet -e .
