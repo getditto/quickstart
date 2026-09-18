@@ -33,3 +33,31 @@ tools: cmdline_tools
     @echo "Installing tools"
     {{cmdline_tools_dir}}/latest/bin/sdkmanager --install 'build-tools;35.0.0'
     {{cmdline_tools_dir}}/latest/bin/sdkmanager --install 'platforms;android-34'
+
+# Runs the Python TUI quickstart
+python-tui:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    cd python-tui
+    if command -v uv >/dev/null 2>&1; then
+        uv run --with dittolive-ditto main.py
+    else
+        [[ -d .venv ]] || python3 -m venv .venv
+        .venv/bin/python -m pip install --quiet -e .
+        .venv/bin/python main.py
+    fi
+
+# Runs the Python TUI quickstart's credential-free CRUD self-test
+python-tui-smoke:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    cd python-tui
+    if command -v uv >/dev/null 2>&1; then
+        uv run --with dittolive-ditto main.py --smoke
+    else
+        [[ -d .venv ]] || python3 -m venv .venv
+        .venv/bin/python -m pip install --quiet -e .
+        .venv/bin/python main.py --smoke
+    fi
