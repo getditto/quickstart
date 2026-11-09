@@ -24,11 +24,12 @@ Assuming you have Xcode and other prerequisites installed, you can build and run
 
 1. Create an application at <https://portal.ditto.live/>.  Make note of the Database ID and Development Token.
 2. Copy the `.env.sample` file at the top level of the `quickstart` repo to `.env` and add your Database ID, Development Token, and Server URL.
-3. Launch Xcode and open the `quickstart/swift/Tasks.xcodeproj` project.
-4. Navigate to the project **Signing & Capabilities** tab and modify the **Team** and **Bundle Identifier** settings to your Apple developer account credentials to provision building to your device.
-5. In Xcode, select a connected iOS device or iOS Simulator as the destination.
-6. Choose the **Product > Build** menu item.  This should generate an `Env.swift` source file containing the values from your `.env` file, and then build the app.
-7. Choose the **Product > Run** menu item.
+3. From `quickstart/swift`, run `./buildEnv.sh ../.env Tasks` to generate `Tasks/Env.swift` from your `.env` file.
+4. Launch Xcode and open the `quickstart/swift/Tasks.xcodeproj` project.
+5. Navigate to the project **Signing & Capabilities** tab and modify the **Team** and **Bundle Identifier** settings to your Apple developer account credentials to provision building to your device.
+6. In Xcode, select a connected iOS device or iOS Simulator as the destination.
+7. Choose the **Product > Build** menu item to build the app.
+8. Choose the **Product > Run** menu item.
 
 The app will build and run on the selected device or emulator.  You can add,
 edit, and delete tasks in the app.

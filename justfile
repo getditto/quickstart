@@ -32,7 +32,8 @@ cmdline_tools:
 tools: cmdline_tools
     @echo "Installing tools"
     {{cmdline_tools_dir}}/latest/bin/sdkmanager --install 'build-tools;35.0.0'
-    {{cmdline_tools_dir}}/latest/bin/sdkmanager --install 'platforms;android-34'
+    {{cmdline_tools_dir}}/latest/bin/sdkmanager --install 'build-tools;36.0.0'
+    {{cmdline_tools_dir}}/latest/bin/sdkmanager --install 'platforms;android-36'
 
 # Runs the Python TUI quickstart
 python-tui:

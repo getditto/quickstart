@@ -138,8 +138,6 @@ public class MainActivity extends ComponentActivity {
         }
         if (Build.VERSION.SDK_INT <= 32) {
             permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-        if (Build.VERSION.SDK_INT <= 30) {
             permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

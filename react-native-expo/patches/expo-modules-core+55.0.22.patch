@@ -1,0 +1,39 @@
+diff --git a/node_modules/expo-modules-core/android/cmake/main.cmake b/node_modules/expo-modules-core/android/cmake/main.cmake
+--- a/node_modules/expo-modules-core/android/cmake/main.cmake
++++ b/node_modules/expo-modules-core/android/cmake/main.cmake
+@@ -68,26 +68,16 @@ target_link_libraries(
+   ${NEW_ARCHITECTURE_DEPENDENCIES}
+   expo-modules-jsi
+ )
+ 
+ if (REACT_NATIVE_WORKLETS_DIR)
+-  add_library(worklets SHARED IMPORTED)
++  # Temporary workaround for Expo 55's hard-coded Worklets library path.
++  # Remove after upgrading Expo Modules Core to a release that fixes this lookup.
++  # https://github.com/expo/expo/issues/42892
++  find_package(react-native-worklets REQUIRED CONFIG)
+ 
+-  if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+-    set(BUILD_TYPE "debug")
+-  else ()
+-    set(BUILD_TYPE "release")
+-  endif ()
+-
+-  set_target_properties(
+-    worklets
+-    PROPERTIES
+-    IMPORTED_LOCATION
+-    "${REACT_NATIVE_WORKLETS_DIR}/android/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
+-  )
+-
+-  target_link_libraries(
+-    expo-modules-core
+-    PRIVATE
+-    worklets
+-  )
++  target_link_libraries(
++    expo-modules-core
++    PRIVATE
++    react-native-worklets::worklets
++  )
+ endif ()

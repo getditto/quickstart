@@ -63,12 +63,13 @@ add_executable(taskscpp ${SOURCES})
 add_dependencies(taskscpp env_h)
 
 # Include the Ditto SDK header and link with the Ditto SDK
-target_include_directories(taskscpp PRIVATE sdk)
+set(DITTO_SDK_DIR "${CMAKE_SOURCE_DIR}/sdk" CACHE PATH "Ditto SDK header and static library directory")
+target_include_directories(taskscpp PRIVATE "${DITTO_SDK_DIR}")
 # Note: we are using an absolute path here (rather than unqualified path
 # with `target_link_directories`) to make updates to the `libditto.a` artifact
 # (e.g., from having recompiled the monorepo's C++ SDK or whatnot) force cmake
 # to redo the linkage step.
-target_link_libraries(taskscpp PRIVATE ${CMAKE_SOURCE_DIR}/sdk/libditto.a)
+target_link_libraries(taskscpp PRIVATE "${DITTO_SDK_DIR}/libditto.a")
 
 if(DITTO_QUICKSTART_TUI)
   target_compile_definitions(taskscpp PRIVATE DITTO_QUICKSTART_TUI)
@@ -92,8 +93,8 @@ if(BUILD_TESTS)
     src/tasks_repository.cpp
     src/tasks_log.cpp
   )
-  target_include_directories(integration_test PRIVATE src sdk third_party/cxxopts/include)
-  target_link_libraries(integration_test PRIVATE ${CMAKE_SOURCE_DIR}/sdk/libditto.a)
+  target_include_directories(integration_test PRIVATE src "${DITTO_SDK_DIR}" third_party/cxxopts/include)
+  target_link_libraries(integration_test PRIVATE "${DITTO_SDK_DIR}/libditto.a")
   add_dependencies(integration_test env_h)
   add_test(NAME IntegrationTests COMMAND integration_test)
   
