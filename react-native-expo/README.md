@@ -3,11 +3,15 @@
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 Ditto is already installed.
 
+The Reanimated 4.3.0 and Worklets 0.8.1 versions are pinned together for React Native 0.83 native builds. They intentionally differ from Expo SDK 55's bundled version recommendations; keep the pair when running `expo install --fix`. See [Reanimated's compatibility table](https://github.com/software-mansion/react-native-reanimated/blob/4.3.0/packages/react-native-reanimated/compatibility.json).
+
+`patch-package` applies a temporary Expo Modules Core CMake fix so its Worklets target uses Prefab. Track [Expo issue #42892](https://github.com/expo/expo/issues/42892) and remove `patches/expo-modules-core+55.0.22.patch` when a fixed Expo SDK 55 release is available.
+
 ⚠️ Expo Go and Expo Web are <b>not</b> compatible with Ditto.
 
 ## Requirements
 
-- **Xcode 26.2 or lower** — the `fmt` library bundled in the Ditto SDK has a `consteval` compilation bug with Xcode 26.4's Clang. Builds will fail on Xcode 26.3+.
+- **Xcode 26.3 or later** — Ditto's Expo config plugin applies a targeted workaround for the `fmt`/Clang incompatibility introduced in Xcode 26.4.
 - **Gradle 9.0+** — Included automatically via the Gradle wrapper.
 - **JDK 17** — Required for Android builds. Install via `brew install openjdk@17` and ensure `JAVA_HOME` is set.
 
