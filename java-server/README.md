@@ -13,6 +13,22 @@ For more information, see - [Java Install Guide](https://docs.ditto.live/sdk/lat
    - `./gradlew bootRun`
 5. Open http://localhost:8080 in a browser to interact with the app.
 
+## Maven build
+
+The Maven variant reuses this directory's application sources. From
+`quickstart/java-server`, load the values from the quickstart root `.env` and
+build with:
+
+```sh
+set -a
+. ../.env
+set +a
+./java-spring-maven/mvnw -f java-spring-maven/pom.xml package -DskipTests
+```
+
+The Maven build embeds the three Ditto values in its generated configuration
+class. If the environment variables are unset, empty values allow compilation.
+
 ## Additional Resources
 
 - [Java Roadmap and Support Policy](https://docs.ditto.live/sdk/latest/install-guides/java/roadmap)

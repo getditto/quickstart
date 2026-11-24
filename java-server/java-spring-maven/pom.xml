@@ -28,20 +28,29 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<ditto.database.id></ditto.database.id>
+		<ditto.server.url></ditto.server.url>
+		<ditto.development.token></ditto.development.token>
 	</properties>
 	<dependencies>
 <!--    ditto-java artifact includes the Java API for Ditto-->
         <dependency>
             <groupId>com.ditto</groupId>
             <artifactId>ditto-java</artifactId>
-            <version>5.1.0</version>
+            <version>5.2.0</version>
         </dependency>
 
 <!--    This will include binaries for all the supported platforms and architectures-->
         <dependency>
             <groupId>com.ditto</groupId>
             <artifactId>ditto-binaries</artifactId>
-            <version>5.1.0</version>
+            <version>5.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>23.0.0</version>
+            <scope>provided</scope>
         </dependency>
 
 <!--    To reduce your module artifact's size, consider including just the necessary platforms and architectures-->
@@ -50,7 +59,7 @@
 <!--        <dependency>-->
 <!--            <groupId>com.ditto</groupId>-->
 <!--            <artifactId>ditto-binaries</artifactId>-->
-<!--            <version>5.0.0-preview.3</version>-->
+<!--            <version>5.2.0</version>-->
 <!--            <classifier>macos-arm64</classifier>-->
 <!--        </dependency>-->
 
@@ -58,7 +67,7 @@
 <!--        <dependency>-->
 <!--            <groupId>com.ditto</groupId>-->
 <!--            <artifactId>ditto-binaries</artifactId>-->
-<!--            <version>5.0.0-preview.3</version>-->
+<!--            <version>5.2.0</version>-->
 <!--            <classifier>macos-x64</classifier>-->
 <!--        </dependency>-->
 
@@ -67,7 +76,7 @@
 <!--        <dependency>-->
 <!--            <groupId>com.ditto</groupId>-->
 <!--            <artifactId>ditto-binaries</artifactId>-->
-<!--            <version>5.0.0-preview.3</version>-->
+<!--            <version>5.2.0</version>-->
 <!--            <classifier>windows-x64</classifier>-->
 <!--        </dependency>-->
 
@@ -75,7 +84,7 @@
 <!--        <dependency>-->
 <!--            <groupId>com.ditto</groupId>-->
 <!--            <artifactId>ditto-binaries</artifactId>-->
-<!--            <version>5.0.0-preview.3</version>-->
+<!--            <version>5.2.0</version>-->
 <!--            <classifier>linux-x64</classifier>-->
 <!--        </dependency>-->
 
@@ -111,10 +120,117 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+			<version>4.11.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.github.bonigarcia</groupId>
+			<artifactId>webdrivermanager</artifactId>
+			<version>5.9.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
+			<version>2.15.2</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
+	<profiles>
+		<profile>
+			<id>ditto-database-id-from-environment</id>
+			<activation>
+				<property>
+					<name>env.DITTO_DATABASE_ID</name>
+				</property>
+			</activation>
+			<properties>
+				<ditto.database.id>${env.DITTO_DATABASE_ID}</ditto.database.id>
+			</properties>
+		</profile>
+		<profile>
+			<id>ditto-server-url-from-environment</id>
+			<activation>
+				<property>
+					<name>env.DITTO_SERVER_URL</name>
+				</property>
+			</activation>
+			<properties>
+				<ditto.server.url>${env.DITTO_SERVER_URL}</ditto.server.url>
+			</properties>
+		</profile>
+		<profile>
+			<id>ditto-development-token-from-environment</id>
+			<activation>
+				<property>
+					<name>env.DITTO_DEVELOPMENT_TOKEN</name>
+				</property>
+			</activation>
+			<properties>
+				<ditto.development.token>${env.DITTO_DEVELOPMENT_TOKEN}</ditto.development.token>
+			</properties>
+		</profile>
+	</profiles>
 
 	<build>
+		<sourceDirectory>../src/main/java</sourceDirectory>
+		<testSourceDirectory>../src/test/java</testSourceDirectory>
+		<resources>
+			<resource>
+				<directory>../src/main/resources</directory>
+			</resource>
+		</resources>
+		<testResources>
+			<testResource>
+				<directory>../src/test/resources</directory>
+			</testResource>
+		</testResources>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>generate-ditto-secrets-source</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/generated-sources/ditto</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/main/templates</directory>
+									<filtering>true</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.6.1</version>
+				<executions>
+					<execution>
+						<id>add-generated-ditto-secrets</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/ditto</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

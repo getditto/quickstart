@@ -2,7 +2,7 @@
 BUILD_TYPE ?= Debug
 
 # Ditto SDK version and platform detection
-DITTO_SDK_VERSION ?= 5.1.0
+DITTO_SDK_VERSION ?= 5.2.0
 PLATFORM := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m)
 
@@ -18,6 +18,8 @@ else ifeq ($(PLATFORM),darwin)
 else
     $(error Unsupported platform: $(PLATFORM))
 endif
+
+DITTO_SDK_DIR ?= $(CURDIR)/sdk/$(DITTO_SDK_VERSION)/$(DITTO_PLATFORM)
 
 DITTO_SDK_URL = https://software.ditto.live/$(DITTO_PLATFORM)/Ditto/$(DITTO_SDK_VERSION)/dist/Ditto.tar.gz
 
@@ -47,30 +49,33 @@ help: ## (default) Displays this message
 
 .PHONY: build
 build: download-sdk ## Generates all targets (downloads SDK first)
-	$(CMAKE) -B $(BUILD_DIR) . -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -Wno-dev
+	$(CMAKE) -B $(BUILD_DIR) . -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DDITTO_SDK_DIR="$(DITTO_SDK_DIR)" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -Wno-dev
 	$(CMAKE) --build $(BUILD_DIR) --parallel
 
 .PHONY: download-sdk
 download-sdk: ## Downloads and installs the Ditto C++ SDK
 	@echo "📥 Downloading Ditto C++ SDK v$(DITTO_SDK_VERSION) for $(DITTO_PLATFORM)..."
-	@if [ ! -f sdk/Ditto.h ] || [ ! -f sdk/libditto.a ]; then \
-		mkdir -p sdk; \
-		if curl -L -f $(DITTO_SDK_URL) | tar xz --strip-components=0 -C sdk/; then \
-			echo "✅ Ditto C++ SDK v$(DITTO_SDK_VERSION) installed successfully"; \
+	@if [ ! -f "$(DITTO_SDK_DIR)/.complete" ] || [ ! -f "$(DITTO_SDK_DIR)/Ditto.h" ] || [ ! -f "$(DITTO_SDK_DIR)/libditto.a" ]; then \
+		mkdir -p "$(DITTO_SDK_DIR)"; \
+		rm -f "$(DITTO_SDK_DIR)/.complete"; \
+		archive=$$(mktemp); \
+		trap 'rm -f "$$archive"' EXIT HUP INT TERM; \
+		if curl -L -f "$(DITTO_SDK_URL)" -o "$$archive" && \
+			tar xzf "$$archive" -C "$(DITTO_SDK_DIR)" && \
+			test -f "$(DITTO_SDK_DIR)/Ditto.h" && test -f "$(DITTO_SDK_DIR)/libditto.a"; then \
+			touch "$(DITTO_SDK_DIR)/.complete"; \
+			echo "Ditto C++ SDK v$(DITTO_SDK_VERSION) installed successfully"; \
 		else \
-			echo "❌ Failed to download SDK for $(DITTO_PLATFORM)"; \
-			echo "💡 The Ditto C++ SDK only supports Linux x64/ARM64 platforms"; \
-			echo "💡 macOS and Windows are not supported by Ditto C++ SDK"; \
-			echo "💡 See: https://docs.ditto.live/reference/compatibility/cpp"; \
+			echo "Failed to download SDK for $(DITTO_PLATFORM)" >&2; \
 			exit 1; \
 		fi; \
 	else \
-		echo "✅ Ditto C++ SDK already installed"; \
+		echo "Ditto C++ SDK v$(DITTO_SDK_VERSION) already installed"; \
 	fi
 
 .PHONY: build-no-tui
 build-no-tui: ## Generates all targets, without TUI support
-	$(CMAKE) -B $(BUILD_DIR) . -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -Wno-dev -DDITTO_QUICKSTART_TUI=OFF
+	$(CMAKE) -B $(BUILD_DIR) . -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DDITTO_SDK_DIR="$(DITTO_SDK_DIR)" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -Wno-dev -DDITTO_QUICKSTART_TUI=OFF
 	$(CMAKE) --build $(BUILD_DIR) --parallel
 
 .PHONY: run-help

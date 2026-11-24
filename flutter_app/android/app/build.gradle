@@ -17,7 +17,7 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace "com.example.flutter_quickstart"
-    compileSdkVersion flutter.compileSdkVersion
+    compileSdkVersion Math.max(36, flutter.compileSdkVersion)
     ndkVersion "27.0.12077973"
 
     compileOptions {

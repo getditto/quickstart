@@ -49,10 +49,11 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.1.20"
+            "kotlinVersion": "2.3.0"
           }
         }
       ],
+      "./plugins/with-kotlin-gradle-plugin",
       "expo-font",
       "expo-web-browser"
     ],
