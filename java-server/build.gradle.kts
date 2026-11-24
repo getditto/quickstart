@@ -11,9 +11,13 @@ plugins {
 group = "com.ditto.example.spring"
 version = "0.0.1-SNAPSHOT"
 
+val javaToolchainVersion = providers.gradleProperty("javaToolchainVersion")
+    .getOrElse("21")
+    .toInt()
+
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(javaToolchainVersion)
     }
 }
 
